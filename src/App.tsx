@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import UserManagementPage from "./pages/UserManagementPage";
 import NotFound from "./pages/NotFound";
 import AuthGuard from "./components/auth/AuthGuard";
 
@@ -26,6 +27,14 @@ function App() {
             element={
               <AuthGuard>
                 <Dashboard />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <AuthGuard>
+                <UserManagementPage />
               </AuthGuard>
             }
           />

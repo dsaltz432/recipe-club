@@ -31,17 +31,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-light via-white to-orange-light">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
           {/* Left: Text Content */}
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
-              Recipe Club
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4">
+              Recipe Club Hub
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-4">
-              Recipe Club
-            </p>
-            <p className="text-lg text-gray-500 mb-8 max-w-md mx-auto lg:mx-0">
+            <p className="text-lg text-gray-500 mb-6 max-w-md mx-auto lg:mx-0">
               Spin the wheel, get your ingredient, and share delicious recipes
               with your club!
             </p>
@@ -52,7 +49,7 @@ const Index = () => {
 
           {/* Right: Wheel Visualization */}
           <div className="flex-1 flex justify-center">
-            <div className="relative w-72 h-72 md:w-96 md:h-96">
+            <div className="relative w-56 h-56 md:w-72 md:h-72">
               {/* Decorative Wheel */}
               <svg viewBox="0 0 200 200" className="w-full h-full animate-spin-slow">
                 <defs>
@@ -103,45 +100,42 @@ const Index = () => {
         </div>
 
         {/* How It Works */}
-        <div className="mt-24">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
+        <div className="mt-12 md:mt-16">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-center text-gray-900 mb-6">
             How It Works
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center shadow-lg">
-              <div className="w-16 h-16 bg-purple rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-white">1</span>
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 text-center shadow-lg">
+              <div className="w-12 h-12 bg-purple rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl font-bold text-white">1</span>
               </div>
-              <h3 className="font-display text-xl font-semibold mb-2">
+              <h3 className="font-display text-lg font-semibold mb-1">
                 Spin the Wheel
               </h3>
-              <p className="text-gray-600">
-                Click the spin button and watch as the wheel selects a random
-                ingredient for you.
+              <p className="text-gray-600 text-sm">
+                Click spin and watch as the wheel selects a random ingredient.
               </p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center shadow-lg">
-              <div className="w-16 h-16 bg-orange rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-white">2</span>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 text-center shadow-lg">
+              <div className="w-12 h-12 bg-orange rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl font-bold text-white">2</span>
               </div>
-              <h3 className="font-display text-xl font-semibold mb-2">
+              <h3 className="font-display text-lg font-semibold mb-1">
                 Pick a Date
               </h3>
-              <p className="text-gray-600">
-                Choose when your recipe club will meet to share dishes featuring
-                your ingredient.
+              <p className="text-gray-600 text-sm">
+                Choose when your club will meet to share dishes.
               </p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center shadow-lg">
-              <div className="w-16 h-16 bg-green rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-white">3</span>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 text-center shadow-lg">
+              <div className="w-12 h-12 bg-green rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl font-bold text-white">3</span>
               </div>
-              <h3 className="font-display text-xl font-semibold mb-2">
+              <h3 className="font-display text-lg font-semibold mb-1">
                 Lock In Your Recipe
               </h3>
-              <p className="text-gray-600">
-                Share what you'll be making and see what others in your club are
-                cooking too!
+              <p className="text-gray-600 text-sm">
+                Share what you're making and see what others are cooking!
               </p>
             </div>
           </div>

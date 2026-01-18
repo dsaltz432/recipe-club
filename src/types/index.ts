@@ -8,43 +8,72 @@ export interface User {
 export interface Ingredient {
   id: string;
   name: string;
-  isUsed: boolean;
-  usedBy?: string;
-  usedDate?: string;
+  usedCount: number;
+  lastUsedBy?: string;
+  lastUsedDate?: string;
   createdBy?: string;
+  inBank: boolean;
 }
 
 export interface Recipe {
   id: string;
   name: string;
   url?: string;
-  notes?: string;
-  userId: string;
-  ingredientId: string;
-  eventDate: string;
+  createdBy?: string;
   createdAt?: string;
+  // Aggregated data (populated by joins)
+  contributionCount?: number;
+  contributors?: string[];
+}
+
+export interface RecipeContribution {
+  id: string;
+  recipeId: string;
+  userId: string;
+  eventId: string;
+  notes?: string;
+  photos?: string[];
+  createdAt?: string;
+  // Joined data
   userName?: string;
   userAvatar?: string;
+  recipeName?: string;
+  recipeUrl?: string;
+  eventDate?: string;
   ingredientName?: string;
 }
 
-export interface WheelItem {
+export interface RecipeRating {
   id: string;
-  label: string;
+  recipeId: string;
+  userId: string;
+  eventId: string;
+  wouldCookAgain: boolean;
+  overallRating: number; // 1-5
+  createdAt?: string;
+  // Joined data
+  userName?: string;
+  recipeName?: string;
+}
+
+export interface RecipeRatingsSummary {
+  recipeId: string;
+  averageRating: number;
+  wouldCookAgainPercent: number;
+  totalRatings: number;
+}
+
+export interface EventRecipeWithContributions {
+  recipe: Recipe;
+  contributions: RecipeContribution[];
 }
 
 export interface ScheduledEvent {
   id: string;
   ingredientId: string;
   eventDate: string;
+  eventTime?: string;
   createdBy: string;
   status: "scheduled" | "completed" | "canceled";
   ingredientName?: string;
-}
-
-export interface EventWithRecipes {
-  eventDate: string;
-  eventId?: string;
-  recipes: Recipe[];
-  participantCount: number;
 }

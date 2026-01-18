@@ -10,26 +10,48 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import type { Ingredient } from "@/types";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { Ingredient, ScheduledEvent } from "@/types";
 import { MIN_INGREDIENTS_TO_SPIN, WHEEL_COLORS } from "@/lib/constants";
 import confetti from "canvas-confetti";
+import { format, parseISO } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { createCalendarEvent } from "@/lib/googleCalendar";
+import { v4 as uuidv4 } from "uuid";
 
 interface IngredientWheelProps {
   ingredients: Ingredient[];
-  onResult: (ingredient: Ingredient, date: Date) => void;
+  onEventCreated: () => void;
+  userId: string;
+  disabled?: boolean;
+  activeEvent?: ScheduledEvent | null;
 }
 
-const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
+const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false, activeEvent }: IngredientWheelProps) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState("19:00");
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+  const [isLockingIn, setIsLockingIn] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
 
-  const availableIngredients = ingredients.filter((i) => !i.isUsed);
-  const canSpin = availableIngredients.length >= MIN_INGREDIENTS_TO_SPIN;
+  // Only show ingredients that are in the bank
+  const bankIngredients = ingredients.filter((i) => i.inBank);
+  const hasEnoughIngredients = bankIngredients.length >= MIN_INGREDIENTS_TO_SPIN;
+  const canSpin = hasEnoughIngredients && !disabled;
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "pm" : "am";
+    const displayHour = hour % 12 || 12;
+    return minutes === "00" ? `${displayHour}${ampm}` : `${displayHour}:${minutes}${ampm}`;
+  };
 
   const spinWheel = () => {
     if (!canSpin || isSpinning) return;
@@ -40,13 +62,13 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
     // Pick a random ingredient (avoid same as last)
     let randomIndex: number;
     do {
-      randomIndex = Math.floor(Math.random() * availableIngredients.length);
-    } while (randomIndex === lastSelectedIndex && availableIngredients.length > 1);
+      randomIndex = Math.floor(Math.random() * bankIngredients.length);
+    } while (randomIndex === lastSelectedIndex && bankIngredients.length > 1);
 
     setLastSelectedIndex(randomIndex);
 
     // Calculate rotation to land on the selected ingredient
-    const segmentAngle = 360 / availableIngredients.length;
+    const segmentAngle = 360 / bankIngredients.length;
     const segmentCenter = segmentAngle * randomIndex + segmentAngle / 2;
 
     // CSS conic-gradient starts at TOP (0deg) and goes clockwise
@@ -70,7 +92,7 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
     // After spin completes
     setTimeout(() => {
       setIsSpinning(false);
-      setSelectedIngredient(availableIngredients[randomIndex]);
+      setSelectedIngredient(bankIngredients[randomIndex]);
       setShowDatePicker(true);
 
       // Confetti!
@@ -87,12 +109,65 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
     setSelectedDate(date);
   };
 
-  const handleConfirm = () => {
-    if (selectedIngredient && selectedDate) {
-      onResult(selectedIngredient, selectedDate);
+  const handleConfirm = async () => {
+    if (!selectedIngredient || !selectedDate) return;
+
+    setIsLockingIn(true);
+
+    try {
+      const eventDateStr = format(selectedDate, "yyyy-MM-dd");
+      const eventId = uuidv4();
+
+      // Try to create Google Calendar event first
+      const calendarResult = await createCalendarEvent({
+        title: `Recipe Club Hub: ${selectedIngredient.name}`,
+        description: `Recipe Club Hub event featuring ${selectedIngredient.name}`,
+        date: selectedDate,
+        time: selectedTime,
+        ingredientName: selectedIngredient.name,
+      });
+
+      // Create the scheduled event with calendar_event_id if available
+      const { error: eventError } = await supabase
+        .from("scheduled_events")
+        .insert({
+          id: eventId,
+          ingredient_id: selectedIngredient.id,
+          event_date: eventDateStr,
+          event_time: selectedTime,
+          created_by: userId,
+          status: "scheduled",
+          calendar_event_id: calendarResult.eventId || null,
+        });
+
+      if (eventError) throw eventError;
+
+      // Note: used_count is incremented when event is COMPLETED, not when scheduled
+
+      // Success confetti!
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: WHEEL_COLORS,
+      });
+
+      if (calendarResult.success) {
+        toast.success(`Event created! Calendar invite sent for ${format(selectedDate, "MMMM d, yyyy")} at ${formatTime(selectedTime)}`);
+      } else {
+        toast.success(`Event created for ${format(selectedDate, "MMMM d, yyyy")} at ${formatTime(selectedTime)}! (Calendar invite not sent)`);
+      }
+
       setShowDatePicker(false);
       setSelectedIngredient(null);
       setSelectedDate(undefined);
+      setSelectedTime("19:00");
+      onEventCreated();
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast.error("Failed to create event. Please try again.");
+    } finally {
+      setIsLockingIn(false);
     }
   };
 
@@ -100,12 +175,13 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
     setShowDatePicker(false);
     setSelectedIngredient(null);
     setSelectedDate(undefined);
+    setSelectedTime("19:00");
     spinWheel();
   };
 
   // Generate wheel segments
   const renderWheel = () => {
-    if (availableIngredients.length === 0) {
+    if (bankIngredients.length === 0) {
       return (
         <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center">
           <span className="text-gray-500 text-center px-4">
@@ -115,7 +191,7 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
       );
     }
 
-    const segmentAngle = 360 / availableIngredients.length;
+    const segmentAngle = 360 / bankIngredients.length;
 
     return (
       <div
@@ -124,7 +200,7 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
         style={{
           transform: `rotate(${rotation}deg)`,
           transition: isSpinning ? "transform 6s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
-          background: `conic-gradient(${availableIngredients
+          background: `conic-gradient(${bankIngredients
             .map(
               (_, i) =>
                 `${WHEEL_COLORS[i % WHEEL_COLORS.length]} ${i * segmentAngle}deg ${
@@ -135,7 +211,7 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
         }}
       >
         {/* Ingredient labels */}
-        {availableIngredients.map((ingredient, i) => {
+        {bankIngredients.map((ingredient, i) => {
           // Angle to center of segment (in conic-gradient coords: 0 = top, clockwise)
           const segmentCenterAngle = segmentAngle * i + segmentAngle / 2;
 
@@ -165,9 +241,15 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
                 transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
                 textShadow: "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)",
                 whiteSpace: "nowrap",
+                opacity: ingredient.usedCount > 2 ? 0.85 : 1,
               }}
             >
               {ingredient.name}
+              {ingredient.usedCount > 0 && (
+                <span className="ml-1 text-[9px] opacity-75">
+                  ({ingredient.usedCount})
+                </span>
+              )}
             </div>
           );
         })}
@@ -211,11 +293,26 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
           </Button>
 
           {/* Progress Message */}
-          {!canSpin && (
+          {activeEvent && (
+            <div className="text-sm text-muted-foreground text-center bg-orange/10 p-3 rounded-lg">
+              <p className="font-medium text-orange">Active event in progress</p>
+              <p>
+                Event on {format(parseISO(activeEvent.eventDate), "MMMM d, yyyy")} with{" "}
+                <span className="font-medium">{activeEvent.ingredientName}</span>
+              </p>
+              <p className="mt-1">Complete or cancel the current event to spin again.</p>
+            </div>
+          )}
+          {!activeEvent && !hasEnoughIngredients && (
             <p className="text-sm text-muted-foreground text-center">
-              Add {MIN_INGREDIENTS_TO_SPIN - availableIngredients.length} more
-              ingredient{MIN_INGREDIENTS_TO_SPIN - availableIngredients.length !== 1 ? "s" : ""} to
+              Add {MIN_INGREDIENTS_TO_SPIN - bankIngredients.length} more
+              ingredient{MIN_INGREDIENTS_TO_SPIN - bankIngredients.length !== 1 ? "s" : ""} to
               spin the wheel!
+            </p>
+          )}
+          {!activeEvent && hasEnoughIngredients && disabled && (
+            <p className="text-sm text-muted-foreground text-center">
+              Only admins can spin the wheel.
             </p>
           )}
         </CardContent>
@@ -244,16 +341,27 @@ const IngredientWheel = ({ ingredients, onResult }: IngredientWheelProps) => {
             />
           </div>
 
+          <div className="flex items-center gap-4 px-4">
+            <Label htmlFor="event-time" className="whitespace-nowrap">Event Time</Label>
+            <Input
+              id="event-time"
+              type="time"
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+              className="w-32"
+            />
+          </div>
+
           <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button variant="outline" onClick={handleSpinAgain}>
+            <Button variant="outline" onClick={handleSpinAgain} disabled={isLockingIn}>
               Spin Again
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={!selectedDate}
+              disabled={!selectedDate || isLockingIn}
               className="bg-purple hover:bg-purple-dark"
             >
-              Lock In Ingredient
+              {isLockingIn ? "Creating Event..." : "Lock In Ingredient"}
             </Button>
           </DialogFooter>
         </DialogContent>

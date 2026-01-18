@@ -12,6 +12,8 @@ import confetti from "canvas-confetti";
 import { ArrowLeft, Calendar, Utensils } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { WHEEL_COLORS } from "@/lib/constants";
+import PhotoUpload from "./PhotoUpload";
+import { createCalendarEvent } from "@/lib/googleCalendar";
 
 interface RecipeLockInFormProps {
   ingredient: Ingredient;
@@ -33,6 +35,7 @@ const RecipeLockInForm = ({
   const [recipeName, setRecipeName] = useState("");
   const [recipeUrl, setRecipeUrl] = useState("");
   const [notes, setNotes] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateUrl = (url: string): boolean => {
@@ -85,9 +88,9 @@ const RecipeLockInForm = ({
         await supabase
           .from("ingredients")
           .update({
-            is_used: true,
-            used_by: userId,
-            used_date: new Date().toISOString(),
+            used_count: (ingredient.usedCount || 0) + 1,
+            last_used_by: userId,
+            last_used_date: new Date().toISOString(),
           })
           .eq("id", ingredient.id);
       }
@@ -98,12 +101,25 @@ const RecipeLockInForm = ({
         name: recipeName.trim(),
         url: recipeUrl.trim() || null,
         notes: notes.trim() || null,
+        photos: photos.length > 0 ? photos : null,
         user_id: userId,
         ingredient_id: ingredient.id,
         event_date: eventDateStr,
       });
 
       if (recipeError) throw recipeError;
+
+      // Try to create Google Calendar event (non-blocking)
+      const calendarResult = await createCalendarEvent({
+        title: `Recipe Club Hub: ${ingredient.name}`,
+        description: `Recipe: ${recipeName.trim()}${recipeUrl ? `\nURL: ${recipeUrl.trim()}` : ""}${notes ? `\nNotes: ${notes.trim()}` : ""}`,
+        date: eventDate,
+        ingredientName: ingredient.name,
+      });
+
+      if (!calendarResult.success) {
+        console.warn("Calendar event not created:", calendarResult.error);
+      }
 
       // Success!
       confetti({
@@ -113,7 +129,11 @@ const RecipeLockInForm = ({
         colors: WHEEL_COLORS,
       });
 
-      toast.success("Recipe locked in! Can't wait to see what you make!");
+      if (calendarResult.success) {
+        toast.success("Recipe locked in and calendar invite sent!");
+      } else {
+        toast.success("Recipe locked in! (Calendar invite not sent - check calendar permissions)");
+      }
       onComplete();
     } catch (error) {
       console.error("Error locking in recipe:", error);
@@ -185,6 +205,11 @@ const RecipeLockInForm = ({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Photos (optional)</Label>
+              <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
             </div>
 
             <div className="flex gap-4">
