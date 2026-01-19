@@ -13,7 +13,7 @@ export const DEFAULT_INGREDIENTS = [
   "Garlic",
 ];
 
-export const MIN_INGREDIENTS_TO_SPIN = 15;
+export const MIN_INGREDIENTS_TO_SPIN = 10;
 
 export const WHEEL_COLORS = [
   "#9b87f5", // purple
