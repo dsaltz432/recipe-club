@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
 import RecipeCard from "@/components/recipes/RecipeCard";
-import type { Recipe, RecipeContribution } from "@/types";
+import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
 
 // Mock date-fns
 vi.mock("date-fns", () => ({
@@ -12,40 +12,40 @@ vi.mock("date-fns", () => ({
   parseISO: (str: string) => new Date(str),
 }));
 
-interface RecipeWithContributions extends Recipe {
-  contributions: RecipeContribution[];
+interface RecipeWithNotes extends Recipe {
+  notes: RecipeNote[];
   ingredientName?: string;
+  ratingSummary?: RecipeRatingsSummary;
 }
 
-const createMockContribution = (overrides: Partial<RecipeContribution> = {}): RecipeContribution => ({
-  id: "contrib-1",
+const createMockNote = (overrides: Partial<RecipeNote> = {}): RecipeNote => ({
+  id: "note-1",
   recipeId: "recipe-1",
   userId: "user-456",
-  eventId: "event-1",
-  notes: null,
-  photos: null,
+  notes: undefined,
+  photos: undefined,
   createdAt: "2025-01-15T10:00:00Z",
   userName: "Test User",
   userAvatar: "https://example.com/avatar.jpg",
-  eventDate: "2025-01-15",
-  ingredientName: "Salmon",
   ...overrides,
 });
 
-const createMockRecipe = (overrides: Partial<RecipeWithContributions> = {}): RecipeWithContributions => ({
+const createMockRecipe = (overrides: Partial<RecipeWithNotes> = {}): RecipeWithNotes => ({
   id: "recipe-1",
   name: "Grilled Salmon",
-  url: null,
+  url: undefined,
   createdBy: "user-123",
+  createdByName: "Test Creator",
+  createdByAvatar: "https://example.com/creator-avatar.jpg",
   createdAt: "2025-01-15T10:00:00Z",
-  contributions: [createMockContribution()],
+  eventId: "event-1",
+  ingredientId: "ingredient-1",
+  notes: [createMockNote()],
   ingredientName: "Salmon",
   ...overrides,
 });
 
 describe("RecipeCard", () => {
-  const mockUserId = "user-123";
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -53,7 +53,7 @@ describe("RecipeCard", () => {
   it("renders recipe name", () => {
     const recipe = createMockRecipe({ name: "Garlic Butter Salmon" });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     expect(screen.getByText("Garlic Butter Salmon")).toBeInTheDocument();
   });
@@ -61,121 +61,79 @@ describe("RecipeCard", () => {
   it("renders ingredient badge", () => {
     const recipe = createMockRecipe({ ingredientName: "Salmon" });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     expect(screen.getByText("Salmon")).toBeInTheDocument();
   });
 
-  it("renders contribution count", () => {
+  it("renders notes count", () => {
     const recipe = createMockRecipe({
-      contributions: [
-        createMockContribution({ id: "c1" }),
-        createMockContribution({ id: "c2" }),
-        createMockContribution({ id: "c3" }),
+      notes: [
+        createMockNote({ id: "n1" }),
+        createMockNote({ id: "n2" }),
+        createMockNote({ id: "n3" }),
       ],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.getByText("3 contributions")).toBeInTheDocument();
+    expect(screen.getByText("3 notes")).toBeInTheDocument();
   });
 
-  it("renders singular contribution text for one contribution", () => {
+  it("renders singular note text for one note", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution()],
+      notes: [createMockNote()],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.getByText("1 contribution")).toBeInTheDocument();
+    expect(screen.getByText("1 note")).toBeInTheDocument();
   });
 
-  it("renders contributor name for single contributor", () => {
+  it("renders submitter name", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ userName: "Alice" })],
+      createdByName: "Alice",
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText(/by Alice/)).toBeInTheDocument();
   });
 
-  it("shows X people for multiple unique contributors", () => {
+  it("renders submitter avatar with first letter fallback", () => {
     const recipe = createMockRecipe({
-      contributions: [
-        createMockContribution({ id: "c1", userName: "Alice" }),
-        createMockContribution({ id: "c2", userName: "Bob" }),
-        createMockContribution({ id: "c3", userName: "Charlie" }),
-      ],
+      createdByName: "Alice",
+      createdByAvatar: undefined,
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
-
-    expect(screen.getByText("3 people")).toBeInTheDocument();
-  });
-
-  it("renders avatar with first letter fallback", () => {
-    const recipe = createMockRecipe({
-      contributions: [createMockContribution({ userName: "Alice", userAvatar: null })],
-    });
-
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     expect(screen.getByText("A")).toBeInTheDocument();
   });
 
-  it("shows You badge when user has contributed", () => {
+  it("shows submitter name without extra indicator", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ userId: mockUserId })],
+      createdBy: "user-123",
+      createdByName: "Test Creator",
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.getByText("You")).toBeInTheDocument();
+    expect(screen.getByText(/by Test Creator/)).toBeInTheDocument();
   });
 
-  it("does not show You badge when user has not contributed", () => {
+  it("renders recipe without crashing when all data is present", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ userId: "other-user" })],
+      notes: [createMockNote()],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.queryByText("You")).not.toBeInTheDocument();
-  });
-
-  it("shows +N indicator for more than 3 contributors", () => {
-    const recipe = createMockRecipe({
-      contributions: [
-        createMockContribution({ id: "c1", userName: "Alice" }),
-        createMockContribution({ id: "c2", userName: "Bob" }),
-        createMockContribution({ id: "c3", userName: "Charlie" }),
-        createMockContribution({ id: "c4", userName: "Diana" }),
-        createMockContribution({ id: "c5", userName: "Eve" }),
-      ],
-    });
-
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
-
-    expect(screen.getByText("+2")).toBeInTheDocument();
-  });
-
-  it("renders event date when present", () => {
-    const recipe = createMockRecipe({
-      contributions: [createMockContribution({ eventDate: "2025-01-15" })],
-    });
-
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
-
-    // The date should be rendered (format depends on date-fns)
-    // Verify the recipe renders without errors when date is present
     expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
   });
 });
 
 describe("RecipeCard - Expandable Details", () => {
-  const mockUserId = "user-123";
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -183,15 +141,15 @@ describe("RecipeCard - Expandable Details", () => {
   it("shows Show More button when there are details", () => {
     const recipe = createMockRecipe({ url: "https://example.com/recipe" });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     expect(screen.getByRole("button", { name: /show more/i })).toBeInTheDocument();
   });
 
-  it("does not show expand button when no URL and no contributions", () => {
-    const recipe = createMockRecipe({ url: null, contributions: [] });
+  it("does not show expand button when no URL and no notes", () => {
+    const recipe = createMockRecipe({ url: undefined, notes: [] });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
   });
@@ -199,7 +157,7 @@ describe("RecipeCard - Expandable Details", () => {
   it("toggles to Show Less when expanded", () => {
     const recipe = createMockRecipe({ url: "https://example.com/recipe" });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
 
@@ -209,7 +167,7 @@ describe("RecipeCard - Expandable Details", () => {
   it("shows recipe URL link when expanded", () => {
     const recipe = createMockRecipe({ url: "https://example.com/salmon-recipe" });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -223,10 +181,10 @@ describe("RecipeCard - Expandable Details", () => {
 
   it("shows notes section when expanded with notes", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ userName: "Alice", notes: "Great recipe!" })],
+      notes: [createMockNote({ userName: "Alice", notes: "Great recipe!" })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -234,12 +192,12 @@ describe("RecipeCard - Expandable Details", () => {
     expect(screen.getByText("Alice's Notes")).toBeInTheDocument();
   });
 
-  it("shows contribution notes when expanded", () => {
+  it("shows note content when expanded", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ notes: "Delicious with lemon!" })],
+      notes: [createMockNote({ notes: "Delicious with lemon!" })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -247,34 +205,16 @@ describe("RecipeCard - Expandable Details", () => {
     expect(screen.getByText("Delicious with lemon!")).toBeInTheDocument();
   });
 
-  it("shows You badge next to user's notes when expanded", () => {
+  it("shows note photos when expanded", () => {
     const recipe = createMockRecipe({
-      contributions: [
-        createMockContribution({ id: "c1", userId: mockUserId, userName: "Test User", notes: "My notes" }),
-        createMockContribution({ id: "c2", userId: "other-user", userName: "Other User", notes: "Their notes" }),
-      ],
-    });
-
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
-
-    // Expand
-    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-
-    // Should show "You" badge in expanded notes section
-    const youBadges = screen.getAllByText("You");
-    expect(youBadges.length).toBeGreaterThan(0);
-  });
-
-  it("shows contribution photos when expanded", () => {
-    const recipe = createMockRecipe({
-      contributions: [
-        createMockContribution({
+      notes: [
+        createMockNote({
           photos: ["https://example.com/photo1.jpg", "https://example.com/photo2.jpg"],
         }),
       ],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -290,7 +230,7 @@ describe("RecipeCard - Expandable Details", () => {
   it("collapses when Show Less is clicked", () => {
     const recipe = createMockRecipe({ url: "https://example.com/recipe" });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -304,11 +244,11 @@ describe("RecipeCard - Expandable Details", () => {
 
   it("does not show URL link when recipe has no URL", () => {
     const recipe = createMockRecipe({
-      url: null,
-      contributions: [createMockContribution({ notes: "Some notes" })],
+      url: undefined,
+      notes: [createMockNote({ notes: "Some notes" })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -316,12 +256,12 @@ describe("RecipeCard - Expandable Details", () => {
     expect(screen.queryByRole("link", { name: /view recipe/i })).not.toBeInTheDocument();
   });
 
-  it("does not show notes section when contribution has no notes or photos", () => {
+  it("does not show notes section when note has no notes or photos", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ notes: null, photos: null })],
+      notes: [createMockNote({ notes: undefined, photos: undefined })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -330,12 +270,12 @@ describe("RecipeCard - Expandable Details", () => {
     expect(screen.queryByText(/Notes/i)).not.toBeInTheDocument();
   });
 
-  it("does not render photos section when contribution has no photos", () => {
+  it("does not render photos section when note has no photos", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ photos: null })],
+      notes: [createMockNote({ photos: undefined })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -347,10 +287,10 @@ describe("RecipeCard - Expandable Details", () => {
 
   it("does not render photos section when photos array is empty", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ photos: [] })],
+      notes: [createMockNote({ photos: [] })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -362,33 +302,162 @@ describe("RecipeCard - Expandable Details", () => {
 });
 
 describe("RecipeCard - Edge Cases", () => {
-  const mockUserId = "user-123";
-
   it("handles recipe without ingredient name", () => {
     const recipe = createMockRecipe({ ingredientName: undefined });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Recipe name should still render
     expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
   });
 
-  it("handles empty contributions array", () => {
-    const recipe = createMockRecipe({ contributions: [] });
+  it("handles empty notes array", () => {
+    const recipe = createMockRecipe({ notes: [] });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.getByText("0 contributions")).toBeInTheDocument();
+    expect(screen.getByText("0 notes")).toBeInTheDocument();
   });
 
-  it("handles contributions without event date", () => {
+  it("handles note without userName", () => {
     const recipe = createMockRecipe({
-      contributions: [createMockContribution({ eventDate: undefined })],
+      notes: [createMockNote({ userName: undefined })],
     });
 
-    render(<RecipeCard recipe={recipe} userId={mockUserId} />);
+    render(<RecipeCard recipe={recipe} />);
 
     // Should not crash
     expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+  });
+
+  it("shows photo count when notes have photos", () => {
+    const recipe = createMockRecipe({
+      notes: [
+        createMockNote({ id: "n1", photos: ["photo1.jpg", "photo2.jpg"] }),
+        createMockNote({ id: "n2", photos: ["photo3.jpg"] }),
+        createMockNote({ id: "n3", photos: undefined }),
+      ],
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Should show total photo count (2 + 1 + 0 = 3)
+    expect(screen.getByText("3 photos")).toBeInTheDocument();
+  });
+
+  it("shows photo count with empty photos array in some notes", () => {
+    const recipe = createMockRecipe({
+      notes: [
+        createMockNote({ id: "n1", photos: ["photo1.jpg"] }),
+        createMockNote({ id: "n2", photos: [] }),
+      ],
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Should show total photo count (1 + 0 = 1)
+    expect(screen.getByText("1 photos")).toBeInTheDocument();
+  });
+
+  it("does not show photo count when no notes have photos", () => {
+    const recipe = createMockRecipe({
+      notes: [
+        createMockNote({ id: "n1", photos: undefined }),
+        createMockNote({ id: "n2", photos: [] }),
+      ],
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Photo count should not be shown
+    expect(screen.queryByText(/photos/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - Ratings Display", () => {
+  it("displays rating summary when available", () => {
+    const recipe = createMockRecipe({
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 5,
+        memberRatings: [
+          { initial: "S", wouldCookAgain: true },
+          { initial: "H", wouldCookAgain: true },
+          { initial: "D", wouldCookAgain: true },
+          { initial: "A", wouldCookAgain: true },
+          { initial: "J", wouldCookAgain: false },
+        ],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.getByText("4.5/5")).toBeInTheDocument();
+    expect(screen.getByText("Make again:")).toBeInTheDocument();
+    expect(screen.getByText(/S: Yes/)).toBeInTheDocument();
+    expect(screen.getByText(/J: No/)).toBeInTheDocument();
+  });
+
+  it("displays singular rating text for 1 rating", () => {
+    const recipe = createMockRecipe({
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 5.0,
+        wouldCookAgainPercent: 100,
+        totalRatings: 1,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.getByText("5/5")).toBeInTheDocument();
+    expect(screen.getByText("S: Yes")).toBeInTheDocument();
+  });
+
+  it("does not display rating section when no ratings", () => {
+    const recipe = createMockRecipe({
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 0,
+        wouldCookAgainPercent: 0,
+        totalRatings: 0,
+        memberRatings: [],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByText(/Make again:/i)).not.toBeInTheDocument();
+  });
+
+  it("does not display rating section when ratingSummary is undefined", () => {
+    const recipe = createMockRecipe({
+      ratingSummary: undefined,
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByText(/Make again:/i)).not.toBeInTheDocument();
+  });
+
+  it("handles ratingSummary without memberRatings array", () => {
+    const recipe = createMockRecipe({
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.0,
+        wouldCookAgainPercent: 75,
+        totalRatings: 4,
+        memberRatings: [],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.getByText("4/5")).toBeInTheDocument();
+    // No "Make again:" section when memberRatings is empty
+    expect(screen.queryByText("Make again:")).not.toBeInTheDocument();
   });
 });

@@ -2,16 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { getClubMemberEmails } from "./auth";
 
 interface CalendarEventParams {
-  title: string;
-  description: string;
   date: Date;
   time?: string; // Format: "HH:mm" e.g., "19:00" - defaults to "19:00"
   ingredientName: string;
 }
 
 export const createCalendarEvent = async ({
-  title,
-  description,
   date,
   time,
   ingredientName,
@@ -49,10 +45,9 @@ export const createCalendarEvent = async ({
     // Get club member emails for calendar invites
     const clubMemberEmails = await getClubMemberEmails();
 
-    // Build the event object with timed event
+    // Build the event object with timed event and Google Meet
     const event = {
-      summary: title,
-      description: `${description}\n\nFeatured Ingredient: ${ingredientName}\n\nCreated by Recipe Club Hub`,
+      summary: `Recipe Club: ${ingredientName}`,
       start: {
         dateTime: startDateTime.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -62,6 +57,14 @@ export const createCalendarEvent = async ({
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
       attendees: clubMemberEmails.map((email) => ({ email })),
+      conferenceData: {
+        createRequest: {
+          requestId: `recipe-club-${Date.now()}`,
+          conferenceSolutionKey: {
+            type: "hangoutsMeet",
+          },
+        },
+      },
       reminders: {
         useDefault: false,
         overrides: [
@@ -71,9 +74,9 @@ export const createCalendarEvent = async ({
       },
     };
 
-    // Create the calendar event using Google Calendar API
+    // Create the calendar event using Google Calendar API (conferenceDataVersion=1 enables Meet link)
     const response = await fetch(
-      "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all&conferenceDataVersion=1",
       {
         method: "POST",
         headers: {
@@ -115,8 +118,6 @@ export const createCalendarEvent = async ({
 
 interface UpdateCalendarEventParams {
   calendarEventId: string;
-  title: string;
-  description: string;
   date: Date;
   time?: string;
   ingredientName: string;
@@ -124,8 +125,6 @@ interface UpdateCalendarEventParams {
 
 export const updateCalendarEvent = async ({
   calendarEventId,
-  title,
-  description,
   date,
   time,
   ingredientName,
@@ -159,8 +158,7 @@ export const updateCalendarEvent = async ({
     endDateTime.setHours(endDateTime.getHours() + 2);
 
     const event = {
-      summary: title,
-      description: `${description}\n\nFeatured Ingredient: ${ingredientName}\n\nCreated by Recipe Club Hub`,
+      summary: `Recipe Club: ${ingredientName}`,
       start: {
         dateTime: startDateTime.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

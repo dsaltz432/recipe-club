@@ -1,4 +1,6 @@
 import type { User, Ingredient, ScheduledEvent } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { CalendarClock } from "lucide-react";
 import CountdownCard from "./CountdownCard";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
@@ -25,16 +27,18 @@ const HomeSection = ({
   onEventUpdated,
 }: HomeSectionProps) => {
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Personalized Greeting */}
       <div className="text-center">
-        <h2 className="font-display text-3xl md:text-4xl font-bold text-gray-900">
+        <h2 className="font-display text-2xl md:text-3xl font-bold text-gray-900">
           What's Cooking, {user?.name?.split(" ")[0] || "Chef"}?
         </h2>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-muted-foreground mt-1 text-sm">
           {activeEvent
             ? "You have an upcoming event!"
-            : "Ready to start a new culinary adventure?"}
+            : isAdmin
+              ? "Ready to start a new culinary adventure?"
+              : "Welcome back to Recipe Club!"}
         </p>
       </div>
 
@@ -48,13 +52,13 @@ const HomeSection = ({
           onEventUpdated={onEventUpdated}
           onEventCanceled={onEventUpdated}
         />
-      ) : (
-        <div className="grid lg:grid-cols-2 gap-8">
+      ) : isAdmin ? (
+        <div className="grid lg:grid-cols-2 gap-6">
           <IngredientWheel
             ingredients={ingredients}
             onEventCreated={onEventCreated}
             userId={user?.id || ""}
-            disabled={!isAdmin}
+            disabled={false}
             activeEvent={null}
           />
           <IngredientBank
@@ -64,6 +68,19 @@ const HomeSection = ({
             isAdmin={isAdmin}
           />
         </div>
+      ) : (
+        <Card className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm">
+          <CardContent className="pt-8 pb-8 text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-purple/10 flex items-center justify-center">
+              <CalendarClock className="h-8 w-8 text-purple" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">No Event Scheduled</h3>
+            <p className="text-muted-foreground">
+              There's no upcoming Recipe Club event at the moment.
+              Check back soon or browse past recipes in the Recipes tab!
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

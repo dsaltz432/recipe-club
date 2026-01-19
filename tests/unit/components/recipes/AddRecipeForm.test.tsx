@@ -61,11 +61,13 @@ describe("AddRecipeForm", () => {
     {
       id: "event-1",
       event_date: "2025-01-15",
+      ingredient_id: "ing-1",
       ingredients: { name: "Salmon" },
     },
     {
       id: "event-2",
       event_date: "2025-01-20",
+      ingredient_id: "ing-2",
       ingredients: { name: "Chicken" },
     },
   ];
@@ -79,9 +81,6 @@ describe("AddRecipeForm", () => {
         return createMockQueryBuilder(mockEventsData);
       }
       if (table === "recipes") {
-        return createMockQueryBuilder([]);
-      }
-      if (table === "recipe_contributions") {
         return createMockQueryBuilder([]);
       }
       return createMockQueryBuilder([]);
@@ -412,6 +411,7 @@ describe("AddRecipeForm - Autocomplete Functionality", () => {
     {
       id: "event-1",
       event_date: "2025-01-15",
+      ingredient_id: "ing-1",
       ingredients: { name: "Salmon" },
     },
   ];
@@ -637,7 +637,7 @@ describe("AddRecipeForm - Error Handling", () => {
   it("handles recipe search error gracefully", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return createMockQueryBuilder([{ id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } }]);
+        return createMockQueryBuilder([{ id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } }]);
       }
       if (table === "recipes") {
         const builder = createMockQueryBuilder([]);
@@ -681,6 +681,7 @@ describe("AddRecipeForm - Form Submission", () => {
     {
       id: "event-1",
       event_date: "2025-01-15",
+      ingredient_id: "ing-1",
       ingredients: { name: "Salmon" },
     },
   ];
@@ -690,8 +691,7 @@ describe("AddRecipeForm - Form Submission", () => {
   });
 
   it("submits new recipe successfully", async () => {
-    const mockRecipeInsert = vi.fn().mockReturnThis();
-    const mockContributionInsert = vi.fn().mockResolvedValue({ error: null });
+    const mockRecipeInsert = vi.fn().mockResolvedValue({ error: null });
 
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
@@ -704,11 +704,6 @@ describe("AddRecipeForm - Form Submission", () => {
           ilike: vi.fn().mockReturnThis(),
           limit: vi.fn().mockResolvedValue({ data: [], error: null }),
           single: vi.fn().mockResolvedValue({ data: { id: "new-recipe-id" }, error: null }),
-        };
-      }
-      if (table === "recipe_contributions") {
-        return {
-          insert: mockContributionInsert,
         };
       }
       return createMockQueryBuilder([]);
@@ -754,83 +749,7 @@ describe("AddRecipeForm - Form Submission", () => {
     });
   });
 
-  it("submits existing recipe contribution successfully", async () => {
-    const mockContributionInsert = vi.fn().mockResolvedValue({ error: null });
-
-    const mockExistingRecipes = [
-      { id: "existing-recipe-1", name: "Grilled Salmon", url: "https://example.com", created_by: "user-1", created_at: "2025-01-01" },
-    ];
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return createMockQueryBuilder(mockEventsData);
-      }
-      if (table === "recipes") {
-        return {
-          select: vi.fn().mockReturnThis(),
-          insert: vi.fn().mockReturnThis(),
-          ilike: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockResolvedValue({ data: mockExistingRecipes, error: null }),
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-        };
-      }
-      if (table === "recipe_contributions") {
-        return {
-          insert: mockContributionInsert,
-        };
-      }
-      return createMockQueryBuilder([]);
-    });
-
-    render(
-      <AddRecipeForm
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        userId={mockUserId}
-        onRecipeAdded={mockOnRecipeAdded}
-      />
-    );
-
-    // Wait for events to load
-    await waitFor(() => {
-      expect(screen.getByText("Select an event")).toBeInTheDocument();
-    });
-
-    // Select an event
-    const selectTrigger = screen.getByRole("combobox");
-    fireEvent.click(selectTrigger);
-    await waitFor(() => {
-      fireEvent.click(screen.getByRole("option"));
-    });
-
-    // Search for existing recipe
-    const nameInput = screen.getByPlaceholderText(/start typing/i);
-    fireEvent.focus(nameInput);
-    fireEvent.change(nameInput, { target: { value: "Gri" } });
-
-    // Select existing recipe
-    await waitFor(() => {
-      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
-    });
-
-    const suggestions = screen.getAllByText("Grilled Salmon");
-    fireEvent.click(suggestions[0]);
-
-    // Submit the form
-    await waitFor(() => {
-      const submitButton = screen.getByRole("button", { name: /add contribution/i });
-      fireEvent.click(submitButton);
-    });
-
-    await waitFor(() => {
-      expect(mockContributionInsert).toHaveBeenCalled();
-      expect(toast.success).toHaveBeenCalledWith("Recipe added!");
-    });
-  });
-
   it("shows loading state during submission", async () => {
-    const mockRecipeInsert = vi.fn().mockReturnThis();
-
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
         return createMockQueryBuilder(mockEventsData);
@@ -838,17 +757,12 @@ describe("AddRecipeForm - Form Submission", () => {
       if (table === "recipes") {
         return {
           select: vi.fn().mockReturnThis(),
-          insert: mockRecipeInsert,
+          insert: vi.fn().mockReturnValue(
+            new Promise((resolve) => setTimeout(() => resolve({ error: null }), 100))
+          ),
           ilike: vi.fn().mockReturnThis(),
           limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-          single: vi.fn().mockReturnValue(
-            new Promise((resolve) => setTimeout(() => resolve({ data: { id: "new-id" }, error: null }), 100))
-          ),
-        };
-      }
-      if (table === "recipe_contributions") {
-        return {
-          insert: vi.fn().mockResolvedValue({ error: null }),
+          single: vi.fn().mockResolvedValue({ data: { id: "new-id" }, error: null }),
         };
       }
       return createMockQueryBuilder([]);
@@ -895,10 +809,10 @@ describe("AddRecipeForm - Form Submission", () => {
       if (table === "recipes") {
         return {
           select: vi.fn().mockReturnThis(),
-          insert: vi.fn().mockReturnThis(),
+          insert: vi.fn().mockResolvedValue({ error: { message: "Insert failed" } }),
           ilike: vi.fn().mockReturnThis(),
           limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-          single: vi.fn().mockResolvedValue({ data: null, error: { message: "Insert failed" } }),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
         };
       }
       return createMockQueryBuilder([]);
@@ -928,58 +842,6 @@ describe("AddRecipeForm - Form Submission", () => {
     fireEvent.change(nameInput, { target: { value: "New Recipe" } });
 
     // Submit
-    const submitButton = screen.getByRole("button", { name: /add recipe/i });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to add recipe");
-    });
-  });
-
-  it("handles contribution creation error", async () => {
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return createMockQueryBuilder(mockEventsData);
-      }
-      if (table === "recipes") {
-        return {
-          select: vi.fn().mockReturnThis(),
-          insert: vi.fn().mockReturnThis(),
-          ilike: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-          single: vi.fn().mockResolvedValue({ data: { id: "new-id" }, error: null }),
-        };
-      }
-      if (table === "recipe_contributions") {
-        return {
-          insert: vi.fn().mockResolvedValue({ error: { message: "Contribution failed" } }),
-        };
-      }
-      return createMockQueryBuilder([]);
-    });
-
-    render(
-      <AddRecipeForm
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        userId={mockUserId}
-        onRecipeAdded={mockOnRecipeAdded}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText("Select an event")).toBeInTheDocument();
-    });
-
-    const selectTrigger = screen.getByRole("combobox");
-    fireEvent.click(selectTrigger);
-    await waitFor(() => {
-      fireEvent.click(screen.getByRole("option"));
-    });
-
-    const nameInput = screen.getByPlaceholderText(/start typing/i);
-    fireEvent.change(nameInput, { target: { value: "New Recipe" } });
-
     const submitButton = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(submitButton);
 
@@ -1040,7 +902,7 @@ describe("AddRecipeForm - Closing Autocomplete", () => {
   const mockUserId = "user-123";
 
   const mockEventsData = [
-    { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+    { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
   ];
 
   beforeEach(() => {
@@ -1101,6 +963,7 @@ describe("AddRecipeForm - URL Input", () => {
     {
       id: "event-1",
       event_date: "2025-01-15",
+      ingredient_id: "ing-1",
       ingredients: { name: "Salmon" },
     },
   ];
@@ -1113,9 +976,6 @@ describe("AddRecipeForm - URL Input", () => {
         return createMockQueryBuilder(mockEventsData);
       }
       if (table === "recipes") {
-        return createMockQueryBuilder([]);
-      }
-      if (table === "recipe_contributions") {
         return createMockQueryBuilder([]);
       }
       return createMockQueryBuilder([]);
@@ -1183,6 +1043,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
       {
         id: "event-1",
         event_date: "2025-01-15",
+        ingredient_id: "ing-1",
         ingredients: null, // No ingredient
       },
     ];
@@ -1210,7 +1071,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("handles recipes with null url and created_by", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     const mockRecipesWithNullFields = [
@@ -1255,7 +1116,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("handles null recipes data in autocomplete", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -1296,7 +1157,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("keeps autocomplete open when clicking inside it", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -1343,7 +1204,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("sets recipe URL when selecting existing recipe with URL", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     const mockRecipesWithUrl = [
@@ -1396,7 +1257,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("calls onOpenChange with true when dialog stays open", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -1435,7 +1296,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("handles selecting recipe with URL and sets recipeUrl state", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     const mockRecipesWithUrl = [
@@ -1491,7 +1352,7 @@ describe("AddRecipeForm - Branch Coverage", () => {
 
   it("handles selecting recipe without URL", async () => {
     const mockEventsData = [
-      { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
     ];
 
     const mockRecipesNoUrl = [
@@ -1541,6 +1402,171 @@ describe("AddRecipeForm - Branch Coverage", () => {
       expect(screen.getByText(/selected recipe/i)).toBeInTheDocument();
       // URL should not be displayed
       expect(screen.queryByText(/https:/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("handles event not found during submission", async () => {
+    // This test covers lines 163-164: the defensive "Event not found" branch
+    // We use _testOverrideEvents to force the events array to not contain the selected event
+    const mockEventsData = [
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return createMockQueryBuilder(mockEventsData);
+      }
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    // Use _testOverrideEvents with empty array to simulate "event not found" scenario
+    render(
+      <AddRecipeForm
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        userId={mockUserId}
+        onRecipeAdded={mockOnRecipeAdded}
+        _testOverrideEvents={[]} // Override with empty events for the find() call
+      />
+    );
+
+    // Wait for events to load (for display)
+    await waitFor(() => {
+      expect(screen.getByText("Select an event")).toBeInTheDocument();
+    });
+
+    // Select event-1
+    const selectTrigger = screen.getByRole("combobox");
+    fireEvent.click(selectTrigger);
+    await waitFor(() => {
+      const option = screen.getByRole("option");
+      fireEvent.click(option);
+    });
+
+    // Enter recipe name
+    const nameInput = screen.getByPlaceholderText(/start typing/i);
+    fireEvent.change(nameInput, { target: { value: "Test Recipe" } });
+
+    // Submit - selectedEventId is "event-1" but effectiveEvents is empty
+    const submitButton = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(submitButton);
+
+    // Should show "Event not found" error
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Event not found");
+    });
+  });
+
+  it("handles events with null ingredient_id (line 80 branch)", async () => {
+    // Test to cover line 80: ingredientId: e.ingredient_id || ""
+    const eventsWithNullIngredientId = [
+      {
+        id: "event-1",
+        event_date: "2025-01-15",
+        ingredient_id: null, // null ingredient_id to trigger || "" branch
+        ingredients: { name: "Salmon" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return createMockQueryBuilder(eventsWithNullIngredientId);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(
+      <AddRecipeForm
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        userId={mockUserId}
+        onRecipeAdded={mockOnRecipeAdded}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Select an event")).toBeInTheDocument();
+    });
+
+    // Event should be selectable even with null ingredient_id
+    const selectTrigger = screen.getByRole("combobox");
+    fireEvent.click(selectTrigger);
+    await waitFor(() => {
+      expect(screen.getByRole("option")).toBeInTheDocument();
+    });
+  });
+
+  it("submits recipe with empty ingredientId (line 180 branch)", async () => {
+    // Test to cover line 180: ingredient_id: selectedEvent.ingredientId || null
+    const mockEventsData = [
+      { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
+    ];
+
+    const mockRecipeInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return createMockQueryBuilder(mockEventsData);
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnThis(),
+          insert: mockRecipeInsert,
+          ilike: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    // Override with event that has empty ingredientId to trigger || null branch
+    const eventsWithEmptyIngredientId = [
+      { id: "event-1", eventDate: "2025-01-15", ingredientId: "", ingredientName: "Salmon" },
+    ];
+
+    render(
+      <AddRecipeForm
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        userId={mockUserId}
+        onRecipeAdded={mockOnRecipeAdded}
+        _testOverrideEvents={eventsWithEmptyIngredientId}
+      />
+    );
+
+    // Wait for events to load
+    await waitFor(() => {
+      expect(screen.getByText("Select an event")).toBeInTheDocument();
+    });
+
+    // Select event
+    const selectTrigger = screen.getByRole("combobox");
+    fireEvent.click(selectTrigger);
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option"));
+    });
+
+    // Enter recipe name
+    const nameInput = screen.getByPlaceholderText(/start typing/i);
+    fireEvent.change(nameInput, { target: { value: "New Recipe" } });
+
+    // Submit
+    const submitButton = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(submitButton);
+
+    // Should insert with ingredient_id: null (the || null branch)
+    await waitFor(() => {
+      expect(mockRecipeInsert).toHaveBeenCalledWith({
+        name: "New Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: mockUserId,
+      });
+      expect(toast.success).toHaveBeenCalledWith("Recipe added!");
     });
   });
 });

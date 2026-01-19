@@ -3,10 +3,8 @@
  * Tests the full user journey from spinning the wheel to completing an event.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@tests/utils";
+import { describe, it, expect, vi } from "vitest";
 import {
-  createMockUser,
   createMockIngredient,
   createMockEvent,
   createMockRecipe,
@@ -212,16 +210,6 @@ describe("Event Flow Integration", () => {
 });
 
 describe("User Permissions Integration", () => {
-  const adminUser = createMockUser({
-    id: "admin-123",
-    email: "admin@example.com",
-  });
-
-  const viewerUser = createMockUser({
-    id: "viewer-123",
-    email: "viewer@example.com",
-  });
-
   it("should differentiate between admin and viewer roles", () => {
     const isAdminRole = (role: string) => role === "admin";
 

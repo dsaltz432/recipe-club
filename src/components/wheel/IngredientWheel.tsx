@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Ingredient, ScheduledEvent } from "@/types";
 import { MIN_INGREDIENTS_TO_SPIN, WHEEL_COLORS } from "@/lib/constants";
+import { getIngredientColor, getContrastTextColor, assignWheelColorsWithContrast, reorderForColorContrast } from "@/lib/ingredientColors";
 import confetti from "canvas-confetti";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +42,19 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
   const wheelRef = useRef<HTMLDivElement>(null);
 
   // Only show ingredients that are in the bank
-  const bankIngredients = ingredients.filter((i) => i.inBank);
+  const bankIngredientsUnordered = ingredients.filter((i) => i.inBank);
+
+  // Reorder ingredients for optimal color contrast on the wheel
+  const bankIngredients = useMemo(() => {
+    if (bankIngredientsUnordered.length <= 2) return bankIngredientsUnordered;
+
+    const colors = bankIngredientsUnordered.map(
+      (ing) => ing.color || getIngredientColor(ing.name)
+    );
+    const reorderedIndices = reorderForColorContrast(colors);
+    return reorderedIndices.map((i) => bankIngredientsUnordered[i]);
+  }, [bankIngredientsUnordered]);
+
   const hasEnoughIngredients = bankIngredients.length >= MIN_INGREDIENTS_TO_SPIN;
   const canSpin = hasEnoughIngredients && !disabled;
 
@@ -120,8 +133,6 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
 
       // Try to create Google Calendar event first
       const calendarResult = await createCalendarEvent({
-        title: `Recipe Club Hub: ${selectedIngredient.name}`,
-        description: `Recipe Club Hub event featuring ${selectedIngredient.name}`,
         date: selectedDate,
         time: selectedTime,
         ingredientName: selectedIngredient.name,
@@ -142,7 +153,16 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
 
       if (eventError) throw eventError;
 
-      // Note: used_count is incremented when event is COMPLETED, not when scheduled
+      // Remove ingredient from bank (used_count is incremented when event is COMPLETED)
+      const { error: ingredientError } = await supabase
+        .from("ingredients")
+        .update({ in_bank: false })
+        .eq("id", selectedIngredient.id);
+
+      if (ingredientError) {
+        console.error("Error removing ingredient from bank:", ingredientError);
+        // Don't throw - event was created successfully, this is non-critical
+      }
 
       // Success confetti!
       confetti({
@@ -193,6 +213,12 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
 
     const segmentAngle = 360 / bankIngredients.length;
 
+    // Get ingredient colors and assign vibrant wheel colors with contrast optimization
+    const ingredientColors = bankIngredients.map(
+      (ingredient) => ingredient.color || getIngredientColor(ingredient.name)
+    );
+    const sliceColors = assignWheelColorsWithContrast(ingredientColors, WHEEL_COLORS);
+
     return (
       <div
         ref={wheelRef}
@@ -200,12 +226,9 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
         style={{
           transform: `rotate(${rotation}deg)`,
           transition: isSpinning ? "transform 6s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
-          background: `conic-gradient(${bankIngredients
+          background: `conic-gradient(${sliceColors
             .map(
-              (_, i) =>
-                `${WHEEL_COLORS[i % WHEEL_COLORS.length]} ${i * segmentAngle}deg ${
-                  (i + 1) * segmentAngle
-                }deg`
+              (color, i) => `${color} ${i * segmentAngle}deg ${(i + 1) * segmentAngle}deg`
             )
             .join(", ")})`,
         }}
@@ -223,95 +246,92 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
           const x = 50 + 36 * Math.cos(radians);
           const y = 50 + 36 * Math.sin(radians);
 
-          // Text rotation: radial orientation, but flip on right side so always readable
-          // Right side of wheel: segmentCenterAngle 270-360 or 0-90 (text should point inward)
-          // Left side of wheel: segmentCenterAngle 90-270 (text should point outward)
-          const isRightSide = segmentCenterAngle <= 90 || segmentCenterAngle > 270;
-          const textRotation = isRightSide
-            ? segmentCenterAngle + 90  // Point inward (readable from outside)
-            : segmentCenterAngle - 90; // Point outward (readable from outside)
+          // Text rotation: all text points radially toward the center
+          const textRotation = segmentCenterAngle + 90;
+
+          // Get text color that contrasts well with the slice color
+          const sliceColor = sliceColors[i];
+          const textColor = getContrastTextColor(sliceColor);
+          // Use appropriate shadow based on text color
+          const textShadow = textColor === "#ffffff"
+            ? "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)"
+            : "1px 1px 2px rgba(255,255,255,0.7), -1px -1px 2px rgba(255,255,255,0.7), 0 0 4px rgba(255,255,255,0.5)";
 
           return (
             <div
               key={ingredient.id}
-              className="absolute text-[11px] font-bold text-white"
+              className="absolute text-[11px] font-bold"
               style={{
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
-                textShadow: "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)",
+                color: textColor,
+                textShadow,
                 whiteSpace: "nowrap",
                 opacity: ingredient.usedCount > 2 ? 0.85 : 1,
               }}
             >
               {ingredient.name}
-              {ingredient.usedCount > 0 && (
-                <span className="ml-1 text-[9px] opacity-75">
-                  ({ingredient.usedCount})
-                </span>
-              )}
             </div>
           );
         })}
 
-        {/* Center circle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-purple"></div>
-        </div>
+        {/* Center Spin Button - counter-rotate to keep text upright */}
+        <button
+          onClick={spinWheel}
+          disabled={!canSpin || isSpinning}
+          className="absolute top-1/2 left-1/2 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center cursor-pointer hover:scale-110 disabled:cursor-not-allowed disabled:hover:scale-100 border-4 border-purple"
+          style={{
+            transform: `translate(-50%, -50%) rotate(${-rotation}deg)`,
+            transition: isSpinning ? "transform 6s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "transform 0.2s ease",
+            boxShadow: "0 0 20px rgba(155, 135, 245, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <span className="font-bold text-base sm:text-lg text-purple drop-shadow-sm">
+            {isSpinning ? "..." : "Spin!"}
+          </span>
+        </button>
       </div>
     );
   };
 
   return (
     <>
-      <Card className="bg-white/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="font-display text-2xl text-center">
-            Ingredient Wheel
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-6">
+      <Card className="bg-white/90 backdrop-blur-sm border-2 border-purple/10 shadow-md">
+        <CardContent className="flex flex-col items-center gap-3 sm:gap-4 px-3 sm:px-6 py-4 sm:py-6">
           {/* Wheel Container */}
           <div className="relative">
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple/20 to-orange/20 rounded-full blur-xl scale-110 opacity-50"></div>
             {/* Pointer */}
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-              <div className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[25px] border-l-transparent border-r-transparent border-t-purple drop-shadow-lg"></div>
+            <div className="absolute -top-2 sm:-top-3 left-1/2 -translate-x-1/2 z-10">
+              <div className="w-0 h-0 border-l-[10px] sm:border-l-[12px] border-r-[10px] sm:border-r-[12px] border-t-[16px] sm:border-t-[20px] border-l-transparent border-r-transparent border-t-purple drop-shadow-lg"></div>
             </div>
 
             {/* Wheel */}
-            <div className="w-64 h-64 md:w-80 md:h-80">{renderWheel()}</div>
+            <div className="w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 relative z-0">{renderWheel()}</div>
           </div>
-
-          {/* Spin Button */}
-          <Button
-            onClick={spinWheel}
-            disabled={!canSpin || isSpinning}
-            size="lg"
-            className="bg-purple hover:bg-purple-dark text-white px-8"
-          >
-            {isSpinning ? "Spinning..." : "Spin!"}
-          </Button>
 
           {/* Progress Message */}
           {activeEvent && (
-            <div className="text-sm text-muted-foreground text-center bg-orange/10 p-3 rounded-lg">
-              <p className="font-medium text-orange">Active event in progress</p>
-              <p>
-                Event on {format(parseISO(activeEvent.eventDate), "MMMM d, yyyy")} with{" "}
-                <span className="font-medium">{activeEvent.ingredientName}</span>
+            <div className="text-xs sm:text-sm text-muted-foreground text-center bg-gradient-to-r from-orange/10 to-orange/5 border border-orange/20 p-3 rounded-xl w-full">
+              <p className="font-semibold text-orange">Active event in progress</p>
+              <p className="mt-1">
+                Event on {format(parseISO(activeEvent.eventDate), "MMM d, yyyy")} with{" "}
+                <span className="font-semibold">{activeEvent.ingredientName}</span>
               </p>
-              <p className="mt-1">Complete or cancel the current event to spin again.</p>
+              <p className="mt-1 text-[10px] sm:text-xs">Complete or cancel the current event to spin again.</p>
             </div>
           )}
           {!activeEvent && !hasEnoughIngredients && (
-            <p className="text-sm text-muted-foreground text-center">
-              Add {MIN_INGREDIENTS_TO_SPIN - bankIngredients.length} more
+            <p className="text-xs sm:text-sm text-muted-foreground text-center bg-purple/5 px-4 py-2 rounded-lg">
+              Add <strong className="text-purple">{MIN_INGREDIENTS_TO_SPIN - bankIngredients.length}</strong> more
               ingredient{MIN_INGREDIENTS_TO_SPIN - bankIngredients.length !== 1 ? "s" : ""} to
               spin the wheel!
             </p>
           )}
           {!activeEvent && hasEnoughIngredients && disabled && (
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center">
               Only admins can spin the wheel.
             </p>
           )}

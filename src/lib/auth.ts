@@ -46,6 +46,7 @@ export const getClubMemberEmails = async (): Promise<string[]> => {
   return data.map((u) => u.email);
 };
 
+
 export const getCurrentUser = async (): Promise<User | null> => {
   const { data: sessionData } = await supabase.auth.getSession();
 

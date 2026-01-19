@@ -58,7 +58,7 @@ describe("IngredientWheel", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the wheel with title", () => {
+  it("renders the wheel with spin button", () => {
     render(
       <IngredientWheel
         ingredients={createIngredientsForWheel(15)}
@@ -67,7 +67,7 @@ describe("IngredientWheel", () => {
       />
     );
 
-    expect(screen.getByText("Ingredient Wheel")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /spin/i })).toBeInTheDocument();
   });
 
   it("renders spin button", () => {
@@ -123,7 +123,12 @@ describe("IngredientWheel", () => {
     );
 
     const neededCount = MIN_INGREDIENTS_TO_SPIN - ingredientCount;
-    expect(screen.getByText(new RegExp(`add ${neededCount} more`, "i"))).toBeInTheDocument();
+    // Use a function matcher since the number is in a <strong> element
+    expect(screen.getByText((content, element) => {
+      const hasText = element?.textContent?.toLowerCase().includes(`add ${neededCount} more`);
+      const isContainer = element?.tagName.toLowerCase() === "p";
+      return hasText && isContainer;
+    })).toBeInTheDocument();
   });
 
   it("shows empty wheel message when no ingredients", () => {
@@ -244,7 +249,7 @@ describe("IngredientWheel", () => {
     const spinButton = screen.getByRole("button", { name: /spin/i });
     fireEvent.click(spinButton);
 
-    expect(screen.getByText("Spinning...")).toBeInTheDocument();
+    expect(screen.getByText("...")).toBeInTheDocument();
 
     vi.useRealTimers();
   });
@@ -342,9 +347,10 @@ describe("IngredientWheel - Wheel Rendering", () => {
       />
     );
 
-    // Check for center circle (has purple background)
-    const centerCircle = document.querySelector(".bg-purple");
-    expect(centerCircle).toBeInTheDocument();
+    // Check for center spin button (has purple text)
+    const centerButton = document.querySelector(".text-purple");
+    expect(centerButton).toBeInTheDocument();
+    expect(screen.getByText("Spin!")).toBeInTheDocument();
   });
 
   it("has a pointer element at the top", () => {
@@ -470,8 +476,8 @@ describe("IngredientWheel - Event Creation", () => {
     // Click again while spinning
     fireEvent.click(spinButton);
 
-    // Should still say Spinning... (only one spin started)
-    expect(screen.getByText("Spinning...")).toBeInTheDocument();
+    // Should still say ... (only one spin started)
+    expect(screen.getByText("...")).toBeInTheDocument();
 
     vi.useRealTimers();
   });

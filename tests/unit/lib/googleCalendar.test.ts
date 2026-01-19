@@ -68,8 +68,6 @@ describe("Google Calendar Functions", () => {
       });
 
       const result = await createCalendarEvent({
-        title: "Recipe Club: Salmon",
-        description: "Cooking challenge",
         date: new Date("2025-01-20"),
         time: "19:00",
         ingredientName: "Salmon",
@@ -78,7 +76,7 @@ describe("Google Calendar Functions", () => {
       expect(result.success).toBe(true);
       expect(result.eventId).toBe("calendar-event-123");
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all&conferenceDataVersion=1",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
@@ -96,8 +94,6 @@ describe("Google Calendar Functions", () => {
       });
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -117,8 +113,6 @@ describe("Google Calendar Functions", () => {
       });
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -138,8 +132,6 @@ describe("Google Calendar Functions", () => {
       });
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -159,8 +151,6 @@ describe("Google Calendar Functions", () => {
       });
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -182,8 +172,6 @@ describe("Google Calendar Functions", () => {
       const testDate = new Date(2025, 0, 20); // January 20, 2025 in local time
 
       await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: testDate,
         ingredientName: "Test",
       });
@@ -201,8 +189,6 @@ describe("Google Calendar Functions", () => {
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -221,8 +207,6 @@ describe("Google Calendar Functions", () => {
       });
 
       await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -246,8 +230,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Updated Event",
-        description: "Updated description",
         date: new Date("2025-01-25"),
         time: "20:00",
         ingredientName: "Chicken",
@@ -272,8 +254,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Test",
-        description: "Test",
         date: new Date(),
         ingredientName: "Test",
       });
@@ -303,8 +283,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "nonexistent-123",
-        title: "Test",
-        description: "Test",
         date: new Date(),
         ingredientName: "Test",
       });
@@ -417,8 +395,6 @@ describe("Google Calendar Functions", () => {
       });
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -431,8 +407,6 @@ describe("Google Calendar Functions", () => {
       mockFetch.mockRejectedValueOnce("string exception");
 
       const result = await createCalendarEvent({
-        title: "Test Event",
-        description: "Test description",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
@@ -455,8 +429,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Test",
-        description: "Test",
         date: new Date(),
         ingredientName: "Test",
       });
@@ -476,8 +448,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Test",
-        description: "Test",
         date: new Date(),
         ingredientName: "Test",
       });
@@ -491,8 +461,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Test",
-        description: "Test",
         date: new Date(),
         ingredientName: "Test",
       });
@@ -506,8 +474,6 @@ describe("Google Calendar Functions", () => {
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Test",
-        description: "Test",
         date: new Date(),
         ingredientName: "Test",
       });
@@ -524,8 +490,6 @@ describe("Google Calendar Functions", () => {
 
       await updateCalendarEvent({
         calendarEventId: "event-123",
-        title: "Test",
-        description: "Test",
         date: new Date("2025-01-20"),
         ingredientName: "Test",
         // time not provided - should default to "19:00"

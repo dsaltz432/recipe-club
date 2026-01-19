@@ -217,19 +217,19 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
     <>
       <Card className="bg-white/80 backdrop-blur-sm">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle className="font-display text-2xl flex items-center gap-2">
-                <Users className="h-6 w-6" />
+              <CardTitle className="font-display text-xl sm:text-2xl flex items-center gap-2">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                 User Management
               </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 {admins.length} admin{admins.length !== 1 ? "s" : ""} · {viewers.length} viewer{viewers.length !== 1 ? "s" : ""} · {clubMembers.length} club member{clubMembers.length !== 1 ? "s" : ""}
               </p>
             </div>
             <Button
               onClick={() => setShowAddDialog(true)}
-              className="bg-purple hover:bg-purple-dark"
+              className="bg-purple hover:bg-purple-dark w-full sm:w-auto"
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Invite User
@@ -241,11 +241,11 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 rounded-lg border bg-white"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border bg-white gap-4"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${
                       user.role === "admin" ? "bg-purple/20" : "bg-gray-100"
                     }`}
                   >
@@ -255,16 +255,16 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
                       <Eye className="h-5 w-5 text-gray-500" />
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{user.email}</span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium truncate">{user.email}</span>
                       {user.email.toLowerCase() === currentUserEmail.toLowerCase() && (
-                        <span className="text-xs bg-purple/10 text-purple px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-purple/10 text-purple px-2 py-0.5 rounded-full flex-shrink-0">
                           You
                         </span>
                       )}
                       {user.is_club_member && (
-                        <span className="text-xs bg-orange/10 text-orange px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-xs bg-orange/10 text-orange px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
                           <ChefHat className="h-3 w-3" />
                           Club Member
                         </span>
@@ -276,10 +276,10 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
                   {/* Club Member Toggle */}
                   <div className="flex items-center gap-2">
-                    <Label htmlFor={`club-${user.id}`} className="text-sm text-muted-foreground">
+                    <Label htmlFor={`club-${user.id}`} className="text-sm text-muted-foreground whitespace-nowrap">
                       In Club
                     </Label>
                     <Switch
@@ -312,7 +312,7 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
                     size="icon"
                     onClick={() => setUserToDelete(user)}
                     disabled={user.email.toLowerCase() === currentUserEmail.toLowerCase()}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive flex-shrink-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

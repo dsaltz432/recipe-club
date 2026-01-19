@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, ThumbsUp, ThumbsDown } from "lucide-react";
-import type { EventRecipeWithContributions } from "@/types";
+import type { EventRecipeWithNotes } from "@/types";
 
 interface EventRatingDialogProps {
   event: {
@@ -19,10 +19,12 @@ interface EventRatingDialogProps {
     eventDate: string;
     ingredientName?: string;
   };
-  recipes: EventRecipeWithContributions[];
+  recipes: EventRecipeWithNotes[];
   userId: string;
   onComplete: () => void;
   onCancel: () => void;
+  /** "completing" = admin completing event, "rating" = member adding ratings to completed event */
+  mode?: "completing" | "rating";
 }
 
 interface RatingData {
@@ -36,9 +38,51 @@ const EventRatingDialog = ({
   userId,
   onComplete,
   onCancel,
+  mode = "completing",
 }: EventRatingDialogProps) => {
   const [ratings, setRatings] = useState<Map<string, RatingData>>(new Map());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(mode === "rating");
+
+  // Load existing user ratings when in "rating" mode
+  useEffect(() => {
+    if (mode !== "rating" || !userId) return;
+
+    const loadExistingRatings = async () => {
+      try {
+        const recipeIds = recipes.map(r => r.recipe.id);
+        if (recipeIds.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("recipe_ratings")
+          .select("recipe_id, would_cook_again, overall_rating")
+          .eq("user_id", userId)
+          .in("recipe_id", recipeIds);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const existingRatings = new Map<string, RatingData>();
+          data.forEach(r => {
+            existingRatings.set(r.recipe_id, {
+              wouldCookAgain: r.would_cook_again,
+              rating: r.overall_rating,
+            });
+          });
+          setRatings(existingRatings);
+        }
+      } catch (error) {
+        console.error("Error loading existing ratings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExistingRatings();
+  }, [mode, userId, recipes]);
 
   const handleRatingChange = (
     recipeId: string,
@@ -56,8 +100,8 @@ const EventRatingDialog = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Insert ratings for recipes that were rated
-      const ratingsToInsert = Array.from(ratings.entries())
+      // Get ratings for recipes that were rated
+      const ratingsToUpsert = Array.from(ratings.entries())
         .filter(([, r]) => r.wouldCookAgain !== null && r.rating !== null)
         .map(([recipeId, r]) => ({
           recipe_id: recipeId,
@@ -67,12 +111,13 @@ const EventRatingDialog = ({
           overall_rating: r.rating as number,
         }));
 
-      if (ratingsToInsert.length > 0) {
+      if (ratingsToUpsert.length > 0) {
+        // Use upsert to handle both new ratings and updates
         const { error } = await supabase
           .from("recipe_ratings")
-          .insert(ratingsToInsert);
+          .upsert(ratingsToUpsert, { onConflict: "recipe_id,user_id" });
         if (error) throw error;
-        toast.success(`Submitted ${ratingsToInsert.length} rating${ratingsToInsert.length !== 1 ? "s" : ""}!`);
+        toast.success(`Submitted ${ratingsToUpsert.length} rating${ratingsToUpsert.length !== 1 ? "s" : ""}!`);
       }
 
       onComplete();
@@ -84,10 +129,24 @@ const EventRatingDialog = ({
     }
   };
 
-  const handleSkip = () => {
-    // Complete event without ratings
-    onComplete();
-  };
+  // Check if all recipes have been rated (or if there are no recipes to rate)
+  const allRecipesRated = recipes.length === 0 || recipes.every(({ recipe }) => {
+    const rating = ratings.get(recipe.id);
+    return rating && rating.wouldCookAgain !== null && rating.rating !== null;
+  });
+
+  const unratedCount = recipes.filter(({ recipe }) => {
+    const rating = ratings.get(recipe.id);
+    return !rating || rating.wouldCookAgain === null || rating.rating === null;
+  }).length;
+
+  // In "rating" mode, at least one rating must be provided
+  const hasAnyRating = Array.from(ratings.values()).some(
+    r => r.wouldCookAgain !== null && r.rating !== null
+  );
+
+  // Determine if submit is allowed based on mode
+  const canSubmit = mode === "completing" ? allRecipesRated : hasAnyRating;
 
   return (
     <Dialog open={true} onOpenChange={() => onCancel()}>
@@ -95,12 +154,18 @@ const EventRatingDialog = ({
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Rate the Recipes</DialogTitle>
           <DialogDescription>
-            How did you like the recipes from the {event.ingredientName} event? Your ratings help everyone discover great recipes.
+            {mode === "completing"
+              ? `How did you like the recipes from the ${event.ingredientName} event? Your ratings help everyone discover great recipes.`
+              : `Rate the recipes from the ${event.ingredientName} event. You can update your ratings anytime.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {recipes.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple"></div>
+            </div>
+          ) : recipes.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">
               No recipes to rate for this event.
             </p>
@@ -179,16 +244,27 @@ const EventRatingDialog = ({
           )}
         </div>
 
-        <DialogFooter className="flex gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleSkip} disabled={isSubmitting}>
-            Skip Ratings
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {mode === "completing" && !allRecipesRated && recipes.length > 0 && (
+            <p className="text-sm text-muted-foreground mr-auto">
+              {unratedCount} recipe{unratedCount !== 1 ? "s" : ""} still need{unratedCount === 1 ? "s" : ""} rating
+            </p>
+          )}
+          {mode === "rating" && !hasAnyRating && recipes.length > 0 && (
+            <p className="text-sm text-muted-foreground mr-auto">
+              Rate at least one recipe to submit
+            </p>
+          )}
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading || !canSubmit}
             className="bg-purple hover:bg-purple-dark"
           >
-            {isSubmitting ? "Submitting..." : "Submit Ratings & Complete Event"}
+            {isSubmitting
+              ? "Submitting..."
+              : mode === "completing"
+                ? "Submit Ratings & Complete Event"
+                : "Submit Ratings"}
           </Button>
         </DialogFooter>
       </DialogContent>

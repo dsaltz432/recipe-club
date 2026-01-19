@@ -312,11 +312,7 @@
 <a name='L247'></a><a href='#L247'>247</a>
 <a name='L248'></a><a href='#L248'>248</a>
 <a name='L249'></a><a href='#L249'>249</a>
-<a name='L250'></a><a href='#L250'>250</a>
-<a name='L251'></a><a href='#L251'>251</a>
-<a name='L252'></a><a href='#L252'>252</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L250'></a><a href='#L250'>250</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -326,8 +322,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -367,7 +361,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -388,6 +381,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -436,11 +437,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -475,7 +472,6 @@
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -569,16 +565,12 @@
 import { getClubMemberEmails } from "./auth";
 &nbsp;
 interface CalendarEventParams {
-  title: string;
-  description: string;
   date: Date;
   time?: string; // Format: "HH:mm" e.g., "19:00" - defaults to "19:00"
   ingredientName: string;
 }
 &nbsp;
 export const createCalendarEvent = async ({
-  title,
-  description,
   date,
   time,
   ingredientName,
@@ -616,10 +608,9 @@ export const createCalendarEvent = async ({
     // Get club member emails for calendar invites
     const clubMemberEmails = await getClubMemberEmails();
 &nbsp;
-    // Build the event object with timed event
+    // Build the event object with timed event and Google Meet
     const event = {
-      summary: title,
-      description: `${description}\n\nFeatured Ingredient: ${ingredientName}\n\nCreated by Recipe Club Hub`,
+      summary: `Recipe Club: ${ingredientName}`,
       start: {
         dateTime: startDateTime.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -629,6 +620,14 @@ export const createCalendarEvent = async ({
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
       attendees: clubMemberEmails.map((email) =&gt; ({ email })),
+      conferenceData: {
+        createRequest: {
+          requestId: `recipe-club-${Date.now()}`,
+          conferenceSolutionKey: {
+            type: "hangoutsMeet",
+          },
+        },
+      },
       reminders: {
         useDefault: false,
         overrides: [
@@ -638,9 +637,9 @@ export const createCalendarEvent = async ({
       },
     };
 &nbsp;
-    // Create the calendar event using Google Calendar API
+    // Create the calendar event using Google Calendar API (conferenceDataVersion=1 enables Meet link)
     const response = await fetch(
-      "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all&amp;conferenceDataVersion=1",
       {
         method: "POST",
         headers: {
@@ -682,8 +681,6 @@ export const createCalendarEvent = async ({
 &nbsp;
 interface UpdateCalendarEventParams {
   calendarEventId: string;
-  title: string;
-  description: string;
   date: Date;
   time?: string;
   ingredientName: string;
@@ -691,8 +688,6 @@ interface UpdateCalendarEventParams {
 &nbsp;
 export const updateCalendarEvent = async ({
   calendarEventId,
-  title,
-  description,
   date,
   time,
   ingredientName,
@@ -726,8 +721,7 @@ export const updateCalendarEvent = async ({
     endDateTime.setHours(endDateTime.getHours() + 2);
 &nbsp;
     const event = {
-      summary: title,
-      description: `${description}\n\nFeatured Ingredient: ${ingredientName}\n\nCreated by Recipe Club Hub`,
+      summary: `Recipe Club: ${ingredientName}`,
       start: {
         dateTime: startDateTime.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -823,7 +817,7 @@ export const deleteCalendarEvent = async (
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-18T02:07:46.452Z
+                at 2026-01-19T02:28:20.212Z
             </div>
         <script src="../prettify.js"></script>
         <script>

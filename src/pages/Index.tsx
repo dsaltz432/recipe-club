@@ -29,16 +29,16 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-light via-white to-orange-light">
+    <div className="min-h-screen bg-gradient-to-br from-purple-light via-white to-orange-light overflow-hidden">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
           {/* Left: Text Content */}
-          <div className="flex-1 text-center lg:text-left">
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4">
+          <div className="flex-1 text-center lg:text-left order-2 lg:order-1">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 sm:mb-4 bg-clip-text">
               Recipe Club Hub
             </h1>
-            <p className="text-lg text-gray-500 mb-6 max-w-md mx-auto lg:mx-0">
+            <p className="text-base sm:text-lg text-gray-600 mb-5 sm:mb-6 max-w-md mx-auto lg:mx-0">
               Spin the wheel, get your ingredient, and share delicious recipes
               with your club!
             </p>
@@ -48,10 +48,12 @@ const Index = () => {
           </div>
 
           {/* Right: Wheel Visualization */}
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-56 h-56 md:w-72 md:h-72">
+          <div className="flex-1 flex justify-center order-1 lg:order-2">
+            <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72">
+              {/* Glow effect behind wheel */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple/30 to-orange/30 rounded-full blur-2xl scale-110"></div>
               {/* Decorative Wheel */}
-              <svg viewBox="0 0 200 200" className="w-full h-full animate-spin-slow">
+              <svg viewBox="0 0 200 200" className="w-full h-full animate-spin-slow relative z-10 drop-shadow-xl">
                 <defs>
                   {WHEEL_COLORS.map((color, i) => (
                     <linearGradient
@@ -63,7 +65,7 @@ const Index = () => {
                       y2="100%"
                     >
                       <stop offset="0%" stopColor={color} />
-                      <stop offset="100%" stopColor={color} stopOpacity="0.7" />
+                      <stop offset="100%" stopColor={color} stopOpacity="0.8" />
                     </linearGradient>
                   ))}
                 </defs>
@@ -88,53 +90,53 @@ const Index = () => {
                     />
                   );
                 })}
-                <circle cx="100" cy="100" r="20" fill="white" />
-                <circle cx="100" cy="100" r="15" fill="#9b87f5" />
+                <circle cx="100" cy="100" r="22" fill="white" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))" />
+                <circle cx="100" cy="100" r="16" fill="#9b87f5" />
               </svg>
               {/* Pointer */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2">
-                <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[20px] border-l-transparent border-r-transparent border-t-purple"></div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
+                <div className="w-0 h-0 border-l-[10px] sm:border-l-[12px] border-r-[10px] sm:border-r-[12px] border-t-[16px] sm:border-t-[20px] border-l-transparent border-r-transparent border-t-purple drop-shadow-lg"></div>
               </div>
             </div>
           </div>
         </div>
 
         {/* How It Works */}
-        <div className="mt-12 md:mt-16">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-center text-gray-900 mb-6">
+        <div className="mt-8 sm:mt-12 md:mt-16">
+          <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-center text-gray-900 mb-4 sm:mb-6">
             How It Works
           </h2>
-          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 text-center shadow-lg">
-              <div className="w-12 h-12 bg-purple rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-white">1</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-5 text-center shadow-lg border border-purple/10 hover:shadow-xl hover:border-purple/20 transition-all duration-200">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple to-purple-dark rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-md">
+                <span className="text-lg sm:text-xl font-bold text-white">1</span>
               </div>
-              <h3 className="font-display text-lg font-semibold mb-1">
+              <h3 className="font-display text-base sm:text-lg font-semibold mb-1">
                 Spin the Wheel
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 text-xs sm:text-sm">
                 Click spin and watch as the wheel selects a random ingredient.
               </p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 text-center shadow-lg">
-              <div className="w-12 h-12 bg-orange rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-white">2</span>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-5 text-center shadow-lg border border-orange/10 hover:shadow-xl hover:border-orange/20 transition-all duration-200">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange to-orange-vivid rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-md">
+                <span className="text-lg sm:text-xl font-bold text-white">2</span>
               </div>
-              <h3 className="font-display text-lg font-semibold mb-1">
+              <h3 className="font-display text-base sm:text-lg font-semibold mb-1">
                 Pick a Date
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 text-xs sm:text-sm">
                 Choose when your club will meet to share dishes.
               </p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 text-center shadow-lg">
-              <div className="w-12 h-12 bg-green rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl font-bold text-white">3</span>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-5 text-center shadow-lg border border-green/10 hover:shadow-xl hover:border-green/20 transition-all duration-200">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green to-green-vivid rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-md">
+                <span className="text-lg sm:text-xl font-bold text-white">3</span>
               </div>
-              <h3 className="font-display text-lg font-semibold mb-1">
+              <h3 className="font-display text-base sm:text-lg font-semibold mb-1">
                 Lock In Your Recipe
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 text-xs sm:text-sm">
                 Share what you're making and see what others are cooking!
               </p>
             </div>

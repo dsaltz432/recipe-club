@@ -5,11 +5,17 @@ import EventRatingDialog from "@/components/events/EventRatingDialog";
 import type { EventRecipeWithContributions } from "@/types";
 
 // Mock Supabase
-const mockInsert = vi.fn();
+const mockUpsert = vi.fn();
+const mockSelect = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: () => ({
-      insert: mockInsert,
+      upsert: mockUpsert,
+      select: () => ({
+        eq: () => ({
+          in: mockSelect,
+        }),
+      }),
     }),
   },
 }));
@@ -52,7 +58,8 @@ describe("EventRatingDialog", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInsert.mockResolvedValue({ error: null });
+    mockUpsert.mockResolvedValue({ error: null });
+    mockSelect.mockResolvedValue({ data: [], error: null });
   });
 
   it("renders the dialog with correct title", () => {
@@ -185,7 +192,7 @@ describe("EventRatingDialog", () => {
     }
   });
 
-  it("has Skip Ratings button", () => {
+  it("disables submit button until all recipes are rated", () => {
     render(
       <EventRatingDialog
         event={mockEvent}
@@ -196,10 +203,11 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    expect(screen.getByText("Skip Ratings")).toBeInTheDocument();
+    const submitButton = screen.getByText(/submit ratings/i);
+    expect(submitButton).toBeDisabled();
   });
 
-  it("calls onComplete when Skip Ratings is clicked", () => {
+  it("shows unrated count message", () => {
     render(
       <EventRatingDialog
         event={mockEvent}
@@ -210,8 +218,60 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Skip Ratings"));
-    expect(mockOnComplete).toHaveBeenCalled();
+    expect(screen.getByText(/2 recipes still need rating/i)).toBeInTheDocument();
+  });
+
+  it("updates unrated count as recipes are rated", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    // Rate first recipe
+    const yesButtons = screen.getAllByText("Yes");
+    fireEvent.click(yesButtons[0]);
+
+    const starButtons = screen.getAllByRole("button").filter(
+      (btn) => btn.querySelector("svg.h-6.w-6")
+    );
+    fireEvent.click(starButtons[4]); // 5th star for first recipe
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 recipe still needs rating/i)).toBeInTheDocument();
+    });
+  });
+
+  it("enables submit button when all recipes are rated", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    // Rate both recipes
+    const yesButtons = screen.getAllByText("Yes");
+    fireEvent.click(yesButtons[0]);
+    fireEvent.click(yesButtons[1]);
+
+    const starButtons = screen.getAllByRole("button").filter(
+      (btn) => btn.querySelector("svg.h-6.w-6")
+    );
+    fireEvent.click(starButtons[4]); // First recipe: 5 stars
+    fireEvent.click(starButtons[9]); // Second recipe: 5 stars
+
+    await waitFor(() => {
+      const submitButton = screen.getByText(/submit ratings/i);
+      expect(submitButton).not.toBeDisabled();
+    });
   });
 
   it("has Submit Ratings button", () => {
@@ -240,6 +300,31 @@ describe("EventRatingDialog", () => {
     );
 
     expect(screen.getByText(/no recipes to rate/i)).toBeInTheDocument();
+  });
+
+  it("allows completing event with no recipes", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={[]}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    // Submit button should be enabled when there are no recipes
+    const submitButton = screen.getByText(/submit ratings/i);
+    expect(submitButton).not.toBeDisabled();
+
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      // onComplete should be called
+      expect(mockOnComplete).toHaveBeenCalled();
+      // insert should NOT be called when there are no recipes
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
   });
 
   it("allows selecting thumbs up for would cook again", async () => {
@@ -292,17 +377,17 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    // Select ratings for first recipe
+    // Rate all recipes (both need to be rated for submit to be enabled)
     const yesButtons = screen.getAllByText("Yes");
     fireEvent.click(yesButtons[0]);
+    fireEvent.click(yesButtons[1]);
 
-    // Click a star for rating (5 stars per recipe, get all stars)
+    // Click stars for both recipes
     const starButtons = screen.getAllByRole("button").filter(
       (btn) => btn.querySelector("svg.h-6.w-6")
     );
-    if (starButtons.length > 0) {
-      fireEvent.click(starButtons[4]); // 5th star for first recipe
-    }
+    fireEvent.click(starButtons[4]); // First recipe: 5 stars
+    fireEvent.click(starButtons[9]); // Second recipe: 5 stars
 
     // Submit
     fireEvent.click(screen.getByText(/submit ratings/i));
@@ -313,7 +398,7 @@ describe("EventRatingDialog", () => {
   });
 
   it("handles submission error gracefully", async () => {
-    mockInsert.mockResolvedValueOnce({ error: { message: "Database error" } });
+    mockUpsert.mockResolvedValueOnce({ error: { message: "Database error" } });
 
     render(
       <EventRatingDialog
@@ -325,16 +410,16 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    // Select ratings
+    // Rate all recipes (both need to be rated for submit to be enabled)
     const yesButtons = screen.getAllByText("Yes");
     fireEvent.click(yesButtons[0]);
+    fireEvent.click(yesButtons[1]);
 
     const starButtons = screen.getAllByRole("button").filter(
       (btn) => btn.querySelector("svg.h-6.w-6")
     );
-    if (starButtons.length > 0) {
-      fireEvent.click(starButtons[4]);
-    }
+    fireEvent.click(starButtons[4]); // First recipe
+    fireEvent.click(starButtons[9]); // Second recipe
 
     fireEvent.click(screen.getByText(/submit ratings/i));
 
@@ -363,7 +448,8 @@ describe("EventRatingDialog - Star Ratings", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInsert.mockResolvedValue({ error: null });
+    mockUpsert.mockResolvedValue({ error: null });
+    mockSelect.mockResolvedValue({ data: [], error: null });
   });
 
   it("displays 5 stars for each recipe", () => {
@@ -440,10 +526,11 @@ describe("EventRatingDialog - Branch Coverage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInsert.mockResolvedValue({ error: null });
+    mockUpsert.mockResolvedValue({ error: null });
+    mockSelect.mockResolvedValue({ data: [], error: null });
   });
 
-  it("calls onComplete without insert when no ratings are filled", async () => {
+  it("disables submit button when no ratings are filled", () => {
     render(
       <EventRatingDialog
         event={mockEvent}
@@ -454,15 +541,10 @@ describe("EventRatingDialog - Branch Coverage", () => {
       />
     );
 
-    // Submit without selecting any ratings
-    fireEvent.click(screen.getByText(/submit ratings/i));
-
-    await waitFor(() => {
-      // onComplete should be called even with no ratings
-      expect(mockOnComplete).toHaveBeenCalled();
-      // insert should NOT be called when ratingsToInsert is empty
-      expect(mockInsert).not.toHaveBeenCalled();
-    });
+    // Submit button should be disabled without any ratings
+    const submitButton = screen.getByText(/submit ratings/i);
+    expect(submitButton).toBeDisabled();
+    expect(screen.getByText(/1 recipe still needs rating/i)).toBeInTheDocument();
   });
 
   it("shows singular message when submitting exactly 1 rating", async () => {
@@ -527,5 +609,218 @@ describe("EventRatingDialog - Branch Coverage", () => {
     await waitFor(() => {
       expect(mockToast.success).toHaveBeenCalledWith("Submitted 2 ratings!");
     });
+  });
+});
+
+describe("EventRatingDialog - Rating Mode", () => {
+  const mockOnComplete = vi.fn();
+  const mockOnCancel = vi.fn();
+
+  const mockEvent = {
+    eventId: "event-123",
+    eventDate: "2025-01-20",
+    ingredientName: "Salmon",
+  };
+
+  const mockRecipes: EventRecipeWithContributions[] = [
+    {
+      recipe: createMockRecipe({ id: "recipe-1", name: "Grilled Salmon", url: "https://example.com/salmon" }),
+      contributions: [
+        createMockContribution({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1" }),
+      ],
+    },
+    {
+      recipe: createMockRecipe({ id: "recipe-2", name: "Salmon Teriyaki" }),
+      contributions: [
+        createMockContribution({ id: "contrib-2", recipeId: "recipe-2", userName: "User 2" }),
+      ],
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUpsert.mockResolvedValue({ error: null });
+    mockSelect.mockResolvedValue({ data: [], error: null });
+  });
+
+  it("shows different description in rating mode", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/you can update your ratings anytime/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'Submit Ratings' button in rating mode", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^submit ratings$/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows loading spinner while fetching existing ratings", () => {
+    // Make the select hang
+    mockSelect.mockReturnValue(new Promise(() => {}));
+
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+  });
+
+  it("loads existing ratings and pre-populates form", async () => {
+    mockSelect.mockResolvedValue({
+      data: [
+        { recipe_id: "recipe-1", would_cook_again: true, overall_rating: 4 },
+      ],
+      error: null,
+    });
+
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    await waitFor(() => {
+      // The Yes button should be highlighted for the first recipe
+      const yesButtons = screen.getAllByRole("button", { name: /yes/i });
+      expect(yesButtons[0]).toHaveClass("bg-green-500");
+    });
+
+    // Rating 4/5 should be shown
+    await waitFor(() => {
+      expect(screen.getByText("4/5")).toBeInTheDocument();
+    });
+  });
+
+  it("allows submitting with only some recipes rated in rating mode", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+      expect(document.querySelector(".animate-spin")).not.toBeInTheDocument();
+    });
+
+    // Rate only the first recipe
+    fireEvent.click(screen.getAllByRole("button", { name: /yes/i })[0]);
+    const starButtons = screen.getAllByRole("button").filter(
+      (btn) => btn.querySelector("svg.lucide-star")
+    );
+    fireEvent.click(starButtons[0]); // First star of first recipe
+
+    // Submit button should be enabled (only need one rating in rating mode)
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^submit ratings$/i })).not.toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^submit ratings$/i }));
+
+    await waitFor(() => {
+      expect(mockOnComplete).toHaveBeenCalled();
+    });
+  });
+
+  it("shows message when no ratings provided in rating mode", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    await waitFor(() => {
+      expect(document.querySelector(".animate-spin")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/rate at least one recipe to submit/i)).toBeInTheDocument();
+  });
+
+  it("handles error when loading existing ratings", async () => {
+    mockSelect.mockResolvedValue({
+      data: null,
+      error: { message: "Database error" },
+    });
+
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    // Should still render the form even if loading fails
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+  });
+
+  it("skips loading ratings when recipe list is empty in rating mode", async () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={[]}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+        mode="rating"
+      />
+    );
+
+    // Should not show loading spinner
+    await waitFor(() => {
+      expect(document.querySelector(".animate-spin")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/no recipes to rate/i)).toBeInTheDocument();
   });
 });

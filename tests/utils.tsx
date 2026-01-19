@@ -1,8 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { ReactElement } from "react";
 import { render, RenderOptions } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { User, Ingredient, Recipe, RecipeContribution, ScheduledEvent } from "@/types";
+import type { User, Ingredient, Recipe, RecipeNote, ScheduledEvent } from "@/types";
 
 // Create a new query client for each test
 const createTestQueryClient = () =>
@@ -60,20 +61,21 @@ export const createMockRecipe = (overrides?: Partial<Recipe>): Recipe => ({
   id: "recipe-123",
   name: "Test Recipe",
   url: "https://example.com/recipe",
+  eventId: "event-123",
+  ingredientId: "ingredient-123",
   createdBy: "user-123",
   createdAt: new Date().toISOString(),
-  contributionCount: 1,
+  notesCount: 1,
   contributors: ["Test User"],
   ...overrides,
 });
 
-export const createMockContribution = (
-  overrides?: Partial<RecipeContribution>
-): RecipeContribution => ({
-  id: "contribution-123",
+export const createMockNote = (
+  overrides?: Partial<RecipeNote>
+): RecipeNote => ({
+  id: "note-123",
   recipeId: "recipe-123",
   userId: "user-123",
-  eventId: "event-123",
   notes: "Test notes",
   photos: [],
   createdAt: new Date().toISOString(),
@@ -81,6 +83,9 @@ export const createMockContribution = (
   userAvatar: "https://example.com/avatar.jpg",
   ...overrides,
 });
+
+// Alias for backward compatibility
+export const createMockContribution = createMockNote;
 
 export const createMockEvent = (overrides?: Partial<ScheduledEvent>): ScheduledEvent => ({
   id: "event-123",

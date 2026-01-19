@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Plus, X, Lightbulb, Check } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { getSuggestedIngredients } from "@/lib/ingredientSuggestions";
+import { getIngredientColor } from "@/lib/ingredientColors";
 
 interface IngredientBankProps {
   ingredients: Ingredient[];
@@ -52,6 +53,7 @@ const IngredientBank = ({
             lastUsedDate: i.last_used_date || undefined,
             createdBy: i.created_by || undefined,
             inBank: i.in_bank,
+            color: i.color || getIngredientColor(i.name),
           }));
           setAllIngredients(mappedIngredients);
           setIngredients(mappedIngredients);
@@ -63,6 +65,7 @@ const IngredientBank = ({
               name,
               usedCount: 0,
               inBank: true,
+              color: getIngredientColor(name),
             })
           );
           setAllIngredients(defaultIngredients);
@@ -77,6 +80,7 @@ const IngredientBank = ({
                 used_count: 0,
                 in_bank: true,
                 created_by: userId,
+                color: i.color,
               })
             )
           );
@@ -89,6 +93,7 @@ const IngredientBank = ({
           name,
           usedCount: 0,
           inBank: true,
+          color: getIngredientColor(name),
         }));
         setAllIngredients(fallbackIngredients);
         setIngredients(fallbackIngredients);
@@ -208,12 +213,14 @@ const IngredientBank = ({
     }
 
     // Create new ingredient
+    const ingredientColor = getIngredientColor(trimmedName);
     const newItem: Ingredient = {
       id: uuidv4(),
       name: trimmedName,
       usedCount: 0,
       inBank: true,
       createdBy: userId,
+      color: ingredientColor,
     };
 
     try {
@@ -223,6 +230,7 @@ const IngredientBank = ({
         used_count: 0,
         in_bank: true,
         created_by: userId,
+        color: ingredientColor,
       });
 
       if (error) throw error;
@@ -279,12 +287,14 @@ const IngredientBank = ({
   const addSuggestion = async (name: string) => {
     // Note: isFull check is handled by the render conditional - suggestions section is hidden when full
 
+    const ingredientColor = getIngredientColor(name);
     const newItem: Ingredient = {
       id: uuidv4(),
       name,
       usedCount: 0,
       inBank: true,
       createdBy: userId,
+      color: ingredientColor,
     };
 
     try {
@@ -294,6 +304,7 @@ const IngredientBank = ({
         used_count: 0,
         in_bank: true,
         created_by: userId,
+        color: ingredientColor,
       });
 
       if (error) throw error;
@@ -324,24 +335,24 @@ const IngredientBank = ({
   }
 
   return (
-    <Card className="bg-white/80 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="font-display text-2xl">Ingredient Bank</CardTitle>
+    <Card className="bg-white/90 backdrop-blur-sm border-2 border-purple/10 shadow-md">
+      <CardHeader className="pb-2 px-3 sm:px-6">
+        <CardTitle className="font-display text-lg sm:text-xl text-gray-900">Ingredient Bank</CardTitle>
         <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
+          <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
             <span>
-              {bankIngredients.length} / {MIN_INGREDIENTS_TO_SPIN} ingredients
+              <strong className="text-purple">{bankIngredients.length}</strong> / {MIN_INGREDIENTS_TO_SPIN} ingredients
             </span>
-            <span>
+            <span className={bankIngredients.length >= MIN_INGREDIENTS_TO_SPIN ? "text-green font-medium" : ""}>
               {bankIngredients.length >= MIN_INGREDIENTS_TO_SPIN
                 ? "Ready to spin!"
                 : `Need ${MIN_INGREDIENTS_TO_SPIN - bankIngredients.length} more`}
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2 bg-purple/10" />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
         {/* Add Ingredient - Admin only */}
         {isAdmin && !isFull && (
           <div className="space-y-3">
@@ -445,7 +456,7 @@ const IngredientBank = ({
         )}
 
         {/* Ingredient List */}
-        <ScrollArea className="h-64">
+        <ScrollArea className="h-80">
           <div className="space-y-2 pr-4">
             {bankIngredients.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">

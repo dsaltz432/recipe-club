@@ -13,34 +13,35 @@ export interface Ingredient {
   lastUsedDate?: string;
   createdBy?: string;
   inBank: boolean;
+  color?: string;
 }
 
 export interface Recipe {
   id: string;
   name: string;
   url?: string;
+  eventId?: string;
+  ingredientId?: string;
   createdBy?: string;
   createdAt?: string;
+  // Joined data
+  createdByName?: string;
+  createdByAvatar?: string;
   // Aggregated data (populated by joins)
-  contributionCount?: number;
+  notesCount?: number;
   contributors?: string[];
 }
 
-export interface RecipeContribution {
+export interface RecipeNote {
   id: string;
   recipeId: string;
   userId: string;
-  eventId: string;
   notes?: string;
   photos?: string[];
   createdAt?: string;
   // Joined data
   userName?: string;
   userAvatar?: string;
-  recipeName?: string;
-  recipeUrl?: string;
-  eventDate?: string;
-  ingredientName?: string;
 }
 
 export interface RecipeRating {
@@ -56,16 +57,22 @@ export interface RecipeRating {
   recipeName?: string;
 }
 
+export interface MemberRating {
+  initial: string;
+  wouldCookAgain: boolean;
+}
+
 export interface RecipeRatingsSummary {
   recipeId: string;
   averageRating: number;
   wouldCookAgainPercent: number;
   totalRatings: number;
+  memberRatings: MemberRating[];
 }
 
-export interface EventRecipeWithContributions {
+export interface EventRecipeWithNotes {
   recipe: Recipe;
-  contributions: RecipeContribution[];
+  notes: RecipeNote[];
 }
 
 export interface ScheduledEvent {
@@ -76,4 +83,5 @@ export interface ScheduledEvent {
   createdBy: string;
   status: "scheduled" | "completed" | "canceled";
   ingredientName?: string;
+  ingredientColor?: string;
 }

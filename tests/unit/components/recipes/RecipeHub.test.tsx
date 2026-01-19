@@ -31,6 +31,7 @@ const createMockQueryBuilder = (data: unknown[] = [], error: unknown = null) => 
   lt: vi.fn().mockReturnThis(),
   lte: vi.fn().mockReturnThis(),
   in: vi.fn().mockReturnThis(),
+  not: vi.fn().mockReturnThis(),
   or: vi.fn().mockReturnThis(),
   order: vi.fn().mockResolvedValue({ data, error }),
   single: vi.fn().mockResolvedValue({ data: data[0] || null, error }),
@@ -39,63 +40,62 @@ const createMockQueryBuilder = (data: unknown[] = [], error: unknown = null) => 
 });
 
 describe("RecipeHub", () => {
-  const mockUserId = "user-123";
-
+  
+  // New schema: recipes have event_id and ingredient_id directly
   const mockRecipesData = [
     {
       id: "recipe-1",
       name: "Grilled Salmon",
       url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
     },
     {
       id: "recipe-2",
       name: "Chicken Stir Fry",
       url: null,
+      event_id: "event-2",
+      ingredient_id: "ing-2",
       created_by: "user-456",
       created_at: "2025-01-14T10:00:00Z",
+      ingredients: { name: "Chicken" },
     },
   ];
 
-  const mockContributionsData = [
+  // New schema: recipe_notes (not recipe_contributions)
+  const mockNotesData = [
     {
-      id: "contrib-1",
+      id: "note-1",
       recipe_id: "recipe-1",
       user_id: "user-123",
-      event_id: "event-1",
       notes: "Delicious with lemon",
       photos: ["photo1.jpg"],
       created_at: "2025-01-15T10:00:00Z",
       profiles: { name: "Test User", avatar_url: "avatar1.jpg" },
-      scheduled_events: {
-        id: "event-1",
-        event_date: "2025-01-15",
-        ingredient_id: "ing-1",
-        ingredients: { name: "Salmon" },
-      },
     },
     {
-      id: "contrib-2",
+      id: "note-2",
       recipe_id: "recipe-2",
       user_id: "user-456",
-      event_id: "event-2",
       notes: "Quick and easy",
       photos: null,
       created_at: "2025-01-14T10:00:00Z",
       profiles: { name: "Another User", avatar_url: "avatar2.jpg" },
-      scheduled_events: {
-        id: "event-2",
-        event_date: "2025-01-14",
-        ingredient_id: "ing-2",
-        ingredients: { name: "Chicken" },
-      },
     },
   ];
 
   const mockIngredientsData = [
-    { id: "ing-1", name: "Salmon", used_count: 1 },
-    { id: "ing-2", name: "Chicken", used_count: 2 },
+    { id: "ing-1", name: "Salmon", used_count: 1, in_bank: true },
+    { id: "ing-2", name: "Chicken", used_count: 2, in_bank: true },
+  ];
+
+  const mockRatingsData = [
+    { recipe_id: "recipe-1", overall_rating: 5, would_cook_again: true },
+    { recipe_id: "recipe-1", overall_rating: 4, would_cook_again: true },
+    { recipe_id: "recipe-2", overall_rating: 3, would_cook_again: false },
   ];
 
   beforeEach(() => {
@@ -106,8 +106,11 @@ describe("RecipeHub", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder(mockRatingsData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder(mockIngredientsData);
@@ -120,7 +123,7 @@ describe("RecipeHub", () => {
   });
 
   it("renders loading state initially", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     // Loading spinner should be present
     expect(document.querySelector(".animate-spin")).toBeInTheDocument();
@@ -132,7 +135,7 @@ describe("RecipeHub", () => {
   });
 
   it("renders search input", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/search recipes/i)).toBeInTheDocument();
@@ -140,31 +143,15 @@ describe("RecipeHub", () => {
   });
 
   it("renders ingredient filter dropdown", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText(/all ingredients/i)).toBeInTheDocument();
     });
   });
 
-  it("shows Add Recipe button for admin users", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={true} />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/add recipe/i)).toBeInTheDocument();
-    });
-  });
-
-  it("hides Add Recipe button for non-admin users", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
-
-    await waitFor(() => {
-      expect(screen.queryByText(/add recipe/i)).not.toBeInTheDocument();
-    });
-  });
-
-  it("displays recipes with contributions", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+  it("displays recipes with notes", async () => {
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -173,7 +160,7 @@ describe("RecipeHub", () => {
   });
 
   it("filters recipes based on search term", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -189,7 +176,7 @@ describe("RecipeHub", () => {
   });
 
   it("shows empty state when no recipes match search", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -209,7 +196,7 @@ describe("RecipeHub", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText(/no recipes yet/i)).toBeInTheDocument();
@@ -217,7 +204,7 @@ describe("RecipeHub", () => {
   });
 
   it("loads used ingredients for filter dropdown", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       // The dropdown trigger should be present
@@ -231,8 +218,7 @@ describe("RecipeHub", () => {
 });
 
 describe("RecipeHub - Error Handling", () => {
-  const mockUserId = "user-123";
-
+  
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -245,7 +231,7 @@ describe("RecipeHub - Error Handling", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     // Component should still render (with error handling)
     await waitFor(() => {
@@ -254,86 +240,49 @@ describe("RecipeHub - Error Handling", () => {
   });
 });
 
-describe("RecipeHub - Admin Features", () => {
-  const mockUserId = "user-123";
-
-  const mockEventsData = [
+describe("RecipeHub - Ingredient Filtering", () => {
+  
+  const mockRecipesData = [
     {
-      id: "event-1",
-      event_date: "2025-01-15",
-      status: "completed",
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: null,
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
       ingredients: { name: "Salmon" },
+    },
+    {
+      id: "recipe-2",
+      name: "Chicken Stir Fry",
+      url: null,
+      event_id: "event-2",
+      ingredient_id: "ing-2",
+      created_by: "user-456",
+      created_at: "2025-01-14T10:00:00Z",
+      ingredients: { name: "Chicken" },
     },
   ];
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return createMockQueryBuilder(mockEventsData);
-      }
-      return createMockQueryBuilder([]);
-    });
-  });
-
-  it("opens add recipe form when admin clicks add button", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={true} />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/add recipe/i)).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText(/add recipe/i));
-
-    // Wait for dialog to open and form to load
-    await waitFor(() => {
-      // The AddRecipeForm dialog should be open - look for form elements
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
-    });
-  });
-});
-
-describe("RecipeHub - Ingredient Filtering", () => {
-  const mockUserId = "user-123";
-
-  const mockRecipesData = [
-    { id: "recipe-1", name: "Grilled Salmon", url: null, created_by: "user-123", created_at: "2025-01-15T10:00:00Z" },
-    { id: "recipe-2", name: "Chicken Stir Fry", url: null, created_by: "user-456", created_at: "2025-01-14T10:00:00Z" },
-  ];
-
-  const mockContributionsData = [
+  const mockNotesData = [
     {
-      id: "contrib-1",
+      id: "note-1",
       recipe_id: "recipe-1",
       user_id: "user-123",
-      event_id: "event-1",
       notes: "Delicious with lemon",
       photos: null,
       created_at: "2025-01-15T10:00:00Z",
       profiles: { name: "Test User", avatar_url: "avatar1.jpg" },
-      scheduled_events: {
-        id: "event-1",
-        event_date: "2025-01-15",
-        ingredient_id: "ing-1",
-        ingredients: { name: "Salmon" },
-      },
     },
     {
-      id: "contrib-2",
+      id: "note-2",
       recipe_id: "recipe-2",
       user_id: "user-456",
-      event_id: "event-2",
       notes: "Quick and easy",
       photos: null,
       created_at: "2025-01-14T10:00:00Z",
       profiles: { name: "Another User", avatar_url: "avatar2.jpg" },
-      scheduled_events: {
-        id: "event-2",
-        event_date: "2025-01-14",
-        ingredient_id: "ing-2",
-        ingredients: { name: "Chicken" },
-      },
     },
   ];
 
@@ -349,8 +298,8 @@ describe("RecipeHub - Ingredient Filtering", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder(mockIngredientsData);
@@ -360,7 +309,7 @@ describe("RecipeHub - Ingredient Filtering", () => {
   });
 
   it("filters recipes by ingredient", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -385,7 +334,7 @@ describe("RecipeHub - Ingredient Filtering", () => {
   });
 
   it("searches in recipe notes", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -395,14 +344,14 @@ describe("RecipeHub - Ingredient Filtering", () => {
     fireEvent.change(searchInput, { target: { value: "lemon" } });
 
     await waitFor(() => {
-      // Should find the Salmon recipe because its contribution notes contain "lemon"
+      // Should find the Salmon recipe because its notes contain "lemon"
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
       expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
     });
   });
 
   it("shows empty state with filter applied", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -422,95 +371,44 @@ describe("RecipeHub - Ingredient Filtering", () => {
   });
 });
 
-describe("RecipeHub - Recipe Added Callback", () => {
-  const mockUserId = "user-123";
-
+describe("RecipeHub - Error Handling Extended", () => {
   const mockRecipesData = [
-    { id: "recipe-1", name: "Grilled Salmon", url: null, created_by: "user-123", created_at: "2025-01-15T10:00:00Z" },
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: null,
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+    },
   ];
 
-  const mockContributionsData = [
+  const mockNotesData = [
     {
-      id: "contrib-1",
+      id: "note-1",
       recipe_id: "recipe-1",
       user_id: "user-123",
-      event_id: "event-1",
       notes: null,
       photos: null,
       created_at: "2025-01-15T10:00:00Z",
       profiles: { name: "Test User", avatar_url: null },
-      scheduled_events: {
-        id: "event-1",
-        event_date: "2025-01-15",
-        ingredient_id: "ing-1",
-        ingredients: { name: "Salmon" },
-      },
     },
-  ];
-
-  const mockEventsData = [
-    { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
   ];
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
 
+  it("renders notes error gracefully", async () => {
+    // Test with error in notes query
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
-      }
-      if (table === "ingredients") {
-        return createMockQueryBuilder([]);
-      }
-      if (table === "scheduled_events") {
-        return createMockQueryBuilder(mockEventsData);
-      }
-      return createMockQueryBuilder([]);
-    });
-  });
-
-  it("reloads recipes after adding a new recipe", async () => {
-    render(<RecipeHub userId={mockUserId} isAdmin={true} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
-    });
-
-    // Track the number of calls
-    const initialCallCount = mockSupabaseFrom.mock.calls.filter(
-      (call: unknown[]) => call[0] === "recipes"
-    ).length;
-
-    // Open the add recipe form
-    fireEvent.click(screen.getByText(/add recipe/i));
-
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
-    });
-
-    // Close the dialog using the cancel button (simulating the onRecipeAdded callback indirectly)
-    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-
-    // Verify form was closed
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    });
-
-    // The recipes should have been loaded initially
-    expect(initialCallCount).toBeGreaterThan(0);
-  });
-
-  it("renders contribution error gracefully", async () => {
-    // Test with error in contributions query
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "recipes") {
-        return createMockQueryBuilder(mockRecipesData);
-      }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder([], { message: "Contributions error" });
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([], { message: "Notes error" });
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([]);
@@ -518,7 +416,7 @@ describe("RecipeHub - Recipe Added Callback", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       // Should show empty state or handle error gracefully
@@ -531,8 +429,8 @@ describe("RecipeHub - Recipe Added Callback", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([], { message: "Ingredients error" });
@@ -540,7 +438,7 @@ describe("RecipeHub - Recipe Added Callback", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       // Should still render recipes even if ingredients fail to load
@@ -552,168 +450,36 @@ describe("RecipeHub - Recipe Added Callback", () => {
   });
 });
 
-describe("RecipeHub - handleRecipeAdded Callback", () => {
-  const mockUserId = "user-123";
+describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
+  
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-  const mockRecipesData = [
-    { id: "recipe-1", name: "Grilled Salmon", url: null, created_by: "user-123", created_at: "2025-01-15T10:00:00Z" },
-  ];
-
-  const mockContributionsData = [
-    {
-      id: "contrib-1",
-      recipe_id: "recipe-1",
-      user_id: "user-123",
-      event_id: "event-1",
-      notes: "Delicious",
-      photos: null,
-      created_at: "2025-01-15T10:00:00Z",
-      profiles: { name: "Test User", avatar_url: "avatar1.jpg" },
-      scheduled_events: {
-        id: "event-1",
-        event_date: "2025-01-15",
+  it("handles notes with missing profiles data", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
+        event_id: "event-1",
         ingredient_id: "ing-1",
+        created_by: null,
+        created_at: null,
         ingredients: { name: "Salmon" },
       },
-    },
-  ];
-
-  const mockIngredientsData = [
-    { id: "ing-1", name: "Salmon", used_count: 1 },
-  ];
-
-  const mockEventsData = [
-    { id: "event-1", event_date: "2025-01-15", ingredients: { name: "Salmon" } },
-  ];
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "recipes") {
-        return createMockQueryBuilder(mockRecipesData);
-      }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
-      }
-      if (table === "ingredients") {
-        return createMockQueryBuilder(mockIngredientsData);
-      }
-      if (table === "scheduled_events") {
-        return createMockQueryBuilder(mockEventsData);
-      }
-      return createMockQueryBuilder([]);
-    });
-  });
-
-  it("reloads recipes and closes form when handleRecipeAdded is called", async () => {
-    // Track how many times loadRecipes is called via the supabase mock
-    let recipeLoadCount = 0;
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "recipes") {
-        recipeLoadCount++;
-        return createMockQueryBuilder(mockRecipesData);
-      }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
-      }
-      if (table === "ingredients") {
-        return createMockQueryBuilder(mockIngredientsData);
-      }
-      if (table === "scheduled_events") {
-        return createMockQueryBuilder(mockEventsData);
-      }
-      return createMockQueryBuilder([]);
-    });
-
-    render(<RecipeHub userId={mockUserId} isAdmin={true} />);
-
-    // Wait for initial load
-    await waitFor(() => {
-      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
-    });
-
-    const initialLoadCount = recipeLoadCount;
-
-    // Open the add recipe form
-    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
-    });
-
-    // Fill out the form and submit to trigger handleRecipeAdded
-    // Select an event
-    const selectTrigger = screen.getByRole("combobox");
-    fireEvent.click(selectTrigger);
-
-    await waitFor(() => {
-      // Look for the event option
-      const salmonOption = screen.getAllByRole("option").find(opt =>
-        opt.textContent?.includes("Salmon")
-      );
-      if (salmonOption) {
-        fireEvent.click(salmonOption);
-      }
-    });
-
-    // Enter recipe name
-    const recipeNameInput = screen.getByPlaceholderText(/start typing/i);
-    fireEvent.change(recipeNameInput, { target: { value: "Test Recipe" } });
-
-    // Click create new recipe in autocomplete
-    await waitFor(() => {
-      const createOption = screen.queryByText(/create new recipe/i);
-      if (createOption) {
-        fireEvent.click(createOption);
-      }
-    });
-
-    // Submit the form
-    const submitButton = screen.getByRole("button", { name: /add recipe/i });
-    // Find the submit button in the dialog (not the one that opens the dialog)
-    const dialogSubmitButton = screen.getAllByRole("button", { name: /add recipe/i }).find(btn =>
-      btn.closest("[role='dialog']")
-    );
-
-    if (dialogSubmitButton) {
-      fireEvent.click(dialogSubmitButton);
-
-      // After submission, handleRecipeAdded should be called which:
-      // 1. Reloads recipes (recipeLoadCount increases)
-      // 2. Closes the form (dialog disappears)
-      await waitFor(() => {
-        // Recipes were reloaded (more calls to recipes query)
-        expect(recipeLoadCount).toBeGreaterThan(initialLoadCount);
-      }, { timeout: 3000 });
-    }
-  });
-});
-
-describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
-  const mockUserId = "user-123";
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("handles contributions with missing profiles and events data", async () => {
-    const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: null, created_by: null, created_at: null },
     ];
 
-    // Contribution with minimal/null data
-    const mockContributionsData = [
+    // Note with null profile
+    const mockNotesData = [
       {
-        id: "contrib-1",
+        id: "note-1",
         recipe_id: "recipe-1",
         user_id: null,
-        event_id: null,
         notes: null,
         photos: null,
         created_at: "2025-01-15T10:00:00Z",
         profiles: null, // No profile
-        scheduled_events: null, // No event
       },
     ];
 
@@ -721,8 +487,8 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([]);
@@ -730,34 +496,36 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Test Recipe")).toBeInTheDocument();
     });
   });
 
-  it("handles contributions with missing ingredient in scheduled_events", async () => {
+  it("handles recipe with no ingredient data", async () => {
     const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: "https://example.com", created_by: "user-123", created_at: "2025-01-15T10:00:00Z" },
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: "https://example.com",
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null, // No ingredient data
+      },
     ];
 
-    const mockContributionsData = [
+    const mockNotesData = [
       {
-        id: "contrib-1",
+        id: "note-1",
         recipe_id: "recipe-1",
         user_id: "user-123",
-        event_id: "event-1",
         notes: "Test notes",
         photos: ["photo1.jpg"],
         created_at: "2025-01-15T10:00:00Z",
-        profiles: { name: null, avatar_url: null }, // Profile with null name
-        scheduled_events: {
-          id: "event-1",
-          event_date: "2025-01-15",
-          ingredient_id: "ing-1",
-          ingredients: null, // No ingredient data
-        },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
       },
     ];
 
@@ -765,8 +533,8 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([]);
@@ -774,19 +542,19 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Test Recipe")).toBeInTheDocument();
     });
   });
 
-  it("handles empty recipes and contributions data", async () => {
+  it("handles empty recipes and notes data", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
         return createMockQueryBuilder([]);
       }
-      if (table === "recipe_contributions") {
+      if (table === "recipe_notes") {
         return createMockQueryBuilder([]);
       }
       if (table === "ingredients") {
@@ -795,7 +563,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       // Should show empty state
@@ -803,78 +571,39 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
     });
   });
 
-  it("handles contribution with scheduled_events but no event_date", async () => {
+  it("handles multiple notes for the same recipe", async () => {
     const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: null, created_by: null, created_at: null },
-    ];
-
-    const mockContributionsData = [
       {
-        id: "contrib-1",
-        recipe_id: "recipe-1",
-        user_id: "user-123",
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
         event_id: "event-1",
-        notes: null,
-        photos: null,
-        created_at: "2025-01-15T10:00:00Z",
-        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
-        scheduled_events: {
-          id: "event-1",
-          event_date: null, // No event date
-          ingredient_id: null,
-          ingredients: { name: "Salmon" },
-        },
+        ingredient_id: "ing-1",
+        created_by: null,
+        created_at: null,
+        ingredients: { name: "Salmon" },
       },
     ];
 
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "recipes") {
-        return createMockQueryBuilder(mockRecipesData);
-      }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
-      }
-      if (table === "ingredients") {
-        return createMockQueryBuilder([{ id: "ing-1", name: "Salmon", used_count: 1 }]);
-      }
-      return createMockQueryBuilder([]);
-    });
-
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Test Recipe")).toBeInTheDocument();
-    });
-  });
-
-  it("handles multiple contributions for the same recipe", async () => {
-    const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: null, created_by: null, created_at: null },
-    ];
-
-    // Multiple contributions for the same recipe
-    const mockContributionsData = [
+    // Multiple notes for the same recipe
+    const mockNotesData = [
       {
-        id: "contrib-1",
+        id: "note-1",
         recipe_id: "recipe-1",
         user_id: "user-123",
-        event_id: "event-1",
-        notes: "First contribution",
+        notes: "First note",
         photos: null,
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "User One", avatar_url: "avatar1.jpg" },
-        scheduled_events: { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
       },
       {
-        id: "contrib-2",
+        id: "note-2",
         recipe_id: "recipe-1", // Same recipe
         user_id: "user-456",
-        event_id: "event-2",
-        notes: "Second contribution",
+        notes: "Second note",
         photos: null,
         created_at: "2025-01-16T10:00:00Z",
         profiles: { name: "User Two", avatar_url: "avatar2.jpg" },
-        scheduled_events: { id: "event-2", event_date: "2025-01-16", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
       },
     ];
 
@@ -882,8 +611,8 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([]);
@@ -891,29 +620,36 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Test Recipe")).toBeInTheDocument();
     });
   });
 
-  it("handles contribution with null userName", async () => {
+  it("handles note with null userName", async () => {
     const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: null, created_by: null, created_at: null },
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: null,
+        created_at: null,
+        ingredients: { name: "Salmon" },
+      },
     ];
 
-    const mockContributionsData = [
+    const mockNotesData = [
       {
-        id: "contrib-1",
+        id: "note-1",
         recipe_id: "recipe-1",
         user_id: "user-123",
-        event_id: "event-1",
         notes: null,
         photos: null,
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: null, avatar_url: null }, // No name
-        scheduled_events: { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
       },
     ];
 
@@ -921,8 +657,8 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([]);
@@ -930,7 +666,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Test Recipe")).toBeInTheDocument();
@@ -939,20 +675,27 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
 
   it("handles null ingredients data", async () => {
     const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: null, created_by: null, created_at: null },
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: null,
+        created_at: null,
+        ingredients: { name: "Salmon" },
+      },
     ];
 
-    const mockContributionsData = [
+    const mockNotesData = [
       {
-        id: "contrib-1",
+        id: "note-1",
         recipe_id: "recipe-1",
         user_id: "user-123",
-        event_id: "event-1",
         notes: null,
         photos: null,
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
-        scheduled_events: { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
       },
     ];
 
@@ -960,8 +703,8 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         // Return null data
@@ -973,7 +716,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Test Recipe")).toBeInTheDocument();
@@ -988,7 +731,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
           order: vi.fn().mockResolvedValue({ data: null, error: null }),
         };
       }
-      if (table === "recipe_contributions") {
+      if (table === "recipe_notes") {
         return createMockQueryBuilder([]);
       }
       if (table === "ingredients") {
@@ -997,7 +740,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       // Should show empty state when no recipes
@@ -1005,67 +748,29 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
     });
   });
 
-  it("handles recipe with no contributions (uses empty array fallback)", async () => {
-    // Recipe exists but has no matching contributions
+  it("handles note with empty string userName in contributors set", async () => {
     const mockRecipesData = [
-      { id: "recipe-1", name: "Recipe With Contribution", url: null, created_by: null, created_at: null },
-      { id: "recipe-2", name: "Recipe Without Contribution", url: null, created_by: null, created_at: null },
-    ];
-
-    // Only one recipe has contributions
-    const mockContributionsData = [
       {
-        id: "contrib-1",
-        recipe_id: "recipe-1", // Only for recipe-1
-        user_id: "user-123",
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
         event_id: "event-1",
-        notes: null,
-        photos: null,
-        created_at: "2025-01-15T10:00:00Z",
-        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
-        scheduled_events: { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
+        ingredient_id: "ing-1",
+        created_by: null,
+        created_at: null,
+        ingredients: { name: "Salmon" },
       },
     ];
 
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "recipes") {
-        return createMockQueryBuilder(mockRecipesData);
-      }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
-      }
-      if (table === "ingredients") {
-        return createMockQueryBuilder([]);
-      }
-      return createMockQueryBuilder([]);
-    });
-
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
-
-    await waitFor(() => {
-      // Only recipe with contribution should show (recipe-2 has no contributions so won't appear)
-      expect(screen.getByText("Recipe With Contribution")).toBeInTheDocument();
-      // Recipe without contributions should NOT show
-      expect(screen.queryByText("Recipe Without Contribution")).not.toBeInTheDocument();
-    });
-  });
-
-  it("handles contribution with undefined userName in contributors set", async () => {
-    const mockRecipesData = [
-      { id: "recipe-1", name: "Test Recipe", url: null, created_by: null, created_at: null },
-    ];
-
-    const mockContributionsData = [
+    const mockNotesData = [
       {
-        id: "contrib-1",
+        id: "note-1",
         recipe_id: "recipe-1",
         user_id: "user-123",
-        event_id: "event-1",
         notes: null,
         photos: null,
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "", avatar_url: null }, // Empty string name (falsy)
-        scheduled_events: { id: "event-1", event_date: "2025-01-15", ingredient_id: "ing-1", ingredients: { name: "Salmon" } },
       },
     ];
 
@@ -1073,8 +778,8 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       if (table === "recipes") {
         return createMockQueryBuilder(mockRecipesData);
       }
-      if (table === "recipe_contributions") {
-        return createMockQueryBuilder(mockContributionsData);
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
       }
       if (table === "ingredients") {
         return createMockQueryBuilder([]);
@@ -1082,10 +787,431 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId={mockUserId} isAdmin={false} />);
+    render(<RecipeHub />);
 
     await waitFor(() => {
       expect(screen.getByText("Test Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("handles recipe with no notes - uses empty array fallback", async () => {
+    // This test covers line 86: const notes = notesByRecipe.get(r.id) || [];
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Recipe With Notes",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+      },
+      {
+        id: "recipe-2",
+        name: "Recipe Without Notes",
+        url: null,
+        event_id: "event-2",
+        ingredient_id: "ing-2",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Chicken" },
+      },
+    ];
+
+    // Only notes for recipe-1, none for recipe-2
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1", // Only recipe-1 has notes
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      // Both recipes should render
+      expect(screen.getByText("Recipe With Notes")).toBeInTheDocument();
+      expect(screen.getByText("Recipe Without Notes")).toBeInTheDocument();
+    });
+  });
+
+  it("handles recipe with null event_id and ingredient_id", async () => {
+    // This test covers lines 93-94: eventId: r.event_id || undefined, ingredientId: r.ingredient_id || undefined
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Recipe With Null IDs",
+        url: null,
+        event_id: null, // null event_id
+        ingredient_id: null, // null ingredient_id
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+      },
+    ];
+
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe With Null IDs")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Rating Calculations", () => {
+  
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("calculates rating summaries for recipes with ratings", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Rated Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    // Multiple ratings for the same recipe to test aggregation (with profiles for initials)
+    const mockRatingsData = [
+      { recipe_id: "recipe-1", overall_rating: 5, would_cook_again: true, profiles: { name: "Sarah" } },
+      { recipe_id: "recipe-1", overall_rating: 4, would_cook_again: true, profiles: { name: "Hannah" } },
+      { recipe_id: "recipe-1", overall_rating: 3, would_cook_again: false, profiles: { name: "Daniel" } },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder(mockRatingsData);
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Rated Recipe")).toBeInTheDocument();
+      // Average: (5+4+3)/3 = 4.0
+      expect(screen.getByText("4/5")).toBeInTheDocument();
+      // Check member initials format
+      expect(screen.getByText("Make again:")).toBeInTheDocument();
+      expect(screen.getByText(/S: Yes/)).toBeInTheDocument();
+      expect(screen.getByText(/H: Yes/)).toBeInTheDocument();
+      expect(screen.getByText(/D: No/)).toBeInTheDocument();
+    });
+  });
+
+  it("handles ratings error gracefully", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Recipe Without Ratings",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder([], { message: "Ratings error" });
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    // Component should still render even if ratings fail to load
+    await waitFor(() => {
+      expect(screen.queryByText("Recipe Without Ratings")).not.toBeInTheDocument();
+    });
+  });
+
+  it("handles recipes with no ratings (empty ratingSummary)", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Unrated Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    // No ratings at all
+    const mockRatingsData: unknown[] = [];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder(mockRatingsData);
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Unrated Recipe")).toBeInTheDocument();
+      // No ratings should be displayed
+      expect(screen.queryByText(/Make again:/)).not.toBeInTheDocument();
+    });
+  });
+
+  it("handles multiple recipes with different ratings", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Recipe One",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+      {
+        id: "recipe-2",
+        name: "Recipe Two",
+        url: null,
+        event_id: "event-2",
+        ingredient_id: "ing-2",
+        created_by: "user-456",
+        created_at: "2025-01-14T10:00:00Z",
+        ingredients: { name: "Chicken" },
+        profiles: { name: "Another User", avatar_url: "avatar2.jpg" },
+      },
+    ];
+
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    // Ratings for recipe-1 (2 ratings) and recipe-2 (1 rating) - with profiles for initials
+    const mockRatingsData = [
+      { recipe_id: "recipe-1", overall_rating: 5, would_cook_again: true, profiles: { name: "Sarah" } },
+      { recipe_id: "recipe-1", overall_rating: 5, would_cook_again: true, profiles: { name: "Hannah" } },
+      { recipe_id: "recipe-2", overall_rating: 3, would_cook_again: false, profiles: { name: "Daniel" } },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder(mockRatingsData);
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe One")).toBeInTheDocument();
+      expect(screen.getByText("Recipe Two")).toBeInTheDocument();
+      // Recipe 1: avg 5.0, both would cook again
+      expect(screen.getByText("5/5")).toBeInTheDocument();
+      // Recipe 2: avg 3.0, would not cook again
+      expect(screen.getByText("3/5")).toBeInTheDocument();
+      // Check member initials exist for both
+      expect(screen.getAllByText("Make again:")).toHaveLength(2);
+    });
+  });
+
+  it("handles rating with would_cook_again false branch", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    const mockNotesData = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Test notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    // All ratings have would_cook_again = false - with profiles for initials
+    const mockRatingsData = [
+      { recipe_id: "recipe-1", overall_rating: 2, would_cook_again: false, profiles: { name: "Sarah" } },
+      { recipe_id: "recipe-1", overall_rating: 3, would_cook_again: false, profiles: { name: "Hannah" } },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder(mockRatingsData);
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Recipe")).toBeInTheDocument();
+      // Average: (2+3)/2 = 2.5
+      expect(screen.getByText("2.5/5")).toBeInTheDocument();
+      // Both ratings say No
+      expect(screen.getByText("Make again:")).toBeInTheDocument();
+      expect(screen.getByText(/S: No/)).toBeInTheDocument();
+      expect(screen.getByText(/H: No/)).toBeInTheDocument();
     });
   });
 });

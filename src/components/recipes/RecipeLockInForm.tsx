@@ -111,8 +111,6 @@ const RecipeLockInForm = ({
 
       // Try to create Google Calendar event (non-blocking)
       const calendarResult = await createCalendarEvent({
-        title: `Recipe Club Hub: ${ingredient.name}`,
-        description: `Recipe: ${recipeName.trim()}${recipeUrl ? `\nURL: ${recipeUrl.trim()}` : ""}${notes ? `\nNotes: ${notes.trim()}` : ""}`,
         date: eventDate,
         ingredientName: ingredient.name,
       });

@@ -59,3 +59,52 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Vibrant gradient backgrounds */
+  .bg-gradient-vibrant {
+    @apply bg-gradient-to-br from-purple-light/40 via-white to-orange-light/40;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  /* Vibrant card with border */
+  .card-vibrant {
+    @apply bg-white/90 backdrop-blur-sm border-2 border-purple/10 shadow-md;
+  }
+
+  /* Touch-friendly minimum sizes for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Better text contrast */
+  .text-vibrant-purple {
+    @apply text-purple-dark font-semibold;
+  }
+
+  .text-vibrant-orange {
+    @apply text-orange font-semibold;
+  }
+}
+
+/* Smooth scrolling for mobile */
+@media (max-width: 768px) {
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Better tap targets on mobile */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+}

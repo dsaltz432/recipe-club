@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser, signOut, getAllowedUser, isAdmin, type AllowedUser } from "@/lib/auth";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Dices, Calendar, BookOpen, Users, ShieldX, Menu } from "lucide-react";
+import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,14 +15,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import IngredientWheel from "@/components/wheel/IngredientWheel";
-import IngredientBank from "@/components/ingredients/IngredientBank";
 import RecipeClubEvents from "@/components/events/RecipeClubEvents";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 
+const VALID_TABS = ["home", "events", "recipes"] as const;
+type TabValue = typeof VALID_TABS[number];
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { tab } = useParams<{ tab?: string }>();
+  const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
+
+  const handleTabChange = (value: string) => {
+    navigate(value === "home" ? "/dashboard" : `/dashboard/${value}`);
+  };
+
   const [user, setUser] = useState<User | null>(null);
   const [, setAllowedUser] = useState<AllowedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,9 +49,9 @@ const Dashboard = () => {
         .eq("status", "scheduled")
         .order("event_date", { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
+      if (error) {
         console.error("Error loading active event:", error);
       }
 
@@ -78,7 +86,7 @@ const Dashboard = () => {
         setUserIsAdmin(isAdmin(allowed));
 
         if (allowed && currentUser.id) {
-          loadStats(currentUser.id);
+          loadStats();
         }
       } else {
         setIsAllowed(false);
@@ -122,7 +130,7 @@ const Dashboard = () => {
     }
   };
 
-  const loadStats = async (userId: string) => {
+  const loadStats = async () => {
     try {
       // Count completed events
       const { count: eventsCount } = await supabase
@@ -130,11 +138,10 @@ const Dashboard = () => {
         .select("*", { count: "exact", head: true })
         .eq("status", "completed");
 
-      // Count user's recipe contributions
+      // Count all recipes in the system
       const { count: recipesCount } = await supabase
-        .from("recipe_contributions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
+        .from("recipes")
+        .select("*", { count: "exact", head: true });
 
       setCompletedEventsCount(eventsCount || 0);
       setUserRecipesCount(recipesCount || 0);
@@ -150,7 +157,7 @@ const Dashboard = () => {
 
   const handleRecipeAdded = () => {
     if (user?.id) {
-      loadStats(user.id);
+      loadStats();
     }
   };
 
@@ -191,32 +198,31 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
+    <div className="min-h-screen bg-gradient-to-br from-purple-light/40 via-white to-orange-light/40">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="font-display text-2xl font-bold text-gray-900">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-purple/10 shadow-sm">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900">
               Recipe Club Hub
             </h1>
-            <div className="hidden sm:flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-purple">{completedEventsCount}</span>
+            <div className="hidden md:flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5 bg-purple/5 px-3 py-1 rounded-full">
+                <span className="font-bold text-purple">{completedEventsCount}</span>
                 <span className="text-muted-foreground">Events</span>
               </div>
-              <div className="w-px h-4 bg-border"></div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-orange">{userRecipesCount}</span>
+              <div className="flex items-center gap-1.5 bg-orange/5 px-3 py-1 rounded-full">
+                <span className="font-bold text-orange">{userRecipesCount}</span>
                 <span className="text-muted-foreground">Recipes</span>
               </div>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-purple/5">
+                <Avatar className="h-8 w-8 ring-2 ring-purple/20">
                   <AvatarImage src={user?.avatar_url} alt={user?.name} />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-purple/10 text-purple font-semibold">
                     {user?.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -226,17 +232,30 @@ const Dashboard = () => {
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-48">
+              {/* Mobile stats */}
+              <div className="md:hidden px-2 py-2 border-b">
+                <div className="flex justify-around text-xs">
+                  <div className="text-center">
+                    <div className="font-bold text-purple">{completedEventsCount}</div>
+                    <div className="text-muted-foreground">Events</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-orange">{userRecipesCount}</div>
+                    <div className="text-muted-foreground">Recipes</div>
+                  </div>
+                </div>
+              </div>
               {userIsAdmin && (
                 <>
-                  <DropdownMenuItem onClick={() => navigate("/users")}>
+                  <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
                     <Users className="h-4 w-4 mr-2" />
                     Manage Users
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
               )}
-              <DropdownMenuItem onClick={handleSignOut}>
+              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </DropdownMenuItem>
@@ -246,24 +265,20 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="home" className="w-full">
-          <TabsList className="grid w-full max-w-2xl mx-auto mb-8 grid-cols-4">
-            <TabsTrigger value="home" className="flex items-center gap-2">
+      <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto mb-4 grid-cols-3 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
+            <TabsTrigger value="home" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
               <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Home</span>
+              <span className="text-sm">Home</span>
             </TabsTrigger>
-            <TabsTrigger value="wheel" className="flex items-center gap-2">
-              <Dices className="h-4 w-4" />
-              <span className="hidden sm:inline">Spin</span>
-            </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center gap-2">
+            <TabsTrigger value="events" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
               <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Events</span>
+              <span className="text-sm">Events</span>
             </TabsTrigger>
-            <TabsTrigger value="recipes" className="flex items-center gap-2">
+            <TabsTrigger value="recipes" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Recipes</span>
+              <span className="text-sm">Recipes</span>
             </TabsTrigger>
           </TabsList>
 
@@ -280,24 +295,6 @@ const Dashboard = () => {
             />
           </TabsContent>
 
-          <TabsContent value="wheel">
-            <div className="grid lg:grid-cols-2 gap-8">
-              <IngredientWheel
-                ingredients={ingredients}
-                onEventCreated={handleEventCreated}
-                userId={user?.id || ""}
-                disabled={!userIsAdmin || !!activeEvent}
-                activeEvent={activeEvent}
-              />
-              <IngredientBank
-                ingredients={ingredients}
-                setIngredients={setIngredients}
-                userId={user?.id || ""}
-                isAdmin={userIsAdmin}
-              />
-            </div>
-          </TabsContent>
-
           <TabsContent value="events">
             <RecipeClubEvents
               userId={user?.id || ""}
@@ -307,7 +304,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="recipes">
-            <RecipeHub userId={user?.id || ""} isAdmin={userIsAdmin} />
+            <RecipeHub />
           </TabsContent>
         </Tabs>
       </main>

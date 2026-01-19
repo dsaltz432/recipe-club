@@ -7,6 +7,7 @@ const ADMIN_EMAILS = [
 ];
 
 const REMINDER_DAYS = [7, 3];
+const APP_BASE_URL = "https://therecipeclubhub.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,11 +24,6 @@ interface ScheduledEvent {
   } | null;
 }
 
-interface AdminWithRecipeStatus {
-  email: string;
-  userId: string;
-  hasRecipe: boolean;
-}
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -110,15 +106,15 @@ serve(async (req) => {
         // Check which users have locked in recipes for this event
         const { data: recipes, error: recipesError } = await supabase
           .from("recipes")
-          .select("user_id")
-          .eq("event_date", event.event_date);
+          .select("created_by")
+          .eq("event_id", event.id);
 
         if (recipesError) {
           results.errors.push(`Error fetching recipes for event ${event.id}: ${recipesError.message}`);
           continue;
         }
 
-        const usersWithRecipes = new Set(recipes?.map((r) => r.user_id) || []);
+        const usersWithRecipes = new Set(recipes?.map((r) => r.created_by).filter(Boolean) || []);
 
         // Send emails to ALL admin emails (not just those who have signed up)
         for (const adminEmail of ADMIN_EMAILS) {
@@ -132,7 +128,8 @@ serve(async (req) => {
             event.event_date,
             event.event_time,
             days,
-            hasRecipe
+            hasRecipe,
+            event.id
           );
 
           if (emailResult.success) {
@@ -178,7 +175,8 @@ async function sendReminderEmail(
   eventDate: string,
   eventTime: string | null,
   daysUntilEvent: number,
-  hasLockedInRecipe: boolean
+  hasLockedInRecipe: boolean,
+  eventId: string
 ): Promise<{ success: boolean; error?: string }> {
   const formattedDate = new Date(eventDate).toLocaleDateString("en-US", {
     weekday: "long",
@@ -187,24 +185,39 @@ async function sendReminderEmail(
     day: "numeric",
   });
 
-  const timeString = eventTime ? ` at ${eventTime}` : "";
+  // Format time from 24-hour (19:00) to 12-hour (7pm)
+  const formatTime = (time: string): string => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "pm" : "am";
+    const hour12 = hours % 12 || 12;
+    if (minutes === 0) {
+      return `${hour12}${period}`;
+    }
+    return `${hour12}:${minutes.toString().padStart(2, "0")}${period}`;
+  };
+
+  const timeString = eventTime ? ` at ${formatTime(eventTime)}` : "";
   const daysText = daysUntilEvent === 1 ? "tomorrow" : `in ${daysUntilEvent} days`;
+  const eventUrl = `${APP_BASE_URL}/events/${eventId}`;
 
   let subject: string;
   let bodyHtml: string;
 
   if (hasLockedInRecipe) {
-    subject = `Get excited! ${ingredientName} Recipe Club Hub is ${daysText}!`;
+    subject = `Get excited! ${ingredientName} Recipe Club is ${daysText}!`;
     bodyHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #9b87f5;">Get Excited for Recipe Club Hub!</h1>
+        <h1 style="color: #9b87f5;">Get Excited for Recipe Club!</h1>
         <p>Hey there!</p>
-        <p>Recipe Club Hub is coming up <strong>${daysText}</strong> on <strong>${formattedDate}${timeString}</strong>!</p>
+        <p>Recipe Club is coming up <strong>${daysText}</strong> on <strong>${formattedDate}${timeString}</strong>!</p>
         <p>This week's featured ingredient is <strong style="color: #F97316;">${ingredientName}</strong>.</p>
         <p>You've already locked in your recipe - great job! We can't wait to see what you've prepared.</p>
+        <p style="margin: 20px 0;">
+          <a href="${eventUrl}" style="background-color: #9b87f5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Event Details</a>
+        </p>
         <p>See you soon!</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">Recipe Club Hub</p>
+        <p style="color: #666; font-size: 12px;">Recipe Club</p>
       </div>
     `;
   } else {
@@ -213,12 +226,15 @@ async function sendReminderEmail(
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #9b87f5;">Don't Forget to Lock In Your Recipe!</h1>
         <p>Hey there!</p>
-        <p>Recipe Club Hub is coming up <strong>${daysText}</strong> on <strong>${formattedDate}${timeString}</strong>!</p>
+        <p>Recipe Club is coming up <strong>${daysText}</strong> on <strong>${formattedDate}${timeString}</strong>!</p>
         <p>This week's featured ingredient is <strong style="color: #F97316;">${ingredientName}</strong>.</p>
         <p><strong>Remember to lock in your recipe!</strong> Head over to the app and submit your dish before the event.</p>
+        <p style="margin: 20px 0;">
+          <a href="${eventUrl}" style="background-color: #9b87f5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Lock In Your Recipe</a>
+        </p>
         <p>We're excited to see what you'll cook up!</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">Recipe Club Hub</p>
+        <p style="color: #666; font-size: 12px;">Recipe Club</p>
       </div>
     `;
   }
@@ -231,7 +247,7 @@ async function sendReminderEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Recipe Club Hub <reminders@therecipeclubhub.com>",
+        from: "Recipe Club <reminders@therecipeclubhub.com>",
         to: [toEmail],
         subject,
         html: bodyHtml,

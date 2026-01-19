@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,104 +10,147 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Search, Plus, BookOpen } from "lucide-react";
-import type { Recipe, Ingredient, RecipeContribution } from "@/types";
+import { Search, BookOpen } from "lucide-react";
+import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary } from "@/types";
 import RecipeCard from "./RecipeCard";
-import AddRecipeForm from "./AddRecipeForm";
+import { getIngredientColor } from "@/lib/ingredientColors";
 
-interface RecipeHubProps {
-  userId: string;
-  isAdmin?: boolean;
-}
-
-interface RecipeWithContributions extends Recipe {
-  contributions: RecipeContribution[];
+interface RecipeWithNotes extends Recipe {
+  notes: RecipeNote[];
   ingredientName?: string;
+  ingredientColor?: string;
+  ratingSummary?: RecipeRatingsSummary;
 }
 
-const RecipeHub = ({ userId, isAdmin = false }: RecipeHubProps) => {
-  const [recipes, setRecipes] = useState<RecipeWithContributions[]>([]);
+const RecipeHub = () => {
+  const [recipes, setRecipes] = useState<RecipeWithNotes[]>([]);
   const [usedIngredients, setUsedIngredients] = useState<Ingredient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [ingredientFilter, setIngredientFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
 
   const loadRecipes = async () => {
     try {
-      // Load all recipes
+      // Load all recipes with their ingredient info (recipes now have event_id and ingredient_id directly)
       const { data: recipesData, error: recipesError } = await supabase
         .from("recipes")
-        .select("*")
+        .select(`
+          *,
+          ingredients (name, color),
+          profiles:created_by (name, avatar_url)
+        `)
+        .not("event_id", "is", null)
         .order("created_at", { ascending: false });
 
       if (recipesError) throw recipesError;
 
-      // Load all contributions with event and ingredient data
-      const { data: contributionsData, error: contributionsError } = await supabase
-        .from("recipe_contributions")
+      // Load all notes for these recipes
+      const recipeIds = recipesData?.map((r) => r.id) || [];
+      const { data: notesData, error: notesError } = await supabase
+        .from("recipe_notes")
         .select(`
           *,
-          profiles (name, avatar_url),
-          scheduled_events (
-            id,
-            event_date,
-            ingredient_id,
-            ingredients (name)
-          )
+          profiles (name, avatar_url)
         `)
+        .in("recipe_id", recipeIds)
         .order("created_at", { ascending: false });
 
-      if (contributionsError) throw contributionsError;
+      if (notesError) throw notesError;
 
-      // Group contributions by recipe
-      const contributionsByRecipe = new Map<string, RecipeContribution[]>();
+      // Load all ratings for these recipes with user names
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from("recipe_ratings")
+        .select("recipe_id, overall_rating, would_cook_again, profiles:user_id (name)")
+        .in("recipe_id", recipeIds);
 
-      contributionsData?.forEach((c) => {
-        const recipeId = c.recipe_id;
-        if (!contributionsByRecipe.has(recipeId)) {
-          contributionsByRecipe.set(recipeId, []);
+      if (ratingsError) throw ratingsError;
+
+      // Group notes by recipe
+      const notesByRecipe = new Map<string, RecipeNote[]>();
+
+      notesData?.forEach((n) => {
+        const recipeId = n.recipe_id;
+        if (!notesByRecipe.has(recipeId)) {
+          notesByRecipe.set(recipeId, []);
         }
-        contributionsByRecipe.get(recipeId)!.push({
-          id: c.id,
-          recipeId: c.recipe_id,
-          userId: c.user_id || "",
-          eventId: c.event_id || "",
-          notes: c.notes || undefined,
-          photos: c.photos || undefined,
-          createdAt: c.created_at,
-          userName: c.profiles?.name || "Unknown",
-          userAvatar: c.profiles?.avatar_url || undefined,
-          eventDate: c.scheduled_events?.event_date || undefined,
-          ingredientName: c.scheduled_events?.ingredients?.name || undefined,
+        notesByRecipe.get(recipeId)!.push({
+          id: n.id,
+          recipeId: n.recipe_id,
+          userId: n.user_id,
+          notes: n.notes || undefined,
+          photos: n.photos || undefined,
+          createdAt: n.created_at,
+          userName: n.profiles?.name || "Unknown",
+          userAvatar: n.profiles?.avatar_url || undefined,
         });
       });
 
-      // Build recipe list with contributions
-      const recipesWithContributions: RecipeWithContributions[] = (recipesData || []).map((r) => {
-        const contributions = contributionsByRecipe.get(r.id) || [];
-        // Get the ingredient name from the first contribution (if any)
-        const ingredientName = contributions[0]?.ingredientName;
+      // Calculate rating summaries by recipe
+      const ratingsByRecipe = new Map<string, RecipeRatingsSummary>();
+
+      ratingsData?.forEach((rating) => {
+        const recipeId = rating.recipe_id;
+        const profile = rating.profiles as { name: string | null } | null;
+        const userName = profile?.name || "?";
+        const initial = userName.charAt(0).toUpperCase();
+
+        if (!ratingsByRecipe.has(recipeId)) {
+          ratingsByRecipe.set(recipeId, {
+            recipeId,
+            averageRating: 0,
+            wouldCookAgainPercent: 0,
+            totalRatings: 0,
+            memberRatings: [],
+          });
+        }
+        const summary = ratingsByRecipe.get(recipeId)!;
+        summary.totalRatings++;
+        summary.averageRating += rating.overall_rating;
+        if (rating.would_cook_again) {
+          summary.wouldCookAgainPercent++;
+        }
+        summary.memberRatings.push({
+          initial,
+          wouldCookAgain: rating.would_cook_again,
+        });
+      });
+
+      // Finalize averages (entries only exist if they have ratings)
+      ratingsByRecipe.forEach((summary) => {
+        summary.averageRating = summary.averageRating / summary.totalRatings;
+        summary.wouldCookAgainPercent = Math.round(
+          (summary.wouldCookAgainPercent / summary.totalRatings) * 100
+        );
+      });
+
+      // Build recipe list with notes and ratings
+      const recipesWithNotes: RecipeWithNotes[] = (recipesData || []).map((r) => {
+        const notes = notesByRecipe.get(r.id) || [];
+        const ingredientName = r.ingredients?.name;
+        const ingredientColor = r.ingredients?.color || (ingredientName ? getIngredientColor(ingredientName) : undefined);
+        const creatorProfile = r.profiles as { name: string | null; avatar_url: string | null } | null;
+        const ratingSummary = ratingsByRecipe.get(r.id);
 
         return {
           id: r.id,
           name: r.name,
           url: r.url || undefined,
+          eventId: r.event_id || undefined,
+          ingredientId: r.ingredient_id || undefined,
           createdBy: r.created_by || undefined,
           createdAt: r.created_at,
-          contributions,
+          createdByName: creatorProfile?.name || undefined,
+          createdByAvatar: creatorProfile?.avatar_url || undefined,
+          notes,
           ingredientName,
-          contributionCount: contributions.length,
-          contributors: [...new Set(contributions.map((c) => c.userName))],
+          ingredientColor,
+          notesCount: notes.length,
+          contributors: [...new Set(notes.map((n) => n.userName!))],
+          ratingSummary,
         };
       });
 
-      // Only show recipes that have at least one contribution
-      const recipesWithAtLeastOneContribution = recipesWithContributions.filter(
-        (r) => r.contributions.length > 0
-      );
-
-      setRecipes(recipesWithAtLeastOneContribution);
+      setRecipes(recipesWithNotes);
     } catch (error) {
       console.error("Error loading recipes:", error);
       toast.error("Failed to load recipes");
@@ -147,27 +189,18 @@ const RecipeHub = ({ userId, isAdmin = false }: RecipeHubProps) => {
     loadUsedIngredients();
   }, []);
 
-  const handleRecipeAdded = () => {
-    loadRecipes();
-    setShowAddForm(false);
-  };
-
   // Filter recipes based on search and ingredient
   const filteredRecipes = recipes.filter((recipe) => {
     const matchesSearch =
       searchTerm === "" ||
       recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.contributions.some(
-        (c) => c.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+      recipe.notes.some(
+        (n) => n.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       );
 
     const matchesIngredient =
       ingredientFilter === "all" ||
-      recipe.contributions.some(
-        (c) => c.ingredientName?.toLowerCase() === usedIngredients.find(
-          (i) => i.id === ingredientFilter
-        )?.name.toLowerCase()
-      );
+      recipe.ingredientId === ingredientFilter;
 
     return matchesSearch && matchesIngredient;
   });
@@ -211,16 +244,6 @@ const RecipeHub = ({ userId, isAdmin = false }: RecipeHubProps) => {
             </SelectContent>
           </Select>
         </div>
-
-        {isAdmin && (
-          <Button
-            onClick={() => setShowAddForm(true)}
-            className="bg-purple hover:bg-purple-dark"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Recipe
-          </Button>
-        )}
       </div>
 
       {/* Recipe Grid */}
@@ -231,25 +254,17 @@ const RecipeHub = ({ userId, isAdmin = false }: RecipeHubProps) => {
             <p className="text-muted-foreground text-center">
               {searchTerm || ingredientFilter !== "all"
                 ? "No recipes found matching your search."
-                : "No recipes yet. Add your first recipe!"}
+                : "No recipes yet. Recipes are added through events."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRecipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} userId={userId} />
+            <RecipeCard key={recipe.id} recipe={recipe} />
           ))}
         </div>
       )}
-
-      {/* Add Recipe Form Dialog */}
-      <AddRecipeForm
-        open={showAddForm}
-        onOpenChange={setShowAddForm}
-        userId={userId}
-        onRecipeAdded={handleRecipeAdded}
-      />
     </div>
   );
 };

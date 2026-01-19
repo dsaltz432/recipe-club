@@ -52,18 +52,27 @@ export default {
           DEFAULT: "#9b87f5",
           dark: "#7E69AB",
           light: "#E5DEFF",
+          vivid: "#8B5CF6",
+          50: "#FAF5FF",
+          100: "#F3E8FF",
+          200: "#E9D5FF",
         },
         orange: {
           DEFAULT: "#F97316",
           light: "#FEC6A1",
+          vivid: "#EA580C",
+          50: "#FFF7ED",
+          100: "#FFEDD5",
         },
         yellow: {
           DEFAULT: "#F6A000",
           light: "#FEF7CD",
+          vivid: "#EAB308",
         },
         green: {
           DEFAULT: "#4CAF50",
           light: "#F2FCE2",
+          vivid: "#22C55E",
         },
       },
       borderRadius: {

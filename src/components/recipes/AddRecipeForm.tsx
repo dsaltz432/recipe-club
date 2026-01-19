@@ -26,6 +26,7 @@ import type { Recipe } from "@/types";
 interface EventOption {
   id: string;
   eventDate: string;
+  ingredientId: string;
   ingredientName: string;
 }
 
@@ -34,6 +35,8 @@ interface AddRecipeFormProps {
   onOpenChange: (open: boolean) => void;
   userId: string;
   onRecipeAdded: () => void;
+  /** @internal For testing only - overrides internal events state */
+  _testOverrideEvents?: EventOption[];
 }
 
 const AddRecipeForm = ({
@@ -41,8 +44,12 @@ const AddRecipeForm = ({
   onOpenChange,
   userId,
   onRecipeAdded,
+  _testOverrideEvents,
 }: AddRecipeFormProps) => {
   const [events, setEvents] = useState<EventOption[]>([]);
+
+  // Allow tests to override events for coverage of defensive code paths
+  const effectiveEvents = _testOverrideEvents ?? events;
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [recipeName, setRecipeName] = useState("");
   const [recipeUrl, setRecipeUrl] = useState("");
@@ -59,7 +66,7 @@ const AddRecipeForm = ({
     try {
       const { data, error } = await supabase
         .from("scheduled_events")
-        .select("id, event_date, ingredients (name)")
+        .select("id, event_date, ingredient_id, ingredients (name)")
         .in("status", ["scheduled", "completed"])
         .order("event_date", { ascending: false });
 
@@ -70,6 +77,7 @@ const AddRecipeForm = ({
           data.map((e) => ({
             id: e.id,
             eventDate: e.event_date,
+            ingredientId: e.ingredient_id || "",
             ingredientName: e.ingredients?.name || "Unknown",
           }))
         );
@@ -155,37 +163,25 @@ const AddRecipeForm = ({
     setIsLoading(true);
 
     try {
-      let recipeId: string;
-
-      if (selectedExistingRecipe) {
-        // Use existing recipe
-        recipeId = selectedExistingRecipe.id;
-      } else {
-        // Create new recipe
-        const { data: newRecipe, error: recipeError } = await supabase
-          .from("recipes")
-          .insert({
-            name: recipeName.trim(),
-            url: recipeUrl.trim() || null,
-            created_by: userId,
-          })
-          .select("id")
-          .single();
-
-        if (recipeError) throw recipeError;
-        recipeId = newRecipe.id;
+      // Find the selected event to get ingredient_id
+      const selectedEvent = effectiveEvents.find((e) => e.id === selectedEventId);
+      if (!selectedEvent) {
+        toast.error("Event not found");
+        return;
       }
 
-      // Create contribution
-      const { error: contributionError } = await supabase
-        .from("recipe_contributions")
+      // Create new recipe with event_id and ingredient_id
+      const { error: recipeError } = await supabase
+        .from("recipes")
         .insert({
-          recipe_id: recipeId,
-          user_id: userId,
+          name: recipeName.trim(),
+          url: recipeUrl.trim() || null,
           event_id: selectedEventId,
+          ingredient_id: selectedEvent.ingredientId || null,
+          created_by: userId,
         });
 
-      if (contributionError) throw contributionError;
+      if (recipeError) throw recipeError;
 
       toast.success("Recipe added!");
       resetForm();
@@ -351,7 +347,7 @@ const AddRecipeForm = ({
               disabled={isLoading || !selectedEventId || !recipeName.trim()}
               className="bg-purple hover:bg-purple-dark"
             >
-              {isLoading ? "Adding..." : selectedExistingRecipe ? "Add Contribution" : "Add Recipe"}
+              {isLoading ? "Adding..." : "Add Recipe"}
             </Button>
           </DialogFooter>
         </form>

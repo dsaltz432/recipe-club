@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import UserManagementPage from "./pages/UserManagementPage";
+import EventDetailPage from "./pages/EventDetailPage";
 import NotFound from "./pages/NotFound";
 import AuthGuard from "./components/auth/AuthGuard";
 
@@ -23,7 +24,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route
-            path="/dashboard"
+            path="/dashboard/:tab?"
             element={
               <AuthGuard>
                 <Dashboard />
@@ -35,6 +36,14 @@ function App() {
             element={
               <AuthGuard>
                 <UserManagementPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/event/:eventId"
+            element={
+              <AuthGuard>
+                <EventDetailPage />
               </AuthGuard>
             }
           />
