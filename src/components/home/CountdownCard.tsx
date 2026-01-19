@@ -232,7 +232,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
             <div className="flex flex-wrap gap-2 items-center">
               <Button
                 className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md"
-                onClick={() => navigate(`/event/${event.id}`)}
+                onClick={() => navigate(`/events/${event.id}`)}
               >
                 View Event Details
               </Button>

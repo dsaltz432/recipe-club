@@ -435,7 +435,7 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
           backgroundColor: bgColor || (isUpcoming ? undefined : "rgba(255,255,255,0.9)"),
           borderColor: borderColor || (isUpcoming ? "rgba(155, 135, 245, 0.2)" : "rgba(155, 135, 245, 0.1)"),
         }}
-        onClick={() => navigate(`/event/${event.eventId}`)}
+        onClick={() => navigate(`/events/${event.eventId}`)}
       >
         <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
