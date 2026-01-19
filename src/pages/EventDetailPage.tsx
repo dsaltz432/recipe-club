@@ -789,11 +789,11 @@ const EventDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/dashboard/events")}
               className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Back</span>
+              <span className="hidden sm:inline">Events</span>
             </Button>
             <div className="flex items-center gap-2 min-w-0">
               <ChefHat className="h-5 w-5 shrink-0" style={{ color: themeColor }} />
