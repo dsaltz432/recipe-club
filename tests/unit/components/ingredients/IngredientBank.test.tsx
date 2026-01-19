@@ -95,8 +95,8 @@ describe("IngredientBank", () => {
     );
 
     await waitFor(() => {
-      // Look for the count display which contains "/ 15 ingredients"
-      expect(screen.getByText(/\/ 15 ingredients/i)).toBeInTheDocument();
+      // Look for the count display which contains "/ 10 ingredients"
+      expect(screen.getByText(/\/ 10 ingredients/i)).toBeInTheDocument();
     });
   });
 
@@ -261,7 +261,7 @@ describe("IngredientBank - Progress indicator", () => {
   });
 
   it("shows correct progress message when below minimum", async () => {
-    const ingredients: Ingredient[] = Array.from({ length: 10 }, (_, i) =>
+    const ingredients: Ingredient[] = Array.from({ length: 5 }, (_, i) =>
       createMockIngredient({ id: `${i}`, name: `Ingredient ${i}`, inBank: true })
     );
 
@@ -280,7 +280,7 @@ describe("IngredientBank - Progress indicator", () => {
   });
 
   it("shows ready message when at minimum", async () => {
-    const ingredients: Ingredient[] = Array.from({ length: 15 }, (_, i) =>
+    const ingredients: Ingredient[] = Array.from({ length: 10 }, (_, i) =>
       createMockIngredient({ id: `${i}`, name: `Ingredient ${i}`, inBank: true })
     );
 

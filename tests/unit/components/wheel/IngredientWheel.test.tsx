@@ -111,7 +111,7 @@ describe("IngredientWheel", () => {
   });
 
   it("shows message when not enough ingredients", () => {
-    const ingredientCount = 10;
+    const ingredientCount = 5;
     const ingredients = createIngredientsForWheel(ingredientCount);
 
     render(

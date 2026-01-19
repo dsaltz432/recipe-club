@@ -40,7 +40,7 @@ npm run lint
 2. Read the source file to understand what code path isn't covered
 3. Add tests that exercise the uncovered branches/lines
 4. For defensive code that's hard to reach, consider:
-   - Adding a `_testOverride*` prop for testing (see `AddRecipeForm.tsx` for example)
+   - Adding a `_testOverride*` prop for testing (e.g., `_testNullRef?: boolean`)
    - Refactoring to make the code more testable
 5. Re-run `npm run test:coverage` until 100% is achieved
 

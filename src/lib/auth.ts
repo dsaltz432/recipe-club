@@ -93,18 +93,6 @@ export const isAdmin = (allowedUser: AllowedUser | null): boolean => {
   return allowedUser?.role === "admin";
 };
 
-// Async check - fetches from database
-export const checkIsAdmin = async (email?: string): Promise<boolean> => {
-  if (!email) {
-    const user = await getCurrentUser();
-    email = user?.email;
-  }
-  if (!email) return false;
-
-  const allowedUser = await getAllowedUser(email);
-  return allowedUser?.role === "admin";
-};
-
 export const signInWithGoogle = async (): Promise<void> => {
   // Get the current site URL dynamically
   const siteUrl = window.location.origin;

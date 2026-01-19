@@ -1,4 +1,4 @@
-// Curated list of 200 kosher-friendly ingredients organized by category
+// Curated list of ~200 kosher-friendly ingredients organized by category
 // Used for suggesting ingredient ideas
 
 export const INGREDIENT_SUGGESTIONS = {
@@ -99,7 +99,6 @@ export const INGREDIENT_SUGGESTIONS = {
     "Veal",
     "Cornish Hen",
     "Goose",
-    "Beef Tongue",
     "Lamb Chops",
     "Skirt Steak",
   ],
@@ -132,7 +131,6 @@ export const INGREDIENT_SUGGESTIONS = {
     "Orzo",
     "Wild Rice",
     "Arborio Rice",
-    "Matzo",
     "Soba Noodles",
     "Udon Noodles",
     "Jasmine Rice",

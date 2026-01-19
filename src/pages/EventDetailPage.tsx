@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser, getAllowedUser, isAdmin } from "@/lib/auth";
 import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary } from "@/types";
@@ -44,10 +44,13 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
+import { v4 as uuidv4 } from "uuid";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 
 // Helper to render stars with half-star support
@@ -106,6 +109,8 @@ const EventDetailPage = () => {
   const [recipeName, setRecipeName] = useState("");
   const [recipeUrl, setRecipeUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingRecipeImage, setIsUploadingRecipeImage] = useState(false);
+  const recipeImageInputRef = useRef<HTMLInputElement>(null);
 
   // Edit Recipe state
   const [recipeToEdit, setRecipeToEdit] = useState<Recipe | null>(null);
@@ -377,6 +382,50 @@ const EventDetailPage = () => {
       }
     } catch (error) {
       console.error("Error invoking notification function:", error);
+    }
+  };
+
+  const handleRecipeImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image is too large (max 5MB)");
+      return;
+    }
+
+    setIsUploadingRecipeImage(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("recipe-images")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("recipe-images").getPublicUrl(filePath);
+
+      setRecipeUrl(publicUrl);
+      toast.success("Image uploaded!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploadingRecipeImage(false);
+      if (recipeImageInputRef.current) {
+        recipeImageInputRef.current.value = "";
+      }
     }
   };
 
@@ -1144,18 +1193,43 @@ const EventDetailPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="recipe-url">Recipe URL *</Label>
-              <Input
-                id="recipe-url"
-                type="url"
-                value={recipeUrl}
-                onChange={(e) => setRecipeUrl(e.target.value)}
-                placeholder="https://..."
-                className={recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}
-              />
+              <Label htmlFor="recipe-url">Recipe URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="recipe-url"
+                  type="url"
+                  value={recipeUrl}
+                  onChange={(e) => setRecipeUrl(e.target.value)}
+                  placeholder="https://... or upload an image"
+                  className={`flex-1 ${recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}`}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => recipeImageInputRef.current?.click()}
+                  disabled={isUploadingRecipeImage}
+                  className="shrink-0"
+                >
+                  {isUploadingRecipeImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                </Button>
+                <input
+                  ref={recipeImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleRecipeImageUpload}
+                  className="hidden"
+                />
+              </div>
               {recipeUrl.trim() && !isValidUrl(recipeUrl) && (
                 <p className="text-sm text-red-500">URL must start with http:// or https://</p>
               )}
+              <p className="text-xs text-muted-foreground">
+                Enter a URL or upload an image (max 5MB)
+              </p>
             </div>
           </div>
 

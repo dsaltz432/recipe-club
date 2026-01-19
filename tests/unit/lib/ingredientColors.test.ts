@@ -251,6 +251,56 @@ describe("ingredientColors", () => {
       const blueResult = assignWheelColorsWithContrast(["#0000FF"], wheelColors);
       expect(blueResult[0]).toBe("#3B82F6");
     });
+
+    it("falls through second preference check when first is too similar to neighbor", () => {
+      // Very limited wheel colors - all similar reds
+      // This forces the algorithm to check multiple preferences
+      // and exercises the false branch at line 431 (when pref !== prefs[0])
+      const limitedWheelColors = [
+        "#FF0000", // red
+        "#FF1000", // slightly different red
+        "#FF2000", // another red variant
+      ];
+
+      // Multiple red-ish ingredients that will all prefer the same wheel colors
+      // When assigning the second ingredient, first preference will be too similar
+      // to the already-assigned first color, forcing iteration through preferences
+      const ingredientColors = ["#FF0000", "#FF0500", "#FF0A00"];
+      const result = assignWheelColorsWithContrast(ingredientColors, limitedWheelColors);
+
+      expect(result).toHaveLength(3);
+      // All results should be from the limited wheel colors
+      result.forEach((color) => {
+        expect(limitedWheelColors).toContain(color);
+      });
+    });
+
+    it("handles circular similarity check for last ingredient (distToNext branch)", () => {
+      // This test exercises the distToNext <= SIMILARITY_THRESHOLD branch at line 431
+      // which only triggers for the LAST ingredient when it's similar to the FIRST
+      //
+      // For the last ingredient: nextColor = assignedColors[0] (circular wrap)
+      // If the last ingredient's first preference is similar to both:
+      //   - prevColor (the previously assigned color)
+      //   - nextColor (the first assigned color, for circular check)
+      // Then distToNext <= threshold is true
+      const limitedWheelColors = [
+        "#FF0000", // red
+        "#FF0800", // very similar red
+        "#00FF00", // green (different)
+      ];
+
+      // Three similar reds - the last one will check circular similarity
+      // First ingredient gets red, second gets similar red, third checks against both
+      // and its nextColor (first assigned = red) triggers the distToNext branch
+      const ingredientColors = ["#FF0000", "#FF0400", "#FF0200"];
+      const result = assignWheelColorsWithContrast(ingredientColors, limitedWheelColors);
+
+      expect(result).toHaveLength(3);
+      result.forEach((color) => {
+        expect(limitedWheelColors).toContain(color);
+      });
+    });
   });
 
   describe("reorderForColorContrast", () => {
@@ -347,6 +397,40 @@ describe("ingredientColors", () => {
       expect(result).toHaveLength(5);
       expect(new Set(result).size).toBe(5);
       expect(result[0]).toBe(0);
+    });
+
+    it("executes swap when last-to-first distance is below threshold and swap improves contrast", () => {
+      // Carefully crafted to trigger the swap branch (lines 380-383):
+      // - Red (#FF0000) and Almost-Red (#FF0505) are very similar (distance ~13 < 100)
+      // - The greedy algorithm will place Almost-Red last, creating poor circular contrast
+      // - A middle element (Blue) can be swapped to the end to improve contrast
+      //
+      // Greedy path: [0] -> [0,3] (Green most different from Red) -> [0,3,1] (Blue most different from Green)
+      //           -> [0,3,1,2] (Yellow most different from Blue) -> [0,3,1,2,4] (Almost-Red is last)
+      //
+      // Now last=4 (Almost-Red), first=0 (Red), distance ~13 < 100
+      // Loop finds i=2 where candidate=1 (Blue) can swap:
+      //   - distToFirst (Blue to Red) ~570 > 13 ✓
+      //   - distToNewPrev (Almost-Red to Green) ~616 > 100 ✓
+      //   - distToNewNext (Almost-Red to Yellow) ~500 > 100 ✓
+      // Swap executes, resulting in [0,3,4,2,1]
+      const colors = [
+        "#FF0000", // 0: Red
+        "#0000FF", // 1: Blue
+        "#FFFF00", // 2: Yellow
+        "#00FF00", // 3: Green
+        "#FF0505", // 4: Almost-Red (very similar to index 0)
+      ];
+      const result = reorderForColorContrast(colors);
+
+      // Verify all indices are present
+      expect(result).toHaveLength(5);
+      expect(new Set(result).size).toBe(5);
+      expect(result[0]).toBe(0);
+
+      // After the swap, Blue (index 1) should be at the end position
+      // because it was swapped from position 2 to position 4
+      expect(result[result.length - 1]).toBe(1);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Ingredient, ScheduledEvent } from "@/types";
 import { MIN_INGREDIENTS_TO_SPIN, WHEEL_COLORS } from "@/lib/constants";
-import { getIngredientColor, getContrastTextColor, assignWheelColorsWithContrast, reorderForColorContrast } from "@/lib/ingredientColors";
+import { getContrastTextColor } from "@/lib/ingredientColors";
 import confetti from "canvas-confetti";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,18 +42,7 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
   const wheelRef = useRef<HTMLDivElement>(null);
 
   // Only show ingredients that are in the bank
-  const bankIngredientsUnordered = ingredients.filter((i) => i.inBank);
-
-  // Reorder ingredients for optimal color contrast on the wheel
-  const bankIngredients = useMemo(() => {
-    if (bankIngredientsUnordered.length <= 2) return bankIngredientsUnordered;
-
-    const colors = bankIngredientsUnordered.map(
-      (ing) => ing.color || getIngredientColor(ing.name)
-    );
-    const reorderedIndices = reorderForColorContrast(colors);
-    return reorderedIndices.map((i) => bankIngredientsUnordered[i]);
-  }, [bankIngredientsUnordered]);
+  const bankIngredients = ingredients.filter((i) => i.inBank);
 
   const hasEnoughIngredients = bankIngredients.length >= MIN_INGREDIENTS_TO_SPIN;
   const canSpin = hasEnoughIngredients && !disabled;
@@ -213,11 +202,8 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
 
     const segmentAngle = 360 / bankIngredients.length;
 
-    // Get ingredient colors and assign vibrant wheel colors with contrast optimization
-    const ingredientColors = bankIngredients.map(
-      (ingredient) => ingredient.color || getIngredientColor(ingredient.name)
-    );
-    const sliceColors = assignWheelColorsWithContrast(ingredientColors, WHEEL_COLORS);
+    // Use fixed wheel colors (cycling through if needed)
+    const sliceColors = bankIngredients.map((_, i) => WHEEL_COLORS[i % WHEEL_COLORS.length]);
 
     return (
       <div
