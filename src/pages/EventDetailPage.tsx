@@ -1202,7 +1202,7 @@ const EventDetailPage = () => {
                   type="url"
                   value={recipeUrl}
                   onChange={(e) => setRecipeUrl(e.target.value)}
-                  placeholder="https://... or upload an image"
+                  placeholder="https://... or upload a file"
                   className={`flex-1 ${recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}`}
                 />
                 <Button
@@ -1230,7 +1230,7 @@ const EventDetailPage = () => {
                 <p className="text-sm text-red-500">URL must start with http:// or https://</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Enter a URL or upload an image/PDF (max 5MB)
+                Enter a URL or upload a file (max 5MB)
               </p>
             </div>
           </div>
