@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Loader2, FileText } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 interface PhotoUploadProps {
@@ -33,8 +33,10 @@ const PhotoUpload = ({
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
         // Validate file type
-        if (!file.type.startsWith("image/")) {
-          throw new Error(`${file.name} is not an image`);
+        const isImage = file.type.startsWith("image/");
+        const isPdf = file.type === "application/pdf";
+        if (!isImage && !isPdf) {
+          throw new Error(`${file.name} is not an image or PDF`);
         }
 
         // Validate file size (max 5MB)
@@ -61,7 +63,7 @@ const PhotoUpload = ({
 
       const uploadedUrls = await Promise.all(uploadPromises);
       onPhotosChange([...photos, ...uploadedUrls]);
-      toast.success(`Uploaded ${uploadedUrls.length} photo(s)`);
+      toast.success(`Uploaded ${uploadedUrls.length} file(s)`);
     } catch (error) {
       console.error("Error uploading photos:", error);
       toast.error(
@@ -102,7 +104,7 @@ const PhotoUpload = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">
-          Photos ({photos.length}/{maxPhotos})
+          Files ({photos.length}/{maxPhotos})
         </span>
         {photos.length < maxPhotos && (
           <Button
@@ -120,7 +122,7 @@ const PhotoUpload = ({
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Photos
+                Upload Files
               </>
             )}
           </Button>
@@ -128,7 +130,7 @@ const PhotoUpload = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.pdf,application/pdf"
           multiple
           onChange={handleFileSelect}
           className="hidden"
@@ -142,30 +144,45 @@ const PhotoUpload = ({
         >
           <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
-            Click to upload photos of your dish
+            Click to upload photos or PDFs
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Max {maxPhotos} photos, 5MB each
+            Max {maxPhotos} files, 5MB each
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {photos.map((photo, index) => (
-            <div key={index} className="relative group aspect-square">
-              <img
-                src={photo}
-                alt={`Recipe photo ${index + 1}`}
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={() => removePhoto(photo)}
-                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+          {photos.map((photo, index) => {
+            const isPdf = photo.toLowerCase().endsWith(".pdf");
+            return (
+              <div key={index} className="relative group aspect-square">
+                {isPdf ? (
+                  <a
+                    href={photo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-full flex flex-col items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    <FileText className="h-12 w-12 text-red-500 mb-2" />
+                    <span className="text-xs text-muted-foreground">PDF</span>
+                  </a>
+                ) : (
+                  <img
+                    src={photo}
+                    alt={`Recipe photo ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => removePhoto(photo)}
+                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

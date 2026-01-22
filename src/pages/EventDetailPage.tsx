@@ -389,13 +389,15 @@ const EventDetailPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      toast.error("Please select an image or PDF file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image is too large (max 5MB)");
+      toast.error("File is too large (max 5MB)");
       return;
     }
 
@@ -417,10 +419,10 @@ const EventDetailPage = () => {
       } = supabase.storage.from("recipe-images").getPublicUrl(filePath);
 
       setRecipeUrl(publicUrl);
-      toast.success("Image uploaded!");
+      toast.success("File uploaded!");
     } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload file");
     } finally {
       setIsUploadingRecipeImage(false);
       if (recipeImageInputRef.current) {
@@ -1219,7 +1221,7 @@ const EventDetailPage = () => {
                 <input
                   ref={recipeImageInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.pdf,application/pdf"
                   onChange={handleRecipeImageUpload}
                   className="hidden"
                 />
@@ -1228,7 +1230,7 @@ const EventDetailPage = () => {
                 <p className="text-sm text-red-500">URL must start with http:// or https://</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Enter a URL or upload an image (max 5MB)
+                Enter a URL or upload an image/PDF (max 5MB)
               </p>
             </div>
           </div>

@@ -50,8 +50,8 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.getByText(/click to upload photos/i)).toBeInTheDocument();
-    expect(screen.getByText(/photos \(0\/5\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/click to upload photos or pdfs/i)).toBeInTheDocument();
+    expect(screen.getByText(/files \(0\/5\)/i)).toBeInTheDocument();
   });
 
   it("renders with custom maxPhotos", () => {
@@ -63,8 +63,8 @@ describe("PhotoUpload", () => {
       />
     );
 
-    expect(screen.getByText(/photos \(0\/3\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/max 3 photos/i)).toBeInTheDocument();
+    expect(screen.getByText(/files \(0\/3\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/max 3 files/i)).toBeInTheDocument();
   });
 
   it("renders upload button", () => {
@@ -72,7 +72,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.getByRole("button", { name: /upload photos/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /upload files/i })).toBeInTheDocument();
   });
 
   it("hides upload button when max photos reached", () => {
@@ -88,7 +88,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.queryByRole("button", { name: /upload photos/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /upload files/i })).not.toBeInTheDocument();
   });
 
   it("renders photo grid when photos exist", () => {
@@ -114,7 +114,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.getByText(/photos \(1\/5\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/files \(1\/5\)/i)).toBeInTheDocument();
   });
 
   it("handles successful file upload", async () => {
@@ -139,7 +139,7 @@ describe("PhotoUpload", () => {
     await waitFor(() => {
       expect(mockUpload).toHaveBeenCalled();
       expect(mockOnPhotosChange).toHaveBeenCalledWith(["https://example.com/uploaded.jpg"]);
-      expect(toast.success).toHaveBeenCalledWith("Uploaded 1 photo(s)");
+      expect(toast.success).toHaveBeenCalledWith("Uploaded 1 file(s)");
     });
   });
 
@@ -165,11 +165,11 @@ describe("PhotoUpload", () => {
 
     await waitFor(() => {
       expect(mockUpload).toHaveBeenCalledTimes(2);
-      expect(toast.success).toHaveBeenCalledWith("Uploaded 2 photo(s)");
+      expect(toast.success).toHaveBeenCalledWith("Uploaded 2 file(s)");
     });
   });
 
-  it("rejects non-image files", async () => {
+  it("rejects non-image and non-PDF files", async () => {
     render(
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
@@ -184,7 +184,7 @@ describe("PhotoUpload", () => {
     fireEvent.change(input);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("test.txt is not an image");
+      expect(toast.error).toHaveBeenCalledWith("test.txt is not an image or PDF");
     });
   });
 
@@ -351,7 +351,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    const emptyState = screen.getByText(/click to upload photos/i).closest("div");
+    const emptyState = screen.getByText(/click to upload photos or pdfs/i).closest("div");
     expect(emptyState).toBeInTheDocument();
 
     // Check that clicking the area would trigger file input
@@ -361,6 +361,55 @@ describe("PhotoUpload", () => {
     fireEvent.click(emptyState!);
 
     expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it("handles successful PDF upload", async () => {
+    mockUpload.mockResolvedValue({ error: null });
+    mockGetPublicUrl.mockReturnValue({
+      data: { publicUrl: "https://example.com/uploaded.pdf" },
+    });
+
+    render(
+      <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
+    );
+
+    const file = new File(["test pdf content"], "recipe.pdf", { type: "application/pdf" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    Object.defineProperty(input, "files", {
+      value: [file],
+    });
+
+    fireEvent.change(input);
+
+    await waitFor(() => {
+      expect(mockUpload).toHaveBeenCalled();
+      expect(mockOnPhotosChange).toHaveBeenCalledWith(["https://example.com/uploaded.pdf"]);
+      expect(toast.success).toHaveBeenCalledWith("Uploaded 1 file(s)");
+    });
+  });
+
+  it("renders PDF files with special icon", () => {
+    const photos = [
+      "https://example.com/photo1.jpg",
+      "https://example.com/recipe.pdf",
+    ];
+
+    render(
+      <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
+    );
+
+    // Should render one image
+    const images = screen.getAllByRole("img");
+    expect(images).toHaveLength(1);
+
+    // Should render PDF indicator
+    expect(screen.getByText("PDF")).toBeInTheDocument();
+
+    // Should render a link for the PDF
+    const pdfLink = screen.getByRole("link");
+    expect(pdfLink).toHaveAttribute("href", "https://example.com/recipe.pdf");
+    expect(pdfLink).toHaveAttribute("target", "_blank");
   });
 });
 
@@ -434,7 +483,7 @@ describe("PhotoUpload - Error Handling", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    const uploadButton = screen.getByRole("button", { name: /upload photos/i });
+    const uploadButton = screen.getByRole("button", { name: /upload files/i });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const clickSpy = vi.spyOn(input, "click");
 
