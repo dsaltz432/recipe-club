@@ -132,19 +132,19 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     try {
-      // Count completed events
-      const { count: eventsCount } = await supabase
-        .from("scheduled_events")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "completed");
+      // Count completed events and recipes in parallel
+      const [eventsResult, recipesResult] = await Promise.all([
+        supabase
+          .from("scheduled_events")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "completed"),
+        supabase
+          .from("recipes")
+          .select("*", { count: "exact", head: true })
+      ]);
 
-      // Count all recipes in the system
-      const { count: recipesCount } = await supabase
-        .from("recipes")
-        .select("*", { count: "exact", head: true });
-
-      setCompletedEventsCount(eventsCount || 0);
-      setUserRecipesCount(recipesCount || 0);
+      setCompletedEventsCount(eventsResult.count || 0);
+      setUserRecipesCount(recipesResult.count || 0);
     } catch (error) {
       console.error("Error loading stats:", error);
     }

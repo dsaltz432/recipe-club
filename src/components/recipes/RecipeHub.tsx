@@ -44,26 +44,29 @@ const RecipeHub = () => {
 
       if (recipesError) throw recipesError;
 
-      // Load all notes for these recipes
+      // Load notes and ratings in parallel (both depend on recipe IDs)
       const recipeIds = recipesData?.map((r) => r.id) || [];
-      const { data: notesData, error: notesError } = await supabase
-        .from("recipe_notes")
-        .select(`
-          *,
-          profiles (name, avatar_url)
-        `)
-        .in("recipe_id", recipeIds)
-        .order("created_at", { ascending: false });
 
-      if (notesError) throw notesError;
+      const [notesResult, ratingsResult] = await Promise.all([
+        supabase
+          .from("recipe_notes")
+          .select(`
+            *,
+            profiles (name, avatar_url)
+          `)
+          .in("recipe_id", recipeIds)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("recipe_ratings")
+          .select("recipe_id, overall_rating, would_cook_again, profiles:user_id (name)")
+          .in("recipe_id", recipeIds)
+      ]);
 
-      // Load all ratings for these recipes with user names
-      const { data: ratingsData, error: ratingsError } = await supabase
-        .from("recipe_ratings")
-        .select("recipe_id, overall_rating, would_cook_again, profiles:user_id (name)")
-        .in("recipe_id", recipeIds);
+      if (notesResult.error) throw notesResult.error;
+      if (ratingsResult.error) throw ratingsResult.error;
 
-      if (ratingsError) throw ratingsError;
+      const notesData = notesResult.data;
+      const ratingsData = ratingsResult.data;
 
       // Group notes by recipe
       const notesByRecipe = new Map<string, RecipeNote[]>();
