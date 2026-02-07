@@ -638,6 +638,104 @@ describe("signInWithGoogle", () => {
   });
 });
 
+describe("signInWithEmail", () => {
+  let mockSupabase: {
+    auth: {
+      getSession: ReturnType<typeof vi.fn>;
+      signInWithOAuth: ReturnType<typeof vi.fn>;
+      signInWithPassword: ReturnType<typeof vi.fn>;
+      signUp: ReturnType<typeof vi.fn>;
+      signOut: ReturnType<typeof vi.fn>;
+    };
+    from: ReturnType<typeof vi.fn>;
+  };
+  let mockToast: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
+
+  beforeEach(async () => {
+    vi.resetModules();
+
+    mockSupabase = {
+      auth: {
+        getSession: vi.fn(),
+        signInWithOAuth: vi.fn(),
+        signInWithPassword: vi.fn(),
+        signUp: vi.fn(),
+        signOut: vi.fn(),
+      },
+      from: vi.fn(),
+    };
+
+    mockToast = {
+      error: vi.fn(),
+      success: vi.fn(),
+    };
+
+    vi.doMock("@/integrations/supabase/client", () => ({
+      supabase: mockSupabase,
+    }));
+
+    vi.doMock("sonner", () => ({
+      toast: mockToast,
+    }));
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should sign in successfully with email and password", async () => {
+    mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
+
+    const { signInWithEmail } = await import("@/lib/auth");
+    await signInWithEmail("dev@example.com", "password123");
+
+    expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
+      email: "dev@example.com",
+      password: "password123",
+    });
+    expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it("should auto-signup when credentials are invalid (new user)", async () => {
+    mockSupabase.auth.signInWithPassword.mockResolvedValue({
+      error: { message: "Invalid login credentials" },
+    });
+    mockSupabase.auth.signUp.mockResolvedValue({ error: null });
+
+    const { signInWithEmail } = await import("@/lib/auth");
+    await signInWithEmail("new@example.com", "password123");
+
+    expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
+      email: "new@example.com",
+      password: "password123",
+    });
+  });
+
+  it("should show error toast and throw when signup fails", async () => {
+    mockSupabase.auth.signInWithPassword.mockResolvedValue({
+      error: { message: "Invalid login credentials" },
+    });
+    const signUpError = { message: "Signup failed" };
+    mockSupabase.auth.signUp.mockResolvedValue({ error: signUpError });
+
+    const { signInWithEmail } = await import("@/lib/auth");
+    await expect(signInWithEmail("test@example.com", "password123")).rejects.toEqual(signUpError);
+    expect(mockToast.error).toHaveBeenCalledWith("Failed to create account: Signup failed");
+  });
+
+  it("should show error toast and throw for non-credential errors", async () => {
+    const signInError = { message: "Server error" };
+    mockSupabase.auth.signInWithPassword.mockResolvedValue({
+      error: signInError,
+    });
+
+    const { signInWithEmail } = await import("@/lib/auth");
+    await expect(signInWithEmail("test@example.com", "password123")).rejects.toEqual(signInError);
+    expect(mockToast.error).toHaveBeenCalledWith("Failed to sign in: Server error");
+    expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
+  });
+});
+
 describe("signOut", () => {
   let mockSupabase: {
     auth: {

@@ -1,11 +1,20 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { signInWithGoogle } from "@/lib/auth";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
+import { isDevMode } from "@/lib/devMode";
 
 const GoogleSignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSignIn = async () => {
+  // Dev mode state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
       await signInWithGoogle();
@@ -16,9 +25,55 @@ const GoogleSignIn = () => {
     }
   };
 
+  const handleEmailSignIn = async () => {
+    if (!email || !password) return;
+    try {
+      setIsLoading(true);
+      await signInWithEmail(email, password);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error signing in:", error);
+      setIsLoading(false);
+    }
+  };
+
+  if (isDevMode()) {
+    return (
+      <div className="space-y-3 w-full max-w-sm">
+        <div className="space-y-1">
+          <Label htmlFor="dev-email">Email</Label>
+          <Input
+            id="dev-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="dev@example.com"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="dev-password">Password</Label>
+          <Input
+            id="dev-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="any password"
+          />
+        </div>
+        <Button
+          onClick={handleEmailSignIn}
+          disabled={isLoading || !email || !password}
+          className="w-full py-6"
+        >
+          {isLoading ? "Signing in..." : "Sign in (Dev Mode)"}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <Button
-      onClick={handleSignIn}
+      onClick={handleGoogleSignIn}
       disabled={isLoading}
       className="bg-white text-black hover:bg-gray-100 border border-gray-300 flex items-center gap-2 py-6"
     >

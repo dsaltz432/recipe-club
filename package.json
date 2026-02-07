@@ -11,7 +11,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "dev:local": "supabase start && vite",
+    "dev:reset": "supabase db reset",
+    "dev:stop": "supabase stop"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

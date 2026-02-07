@@ -111,6 +111,38 @@ export const signInWithGoogle = async (): Promise<void> => {
   }
 };
 
+export const signInWithEmail = async (
+  email: string,
+  password: string
+): Promise<void> => {
+  // Try to sign in first
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (!signInError) {
+    return;
+  }
+
+  // If invalid credentials, try to sign up (auto-creates in local dev)
+  if (signInError.message.includes("Invalid login credentials")) {
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (signUpError) {
+      toast.error("Failed to create account: " + signUpError.message);
+      throw signUpError;
+    }
+    return;
+  }
+
+  toast.error("Failed to sign in: " + signInError.message);
+  throw signInError;
+};
+
 export const signOut = async (): Promise<void> => {
   const { error } = await supabase.auth.signOut();
 

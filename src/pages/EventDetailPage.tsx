@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
+import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { v4 as uuidv4 } from "uuid";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
@@ -363,6 +364,11 @@ const EventDetailPage = () => {
     recipeNameVal: string,
     recipeUrlVal: string
   ) => {
+    if (isDevMode()) {
+      console.log(`[DEV MODE] Skipping ${type} notification for: ${recipeNameVal}`);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("notify-recipe-change", {
         body: {
