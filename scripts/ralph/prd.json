@@ -55,7 +55,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "This script exercises the full pipeline: raw parsed data -> combineIngredients -> formatGroceryItem. It validates all the grocery list improvements we made in this session."
     }
   ]

@@ -6,6 +6,7 @@ Started: Sun Feb  8 16:43:34 EST 2026
 - Rate limits (8k output tokens/min) cause ~10-15% failures on first run — just re-run the script to retry only the failures
 - Local Supabase must be running (`npm run dev:local`) with edge functions served for parsing to work
 - The recipes.ts file uses `rawText` (camelCase) but the edge function returns `raw_text` (snake_case) — the script handles the mapping
+- To run src/lib functions outside Vite (in Node.js scripts), use `npx tsx --tsconfig tsconfig.app.json --import ./scripts/_mock-env.mjs <script>` to mock the supabase client
 ---
 
 ## 2026-02-08 - US-001
@@ -67,4 +68,24 @@ Started: Sun Feb  8 16:43:34 EST 2026
 - **Learnings for future iterations:**
   - The parse-recipe edge function's AI prompt was already updated to exclude `canned_goods` — no further changes needed
   - All categories in the parsed data are valid GroceryCategory types: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other
+---
+
+## 2026-02-08 - US-004
+- **What was implemented:** Created `scripts/verify-parsing.ts` verification script that exercises the full grocery list pipeline
+- **Files changed:**
+  - `scripts/verify-parsing.ts` (new — main verification script)
+  - `scripts/_mock-env.mjs` (new — preload for module loader registration)
+  - `scripts/_mock-loader.mjs` (new — ESM loader that mocks supabase client for Node.js)
+- **Verification results (12 assertions, 0 failures):**
+  1. `all-purpose flour` → `flour` ✓ (alias normalization)
+  2. `red pepper flakes` stays intact, not singularized ✓ (MASS_NOUNS set via "flakes")
+  3. spaghetti/penne/pesto/sage/tarragon never pluralized ✓ (MASS_NOUNS set)
+  4. `garlic clove` → `127 garlic cloves` ✓ (name-first unit order with plural)
+  5. `celery` → `9 1/2 celery stalks` ✓ (name-first, COUNT_TO_CUP merge from volume)
+  6. `bacon` → `21 bacon strips` ✓ (name-first unit order)
+- **Learnings for future iterations:**
+  - Running src/lib functions in Node.js (outside Vite) requires mocking `import.meta.env` and the supabase client
+  - Use `--import ./scripts/_mock-env.mjs` with tsx to register a custom ESM loader that intercepts supabase
+  - The `garlic clove` name (from parse-recipe) normalizes to `garlic clove` — it's a distinct combined name, not just `garlic`
+  - `PREFERRED_COUNT_UNIT` applies to bare-name `garlic`/`celery`/`bacon` entries; `garlic clove` entries already carry the clove concept in their name
 ---
