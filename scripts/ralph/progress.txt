@@ -59,3 +59,12 @@ Started: Sun Feb  8 16:43:34 EST 2026
   - The parse-recipe edge function names garlic as `garlic clove` (not `garlic`) when it's a count — this works perfectly with our combining logic
   - Celery appears in both count (stalk/rib) and volume (cup) forms — the COUNT_TO_CUP merge handles this
 ---
+
+## 2026-02-08 - US-003
+- **What was implemented:** Verified that `canned_goods` category does not appear in any parsed recipe data
+- **Files changed:** None (verification only)
+- **Result:** `grep canned_goods test-combine/src/data/recipes.ts` → 0 matches. The parse-recipe edge function correctly uses `pantry` instead.
+- **Learnings for future iterations:**
+  - The parse-recipe edge function's AI prompt was already updated to exclude `canned_goods` — no further changes needed
+  - All categories in the parsed data are valid GroceryCategory types: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other
+---

@@ -42,7 +42,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "The canned_goods category was removed from the GroceryCategory type. The parse-recipe edge function should not return it. If it does, the AI prompt in the edge function needs updating."
     },
     {
