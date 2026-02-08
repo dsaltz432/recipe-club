@@ -12,9 +12,11 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "dev:local": "supabase start && vite",
+    "dev:local": "supabase start && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt &  vite",
     "dev:reset": "supabase db reset",
-    "dev:stop": "supabase stop"
+    "dev:stop": "supabase stop",
+    "test:combine": "cd test-combine && npm run dev",
+    "validate:urls": "npx tsx scripts/validate-recipe-urls.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
