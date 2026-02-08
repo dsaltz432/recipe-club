@@ -1,0 +1,61 @@
+# Ralph Progress Log
+Started: Sun Feb  8 16:43:34 EST 2026
+
+## Codebase Patterns
+- `npx tsx scripts/reparse-recipes.ts` re-parses only recipes with empty ingredients arrays (use `--force` to re-parse all)
+- Rate limits (8k output tokens/min) cause ~10-15% failures on first run — just re-run the script to retry only the failures
+- Local Supabase must be running (`npm run dev:local`) with edge functions served for parsing to work
+- The recipes.ts file uses `rawText` (camelCase) but the edge function returns `raw_text` (snake_case) — the script handles the mapping
+---
+
+## 2026-02-08 - US-001
+- **What was implemented:** Re-parsed all 100 test recipes using the parse-recipe edge function
+- **Files changed:** `test-combine/src/data/recipes.ts` (1541 insertions, 1312 deletions)
+- **Process:** First run parsed 89/100 (11 failed due to 429 rate limits). Waited 60s, re-ran script which successfully parsed the remaining 11.
+- **Result:** All 100 recipes have non-empty ingredients arrays, 0 failures, typecheck passes
+- **Learnings for future iterations:**
+  - The 8k output tokens/min rate limit on claude-sonnet-4-5-20250929 means batches of 2 with 3s delay still hit limits around recipe 69-70
+  - Waiting 60s between runs is sufficient for rate limit recovery
+  - The script is idempotent — re-running only processes recipes with empty ingredients
+---
+
+## 2026-02-08 - US-002
+- **What was implemented:** Verified preferred count units for garlic, celery, and bacon in parsed data
+- **Files changed:** None (verification only)
+- **Findings:**
+
+### Garlic (58 total entries)
+| Variant | Unit | Count | Notes |
+|---------|------|-------|-------|
+| `garlic clove` | null | 44 | Will get PREFERRED_COUNT_UNIT `clove` at display time |
+| `garlic` | tsp | 4 | Volume-measured, no count unit needed |
+| `garlic` | tbsp | 4 | Volume-measured, no count unit needed |
+| `garlic powder` | tsp | 3 | Distinct ingredient, not applicable |
+| `garlic powder` | tbsp | 1 | Distinct ingredient, not applicable |
+| `garlic salt` | dash/tsp | 2 | Distinct ingredient, not applicable |
+
+76% of garlic entries use bare counts — ideal for preferred count unit assignment.
+
+### Celery (10 total entries)
+| Variant | Unit | Count | Notes |
+|---------|------|-------|-------|
+| `celery` | cup | 5 | Volume-based, handled by COUNT_TO_CUP merge |
+| `celery stalk` | null | 1 | Will get PREFERRED_COUNT_UNIT `stalk` |
+| `celery rib` | null | 1 | UNIT_REMAP maps rib → stalk |
+| `celery` | stalk | 1 | Already has explicit stalk unit |
+| `celery` | null | 1 | Will get PREFERRED_COUNT_UNIT `stalk` |
+| `celery seed` | tsp | 1 | Distinct ingredient, not applicable |
+
+### Bacon (4 total entries)
+| Variant | Unit | Count | Notes |
+|---------|------|-------|-------|
+| `bacon` | slice | 2 | Explicit count unit |
+| `bacon` | null | 2 | Will get PREFERRED_COUNT_UNIT `strip` |
+
+100% of bacon entries are count-based.
+
+- **Verdict:** Data is reasonable for preferred count unit assignment. No corrections needed.
+- **Learnings for future iterations:**
+  - The parse-recipe edge function names garlic as `garlic clove` (not `garlic`) when it's a count — this works perfectly with our combining logic
+  - Celery appears in both count (stalk/rib) and volume (cup) forms — the COUNT_TO_CUP merge handles this
+---
