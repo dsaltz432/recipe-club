@@ -16,7 +16,7 @@
     "dev:reset": "supabase db reset",
     "dev:stop": "supabase stop",
     "test:combine": "cd test-combine && npm run dev",
-    "validate:urls": "npx tsx scripts/validate-recipe-urls.ts"
+    "deploy:functions": "supabase functions deploy --no-verify-jwt"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

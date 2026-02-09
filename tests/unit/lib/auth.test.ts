@@ -723,6 +723,20 @@ describe("signInWithEmail", () => {
     expect(mockToast.error).toHaveBeenCalledWith("Failed to create account: Signup failed");
   });
 
+  it("should show password hint when user already registered", async () => {
+    mockSupabase.auth.signInWithPassword.mockResolvedValue({
+      error: { message: "Invalid login credentials" },
+    });
+    const signUpError = { message: "User already registered" };
+    mockSupabase.auth.signUp.mockResolvedValue({ error: signUpError });
+
+    const { signInWithEmail } = await import("@/lib/auth");
+    await expect(signInWithEmail("test@example.com", "wrong")).rejects.toEqual(signUpError);
+    expect(mockToast.error).toHaveBeenCalledWith(
+      "Wrong password. Use the password you first signed up with, or run 'npm run dev:reset' to reset the local database."
+    );
+  });
+
   it("should show error toast and throw for non-credential errors", async () => {
     const signInError = { message: "Server error" };
     mockSupabase.auth.signInWithPassword.mockResolvedValue({

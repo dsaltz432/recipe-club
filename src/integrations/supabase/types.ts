@@ -265,6 +265,162 @@ export type Database = {
           }
         ];
       };
+      recipe_content: {
+        Row: {
+          id: string;
+          recipe_id: string;
+          description: string | null;
+          servings: string | null;
+          prep_time: string | null;
+          cook_time: string | null;
+          total_time: string | null;
+          instructions: Json | null;
+          source_title: string | null;
+          parsed_at: string | null;
+          status: string;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipe_id: string;
+          description?: string | null;
+          servings?: string | null;
+          prep_time?: string | null;
+          cook_time?: string | null;
+          total_time?: string | null;
+          instructions?: Json | null;
+          source_title?: string | null;
+          parsed_at?: string | null;
+          status?: string;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipe_id?: string;
+          description?: string | null;
+          servings?: string | null;
+          prep_time?: string | null;
+          cook_time?: string | null;
+          total_time?: string | null;
+          instructions?: Json | null;
+          source_title?: string | null;
+          parsed_at?: string | null;
+          status?: string;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_content_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: true;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      recipe_ingredients: {
+        Row: {
+          id: string;
+          recipe_id: string;
+          name: string;
+          quantity: number | null;
+          unit: string | null;
+          category: string;
+          raw_text: string | null;
+          sort_order: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipe_id: string;
+          name: string;
+          quantity?: number | null;
+          unit?: string | null;
+          category?: string;
+          raw_text?: string | null;
+          sort_order?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipe_id?: string;
+          name?: string;
+          quantity?: number | null;
+          unit?: string | null;
+          category?: string;
+          raw_text?: string | null;
+          sort_order?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      user_pantry_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      event_grocery_cache: {
+        Row: {
+          id: string;
+          event_id: string;
+          items: Json;
+          recipe_ids: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          items: Json;
+          recipe_ids: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          items?: Json;
+          recipe_ids?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_grocery_cache_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: true;
+            referencedRelation: "scheduled_events";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       scheduled_events: {
         Row: {
           id: string;

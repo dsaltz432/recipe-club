@@ -25,3 +25,14 @@ dist-ssr
 
 # Supabase local dev
 supabase/.temp/
+supabase/.env
+supabase/functions/.env
+
+# Test coverage reports
+coverage/
+
+# Ralph agent
+scripts/ralph/
+
+# Test app env
+test-combine/.env
