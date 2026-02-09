@@ -23,6 +23,12 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+// Mock constants to enable parse buttons in tests
+vi.mock("@/lib/constants", async () => {
+  const actual = await vi.importActual("@/lib/constants");
+  return { ...actual, SHOW_PARSE_BUTTONS: true };
+});
+
 describe("GroceryListSection", () => {
   const mockParseRecipe = vi.fn().mockResolvedValue(undefined);
 

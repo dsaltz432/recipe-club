@@ -15,6 +15,8 @@ export const DEFAULT_INGREDIENTS = [
 
 export const MIN_INGREDIENTS_TO_SPIN = 10;
 
+export const SHOW_PARSE_BUTTONS = false;
+
 export const WHEEL_COLORS = [
   "#9b87f5", // purple
   "#F97316", // orange
