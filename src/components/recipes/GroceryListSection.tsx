@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { RecipeIngredient, RecipeContent, CombinedGroceryItem, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
 import { combineIngredients, groupByCategory, filterPantryItems, filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
+import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
 
@@ -106,7 +107,7 @@ const GroceryListSection = ({
         </div>
 
         {/* Parse buttons for unparsed recipes */}
-        {recipesWithUrl.length > 0 && (
+        {SHOW_PARSE_BUTTONS && recipesWithUrl.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {recipesWithUrl.map((recipe) => {
               const content = recipeContentMap[recipe.id];
