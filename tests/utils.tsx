@@ -3,7 +3,7 @@ import React, { ReactElement } from "react";
 import { render, RenderOptions } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { User, Ingredient, Recipe, RecipeNote, ScheduledEvent } from "@/types";
+import type { User, Ingredient, Recipe, RecipeNote, ScheduledEvent, RecipeContent, RecipeIngredient } from "@/types";
 
 // Create a new query client for each test
 const createTestQueryClient = () =>
@@ -95,6 +95,28 @@ export const createMockEvent = (overrides?: Partial<ScheduledEvent>): ScheduledE
   createdBy: "user-123",
   status: "scheduled",
   ingredientName: "Test Ingredient",
+  ...overrides,
+});
+
+export const createMockRecipeContent = (overrides?: Partial<RecipeContent>): RecipeContent => ({
+  id: "content-123",
+  recipeId: "recipe-123",
+  status: "completed",
+  parsedAt: new Date().toISOString(),
+  createdAt: new Date().toISOString(),
+  ...overrides,
+});
+
+export const createMockRecipeIngredient = (overrides?: Partial<RecipeIngredient>): RecipeIngredient => ({
+  id: "ingredient-item-123",
+  recipeId: "recipe-123",
+  name: "flour",
+  quantity: 2,
+  unit: "cup",
+  category: "pantry",
+  rawText: "2 cups flour",
+  sortOrder: 0,
+  createdAt: new Date().toISOString(),
   ...overrides,
 });
 

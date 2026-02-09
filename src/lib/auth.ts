@@ -111,6 +111,51 @@ export const signInWithGoogle = async (): Promise<void> => {
   }
 };
 
+export const signInWithEmail = async (
+  email: string,
+  password: string
+): Promise<void> => {
+  // Try to sign in first
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (!signInError) {
+    return;
+  }
+
+  // If invalid credentials, try to sign up (auto-creates in local dev)
+  // Check for various error messages across Supabase versions
+  const isInvalidCreds =
+    signInError.message.includes("Invalid login credentials") ||
+    signInError.message.includes("invalid_credentials") ||
+    signInError.status === 400;
+
+  if (isInvalidCreds) {
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (signUpError) {
+      // User exists but wrong password — tell them to use the right one
+      if (signUpError.message.includes("already registered")) {
+        toast.error(
+          "Wrong password. Use the password you first signed up with, or run 'npm run dev:reset' to reset the local database."
+        );
+        throw signUpError;
+      }
+      toast.error("Failed to create account: " + signUpError.message);
+      throw signUpError;
+    }
+    return;
+  }
+
+  toast.error("Failed to sign in: " + signInError.message);
+  throw signInError;
+};
+
 export const signOut = async (): Promise<void> => {
   const { error } = await supabase.auth.signOut();
 

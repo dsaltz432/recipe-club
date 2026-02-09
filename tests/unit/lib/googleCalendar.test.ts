@@ -32,6 +32,12 @@ vi.mock("@/lib/auth", () => ({
   ]),
 }));
 
+// Mock devMode - default to false (production behavior)
+const mockIsDevMode = vi.fn(() => false);
+vi.mock("@/lib/devMode", () => ({
+  isDevMode: () => mockIsDevMode(),
+}));
+
 import {
   createCalendarEvent,
   updateCalendarEvent,
@@ -519,6 +525,45 @@ describe("Google Calendar Functions", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Failed to delete calendar event");
+    });
+  });
+
+  describe("Dev mode guards", () => {
+    beforeEach(() => {
+      mockIsDevMode.mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      mockIsDevMode.mockReturnValue(false);
+    });
+
+    it("should skip Google Calendar API and return mock eventId for create in dev mode", async () => {
+      const result = await createCalendarEvent({
+        date: new Date("2025-01-20"),
+        ingredientName: "Salmon",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.eventId).toMatch(/^dev-calendar-/);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("should skip Google Calendar API for update in dev mode", async () => {
+      const result = await updateCalendarEvent({
+        calendarEventId: "event-123",
+        date: new Date("2025-01-25"),
+        ingredientName: "Chicken",
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("should skip Google Calendar API for delete in dev mode", async () => {
+      const result = await deleteCalendarEvent("event-123");
+
+      expect(result.success).toBe(true);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 });

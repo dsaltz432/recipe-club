@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getClubMemberEmails } from "./auth";
+import { isDevMode } from "./devMode";
 
 interface CalendarEventParams {
   date: Date;
@@ -12,6 +13,11 @@ export const createCalendarEvent = async ({
   time,
   ingredientName,
 }: CalendarEventParams): Promise<{ success: boolean; eventId?: string; error?: string }> => {
+  if (isDevMode()) {
+    console.log("[DEV MODE] Skipping Google Calendar create for:", ingredientName);
+    return { success: true, eventId: `dev-calendar-${Date.now()}` };
+  }
+
   try {
     // Get the current session to access the provider token
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -129,6 +135,11 @@ export const updateCalendarEvent = async ({
   time,
   ingredientName,
 }: UpdateCalendarEventParams): Promise<{ success: boolean; error?: string }> => {
+  if (isDevMode()) {
+    console.log("[DEV MODE] Skipping Google Calendar update for:", calendarEventId);
+    return { success: true };
+  }
+
   try {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
@@ -203,6 +214,11 @@ export const updateCalendarEvent = async ({
 export const deleteCalendarEvent = async (
   calendarEventId: string
 ): Promise<{ success: boolean; error?: string }> => {
+  if (isDevMode()) {
+    console.log("[DEV MODE] Skipping Google Calendar delete for:", calendarEventId);
+    return { success: true };
+  }
+
   try {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 

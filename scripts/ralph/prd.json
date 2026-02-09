@@ -1,0 +1,62 @@
+{
+  "project": "Recipe Club Hub",
+  "branchName": "ralph/reparse-test-recipes",
+  "description": "Re-parse all 100 test recipe ingredients and verify grocery list formatting improvements",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Re-parse all 100 test recipes",
+      "description": "As a developer, I want to re-parse all 100 test recipe URLs so that the ingredient data reflects the latest AI parsing output.",
+      "acceptanceCriteria": [
+        "Run `npx tsx scripts/reparse-recipes.ts` (all ingredient arrays are already empty)",
+        "All 100 recipes in test-combine/src/data/recipes.ts have non-empty ingredients arrays after parsing",
+        "Failed recipe count is 0 (or any failures are documented in progress.txt)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Local Supabase must be running with edge functions served. Script processes 2 at a time with 3s delays (~2.5 min total). If some recipes fail, re-run the script to retry only the failures."
+    },
+    {
+      "id": "US-002",
+      "title": "Verify preferred count units in parsed data",
+      "description": "As a developer, I want to confirm that garlic, celery, and bacon ingredients display with their preferred count units (clove, stalk, strip) when combined.",
+      "acceptanceCriteria": [
+        "Search test-combine/src/data/recipes.ts for garlic ingredients and confirm they exist with unit 'clove' or 'cloves' (or null, which will get 'clove' assigned at display time via PREFERRED_COUNT_UNIT)",
+        "Search for celery ingredients and confirm they exist with unit 'stalk', 'stalks', 'rib', or null (null gets 'stalk' at display time)",
+        "Search for bacon ingredients and confirm they exist with unit 'strip', 'strips', 'slice', or null (null gets 'strip' at display time)",
+        "Document findings in progress.txt with counts of each unit type found",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "The parse-recipe edge function returns raw units from recipes. Our client-side combineIngredients logic normalizes and assigns preferred units at display time. This story verifies the raw data is reasonable."
+    },
+    {
+      "id": "US-003",
+      "title": "Verify no canned_goods category in parsed data",
+      "description": "As a developer, I want to confirm that the canned_goods category no longer appears in any parsed recipe data.",
+      "acceptanceCriteria": [
+        "Search test-combine/src/data/recipes.ts for 'canned_goods' - must return zero matches",
+        "If any canned_goods entries are found, update the parse-recipe edge function prompt to use 'pantry' instead and re-parse affected recipes",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "The canned_goods category was removed from the GroceryCategory type. The parse-recipe edge function should not return it. If it does, the AI prompt in the edge function needs updating."
+    },
+    {
+      "id": "US-004",
+      "title": "Verify mass noun and alias normalization in display",
+      "description": "As a developer, I want to confirm that the grocery list formatting correctly handles mass nouns and ingredient aliases for the newly parsed data.",
+      "acceptanceCriteria": [
+        "Write a quick verification script (scripts/verify-parsing.ts) that imports TEST_RECIPES, runs combineIngredients + formatGroceryItem on all ingredients, and checks: (1) 'all-purpose flour' normalizes to 'flour', (2) 'red pepper flakes' stays as 'red pepper flakes' (not singularized), (3) spaghetti/penne/pesto/sage/tarragon are never pluralized in output, (4) garlic with no unit displays as 'N garlic cloves', (5) name-first unit order is used (e.g. 'garlic cloves' not 'cloves garlic')",
+        "Script runs successfully with zero assertion failures",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "This script exercises the full pipeline: raw parsed data -> combineIngredients -> formatGroceryItem. It validates all the grocery list improvements we made in this session."
+    }
+  ]
+}
