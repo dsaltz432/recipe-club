@@ -59,7 +59,7 @@ serve(async (req) => {
           </ul>
         </div>
 
-        <p>Head over to your next event to try it out!</p>
+        <p>Head over to your <a href="https://www.therecipeclubhub.com/events/7b1ea8fc-729d-4c83-a64f-46552f9abab6" style="color: #9b87f5; font-weight: bold;">next event</a> to try it out!</p>
 
         <div style="text-align: center; margin: 24px 0;">
           <a href="https://therecipeclubhub.com" style="background: #9b87f5; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open Recipe Club Hub</a>
