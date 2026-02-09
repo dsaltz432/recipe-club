@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getAllowedUser, isAdmin } from "@/lib/auth";
-import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary } from "@/types";
+import { getCurrentUser, getAllowedUser, isAdmin, signOut } from "@/lib/auth";
+import type { User, Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,8 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import {
@@ -35,50 +42,37 @@ import {
   ChefHat,
   Calendar as CalendarIcon,
   Clock,
-  ExternalLink,
-  Plus,
   Pencil,
-  Trash2,
   X,
-  Camera,
   Star,
-  ChevronDown,
-  ChevronUp,
   Upload,
   Loader2,
+  Menu,
+  LogOut,
+  ShoppingCart,
+  BookOpen,
+  UtensilsCrossed,
+  // Flame, // Cook Mode disabled
+  Check,
+  Circle,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
+import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
+import EventRecipesTab from "@/components/events/EventRecipesTab";
+import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import { v4 as uuidv4 } from "uuid";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
-
-// Helper to render stars with half-star support
-const renderStars = (rating: number, starSize = "h-4 w-4") => {
-  return [1, 2, 3, 4, 5].map((star) => {
-    if (rating >= star) {
-      // Full star
-      return <Star key={star} className={`${starSize} fill-yellow-400 text-yellow-400`} />;
-    } else if (rating >= star - 0.5) {
-      // Half star - use relative positioning to overlay half-filled on empty
-      return (
-        <div key={star} className={`${starSize} relative`}>
-          <Star className={`${starSize} text-gray-300 absolute`} />
-          <div className="overflow-hidden w-1/2">
-            <Star className={`${starSize} fill-yellow-400 text-yellow-400`} />
-          </div>
-        </div>
-      );
-    } else {
-      // Empty star
-      return <Star key={star} className={`${starSize} text-gray-300`} />;
-    }
-  });
-};
-
-interface EventRecipeWithRatings extends EventRecipeWithNotes {
-  ratingSummary?: RecipeRatingsSummary;
-}
+import GroceryListSection from "@/components/recipes/GroceryListSection";
+// import CookModeSection from "@/components/recipes/CookModeSection"; // Cook Mode disabled
+import PantryDialog from "@/components/pantry/PantryDialog";
+import PantrySection from "@/components/pantry/PantrySection";
+import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
+import { smartCombineIngredients } from "@/lib/groceryList";
+import { loadGroceryCache, saveGroceryCache, deleteGroceryCache } from "@/lib/groceryCache";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 interface EventData {
   eventId: string;
@@ -129,6 +123,9 @@ const EventDetailPage = () => {
   const [noteToDelete, setNoteToDelete] = useState<RecipeNote | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
+  // Delete recipe state
+  const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
+
   // Edit event state
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
@@ -142,6 +139,40 @@ const EventDetailPage = () => {
   // Rating dialog state
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [ratingDialogMode, setRatingDialogMode] = useState<"completing" | "rating">("completing");
+
+  // Grocery list state
+  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
+  const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
+  const [isLoadingIngredients, setIsLoadingIngredients] = useState(false);
+
+  // Parse-on-add state
+  const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
+  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "combining" | "notifying" | "done">("saving");
+  const [showCombineStep, setShowCombineStep] = useState(false);
+
+  // Smart grocery combine state
+  const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
+  const [isCombining, setIsCombining] = useState(false);
+
+  // Pantry state
+  const [pantryItems, setPantryItems] = useState<string[]>([]);
+  const [showPantryDialog, setShowPantryDialog] = useState(false);
+
+  // Parse progress step definitions
+  const parseSteps = [
+    { key: "saving" as const, label: "Adding recipe" },
+    { key: "parsing" as const, label: "Parsing ingredients & instructions" },
+    { key: "loading" as const, label: "Loading recipe data" },
+    ...(showCombineStep ? [{ key: "combining" as const, label: "Combining with other recipes" }] : []),
+    { key: "notifying" as const, label: "Notifying club members" },
+  ];
+
+  const parseStepIndex = parseSteps.findIndex(s => s.key === parseStep);
+  const progressPercent = parseStep === "done"
+    ? 100
+    : Math.round(((parseStepIndex >= 0 ? parseStepIndex : 0) / parseSteps.length) * 100);
 
   // Notes expansion state - tracks which recipes have notes expanded
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -334,6 +365,127 @@ const EventDetailPage = () => {
     }
   };
 
+  const loadGroceryData = async (recipeIds: string[]) => {
+    if (recipeIds.length === 0) return;
+    setIsLoadingIngredients(true);
+    try {
+      const [ingredientsResult, contentResult] = await Promise.all([
+        supabase.from("recipe_ingredients").select("*").in("recipe_id", recipeIds),
+        supabase.from("recipe_content").select("*").in("recipe_id", recipeIds),
+      ]);
+
+      if (ingredientsResult.data) {
+        setRecipeIngredients(ingredientsResult.data.map((row) => ({
+          id: row.id,
+          recipeId: row.recipe_id,
+          name: row.name,
+          quantity: row.quantity ?? undefined,
+          unit: row.unit ?? undefined,
+          category: row.category as RecipeIngredient["category"],
+          rawText: row.raw_text ?? undefined,
+          sortOrder: row.sort_order ?? undefined,
+          createdAt: row.created_at,
+        })));
+      }
+
+      if (contentResult.data) {
+        const map: Record<string, RecipeContent> = {};
+        for (const row of contentResult.data) {
+          map[row.recipe_id] = {
+            id: row.id,
+            recipeId: row.recipe_id,
+            description: row.description ?? undefined,
+            servings: row.servings ?? undefined,
+            prepTime: row.prep_time ?? undefined,
+            cookTime: row.cook_time ?? undefined,
+            totalTime: row.total_time ?? undefined,
+            instructions: Array.isArray(row.instructions) ? row.instructions as string[] : undefined,
+            sourceTitle: row.source_title ?? undefined,
+            parsedAt: row.parsed_at ?? undefined,
+            status: row.status as RecipeContent["status"],
+            errorMessage: row.error_message ?? undefined,
+            createdAt: row.created_at,
+          };
+        }
+        setRecipeContentMap(map);
+      }
+    } catch (error) {
+      console.error("Error loading grocery data:", error);
+    } finally {
+      setIsLoadingIngredients(false);
+    }
+  };
+
+  const runSmartCombine = async (currentIngredients: RecipeIngredient[], currentContentMap: Record<string, RecipeContent>, recipes: Recipe[], forEventId?: string) => {
+    // Count parsed recipes
+    const parsedRecipes = recipes.filter((r) => currentContentMap[r.id]?.status === "completed");
+    if (parsedRecipes.length < 2) {
+      setSmartGroceryItems(null);
+      return;
+    }
+
+    setIsCombining(true);
+    try {
+      const recipeNameMap: Record<string, string> = {};
+      for (const r of recipes) {
+        recipeNameMap[r.id] = r.name;
+      }
+      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
+      setSmartGroceryItems(result);
+
+      // Persist to cache
+      const eid = forEventId || eventId;
+      if (result && eid) {
+        const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
+        saveGroceryCache(eid, result, sortedRecipeIds);
+      }
+    } catch {
+      setSmartGroceryItems(null);
+    } finally {
+      setIsCombining(false);
+    }
+  };
+
+  const handleParseRecipe = async (recipeId: string) => {
+    const recipe = event?.recipesWithNotes.find((r) => r.recipe.id === recipeId)?.recipe;
+    if (!recipe?.url) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-recipe", {
+        body: { recipeId, recipeUrl: recipe.url, recipeName: recipe.name },
+      });
+
+      if (error) throw error;
+
+      if (data?.skipped) {
+        toast.success("Recipe parsed (skipped in dev mode)");
+      } else {
+        toast.success("Recipe parsed successfully!");
+      }
+
+      // Reload grocery data
+      const recipeIds = event?.recipesWithNotes.map((r) => r.recipe.id) || [];
+      await loadGroceryData(recipeIds);
+
+      // Run smart combine after re-parse
+      const allRecipes = event?.recipesWithNotes.map((r) => r.recipe) || [];
+      await runSmartCombine(recipeIngredients, recipeContentMap, allRecipes);
+    } catch (error) {
+      console.error("Error parsing recipe:", error);
+      toast.error("Failed to parse recipe. Please try again.");
+    }
+  };
+
+  const loadPantryItems = async (userId: string) => {
+    try {
+      await ensureDefaultPantryItems(userId);
+      const items = await getPantryItems(userId);
+      setPantryItems(items.map((i) => i.name));
+    } catch (error) {
+      console.error("Error loading pantry items:", error);
+    }
+  };
+
   useEffect(() => {
     const loadUser = async () => {
       const currentUser = await getCurrentUser();
@@ -345,6 +497,10 @@ const EventDetailPage = () => {
         setUserIsAdmin(isAdmin(allowed));
       }
 
+      if (currentUser?.id) {
+        loadPantryItems(currentUser.id);
+      }
+
       await loadEventData();
       setIsLoading(false);
     };
@@ -352,6 +508,37 @@ const EventDetailPage = () => {
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  // Load grocery data when event recipes are available
+  useEffect(() => {
+    if (event?.recipesWithNotes && event.recipesWithNotes.length > 0) {
+      const recipeIds = event.recipesWithNotes.map((r) => r.recipe.id);
+      loadGroceryData(recipeIds).then(async () => {
+        // Check cache before running AI combine
+        if (eventId) {
+          const cached = await loadGroceryCache(eventId);
+          if (cached) {
+            const currentParsedIds = event.recipesWithNotes
+              .filter((r) => recipeContentMap[r.recipe.id]?.status === "completed")
+              .map((r) => r.recipe.id)
+              .sort();
+            const cachedIds = [...cached.recipeIds].sort();
+            if (
+              currentParsedIds.length === cachedIds.length &&
+              currentParsedIds.every((id, i) => id === cachedIds[i])
+            ) {
+              setSmartGroceryItems(cached.items);
+              return;
+            }
+          }
+        }
+        // Cache miss or stale — run smart combine
+        const allRecipes = event.recipesWithNotes.map((r) => r.recipe);
+        runSmartCombine(recipeIngredients, recipeContentMap, allRecipes);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.recipesWithNotes?.length]);
 
   const isValidUrl = (url: string) => {
     return url.trim().startsWith("http://") || url.trim().startsWith("https://");
@@ -363,6 +550,11 @@ const EventDetailPage = () => {
     recipeNameVal: string,
     recipeUrlVal: string
   ) => {
+    if (isDevMode()) {
+      console.log(`[DEV MODE] Skipping ${type} notification for: ${recipeNameVal}`);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("notify-recipe-change", {
         body: {
@@ -444,10 +636,19 @@ const EventDetailPage = () => {
       return;
     }
 
+    // Determine if combining step will be needed (existing parsed recipes >= 1 means this new one makes 2+)
+    const existingParsedCount = event.recipesWithNotes.filter(
+      r => recipeContentMap[r.recipe.id]?.status === "completed"
+    ).length;
+    const willCombine = existingParsedCount >= 1;
+    setShowCombineStep(willCombine);
+
+    setParseStep("saving");
+    setParseStatus("parsing");
     setIsSubmitting(true);
     try {
-      // Create new recipe with event_id and ingredient_id
-      const { error: recipeError } = await supabase
+      // Create new recipe with event_id and ingredient_id, returning the new ID
+      const { data: insertedRecipe, error: recipeError } = await supabase
         .from("recipes")
         .insert({
           name: recipeName.trim(),
@@ -455,27 +656,99 @@ const EventDetailPage = () => {
           event_id: event.eventId,
           ingredient_id: event.ingredientId,
           created_by: user.id,
-        });
+        })
+        .select()
+        .single();
 
       if (recipeError) throw recipeError;
 
-      toast.success("Recipe added!");
+      const newRecipeId = insertedRecipe.id;
+      setPendingRecipeId(newRecipeId);
 
-      // Send notification to club members
-      sendRecipeNotification("added", recipeName.trim(), recipeUrl.trim());
+      setIsSubmitting(false);
+      setParseStep("parsing");
 
-      // Clear form
-      setRecipeName("");
-      setRecipeUrl("");
-      setShowAddForm(false);
-      loadEventData();
+      const savedRecipeName = recipeName.trim();
+      const savedRecipeUrl = recipeUrl.trim();
+
+      try {
+        const { error: parseError } = await supabase.functions.invoke("parse-recipe", {
+          body: { recipeId: newRecipeId, recipeUrl: savedRecipeUrl, recipeName: savedRecipeName },
+        });
+
+        if (parseError) throw parseError;
+
+        // Loading step: reload event and grocery data
+        setParseStep("loading");
+        await loadEventData();
+
+        const recipeIds = [...(event.recipesWithNotes.map((r) => r.recipe.id) || []), newRecipeId];
+        await loadGroceryData(recipeIds);
+
+        // Combining step (only if 2+ parsed recipes)
+        if (willCombine) {
+          setParseStep("combining");
+          const allRecipes = [...(event.recipesWithNotes.map((r) => r.recipe) || []), insertedRecipe as unknown as Recipe];
+          await runSmartCombine(recipeIngredients, recipeContentMap, allRecipes);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // Notifying step: send email notification to club members
+        setParseStep("notifying");
+        await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Show "done" state with all checkmarks for 1.5s before closing
+        setParseStep("done");
+        await new Promise(resolve => setTimeout(resolve, 2500));
+
+        // Success: close dialog, reset state
+        setParseStatus("idle");
+        setParseError(null);
+        setPendingRecipeId(null);
+        setRecipeName("");
+        setRecipeUrl("");
+        setShowAddForm(false);
+        setParseStep("saving");
+      } catch (error) {
+        console.error("Error parsing recipe:", error);
+        const msg = error instanceof Error ? error.message : "Failed to parse recipe";
+        setParseStatus("failed");
+        setParseError(msg);
+      }
     } catch (error: unknown) {
       console.error("Error saving recipe:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to save recipe";
       toast.error(errorMessage);
-    } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleKeepRecipeAnyway = () => {
+    setParseStatus("idle");
+    setParseError(null);
+    setPendingRecipeId(null);
+    setParseStep("saving");
+    setRecipeName("");
+    setRecipeUrl("");
+    setShowAddForm(false);
+    toast.success("Recipe added (parsing skipped)");
+    loadEventData();
+  };
+
+  const handleRemoveAndRetry = async () => {
+    if (pendingRecipeId) {
+      try {
+        await supabase.from("recipes").delete().eq("id", pendingRecipeId);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    setParseStatus("idle");
+    setParseError(null);
+    setPendingRecipeId(null);
+    setParseStep("saving");
+    // Keep form values so user can change the URL
   };
 
   const handleEditRecipeClick = (recipe: Recipe) => {
@@ -610,6 +883,28 @@ const EventDetailPage = () => {
     }
   };
 
+  const handleDeleteRecipeClick = (recipe: Recipe) => {
+    setRecipeToDelete(recipe);
+  };
+
+  const handleConfirmDeleteRecipe = async () => {
+    if (!recipeToDelete) return;
+    try {
+      const { error } = await supabase.from("recipes").delete().eq("id", recipeToDelete.id);
+      if (error) throw error;
+      setRecipeToDelete(null);
+      toast.success("Recipe removed");
+      if (eventId) {
+        deleteGroceryCache(eventId);
+      }
+      loadEventData();
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
+      toast.error("Failed to remove recipe");
+      setRecipeToDelete(null);
+    }
+  };
+
   const handleEditEventClick = () => {
     if (!event) return;
     setEditDate(parseISO(event.eventDate));
@@ -721,6 +1016,16 @@ const EventDetailPage = () => {
   const handleRateRecipesClick = () => {
     setRatingDialogMode("rating");
     setShowRatingDialog(true);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const handlePantryChange = () => {
+    if (user?.id) {
+      loadPantryItems(user.id);
+    }
   };
 
   const handleRatingsSubmitted = () => {
@@ -861,23 +1166,63 @@ const EventDetailPage = () => {
               )}
             </div>
           </div>
-          {isUpcoming && userIsAdmin && user?.id === event?.createdBy && (
-            <div className="flex gap-1 sm:gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={handleEditEventClick} className="px-2 sm:px-3">
-                <Pencil className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Edit</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-purple/5 shrink-0">
+                <Avatar className="h-8 w-8 ring-2 ring-purple/20">
+                  <AvatarImage src={user?.avatar_url} alt={user?.name} />
+                  <AvatarFallback className="bg-purple/10 text-purple font-semibold">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <Menu className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCancelConfirm(true)}
-                className="text-muted-foreground hover:text-destructive px-2 sm:px-3"
-              >
-                <X className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Cancel</span>
-              </Button>
-            </div>
-          )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {isUpcoming && userIsAdmin && user?.id === event?.createdBy && (
+                <>
+                  <DropdownMenuItem onClick={handleEditEventClick} className="cursor-pointer">
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCompleteClick} className="cursor-pointer">
+                    <Star className="h-4 w-4 mr-2" />
+                    Complete Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="cursor-pointer text-destructive"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel Event
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {isUpcoming && userIsAdmin && user?.id !== event?.createdBy && (
+                <>
+                  <DropdownMenuItem onClick={handleCompleteClick} className="cursor-pointer">
+                    <Star className="h-4 w-4 mr-2" />
+                    Complete Event
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {!isUpcoming && userIsMember && totalRecipes > 0 && (
+                <>
+                  <DropdownMenuItem onClick={handleRateRecipesClick} className="cursor-pointer">
+                    <Star className="h-4 w-4 mr-2" />
+                    Rate Recipes
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -892,284 +1237,137 @@ const EventDetailPage = () => {
           }}
         >
           <CardContent className="py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
-                  <div
-                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full"
-                    style={{ backgroundColor: bgColor || "rgba(155, 135, 245, 0.05)" }}
-                  >
-                    <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: themeColor }} />
-                    <span className="font-medium">{event && format(parseISO(event.eventDate), "EEE, MMM d, yyyy")}</span>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
+                <div
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full"
+                  style={{ backgroundColor: bgColor || "rgba(155, 135, 245, 0.05)" }}
+                >
+                  <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: themeColor }} />
+                  <span className="font-medium">{event && format(parseISO(event.eventDate), "EEE, MMM d, yyyy")}</span>
+                </div>
+                {event?.eventTime && (
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-orange/5 px-2 sm:px-3 py-1 rounded-full">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange" />
+                    <span className="font-medium">{formatTime(event.eventTime)}</span>
                   </div>
-                  {event?.eventTime && (
-                    <div className="flex items-center gap-1.5 sm:gap-2 bg-orange/5 px-2 sm:px-3 py-1 rounded-full">
-                      <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange" />
-                      <span className="font-medium">{formatTime(event.eventTime)}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                  <ChefHat className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span>
-                    <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
-                  </span>
-                </div>
+                )}
               </div>
-              {isUpcoming && userIsAdmin && (
-                <Button
-                  onClick={handleCompleteClick}
-                  className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md w-full sm:w-auto"
-                >
-                  Complete Event
-                </Button>
-              )}
-              {!isUpcoming && userIsMember && totalRecipes > 0 && (
-                <Button
-                  onClick={handleRateRecipesClick}
-                  variant="outline"
-                  className="border-purple text-purple hover:bg-purple/10 w-full sm:w-auto"
-                >
-                  <Star className="h-4 w-4 mr-2" />
-                  Rate Recipes
-                </Button>
-              )}
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <ChefHat className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>
+                  <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recipes Section */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg sm:text-xl font-semibold">
-              Recipes ({event?.recipesWithNotes.length || 0})
-            </h2>
-            {userIsAdmin && (
-              <Button
-                onClick={() => setShowAddForm(true)}
-                className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                <span>Add Recipe</span>
-              </Button>
+        {/* Tabbed Content */}
+        <Tabs defaultValue="recipes" className="w-full">
+          <TabsList className="grid w-full max-w-lg grid-cols-3 mb-4">
+            <TabsTrigger value="recipes" className="flex items-center gap-1.5">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Recipes</span>
+            </TabsTrigger>
+            <TabsTrigger value="grocery" className="flex items-center gap-1.5">
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline">Grocery</span>
+            </TabsTrigger>
+            <TabsTrigger value="pantry" className="flex items-center gap-1.5">
+              <UtensilsCrossed className="h-4 w-4" />
+              <span className="hidden sm:inline">Pantry</span>
+            </TabsTrigger>
+            {/* Cook Mode tab hidden for now
+            <TabsTrigger value="cook-mode" className="flex items-center gap-1.5">
+              <Flame className="h-4 w-4" />
+              <span className="hidden sm:inline">Cook</span>
+            </TabsTrigger>
+            */}
+          </TabsList>
+
+          <TabsContent value="recipes" forceMount className="data-[state=inactive]:hidden">
+            <EventRecipesTab
+              recipesWithNotes={event?.recipesWithNotes || []}
+              user={user}
+              userIsAdmin={userIsAdmin}
+              expandedRecipeNotes={expandedRecipeNotes}
+              deletingNoteId={deletingNoteId}
+              onToggleRecipeNotes={toggleRecipeNotes}
+              onAddRecipeClick={() => setShowAddForm(true)}
+              onEditRecipeClick={handleEditRecipeClick}
+              onAddNotesClick={handleAddNotesClick}
+              onEditNoteClick={handleEditNoteClick}
+              onDeleteNoteClick={handleDeleteClick}
+              onDeleteRecipeClick={handleDeleteRecipeClick}
+            />
+          </TabsContent>
+
+          <TabsContent value="grocery">
+            {event && event.recipesWithNotes.length > 0 ? (
+              <GroceryListSection
+                recipes={event.recipesWithNotes.map((r) => r.recipe)}
+                recipeIngredients={recipeIngredients}
+                recipeContentMap={recipeContentMap}
+                onParseRecipe={handleParseRecipe}
+                eventName={event.ingredientName || "Event"}
+                isLoading={isLoadingIngredients}
+                pantryItems={pantryItems}
+                smartGroceryItems={smartGroceryItems}
+                isCombining={isCombining}
+              />
+            ) : (
+              <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
+                <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center text-sm sm:text-base">
+                    Add recipes first to generate a grocery list.
+                  </p>
+                </CardContent>
+              </Card>
             )}
-          </div>
+          </TabsContent>
 
+          <TabsContent value="pantry">
+            <PantrySection userId={user?.id} onPantryChange={handlePantryChange} />
+          </TabsContent>
 
-          {/* Recipe List */}
-          {event?.recipesWithNotes.length === 0 ? (
-            <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
-              <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
-                <div className="w-16 h-16 rounded-full bg-purple/10 flex items-center justify-center mb-4">
-                  <ChefHat className="h-8 w-8 text-purple" />
-                </div>
-                <p className="text-muted-foreground text-center text-sm sm:text-base">
-                  No recipes locked in yet. Be the first to add one!
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {event?.recipesWithNotes.map(({ recipe, notes, ratingSummary }) => {
-                const hasUserNote = notes.some(n => n.userId === user?.id);
-
-                return (
-                <Card key={recipe.id} className="bg-white/90 backdrop-blur-sm border border-purple/10 shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-3 sm:py-4 sm:px-6 space-y-3">
-                    {/* Recipe header */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
-                        {recipe.createdByName && (
-                          <Avatar className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 ring-2 ring-purple/20">
-                            <AvatarImage src={recipe.createdByAvatar} />
-                            <AvatarFallback className="bg-purple/10 text-purple text-xs">
-                              {recipe.createdByName.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-base sm:text-lg truncate">{recipe.name}</h3>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {recipe.createdByName && (
-                              <span className="text-xs text-muted-foreground">
-                                by {recipe.createdByName}
-                              </span>
-                            )}
-                            {recipe.url && (
-                              <a
-                                href={recipe.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs sm:text-sm text-purple hover:text-purple-dark hover:underline flex items-center gap-1 font-medium"
-                              >
-                                View recipe <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </div>
-                          {/* Rating display */}
-                          {ratingSummary && ratingSummary.totalRatings > 0 && (
-                            <div className="flex flex-col gap-1 mt-2">
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-0.5">
-                                  {renderStars(ratingSummary.averageRating, "h-3.5 w-3.5 sm:h-4 sm:w-4")}
-                                </div>
-                                <span className="text-xs sm:text-sm font-medium">
-                                  {Number.isInteger(ratingSummary.averageRating)
-                                    ? ratingSummary.averageRating
-                                    : ratingSummary.averageRating.toFixed(1)}/5
-                                </span>
-                              </div>
-                              {ratingSummary.memberRatings && ratingSummary.memberRatings.length > 0 && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-                                  <span>Make again:</span>
-                                  {ratingSummary.memberRatings.map((member, idx) => (
-                                    <span key={idx} className={member.wouldCookAgain ? "text-green-600" : "text-red-500"}>
-                                      {member.initial}: {member.wouldCookAgain ? "Yes" : "No"}
-                                      {idx < ratingSummary.memberRatings!.length - 1 && ","}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                        {notes.length > 0 && (
-                          <span className="text-[10px] sm:text-xs bg-purple/10 text-purple px-2 py-0.5 rounded-full font-medium">
-                            {notes.length} {notes.length !== 1 ? "notes" : "note"}
-                          </span>
-                        )}
-                        {(recipe.createdBy === user?.id || userIsAdmin) && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 sm:h-8 sm:w-8"
-                            onClick={() => handleEditRecipeClick(recipe)}
-                          >
-                            <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Expandable Notes Section */}
-                    {notes.length > 0 && (
-                      <>
-                        {expandedRecipeNotes.has(recipe.id) && (
-                          <>
-                            <Separator className="bg-purple/10" />
-                            <div className="space-y-3">
-                              {notes.map((note) => (
-                                <div key={note.id} className="flex items-start gap-2 sm:gap-3 pl-2 sm:pl-3 border-l-2 border-purple/30">
-                                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 ring-2 ring-purple/10">
-                                    <AvatarImage src={note.userAvatar} />
-                                    <AvatarFallback className="bg-purple/10 text-purple text-xs">{note.userName?.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                      <span className="font-medium text-sm sm:text-base">{note.userName}'s Notes</span>
-                                      {note.photos && note.photos.length > 0 && (
-                                        <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground">
-                                          <Camera className="h-3 w-3" />
-                                          {note.photos.length}
-                                        </span>
-                                      )}
-                                    </div>
-                                    {note.notes && (
-                                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">{note.notes}</p>
-                                    )}
-                                    {note.photos && note.photos.length > 0 && (
-                                      <div className="flex gap-2 mt-2 overflow-x-auto pb-1 -mx-1 px-1">
-                                        {note.photos.map((photo, idx) => (
-                                          <img
-                                            key={idx}
-                                            src={photo}
-                                            alt=""
-                                            className="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-lg shadow-sm shrink-0"
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                  {note.userId === user?.id && (
-                                    <div className="flex gap-0.5 sm:gap-1 shrink-0">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 sm:h-8 sm:w-8"
-                                        onClick={() => handleEditNoteClick(note)}
-                                      >
-                                        <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 sm:h-8 sm:w-8"
-                                        disabled={deletingNoteId === note.id}
-                                        onClick={() => handleDeleteClick(note)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {/* Toggle notes button */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-muted-foreground"
-                          onClick={() => toggleRecipeNotes(recipe.id)}
-                        >
-                          {expandedRecipeNotes.has(recipe.id) ? (
-                            <>
-                              <ChevronUp className="h-4 w-4 mr-1" />
-                              Hide Notes
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-4 w-4 mr-1" />
-                              Show Notes ({notes.length})
-                            </>
-                          )}
-                        </Button>
-                      </>
-                    )}
-
-                    {/* Add notes button - show for users who haven't added notes yet */}
-                    {!hasUserNote && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-purple border-purple/30"
-                        onClick={() => handleAddNotesClick(recipe)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add notes
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )})}
-            </div>
-          )}
-        </div>
+          {/* Cook Mode tab content hidden for now
+          <TabsContent value="cook-mode">
+            {event && event.recipesWithNotes.length > 0 ? (
+              <CookModeSection
+                recipes={event.recipesWithNotes.map((r) => r.recipe)}
+                recipeContentMap={recipeContentMap}
+                recipeIngredients={recipeIngredients}
+                eventName={event.ingredientName || "Event"}
+              />
+            ) : (
+              <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
+                <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
+                  <Flame className="h-8 w-8 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center text-sm sm:text-base">
+                    Add recipes first to use Cook Mode.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          */}
+        </Tabs>
       </main>
 
       {/* Add Recipe Dialog */}
       <Dialog
         open={showAddForm}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && parseStatus !== "parsing") {
             setShowAddForm(false);
             setRecipeName("");
             setRecipeUrl("");
+            setParseStatus("idle");
+            setParseError(null);
+            setPendingRecipeId(null);
+            setParseStep("saving");
           }
         }}
       >
@@ -1183,78 +1381,140 @@ const EventDetailPage = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="recipe-name">Recipe Name *</Label>
-              <Input
-                id="recipe-name"
-                value={recipeName}
-                onChange={(e) => setRecipeName(e.target.value)}
-                placeholder="Enter recipe name"
-              />
-            </div>
+          {parseStatus === "parsing" && (
+            <div className="space-y-5 py-6">
+              <Progress value={progressPercent} className="h-2" />
+              <div className="space-y-3">
+                {parseSteps.map((step) => {
+                  const stepIdx = parseSteps.findIndex(s => s.key === step.key);
+                  const isDone = parseStep === "done";
+                  const currentIdx = isDone ? parseSteps.length : parseSteps.findIndex(s => s.key === parseStep);
+                  const isComplete = stepIdx < currentIdx;
+                  const isActive = step.key === parseStep;
 
-            <div className="space-y-2">
-              <Label htmlFor="recipe-url">Recipe URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="recipe-url"
-                  type="url"
-                  value={recipeUrl}
-                  onChange={(e) => setRecipeUrl(e.target.value)}
-                  placeholder="https://... or upload a file"
-                  className={`flex-1 ${recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}`}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => recipeImageInputRef.current?.click()}
-                  disabled={isUploadingRecipeImage}
-                  className="shrink-0"
-                >
-                  {isUploadingRecipeImage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
-                </Button>
-                <input
-                  ref={recipeImageInputRef}
-                  type="file"
-                  accept="image/*,.pdf,application/pdf"
-                  onChange={handleRecipeImageUpload}
-                  className="hidden"
-                />
+                  return (
+                    <div key={step.key} className="flex items-center gap-3">
+                      {isComplete ? (
+                        <Check className="h-5 w-5 text-green-500" />
+                      ) : isActive ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-purple" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-gray-300" />
+                      )}
+                      <span className={cn(
+                        "text-sm",
+                        isComplete && "text-green-700",
+                        isActive && "text-foreground font-medium",
+                        !isComplete && !isActive && "text-muted-foreground"
+                      )}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              {recipeUrl.trim() && !isValidUrl(recipeUrl) && (
-                <p className="text-sm text-red-500">URL must start with http:// or https://</p>
+              {parseStep === "done" && (
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <Check className="h-6 w-6 text-green-500" />
+                  <span className="text-lg font-semibold text-green-700">Recipe Added!</span>
+                </div>
               )}
-              <p className="text-xs text-muted-foreground">
-                Enter a URL or upload a file (max 5MB)
-              </p>
             </div>
-          </div>
+          )}
 
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAddForm(false);
-                setRecipeName("");
-                setRecipeUrl("");
-              }}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitRecipe}
-              disabled={isSubmitting || !recipeName.trim() || !isValidUrl(recipeUrl)}
-              className="bg-purple hover:bg-purple-dark"
-            >
-              {isSubmitting ? "Adding..." : "Add Recipe"}
-            </Button>
-          </div>
+          {parseStatus === "failed" && (
+            <div className="space-y-4 py-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-700 font-medium mb-1">Recipe parsing failed</p>
+                <p className="text-xs text-red-600">{parseError}</p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleKeepRecipeAnyway}>
+                  Keep Recipe Anyway
+                </Button>
+                <Button onClick={handleRemoveAndRetry} className="bg-purple hover:bg-purple-dark">
+                  Try Different URL
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {parseStatus === "idle" && (
+            <>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="recipe-name">Recipe Name *</Label>
+                  <Input
+                    id="recipe-name"
+                    value={recipeName}
+                    onChange={(e) => setRecipeName(e.target.value)}
+                    placeholder="Enter recipe name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="recipe-url">Recipe URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="recipe-url"
+                      type="url"
+                      value={recipeUrl}
+                      onChange={(e) => setRecipeUrl(e.target.value)}
+                      placeholder="https://... or upload a file"
+                      className={`flex-1 ${recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => recipeImageInputRef.current?.click()}
+                      disabled={isUploadingRecipeImage}
+                      className="shrink-0"
+                    >
+                      {isUploadingRecipeImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <input
+                      ref={recipeImageInputRef}
+                      type="file"
+                      accept="image/*,.pdf,application/pdf"
+                      onChange={handleRecipeImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  {recipeUrl.trim() && !isValidUrl(recipeUrl) && (
+                    <p className="text-sm text-red-500">URL must start with http:// or https://</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Enter a URL or upload a file (max 5MB)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setRecipeName("");
+                    setRecipeUrl("");
+                  }}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitRecipe}
+                  disabled={isSubmitting || !recipeName.trim() || !isValidUrl(recipeUrl)}
+                  className="bg-purple hover:bg-purple-dark"
+                >
+                  {isSubmitting ? "Adding..." : "Add Recipe"}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1404,6 +1664,28 @@ const EventDetailPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete Recipe Confirmation */}
+      <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Recipe?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove &quot;{recipeToDelete?.name}&quot;? This will also delete all
+              notes, ratings, and parsed data for this recipe. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteRecipe}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Edit Event Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-md">
@@ -1490,6 +1772,16 @@ const EventDetailPage = () => {
           onComplete={ratingDialogMode === "completing" ? handleRatingsComplete : handleRatingsSubmitted}
           onCancel={() => setShowRatingDialog(false)}
           mode={ratingDialogMode}
+        />
+      )}
+
+      {/* Pantry Dialog */}
+      {user?.id && (
+        <PantryDialog
+          open={showPantryDialog}
+          onOpenChange={setShowPantryDialog}
+          userId={user.id}
+          onPantryChange={handlePantryChange}
         />
       )}
     </div>

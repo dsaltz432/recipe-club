@@ -37,7 +37,11 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY is not configured");
+      console.log("RESEND_API_KEY not configured — skipping reminder emails");
+      return new Response(
+        JSON.stringify({ success: true, sent: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
