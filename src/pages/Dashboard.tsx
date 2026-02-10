@@ -134,12 +134,12 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     try {
-      // Count completed events and recipes in parallel
+      // Count events (scheduled + completed) and recipes in parallel
       const [eventsResult, recipesResult] = await Promise.all([
         supabase
           .from("scheduled_events")
           .select("*", { count: "exact", head: true })
-          .eq("status", "completed"),
+          .in("status", ["scheduled", "completed"]),
         supabase
           .from("recipes")
           .select("*", { count: "exact", head: true })
