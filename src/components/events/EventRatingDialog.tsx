@@ -115,7 +115,7 @@ const EventRatingDialog = ({
         // Use upsert to handle both new ratings and updates
         const { error } = await supabase
           .from("recipe_ratings")
-          .upsert(ratingsToUpsert, { onConflict: "recipe_id,user_id" });
+          .upsert(ratingsToUpsert, { onConflict: "recipe_id,user_id,event_id" });
         if (error) throw error;
         toast.success(`Submitted ${ratingsToUpsert.length} rating${ratingsToUpsert.length !== 1 ? "s" : ""}!`);
       }
