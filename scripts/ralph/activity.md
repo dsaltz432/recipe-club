@@ -13,8 +13,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-15
-**Tasks Completed:** 7
-**Current Task:** US-006 (Parse batch 3, evaluate, fix) complete
+**Tasks Completed:** 8
+**Current Task:** US-007 (Parse batch 4, evaluate, fix) complete
 
 ---
 
@@ -268,4 +268,42 @@
   - The evaluator increasingly flags false positives as data quality improves. Consider improving the evaluator system prompt before the full re-parse (US-011) to reduce noise.
   - "Crispy onion" is a garnish/topping ingredient listed as a sub-recipe component — these edge cases are hard for the AI to handle perfectly.
   - The prompt is stable: no new issue types in batch 3 vs batch 2. Category_inconsistency dropped to 0 in batch 3 (was 3 in batch 2, 13 in batch 1).
+---
+
+## 2026-02-15 - US-007: Parse batch 4 (recipes 61-80), evaluate, and fix if needed
+- **Batch 4 parsing:** All 20 recipes (offset=60, limit=20) successfully parsed. Required 3 runs: first run parsed 12 (8 BOOT_ERROR 503), second run hit Anthropic 429 rate limit on all 8 remaining, third run (after 65s wait) completed remaining 8.
+- **DB state after batch 4:** 83 recipes, 1059 ingredients total.
+- **Evaluation results (all 83 recipes, 1059 ingredients):** 85 raw issues
+  - pluralization: 18, count_unit_in_name: 15, quantity_precision: 15, category_inconsistency: 15, prep_adjective: 12, non_standard_unit: 9, typo: 1
+  - Note: Batch 2/6 of evaluation had JSON parse failure (0 issues captured) — some issues may be underreported from that batch.
+- **Batch 4 analysis (20 raw issues → 1 true issue, 19 false positives = 95% FP rate):**
+  - TRUE: `black pepper` in Waldorf Salad (quantity_precision — qty=0.125 should be 0.13, 3 decimal places)
+  - FALSE POSITIVES breakdown:
+    - 5× quantity_precision: raw_text shows excessive decimals (0.33333334326744) but actual qty field correctly rounded to 0.33 — evaluator confused by raw_text vs parsed quantity
+    - 5× pluralization: names already singular (grape, blueberry, rib, pork chop, shrimp) — evaluator confirming correct values
+    - 4× prep_adjective: names don't contain prep adjectives (walnut, garlic, butter) — evaluator reading raw_text instead of name field
+    - 2× count_unit_in_name: units already in unit field (garlic unit=clove, French bread unit=slice) — already correct
+    - 1× category_inconsistency: fresh thyme correctly categorized as produce — evaluator uncertain about fresh vs dried
+    - 1× quantity_precision: evaluator says "already correct" (0.33)
+    - 1× quantity_precision: 0.125 is the only actual issue (see TRUE above)
+- **Batch comparison (true issues only):**
+  - Batch 1 (parsed with OLD prompt): ~20 true issues
+  - Batch 2 (parsed with US-003 prompt): 7 true issues
+  - Batch 3 (parsed with US-004 prompt): 3 true issues
+  - Batch 4 (parsed with US-004 prompt): **1 true issue** — prompt quality continues to improve
+- **Prompt fix decision: No changes needed.** The single true issue (0.125 precision) is already covered by the existing prompt rule "Round to 2 decimal places maximum." This is an AI execution error on one ingredient, not a systemic prompt failure. The prompt is stable for **3 consecutive batches** (batches 2, 3, 4) with no new issue types.
+- **Key data quality observations:**
+  - Batch 4 recipes are mostly American comfort food and grilling recipes — simpler ingredient lists
+  - The AI correctly handles: softened butter (removes prep), chopped walnuts (removes prep), fresh thyme (categorizes as produce), 1/3 fractions (rounds to 0.33)
+  - The raw_text field preserves original recipe text including excessive decimals from fraction conversion — this is intentional and correct
+  - The evaluator's FP rate continues to climb as data improves: 24% → 61% → 90% → 95%
+- **Files changed:** None (no prompt changes needed — prompt stable for 3+ batches)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - The evaluator's false positive rate is now 95% for batch 4 data. The Claude evaluator system prompt should be improved to differentiate between the `name` field and `raw_text` field — many FPs come from the evaluator reading prep adjectives and excessive decimals from raw_text that are correctly handled in the parsed fields.
+  - The 0.125 quantity issue suggests the AI sometimes returns exact fraction conversions (1/8 = 0.125) instead of rounding. This is a minor edge case — 0.125 is mathematically correct but violates the 2-decimal-place rule.
+  - Batch-parse BOOT_ERROR (503) and rate limit (429) are expected — 3 runs per batch is the typical pattern. Wait ~60s between retries for rate limits.
+  - At 83 recipes and 1059 ingredients, the evaluator takes 6 batches of 15 recipes with ~1.5s delay between — total evaluation time is reasonable.
 ---

@@ -129,8 +129,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": "At this point we have 80 recipes parsed. If the last 2-3 batches had minimal/no new issues, the prompt is converging."
+      "passes": true,
+      "notes": "COMPLETED. All 20 batch 4 recipes parsed successfully (3 runs needed for BOOT_ERROR/rate limits). Evaluation: 20 raw issues, 1 true issue (0.125 quantity precision), 19 false positives (95% FP rate). No new issue types found. Prompt stable for 3 consecutive batches. The single true issue (0.125 should be 0.13) is already covered by existing prompt rules — an AI execution edge case, not a systemic failure. No prompt changes needed."
     },
     {
       "id": "US-008",
