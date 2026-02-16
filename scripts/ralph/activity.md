@@ -12,9 +12,9 @@
 - **Claude API for evaluation**: POST `https://api.anthropic.com/v1/messages` with `x-api-key` and `anthropic-version: 2023-06-01`. Model: `claude-sonnet-4-5-20250929`. Batch recipes in groups of 15, 1.5s delay between calls. Rate limit: 429 = wait 60s and retry.
 
 ## Current Status
-**Last Updated:** 2026-02-15
-**Tasks Completed:** 8
-**Current Task:** US-007 (Parse batch 4, evaluate, fix) complete
+**Last Updated:** 2026-02-16
+**Tasks Completed:** 9
+**Current Task:** US-008 (Parse batch 5, evaluate, fix) complete
 
 ---
 
@@ -306,4 +306,47 @@
   - The 0.125 quantity issue suggests the AI sometimes returns exact fraction conversions (1/8 = 0.125) instead of rounding. This is a minor edge case — 0.125 is mathematically correct but violates the 2-decimal-place rule.
   - Batch-parse BOOT_ERROR (503) and rate limit (429) are expected — 3 runs per batch is the typical pattern. Wait ~60s between retries for rate limits.
   - At 83 recipes and 1059 ingredients, the evaluator takes 6 batches of 15 recipes with ~1.5s delay between — total evaluation time is reasonable.
+---
+
+## 2026-02-16 - US-008: Parse batch 5 (recipes 81-100), evaluate, and fix if needed
+- **Batch 5 parsing:** All 20 recipes (offset=80, limit=20) successfully parsed. Required 3 runs: first run parsed 9 (11 BOOT_ERROR 503), second run hit Anthropic 429 rate limit on all 11 remaining, third run (after 65s wait) completed all 11.
+- **DB state after batch 5:** 103 recipes, 1363 ingredients total.
+- **Batch 5 recipes:** Lentil Soup, Lamb Kebabs, Hummus, Falafel, Shakshuka, Baba Ganoush, Tabbouleh Wrap, Chicken Shawarma, Pho, Greek Salad, Moussaka, Spanakopita, Stuffed Grape Leaves, Fattoush, Asian Sesame Salad, Scones, Chimichurri Steak, Jerk Chicken, Beef Recipe Link, Long-Cooked Broccoli
+- **Evaluation results (all 103 recipes, 1363 ingredients):** 105 raw issues
+  - quantity_precision: 27, category_inconsistency: 20, pluralization: 19, prep_adjective: 17, count_unit_in_name: 13, non_standard_unit: 7, typo: 2
+  - Note: Batch 1/7 of evaluation had JSON parse failure after rate limit retry (0 issues captured from first 15 recipes) — some issues may be underreported from early batches.
+- **Batch 5 analysis (19 raw issues → 2 true issues, 17 false positives = 89% FP rate):**
+  - TRUE: `frozen chopped spinach` in Spanakopita (prep_adjective — "chopped" should be removed, leaving "frozen spinach")
+  - TRUE: `tomato paste` in Shakshuka (category_inconsistency — should be "pantry" not "condiments")
+  - FALSE POSITIVES breakdown:
+    - 8× pluralization: names already singular in DB (pita, radish, eggplant, scallion, bean sprout, pine nut, chickpea, chocolate chip) — evaluator confirming correct values or wrongly suggesting plurals
+    - 3× quantity_precision: quantities already ≤2 decimal places (0.33, 0.67, 5.5) — evaluator incorrectly flagging
+    - 3× prep_adjective: names already clean in DB (spinach, onion) — evaluator reading raw_text instead of name field
+    - 2× count_unit_in_name: garlic already has unit=clove correctly — evaluator confirming correct values
+    - 1× non_standard_unit: tabbouleh/Mediterranean salad as sub-recipe components with unit=null — correctly handled per prompt rules
+- **Batch comparison (true issues only):**
+  - Batch 1 (parsed with OLD prompt): ~20 true issues
+  - Batch 2 (parsed with US-003 prompt): 7 true issues
+  - Batch 3 (parsed with US-004 prompt): 3 true issues
+  - Batch 4 (parsed with US-004 prompt): 1 true issue
+  - Batch 5 (parsed with US-004 prompt): **2 true issues** — prompt quality remains excellent
+- **Prompt fix decision: No changes needed.** Both true issues are from existing issue types already covered by current prompt rules:
+  - "frozen chopped spinach" — prompt already says to remove prep adjectives; AI kept "chopped" alongside product-form qualifier "frozen"
+  - "tomato paste" categorized as "condiments" — prompt already says canned tomato products → pantry; AI miscategorized this specific one
+  - These are AI execution edge cases (2 out of ~300 new ingredients = 99.3% accuracy), not systemic prompt failures
+- **No new issue types found.** Prompt is stable for **4 consecutive batches** (batches 2, 3, 4, 5) with no new issue types.
+- **Notable batch 5 observations:**
+  - Middle Eastern/Mediterranean recipes dominate this batch (Lentil Soup, Lamb Kebabs, Hummus, Falafel, Shakshuka, Baba Ganoush, Tabbouleh, Chicken Shawarma, Fattoush, Spanakopita, Stuffed Grape Leaves, Greek Salad, Moussaka)
+  - Pho has 25 ingredients — complex Vietnamese recipe handled well (0 true issues in batch 5 analysis)
+  - Sub-recipe references (tabbouleh in Falafel, Mediterranean salad in Chicken Shawarma) correctly handled with unit=null, cat=other
+  - Evaluator FP rate trend: 24% → 61% → 90% → 95% → 89% (stabilizing around 89-95%)
+- **Files changed:** None (no prompt changes needed — prompt stable for 4+ batches)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - Batch-parse continues to require 3 runs per batch — BOOT_ERROR (503) from edge function concurrency, then Anthropic 429 rate limits. The 65-second wait between retries is sufficient.
+  - At 103 recipes and 1363 ingredients, the evaluator uses 7 batches of 15 recipes. Evaluation takes ~2 minutes including rate limit waits.
+  - The evaluator's JSON parsing occasionally fails on rate-limited retries (batch 1/7 returned 0 issues due to truncated JSON response). This doesn't affect the batch 5 analysis since those recipes are in later evaluation batches.
+  - Middle Eastern cuisine ingredients are handled well by the prompt — spices (sumac, Aleppo pepper, za'atar), specialty items (grape leaves in brine, phyllo dough, tahini), and fresh herbs all categorized correctly.
 ---
