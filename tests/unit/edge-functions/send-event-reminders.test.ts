@@ -427,4 +427,122 @@ describe("send-event-reminders edge function", () => {
       }
     }
   });
+
+  it("returns 500 when unexpected error occurs in main try block", async () => {
+    mockSupabase.from.mockImplementation(() => {
+      throw "unexpected non-Error";
+    });
+
+    mockSupabase.auth.admin.listUsers.mockResolvedValue({
+      data: { users: [] },
+      error: null,
+    });
+
+    const req = createEdgeRequest({});
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
+  });
+
+  it("uses 'the ingredient' fallback when event has no ingredient name", async () => {
+    const eventsBuilder = createBuilder(
+      [{ id: "event-1", event_date: "2026-03-01", event_time: "19:00", status: "scheduled", ingredient: null }],
+      null,
+    );
+    const recipesBuilder = createBuilder([], null);
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === "scheduled_events") return eventsBuilder;
+      if (table === "recipes") return recipesBuilder;
+      return createBuilder();
+    });
+
+    mockSupabase.auth.admin.listUsers.mockResolvedValue({
+      data: { users: [] },
+      error: null,
+    });
+
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({});
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const emailBody = JSON.parse(fetchCall[1].body);
+    expect(emailBody.html).toContain("the ingredient");
+  });
+
+  it("returns 500 with error message when an Error is thrown in outer catch", async () => {
+    mockSupabase.from.mockImplementation(() => {
+      throw new Error("Unexpected DB crash");
+    });
+
+    const req = createEdgeRequest({});
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unexpected DB crash" });
+  });
+
+  it("handles null recipes data without error", async () => {
+    const eventsBuilder = createBuilder(
+      [{ id: "event-1", event_date: "2026-03-01", event_time: "19:00", status: "scheduled", ingredient: { name: "Tofu" } }],
+      null,
+    );
+    // recipes query returns null data with no error
+    const recipesBuilder = createBuilder(null, null);
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === "scheduled_events") return eventsBuilder;
+      if (table === "recipes") return recipesBuilder;
+      return createBuilder();
+    });
+
+    mockSupabase.auth.admin.listUsers.mockResolvedValue({
+      data: { users: [] },
+      error: null,
+    });
+
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({});
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true });
+  });
+
+  it("handles non-Error thrown in sendReminderEmail catch", async () => {
+    const eventsBuilder = createBuilder(
+      [{ id: "event-1", event_date: "2026-03-01", event_time: "19:00", status: "scheduled", ingredient: { name: "Tofu" } }],
+      null,
+    );
+    const recipesBuilder = createBuilder([], null);
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === "scheduled_events") return eventsBuilder;
+      if (table === "recipes") return recipesBuilder;
+      return createBuilder();
+    });
+
+    mockSupabase.auth.admin.listUsers.mockResolvedValue({
+      data: { users: [] },
+      error: null,
+    });
+
+    globalThis.fetch = vi.fn().mockRejectedValue("not an Error object");
+
+    const req = createEdgeRequest({});
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect((data as { errors: string[] }).errors).toBeDefined();
+    expect((data as { errors: string[] }).errors[0]).toContain("Unknown error sending email");
+  });
 });

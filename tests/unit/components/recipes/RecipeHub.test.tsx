@@ -31,6 +31,7 @@ const createMockQueryBuilder = (data: unknown[] = [], error: unknown = null) => 
   lt: vi.fn().mockReturnThis(),
   lte: vi.fn().mockReturnThis(),
   in: vi.fn().mockReturnThis(),
+  is: vi.fn().mockReturnThis(),
   not: vi.fn().mockReturnThis(),
   or: vi.fn().mockReturnThis(),
   order: vi.fn().mockResolvedValue({ data, error }),
@@ -114,6 +115,9 @@ describe("RecipeHub", () => {
       }
       if (table === "ingredients") {
         return createMockQueryBuilder(mockIngredientsData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
       }
       if (table === "scheduled_events") {
         return createMockQueryBuilder([]);
@@ -447,6 +451,35 @@ describe("RecipeHub - Error Handling Extended", () => {
 
     // Ingredient filter should still show (but empty)
     expect(screen.getByText(/all ingredients/i)).toBeInTheDocument();
+  });
+
+  it("handles null ratingsData gracefully", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(mockRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(mockNotesData);
+      }
+      if (table === "recipe_ratings") {
+        // Return null data to exercise (ratingsData || []) fallback
+        const builder = createMockQueryBuilder([]);
+        builder.then = vi.fn((resolve) =>
+          Promise.resolve({ data: null, error: null }).then(resolve)
+        );
+        return builder;
+      }
+      if (table === "ingredients") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
   });
 });
 
@@ -1212,6 +1245,1064 @@ describe("RecipeHub - Rating Calculations", () => {
       expect(screen.getByText("Make again:")).toBeInTheDocument();
       expect(screen.getByText(/S: No/)).toBeInTheDocument();
       expect(screen.getByText(/H: No/)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Sub-tabs", () => {
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders Club Recipes and My Recipes sub-tab buttons", async () => {
+    mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder([]));
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipes")).toBeInTheDocument();
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+  });
+
+  it("shows club recipes by default", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Club Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("shows personal empty state when switching to My Recipes tab", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        // Return empty for personal recipes
+        return {
+          ...createMockQueryBuilder([]),
+          is: vi.fn().mockReturnThis(),
+        };
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.queryByText("animate-spin")).not.toBeInTheDocument();
+    });
+
+    // Click "My Recipes" tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/no personal recipes yet/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows Add Recipe button in personal tab", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          ...createMockQueryBuilder([]),
+          is: vi.fn().mockReturnThis(),
+        };
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Click "My Recipes" tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show Add Recipe button without userId", async () => {
+    mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder([]));
+
+    render(<RecipeHub />);
+
+    // Click "My Recipes" tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Add Recipe")).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not show ingredient filter in personal tab", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          ...createMockQueryBuilder([]),
+          is: vi.fn().mockReturnThis(),
+        };
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // In club tab, ingredient filter should be visible
+    await waitFor(() => {
+      expect(screen.getByText(/all ingredients/i)).toBeInTheDocument();
+    });
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/all ingredients/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("loads personal recipes created by user", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "My Home Recipe",
+        url: "https://example.com/home",
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(personalRecipesData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("My Home Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("loads saved club recipes in personal tab", async () => {
+    const savedRecipesData = [
+      {
+        recipe_id: "saved-club-1",
+        recipes: {
+          id: "saved-club-1",
+          name: "Saved Club Recipe",
+          url: "https://example.com/saved",
+          event_id: "event-1",
+          ingredient_id: "ing-1",
+          created_by: "user-456",
+          created_at: "2025-01-15T10:00:00Z",
+          ingredients: { name: "Chicken", color: "#E6D5B8" },
+          profiles: { name: "Other User", avatar_url: "avatar2.jpg" },
+        },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder(savedRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Saved Club Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("deduplicates saved recipes against personal recipes", async () => {
+    const personalRecipesData = [
+      {
+        id: "recipe-1",
+        name: "My Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    const savedRecipesData = [
+      {
+        recipe_id: "recipe-1", // same id as personal recipe
+        recipes: {
+          id: "recipe-1",
+          name: "My Recipe",
+          url: null,
+          event_id: null,
+          ingredient_id: null,
+          created_by: "user-123",
+          created_at: "2025-01-15T10:00:00Z",
+          ingredients: null,
+          profiles: null,
+        },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(personalRecipesData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder(savedRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      // Should only show once, not duplicated
+      const recipes = screen.getAllByText("My Recipe");
+      expect(recipes).toHaveLength(1);
+    });
+  });
+
+  it("skips null recipes in saved_recipes join data", async () => {
+    const savedRecipesData = [
+      {
+        recipe_id: "recipe-1",
+        recipes: null, // null join - recipe was deleted
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder(savedRecipesData);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("loads notes for personal recipes", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "Recipe With Notes",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    const notesData = [
+      {
+        id: "note-1",
+        recipe_id: "personal-1",
+        user_id: "user-123",
+        notes: "My personal notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(personalRecipesData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(notesData);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe With Notes")).toBeInTheDocument();
+      // 1 note should show
+      expect(screen.getByText("1 note")).toBeInTheDocument();
+    });
+  });
+
+  it("handles personal recipes error", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([], { message: "Error" });
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("handles saved_recipes error", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([], { message: "Error" });
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("returns empty recipes when no userId in personal tab", async () => {
+    mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder([]));
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("handles loadSavedRecipeIds error gracefully", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([], { message: "Error loading saved" });
+      }
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Should still render without crashing
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipes")).toBeInTheDocument();
+    });
+  });
+
+  it("opens add personal recipe dialog", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add Personal Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("toggles save state via handleSaveToggle - save", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "saved_recipes") {
+        const builder = createMockQueryBuilder([]);
+        builder.insert = vi.fn().mockResolvedValue({ error: null });
+        builder.eq.mockImplementation(() => ({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }));
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Recipe")).toBeInTheDocument();
+    });
+
+    // Click the save button to trigger handleSaveToggle with saved=true
+    const bookmarkButton = screen.getByTitle("Save to collection");
+    fireEvent.click(bookmarkButton);
+
+    // The bookmark state should toggle
+    await waitFor(() => {
+      expect(screen.getByTitle("Remove from collection")).toBeInTheDocument();
+    });
+  });
+
+  it("toggles save state via handleSaveToggle - unsave", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Test Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "saved_recipes") {
+        const builder = createMockQueryBuilder([]);
+        builder.insert = vi.fn().mockResolvedValue({ error: null });
+        builder.eq.mockImplementation(() => ({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }));
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Recipe")).toBeInTheDocument();
+    });
+
+    // First save the recipe
+    fireEvent.click(screen.getByTitle("Save to collection"));
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Remove from collection")).toBeInTheDocument();
+    });
+
+    // Now unsave it - triggers handleSaveToggle with saved=false (delete branch)
+    fireEvent.click(screen.getByTitle("Remove from collection"));
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Save to collection")).toBeInTheDocument();
+    });
+  });
+
+  it("shows saved club recipe with ingredient info without color", async () => {
+    const savedRecipesData = [
+      {
+        recipe_id: "saved-1",
+        recipes: {
+          id: "saved-1",
+          name: "Recipe No Color",
+          url: null,
+          event_id: "event-1",
+          ingredient_id: "ing-1",
+          created_by: null,
+          created_at: "2025-01-15T10:00:00Z",
+          ingredients: { name: "Tomato", color: null },
+          profiles: null,
+        },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder(savedRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe No Color")).toBeInTheDocument();
+    });
+  });
+
+  it("shows saved recipe without ingredient info", async () => {
+    const savedRecipesData = [
+      {
+        recipe_id: "saved-1",
+        recipes: {
+          id: "saved-1",
+          name: "Recipe No Ingredient",
+          url: null,
+          event_id: "event-1",
+          ingredient_id: null,
+          created_by: null,
+          created_at: "2025-01-15T10:00:00Z",
+          ingredients: null,
+          profiles: null,
+        },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder(savedRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe No Ingredient")).toBeInTheDocument();
+    });
+  });
+
+  it("triggers onRecipeAdded callback when a recipe is added", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder([]);
+        builder.insert = vi.fn().mockResolvedValue({ error: null });
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    // Open the dialog
+    await waitFor(() => {
+      expect(screen.getByText("Add Recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    // Fill in the form and submit
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText(/recipe name/i), {
+      target: { value: "New Recipe" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    // The dialog should close (onRecipeAdded triggers loadRecipes)
+    await waitFor(() => {
+      expect(screen.queryByText("Add Personal Recipe")).not.toBeInTheDocument();
+    });
+  });
+
+  it("loads saved recipe with null event_id and notes with null profiles", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "Personal Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    const savedRecipesData = [
+      {
+        recipe_id: "saved-1",
+        recipes: {
+          id: "saved-1",
+          name: "Saved No Event",
+          url: null,
+          event_id: null,
+          ingredient_id: null,
+          created_by: null,
+          created_at: "2025-01-15T10:00:00Z",
+          ingredients: null,
+          profiles: null,
+        },
+      },
+    ];
+
+    const notesData = [
+      {
+        id: "note-1",
+        recipe_id: "saved-1",
+        user_id: "user-123",
+        notes: "First note",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "User A", avatar_url: null },
+      },
+      {
+        id: "note-2",
+        recipe_id: "saved-1",
+        user_id: "user-456",
+        notes: null,
+        photos: null,
+        created_at: "2025-01-16T10:00:00Z",
+        profiles: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(personalRecipesData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder(savedRecipesData);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder(notesData);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Saved No Event")).toBeInTheDocument();
+    });
+  });
+
+  it("handles null personalResult data", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        // Return null data to exercise (personalResult.data || []) fallback
+        const builder = createMockQueryBuilder([]);
+        builder.order = vi.fn().mockResolvedValue({ data: null, error: null });
+        return builder;
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("handles null savedResult data", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "saved_recipes") {
+        // Return null data to exercise (savedResult.data || []) fallback
+        const builder = createMockQueryBuilder([]);
+        builder.then = vi.fn((resolve) =>
+          Promise.resolve({ data: null, error: null }).then(resolve)
+        );
+        return builder;
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("handles personal recipe with null created_by", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "Anonymous Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(personalRecipesData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "recipe_notes") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Anonymous Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("handles null notesData when loading personal recipes", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "Recipe With Null Notes",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder(personalRecipesData);
+      }
+      if (table === "saved_recipes") {
+        return createMockQueryBuilder([]);
+      }
+      if (table === "recipe_notes") {
+        // Return null data to exercise (notesData) false branch
+        const builder = createMockQueryBuilder([]);
+        builder.then = vi.fn((resolve) =>
+          Promise.resolve({ data: null, error: null }).then(resolve)
+        );
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("My Recipes"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe With Null Notes")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Shared with Me tab", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder([]));
+  });
+
+  it("shows Shared with Me button when userEmail is provided", async () => {
+    render(<RecipeHub userId="user-123" userEmail="test@example.com" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Shared with Me")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show Shared with Me button without userEmail", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipes")).toBeInTheDocument();
+      expect(screen.queryByText("Shared with Me")).not.toBeInTheDocument();
+    });
+  });
+
+  it("hides Club and My Recipes tabs for share_only users", async () => {
+    render(<RecipeHub userId="user-123" userEmail="test@example.com" accessType="share_only" />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Club Recipes")).not.toBeInTheDocument();
+      expect(screen.queryByText("My Recipes")).not.toBeInTheDocument();
+      expect(screen.getByText("Shared with Me")).toBeInTheDocument();
+    });
+  });
+
+  it("renders SharedWithMeSection when switching to shared tab", async () => {
+    const sharesData = [
+      {
+        id: "share-1",
+        recipe_id: "recipe-1",
+        message: null,
+        viewed_at: null,
+        shared_at: "2025-02-14T10:00:00Z",
+        recipes: { name: "Shared Recipe", url: null },
+        profiles: { name: "Sarah" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipe_shares") {
+        return createMockQueryBuilder(sharesData);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" userEmail="test@example.com" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Shared with Me")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Shared with Me"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Shared Recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("shows search/filter for club tab but not for shared tab", async () => {
+    render(<RecipeHub userId="user-123" userEmail="test@example.com" />);
+
+    // Club tab should have search
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search recipes/i)).toBeInTheDocument();
+    });
+
+    // Switch to shared tab
+    fireEvent.click(screen.getByText("Shared with Me"));
+
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText(/search recipes/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("defaults to shared tab for share_only users", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipe_shares") {
+        return createMockQueryBuilder([]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" userEmail="test@example.com" accessType="share_only" />);
+
+    await waitFor(() => {
+      // Should show the shared empty state, not the club empty state
+      expect(screen.getByText(/no recipes have been shared with you yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("switches back to club tab from shared tab", async () => {
+    const mockRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Club Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_shares") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" userEmail="test@example.com" />);
+
+    // Wait for loading
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipes")).toBeInTheDocument();
+    });
+
+    // Switch to shared tab
+    fireEvent.click(screen.getByText("Shared with Me"));
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText(/search recipes/i)).not.toBeInTheDocument();
+    });
+
+    // Switch back to club tab
+    fireEvent.click(screen.getByText("Club Recipes"));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search recipes/i)).toBeInTheDocument();
     });
   });
 });

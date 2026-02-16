@@ -142,4 +142,25 @@ describe("recipe-club-product-update edge function", () => {
     expect((data as { errors: string[] }).errors).toHaveLength(1);
     expect((data as { errors: string[] }).errors[0]).toContain("Network failure");
   });
+
+  it("handles non-Error thrown in per-email catch", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue("not an Error object");
+
+    const req = createEdgeRequest({ emails: ["a@b.com"] });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, sent: 0 });
+    expect((data as { errors: string[] }).errors[0]).toContain("Unknown error");
+  });
+
+  it("returns 'Unknown error' when a non-Error is thrown in outer catch", async () => {
+    const req = createEdgeRequest({ emails: ["a@b.com"] });
+    req.json = () => Promise.reject("non-Error rejection");
+
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
+  });
 });

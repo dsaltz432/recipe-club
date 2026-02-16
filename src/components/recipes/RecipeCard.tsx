@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Share2 } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
+import SaveRecipeButton from "./SaveRecipeButton";
+import ShareRecipeDialog from "./ShareRecipeDialog";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -35,14 +37,20 @@ interface RecipeWithNotes extends Recipe {
   ingredientName?: string;
   ingredientColor?: string;
   ratingSummary?: RecipeRatingsSummary;
+  isPersonal?: boolean;
+  isSaved?: boolean;
 }
 
 interface RecipeCardProps {
   recipe: RecipeWithNotes;
+  userId?: string;
+  isSaved?: boolean;
+  onSaveToggle?: (recipeId: string, saved: boolean) => void;
 }
 
-const RecipeCard = ({ recipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, userId, isSaved = false, onSaveToggle }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const hasDetails = recipe.url || recipe.notes.length > 0;
 
@@ -88,24 +96,52 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
               )}
             </div>
           </div>
+          <div className="flex items-center gap-1">
+            {/* Share button */}
+            {userId && (
+              <button
+                onClick={() => setShowShareDialog(true)}
+                className="p-1 rounded-md hover:bg-black/5 transition-colors"
+                title="Share recipe"
+              >
+                <Share2 className="h-4 w-4 text-muted-foreground hover:text-purple" />
+              </button>
+            )}
+            {/* Save/Bookmark button */}
+            {userId && onSaveToggle && !recipe.isPersonal && (
+              <SaveRecipeButton
+                recipeId={recipe.id}
+                userId={userId}
+                isSaved={isSaved}
+                onToggle={onSaveToggle}
+              />
+            )}
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="pt-0">
+        {/* Badges row */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {recipe.isPersonal && (
+            <Badge variant="outline" className="border-purple text-purple bg-purple/5">
+              Personal
+            </Badge>
+          )}
 
-        {recipe.ingredientName && (
-          <Badge
-            variant="outline"
-            className="mb-3"
-            style={{
-              borderColor: themeColor,
-              color: themeColor,
-              backgroundColor: bgColor || undefined,
-            }}
-          >
-            {recipe.ingredientName}
-          </Badge>
-        )}
+          {recipe.ingredientName && (
+            <Badge
+              variant="outline"
+              style={{
+                borderColor: themeColor,
+                color: themeColor,
+                backgroundColor: bgColor || undefined,
+              }}
+            >
+              {recipe.ingredientName}
+            </Badge>
+          )}
+        </div>
 
         {/* Rating display */}
         {recipe.ratingSummary && recipe.ratingSummary.totalRatings > 0 && (
@@ -233,6 +269,16 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
           </>
         )}
       </CardContent>
+
+      {userId && (
+        <ShareRecipeDialog
+          open={showShareDialog}
+          onOpenChange={setShowShareDialog}
+          recipeId={recipe.id}
+          recipeName={recipe.name}
+          userId={userId}
+        />
+      )}
     </Card>
   );
 };

@@ -252,4 +252,54 @@ describe("send-recipe-share edge function", () => {
     // Email failure is non-fatal
     expect(data).toMatchObject({ success: true, emailSent: true });
   });
+
+  it("uses 'Someone' fallback when sharer has no email and no profile name", async () => {
+    // recipe_shares insert succeeds
+    const sharesBuilder = createBuilder(null, null);
+    // allowed_users: no existing user, then insert
+    const allowedUsersSelectBuilder = createBuilder(null, null);
+    const allowedUsersInsertBuilder = createBuilder(null, null);
+    // profiles: no name
+    const profilesBuilder = createBuilder(null, null);
+
+    let allowedUsersCallCount = 0;
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === "recipe_shares") return sharesBuilder;
+      if (table === "allowed_users") {
+        allowedUsersCallCount++;
+        return allowedUsersCallCount === 1 ? allowedUsersSelectBuilder : allowedUsersInsertBuilder;
+      }
+      if (table === "profiles") return profilesBuilder;
+      return createBuilder();
+    });
+
+    mockSupabase.auth.admin.getUserById.mockResolvedValue({
+      data: { user: { email: null } },
+      error: null,
+    });
+
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, emailSent: true });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const emailBody = JSON.parse(fetchCall[1].body);
+    expect(emailBody.html).toContain("Someone");
+    expect(emailBody.subject).toContain("Someone");
+  });
+
+  it("returns 'Unknown error' when a non-Error is thrown in outer catch", async () => {
+    const req = createEdgeRequest(baseBody);
+    req.json = () => Promise.reject("non-Error rejection");
+
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
+  });
 });

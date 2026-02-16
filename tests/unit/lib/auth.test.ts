@@ -28,6 +28,7 @@ describe("isAdmin", () => {
       email: "admin@example.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
     };
 
     expect(isAdmin(adminUser)).toBe(true);
@@ -39,6 +40,7 @@ describe("isAdmin", () => {
       email: "viewer@example.com",
       role: "viewer",
       is_club_member: true,
+      access_type: "club",
     };
 
     expect(isAdmin(viewerUser)).toBe(false);
@@ -56,12 +58,14 @@ describe("AllowedUser type", () => {
       email: "test@example.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
     };
 
     expect(user.id).toBeDefined();
     expect(user.email).toBeDefined();
     expect(user.role).toMatch(/^(admin|viewer)$/);
     expect(typeof user.is_club_member).toBe("boolean");
+    expect(["club", "share_only"]).toContain(user.access_type);
   });
 
   it("should enforce valid role values", () => {
@@ -70,6 +74,7 @@ describe("AllowedUser type", () => {
       email: "admin@test.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
     };
 
     const viewerUser: AllowedUser = {
@@ -77,6 +82,7 @@ describe("AllowedUser type", () => {
       email: "viewer@test.com",
       role: "viewer",
       is_club_member: false,
+      access_type: "share_only",
     };
 
     expect(["admin", "viewer"]).toContain(adminUser.role);
@@ -154,6 +160,7 @@ describe("Auth module integration", () => {
           email: "test@example.com",
           role: "admin",
           is_club_member: true,
+          access_type: "club",
         },
         error: null,
       }),
@@ -174,6 +181,37 @@ describe("Auth module integration", () => {
       email: "test@example.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
+    });
+  });
+
+  it("should default access_type to club when not set", async () => {
+    const mockQueryBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: {
+          id: "allowed-user-456",
+          email: "legacy@example.com",
+          role: "viewer",
+          is_club_member: true,
+          access_type: null,
+        },
+        error: null,
+      }),
+    };
+
+    mockSupabase.from.mockReturnValue(mockQueryBuilder);
+
+    const { getAllowedUser } = await import("@/lib/auth");
+    const result = await getAllowedUser("legacy@example.com");
+
+    expect(result).toEqual({
+      id: "allowed-user-456",
+      email: "legacy@example.com",
+      role: "viewer",
+      is_club_member: true,
+      access_type: "club",
     });
   });
 

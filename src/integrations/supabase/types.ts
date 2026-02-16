@@ -19,6 +19,7 @@ export type Database = {
           role: string;
           is_club_member: boolean;
           invited_by: string | null;
+          access_type: string;
           created_at: string;
         };
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           role?: string;
           is_club_member?: boolean;
           invited_by?: string | null;
+          access_type?: string;
           created_at?: string;
         };
         Update: {
@@ -35,6 +37,7 @@ export type Database = {
           role?: string;
           is_club_member?: boolean;
           invited_by?: string | null;
+          access_type?: string;
           created_at?: string;
         };
         Relationships: [
@@ -417,6 +420,230 @@ export type Database = {
             columns: ["event_id"];
             isOneToOne: true;
             referencedRelation: "scheduled_events";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      recipe_shares: {
+        Row: {
+          id: string;
+          recipe_id: string;
+          shared_by: string;
+          shared_with_email: string;
+          message: string | null;
+          viewed_at: string | null;
+          shared_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipe_id: string;
+          shared_by: string;
+          shared_with_email: string;
+          message?: string | null;
+          viewed_at?: string | null;
+          shared_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipe_id?: string;
+          shared_by?: string;
+          shared_with_email?: string;
+          message?: string | null;
+          viewed_at?: string | null;
+          shared_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_shares_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recipe_shares_shared_by_fkey";
+            columns: ["shared_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      saved_recipes: {
+        Row: {
+          id: string;
+          user_id: string;
+          recipe_id: string;
+          saved_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          recipe_id: string;
+          saved_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          recipe_id?: string;
+          saved_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "saved_recipes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saved_recipes_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      user_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          dietary_restrictions: string[];
+          cuisine_preferences: string[];
+          disliked_ingredients: string[];
+          household_size: number;
+          cooking_skill: string;
+          max_cook_time_minutes: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          dietary_restrictions?: string[];
+          cuisine_preferences?: string[];
+          disliked_ingredients?: string[];
+          household_size?: number;
+          cooking_skill?: string;
+          max_cook_time_minutes?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          dietary_restrictions?: string[];
+          cuisine_preferences?: string[];
+          disliked_ingredients?: string[];
+          household_size?: number;
+          cooking_skill?: string;
+          max_cook_time_minutes?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      meal_plans: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          week_start: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name?: string;
+          week_start: string;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          week_start?: string;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      meal_plan_items: {
+        Row: {
+          id: string;
+          plan_id: string;
+          recipe_id: string | null;
+          day_of_week: number;
+          meal_type: string;
+          custom_name: string | null;
+          custom_url: string | null;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          recipe_id?: string | null;
+          day_of_week: number;
+          meal_type: string;
+          custom_name?: string | null;
+          custom_url?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          plan_id?: string;
+          recipe_id?: string | null;
+          day_of_week?: number;
+          meal_type?: string;
+          custom_name?: string | null;
+          custom_url?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_items_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "meal_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "meal_plan_items_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      meal_plan_grocery_cache: {
+        Row: {
+          id: string;
+          plan_id: string;
+          items: Json;
+          recipe_ids: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          items: Json;
+          recipe_ids: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          plan_id?: string;
+          items?: Json;
+          recipe_ids?: string[];
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_grocery_cache_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: true;
+            referencedRelation: "meal_plans";
             referencedColumns: ["id"];
           }
         ];

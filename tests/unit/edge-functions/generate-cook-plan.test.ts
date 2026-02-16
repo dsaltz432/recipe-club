@@ -145,4 +145,27 @@ describe("generate-cook-plan edge function", () => {
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
+
+  it("falls back to empty text when AI returns empty content array", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ content: [] }), { status: 200 }),
+    );
+
+    const req = createEdgeRequest({ recipes: sampleRecipes });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Failed to parse");
+  });
+
+  it("returns 'Unknown error' when a non-Error value is thrown", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue("string error");
+
+    const req = createEdgeRequest({ recipes: sampleRecipes });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
+  });
 });

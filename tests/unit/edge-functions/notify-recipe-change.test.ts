@@ -216,4 +216,92 @@ describe("notify-recipe-change edge function", () => {
     expect((data as { errors: string[] }).errors).toHaveLength(1);
     expect((data as { errors: string[] }).errors[0]).toContain("Network timeout");
   });
+
+  it("sends 'added' notification without excludeUserId, eventDate, ingredientName, or recipeUrl", async () => {
+    mockSupabase.from.mockReturnValue(
+      createMembersBuilder([{ email: "member@example.com" }]),
+    );
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({
+      type: "added",
+      recipeName: "Test Recipe",
+    });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, message: "Sent 1 notification" });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const emailBody = JSON.parse(fetchCall[1].body);
+    expect(emailBody.subject).toContain("Recipe Club");
+    expect(emailBody.html).not.toContain(" on ");
+    expect(emailBody.html).not.toContain("<a href=");
+  });
+
+  it("sends 'updated' notification without eventDate or ingredientName", async () => {
+    mockSupabase.from.mockReturnValue(
+      createMembersBuilder([{ email: "member@example.com" }]),
+    );
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({
+      type: "updated",
+      recipeName: "Updated Recipe",
+      recipeUrl: "https://example.com/recipe",
+      excludeUserId: "user-123",
+    });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const emailBody = JSON.parse(fetchCall[1].body);
+    expect(emailBody.subject).toContain("Recipe Club");
+    expect(emailBody.html).not.toContain(" on ");
+  });
+
+  it("handles non-Error thrown in per-email catch", async () => {
+    mockSupabase.from.mockReturnValue(
+      createMembersBuilder([{ email: "throw@example.com" }]),
+    );
+    globalThis.fetch = vi.fn().mockRejectedValue("string error");
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect((data as { errors: string[] }).errors[0]).toContain("Unknown error");
+  });
+
+  it("returns 'Unknown error' when a non-Error is thrown in outer catch", async () => {
+    const req = createEdgeRequest(baseBody);
+    req.json = () => Promise.reject("non-Error rejection");
+
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
+  });
+
+  it("handles excludeUserId when user has no email", async () => {
+    mockSupabase.auth.admin.getUserById.mockResolvedValue({
+      data: { user: { email: null } },
+      error: null,
+    });
+    mockSupabase.from.mockReturnValue(
+      createMembersBuilder([{ email: "member@example.com" }]),
+    );
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, message: "Sent 1 notification" });
+  });
 });

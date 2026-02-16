@@ -1,62 +1,135 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/reparse-test-recipes",
-  "description": "Re-parse all 100 test recipe ingredients and verify grocery list formatting improvements",
+  "branchName": "ralph/e2e-test-flows-update",
+  "description": "Update E2E_TEST_FLOWS.md with comprehensive manual test flows for all new features: Recipe Saving, Personal Recipes, Recipe Sharing, RecipeHub subtab navigation, and Meal Planning",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Re-parse all 100 test recipes",
-      "description": "As a developer, I want to re-parse all 100 test recipe URLs so that the ingredient data reflects the latest AI parsing output.",
+      "title": "Add Recipe Saving E2E test flows (Section 15)",
+      "description": "As a tester, I want manual E2E test flows for the recipe saving/bookmarking feature so that I can verify save/unsave functionality across the app.",
       "acceptanceCriteria": [
-        "Run `npx tsx scripts/reparse-recipes.ts` (all ingredient arrays are already empty)",
-        "All 100 recipes in test-combine/src/data/recipes.ts have non-empty ingredients arrays after parsing",
-        "Failed recipe count is 0 (or any failures are documented in progress.txt)",
-        "Typecheck passes"
+        "Section 15 'Recipe Saving' added to E2E_TEST_FLOWS.md after Section 14",
+        "Flow 15.1: Save a club recipe - click bookmark icon on RecipeCard in Club Recipes tab, verify filled purple bookmark appears, verify toast 'Recipe saved to collection'",
+        "Flow 15.2: Unsave a recipe - click filled bookmark icon, verify icon goes unfilled, verify toast 'Recipe removed from collection'",
+        "Flow 15.3: View saved recipes in My Recipes tab - save a club recipe, switch to 'My Recipes' subtab, verify saved recipe appears with ingredient tag and 'Saved' indicator",
+        "Flow 15.4: Bookmark not shown on personal recipes - add a personal recipe, verify no bookmark icon on it in My Recipes tab",
+        "Flow 15.5: Save persists across page navigation - save a recipe, navigate away and back to Recipes tab, verify recipe still shows as saved",
+        "Formatting matches existing E2E_TEST_FLOWS.md style (numbered steps, **Verify:** markers)",
+        "npm run build passes",
+        "npm run lint passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Local Supabase must be running with edge functions served. Script processes 2 at a time with 3s delays (~2.5 min total). If some recipes fail, re-run the script to retry only the failures."
+      "passes": false,
+      "notes": "Read src/components/recipes/SaveRecipeButton.tsx (63 lines) and src/components/recipes/RecipeHub.tsx (lines 385-395 for handleSaveToggle, lines 527-534 for RecipeCard rendering with isSaved prop). The bookmark icon is a Lucide Bookmark that shows filled purple when saved. saved_recipes table is a simple user_id + recipe_id junction."
     },
     {
       "id": "US-002",
-      "title": "Verify preferred count units in parsed data",
-      "description": "As a developer, I want to confirm that garlic, celery, and bacon ingredients display with their preferred count units (clove, stalk, strip) when combined.",
+      "title": "Add Personal Recipes E2E test flows (Section 16)",
+      "description": "As a tester, I want manual E2E test flows for personal recipe management so that I can verify adding, viewing, and managing personal recipes.",
       "acceptanceCriteria": [
-        "Search test-combine/src/data/recipes.ts for garlic ingredients and confirm they exist with unit 'clove' or 'cloves' (or null, which will get 'clove' assigned at display time via PREFERRED_COUNT_UNIT)",
-        "Search for celery ingredients and confirm they exist with unit 'stalk', 'stalks', 'rib', or null (null gets 'stalk' at display time)",
-        "Search for bacon ingredients and confirm they exist with unit 'strip', 'strips', 'slice', or null (null gets 'strip' at display time)",
-        "Document findings in progress.txt with counts of each unit type found",
-        "Typecheck passes"
+        "Section 16 'Personal Recipes' added to E2E_TEST_FLOWS.md after Section 15",
+        "Flow 16.1: Add personal recipe with name and URL - click 'My Recipes' subtab, click 'Add Recipe' button, fill name + URL, submit. Verify toast 'Personal recipe added!', recipe appears in list",
+        "Flow 16.2: Add personal recipe name only - submit with name only (no URL). Verify recipe created, no 'View recipe' link shown on card",
+        "Flow 16.3: URL validation - enter invalid URL (not starting with http/https), verify red border + error message 'URL must start with http:// or https://'",
+        "Flow 16.4: Personal badge - verify personal recipes show purple 'Personal' badge on RecipeCard",
+        "Flow 16.5: Empty state - with no personal or saved recipes, verify empty state message 'No personal recipes yet. Add one or save a club recipe!'",
+        "Flow 16.6: Cancel dialog - open Add Recipe dialog, type a name, click Cancel, reopen dialog, verify fields are cleared",
+        "Flow 16.7: Share personal recipe - verify Share button is available on personal recipes",
+        "Formatting matches existing E2E_TEST_FLOWS.md style",
+        "npm run build passes",
+        "npm run lint passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "The parse-recipe edge function returns raw units from recipes. Our client-side combineIngredients logic normalizes and assigns preferred units at display time. This story verifies the raw data is reasonable."
+      "passes": false,
+      "notes": "Read src/components/recipes/AddPersonalRecipeDialog.tsx (145 lines). Creates recipe with event_id: null, ingredient_id: null. The 'Add Recipe' button only shows when subTab === 'personal' && userId. RecipeHub.tsx line 498-507 for the button. The dialog clears fields on close (onOpenChange handler lines 71-75). RecipeCard determines isPersonal based on recipe.isPersonal flag."
     },
     {
       "id": "US-003",
-      "title": "Verify no canned_goods category in parsed data",
-      "description": "As a developer, I want to confirm that the canned_goods category no longer appears in any parsed recipe data.",
+      "title": "Add Recipe Sharing E2E test flows (Section 17)",
+      "description": "As a tester, I want manual E2E test flows for recipe sharing so that I can verify the share dialog, email sending, shared-with-me view, and share-only user access.",
       "acceptanceCriteria": [
-        "Search test-combine/src/data/recipes.ts for 'canned_goods' - must return zero matches",
-        "If any canned_goods entries are found, update the parse-recipe edge function prompt to use 'pantry' instead and re-parse affected recipes",
-        "Typecheck passes"
+        "Section 17 'Recipe Sharing' added to E2E_TEST_FLOWS.md after Section 16",
+        "Flow 17.1: Share recipe via dialog - click Share icon on any recipe card, verify dialog opens with recipe name in description, enter valid email + optional message, click Share. Verify toast 'Recipe shared with {email}!'",
+        "Flow 17.2: Email validation - type invalid email, verify red border + 'Please enter a valid email address', verify Share button disabled",
+        "Flow 17.3: Duplicate share prevention - share same recipe to same email twice, verify toast error 'This recipe has already been shared with this email'",
+        "Flow 17.4: View Shared with Me tab - switch to 'Shared with Me' subtab. Verify shared recipes displayed with: recipe name, 'Shared by {name}', personal message (if provided), date, 'Shared' badge",
+        "Flow 17.5: New badge on unviewed shares - verify unviewed shares show purple 'New' badge",
+        "Flow 17.6: Mark as viewed via View Recipe - click 'View Recipe' link on a shared recipe with URL. Verify 'New' badge disappears after returning to the tab",
+        "Flow 17.7: Mark as viewed button - for shares without URL, verify 'Mark as Viewed' button appears. Click it, verify 'New' badge disappears",
+        "Flow 17.8: Empty shared state - with no shares, verify empty state with Share2 icon and 'No recipes have been shared with you yet.'",
+        "Flow 17.9: Share-only user access - log in as share-only user (access_type='share_only'). Verify: only 'Shared with Me' subtab visible, no 'Club Recipes' or 'My Recipes' tabs, no Home/Events tabs",
+        "Flow 17.10: Dev mode sharing - in dev mode, share a recipe. Verify: direct DB insert (no edge function call), recipe share still created successfully",
+        "Formatting matches existing E2E_TEST_FLOWS.md style",
+        "npm run build passes",
+        "npm run lint passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "The canned_goods category was removed from the GroceryCategory type. The parse-recipe edge function should not return it. If it does, the AI prompt in the edge function needs updating."
+      "passes": false,
+      "notes": "Read src/components/recipes/ShareRecipeDialog.tsx (174 lines) and src/components/recipes/SharedWithMeSection.tsx (191 lines). The ShareRecipeDialog has dev mode branch (lines 46-63) that inserts directly to recipe_shares instead of calling the edge function. SharedWithMeSection queries recipe_shares joined with recipes and profiles. The share-only user logic is in RecipeHub.tsx line 44 (defaults subTab to 'shared') and lines 425-444 (hides club/personal tabs). The 23505 error code is PostgreSQL unique violation."
     },
     {
       "id": "US-004",
-      "title": "Verify mass noun and alias normalization in display",
-      "description": "As a developer, I want to confirm that the grocery list formatting correctly handles mass nouns and ingredient aliases for the newly parsed data.",
+      "title": "Add RecipeHub Subtab Navigation E2E test flows (Section 18)",
+      "description": "As a tester, I want manual E2E test flows for the RecipeHub subtab navigation so that I can verify switching between Club, My Recipes, and Shared with Me tabs.",
       "acceptanceCriteria": [
-        "Write a quick verification script (scripts/verify-parsing.ts) that imports TEST_RECIPES, runs combineIngredients + formatGroceryItem on all ingredients, and checks: (1) 'all-purpose flour' normalizes to 'flour', (2) 'red pepper flakes' stays as 'red pepper flakes' (not singularized), (3) spaghetti/penne/pesto/sage/tarragon are never pluralized in output, (4) garlic with no unit displays as 'N garlic cloves', (5) name-first unit order is used (e.g. 'garlic cloves' not 'cloves garlic')",
-        "Script runs successfully with zero assertion failures",
-        "Typecheck passes"
+        "Section 18 'RecipeHub Subtab Navigation' added to E2E_TEST_FLOWS.md after Section 17",
+        "Flow 18.1: Default tab - navigate to Recipes tab on dashboard. Verify 'Club Recipes' subtab is active (purple background), club recipes displayed",
+        "Flow 18.2: Switch to My Recipes - click 'My Recipes' subtab. Verify: tab highlights purple, personal recipes + saved club recipes shown, 'Add Recipe' button visible, ingredient filter hidden",
+        "Flow 18.3: Switch to Shared with Me - click 'Shared with Me' subtab. Verify: tab highlights purple, shared recipes or empty state shown, search bar and ingredient filter hidden",
+        "Flow 18.4: Search across tabs - enter search term on Club tab, verify results filter. Switch to My Recipes, verify search still filters. Verify search works on recipe names and note content",
+        "Flow 18.5: Ingredient filter (Club only) - on Club tab, select ingredient from dropdown. Verify recipes filtered. Switch to My Recipes, verify ingredient filter is not shown",
+        "Flow 18.6: Loading states - switch tabs rapidly. Verify loading spinner appears briefly during data fetch",
+        "Formatting matches existing E2E_TEST_FLOWS.md style",
+        "npm run build passes",
+        "npm run lint passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "This script exercises the full pipeline: raw parsed data -> combineIngredients -> formatGroceryItem. It validates all the grocery list improvements we made in this session."
+      "passes": false,
+      "notes": "Read src/components/recipes/RecipeHub.tsx. Subtabs defined as type RecipeSubTab = 'club' | 'personal' | 'shared'. The subtab buttons are at lines 424-455. Ingredient filter only renders when subTab === 'club' (line 480). Search filters on recipe name + note text (lines 398-411). loadRecipes() switches between loadClubRecipes() and loadPersonalRecipes() based on subTab. Shared tab renders SharedWithMeSection directly."
+    },
+    {
+      "id": "US-005",
+      "title": "Add Meal Planning E2E test flows (Section 19)",
+      "description": "As a tester, I want manual E2E test flows for the meal planning system so that I can verify the weekly grid, meal CRUD, preferences, AI suggestions, and chat panel.",
+      "acceptanceCriteria": [
+        "Section 19 'Meal Planning' added to E2E_TEST_FLOWS.md after Section 18",
+        "Flow 19.1: Navigate to Meal Plan tab - click 'Meals' tab on dashboard. Verify: 'Meal Plan' heading, 'Preferences' and 'Get Suggestions' buttons, week navigation, 7-day x 3-meal grid (breakfast/lunch/dinner)",
+        "Flow 19.2: Week navigation - click right arrow for next week. Verify dates update. Click left arrow for previous week. Verify dates update. Click 'Today' to return to current week",
+        "Flow 19.3: Add meal via empty slot - click an empty grid slot. Verify pending slot banner appears ('Adding meal for {Day} {mealType}'). Verify cancel link in banner works",
+        "Flow 19.4: Add AI suggestion to pending slot - with pending slot active, click 'Get Suggestions'. Click a suggestion card. Verify meal appears in the selected slot, pending banner disappears, toast 'Added \"{name}\" to plan'",
+        "Flow 19.5: Add suggestion without pending slot - without clicking a slot first, click a suggestion. Verify it goes to next available dinner slot. If all dinner slots filled, verify error toast 'All dinner slots are filled. Click an empty slot first.'",
+        "Flow 19.6: Remove meal - click the X button on an occupied slot. Verify meal removed, toast 'Meal removed', slot returns to empty state",
+        "Flow 19.7: User preferences dialog - click 'Preferences' button. Verify dialog with: dietary restrictions (multi-select), cuisine preferences (multi-select), disliked ingredients (multi-select), household size (number), cooking skill (beginner/intermediate/advanced), max cook time (minutes)",
+        "Flow 19.8: Save preferences - fill out preferences and save. Verify toast confirmation, preferences persist after closing/reopening dialog",
+        "Flow 19.9: AI suggestions panel - click 'Get Suggestions'. Verify 3 suggestion cards appear with: name, cuisine tag, time estimate, reason. Verify each has an 'Add to Plan' button",
+        "Flow 19.10: AI chat panel - type a message (e.g., 'I want something spicy') and press Enter/send. Verify: user message appears in chat, assistant response appears, new suggestions refresh based on request",
+        "Flow 19.11: Dev mode suggestions - in dev mode, click 'Get Suggestions'. Verify mock suggestions appear (Mediterranean Quinoa Bowl, Honey Garlic Salmon, One-Pot Pasta Primavera) without errors",
+        "Flow 19.12: Week persistence - add meals to a week, navigate away, navigate back to same week. Verify meals are still present",
+        "Flow 19.13: Loading state - on initial load, verify spinner displays while meal plan loads",
+        "Formatting matches existing E2E_TEST_FLOWS.md style",
+        "npm run build passes",
+        "npm run lint passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Read src/components/mealplan/MealPlanPage.tsx (433 lines) for the main orchestrator. Key sub-components: WeekNavigation.tsx (prev/next/today buttons + date range display), MealPlanGrid.tsx (63 lines, 7 days x 3 meal types), MealPlanSlot.tsx (individual slot with add/remove), AISuggestionPanel.tsx (shows MealSuggestion cards), AIChatPanel.tsx (chat input + message history), PreferencesDialog.tsx (form with all preference fields). Dev mode mock suggestions are hardcoded at lines 279-301 of MealPlanPage.tsx. The grid shows DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] and MEAL_TYPES = ['breakfast','lunch','dinner'] (no snack - only 3 meal types, not 4). The pendingSlot state (line 41) controls the 'Adding meal for...' banner."
+    },
+    {
+      "id": "US-006",
+      "title": "Update environment notes and known issues for new features",
+      "description": "As a tester, I want the Test Environment Notes and Known Issues sections updated so that the document reflects all new feature considerations.",
+      "acceptanceCriteria": [
+        "Test Environment Notes section updated with: share-only user access type note, dev mode recipe sharing (direct DB insert vs edge function), meal plan AI suggestions (mock data in dev mode)",
+        "Known Issues table updated if any known issues exist for new features",
+        "Add note about feature flag or disabled features related to new features if any",
+        "Add note about share-only test user setup (access_type in allowed_users table)",
+        "Formatting matches existing E2E_TEST_FLOWS.md style",
+        "npm run build passes",
+        "npm run lint passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Read the bottom of E2E_TEST_FLOWS.md (lines 520-539) for the existing Known Issues and Test Environment Notes sections. Key new environment notes: (1) share-only users need access_type='share_only' in allowed_users table, (2) recipe sharing in dev mode bypasses edge function and inserts directly to recipe_shares, (3) meal plan AI suggestions return mock data in dev mode (see MealPlanPage.tsx lines 277-309), (4) meal plan grid uses 3 meal types (breakfast/lunch/dinner), not 4 as originally planned."
     }
   ]
 }

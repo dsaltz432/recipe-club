@@ -135,11 +135,9 @@ describe("generate-meal-suggestions edge function", () => {
     ratingsBuilder.then = (onFulfilled?: (v: unknown) => unknown) =>
       Promise.resolve({ data: [{ overall_rating: 5, recipes: { name: "Pasta Carbonara" } }], error: null }).then(onFulfilled);
 
-    let callCount = 0;
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === "recipes") return recipesBuilder;
       if (table === "recipe_ratings") return ratingsBuilder;
-      callCount++;
       return recipesBuilder;
     });
 
@@ -274,5 +272,67 @@ describe("generate-meal-suggestions edge function", () => {
     const body = JSON.parse(fetchCall[1].body);
     expect(body.messages[0].content).toContain("Good Recipe (5/5)");
     expect(body.messages[0].content).not.toContain("null");
+  });
+
+  it("covers all preference template branches and empty meal plan", async () => {
+    const aiSuggestions = {
+      suggestions: [{ name: "Soup", cuisine: "Any", timeEstimate: "20 min", reason: "Easy" }],
+      chatResponse: "Here!",
+    };
+    const mockFetch = vi.fn().mockResolvedValue(
+      createAnthropicResponse(JSON.stringify(aiSuggestions)),
+    );
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({
+      userId: "user-123",
+      preferences: {
+        dietaryRestrictions: ["vegan", "gluten-free"],
+        cuisinePreferences: [],
+        dislikedIngredients: ["mushrooms"],
+        householdSize: 1,
+        cookingSkill: "beginner",
+        maxCookTimeMinutes: 30,
+      },
+      currentPlanItems: [],
+    });
+
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const body = JSON.parse(fetchCall[1].body);
+    expect(body.messages[0].content).toContain("vegan, gluten-free");
+    expect(body.messages[0].content).toContain("Open to all");
+    expect(body.messages[0].content).toContain("mushrooms");
+    expect(body.messages[0].content).toContain("Empty - no meals planned yet");
+  });
+
+  it("uses all fallbacks when AI content is empty", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ content: [] }), { status: 200 }),
+    );
+
+    const req = createEdgeRequest(sampleBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({
+      success: true,
+      suggestions: [],
+      chatResponse: "Here are some suggestions for you!",
+    });
+  });
+
+  it("returns 'Unknown error' when a non-Error is thrown", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue("string rejection");
+
+    const req = createEdgeRequest(sampleBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
   });
 });

@@ -267,27 +267,43 @@ describe("groceryList", () => {
       expect(normalizeIngredientName("cherries")).toBe("cherry");
     });
 
-    it("singularizes -es endings (not -ses, -ches, -shes, -kes, -ves)", () => {
+    it("singularizes -oes endings by stripping -es", () => {
       expect(normalizeIngredientName("tomatoes")).toBe("tomato");
       expect(normalizeIngredientName("potatoes")).toBe("potato");
     });
 
-    it("singularizes -kes words via -s rule (not -es)", () => {
+    it("singularizes -kes words via -s rule", () => {
       expect(normalizeIngredientName("flakes")).toBe("flake");
+      expect(normalizeIngredientName("artichokes")).toBe("artichoke");
     });
 
-    it("singularizes -ves words via -s rule (not -es)", () => {
+    it("singularizes -ves words via -s rule", () => {
       expect(normalizeIngredientName("cloves")).toBe("clove");
       expect(normalizeIngredientName("olives")).toBe("olive");
     });
 
-    it("applies -s removal after -es rule is skipped for -ches/-shes endings", () => {
-      expect(normalizeIngredientName("peaches")).toBe("peache");
-      expect(normalizeIngredientName("radishes")).toBe("radishe");
+    it("singularizes -ches/-shes endings by stripping -es", () => {
+      expect(normalizeIngredientName("peaches")).toBe("peach");
+      expect(normalizeIngredientName("radishes")).toBe("radish");
     });
 
-    it("applies -s removal after -ses endings skip -es rule", () => {
-      expect(normalizeIngredientName("molasses")).toBe("molasse");
+    it("singularizes -les/-ces/-tes words via -s rule (not -es)", () => {
+      expect(normalizeIngredientName("testicles")).toBe("testicle");
+      expect(normalizeIngredientName("apples")).toBe("apple");
+      expect(normalizeIngredientName("noodles")).toBe("noodle");
+      expect(normalizeIngredientName("sauces")).toBe("sauce");
+    });
+
+    it("preserves foreign words where trailing s is not a plural marker", () => {
+      expect(normalizeIngredientName("foie gras")).toBe("foie gras");
+      expect(normalizeIngredientName("molasses")).toBe("molasses");
+    });
+
+    it("preserves naturally plural ingredient names", () => {
+      expect(normalizeIngredientName("tortilla chips")).toBe("tortilla chips");
+      expect(normalizeIngredientName("breadcrumbs")).toBe("breadcrumbs");
+      expect(normalizeIngredientName("red pepper flakes")).toBe("red pepper flakes");
+      expect(normalizeIngredientName("oats")).toBe("oats");
     });
 
     it("singularizes basic -s ending", () => {
@@ -1422,6 +1438,52 @@ describe("groceryList", () => {
         sourceRecipes: ["Recipe A"],
       };
       expect(formatGroceryItem(item)).toBe("1/3 cup sugar");
+    });
+
+    it("keeps liquid as mass noun (uncountable in cooking)", () => {
+      expect(formatGroceryItem({
+        name: "ramp pickling liquid",
+        totalQuantity: 3,
+        unit: "tbsp",
+        category: "condiments",
+        sourceRecipes: ["Recipe A"],
+      })).toBe("3 tbsp ramp pickling liquid");
+    });
+
+    it("keeps broth as mass noun", () => {
+      expect(formatGroceryItem({
+        name: "chicken broth",
+        totalQuantity: 2,
+        unit: "cup",
+        category: "pantry",
+        sourceRecipes: ["Recipe A"],
+      })).toBe("2 cups chicken broth");
+    });
+
+    it("displays always-plural items as plural even without quantity", () => {
+      expect(formatGroceryItem({
+        name: "tortilla chips",
+        category: "other",
+        sourceRecipes: ["Recipe A"],
+      })).toBe("tortilla chips");
+
+      expect(formatGroceryItem({
+        name: "tortilla chips",
+        totalQuantity: 1,
+        unit: "bag",
+        category: "other",
+        sourceRecipes: ["Recipe A"],
+      })).toBe("1 bag tortilla chips");
+    });
+
+    it("formats foie gras correctly (foreign word)", () => {
+      expect(formatGroceryItem({
+        name: "foie gras",
+        totalQuantity: 4,
+        unit: "oz",
+        category: "meat_seafood",
+        sourceRecipes: ["Recipe A"],
+      })).toBe("4 oz foie gras");
     });
   });
 

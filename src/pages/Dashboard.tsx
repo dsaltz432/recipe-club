@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, UtensilsCrossed } from "lucide-react";
+import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, UtensilsCrossed, CalendarDays } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,21 +19,21 @@ import RecipeClubEvents from "@/components/events/RecipeClubEvents";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import PantryDialog from "@/components/pantry/PantryDialog";
+import MealPlanPage from "@/components/mealplan/MealPlanPage";
 
-const VALID_TABS = ["home", "events", "recipes"] as const;
+const VALID_TABS = ["home", "events", "recipes", "mealplan"] as const;
 type TabValue = typeof VALID_TABS[number];
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { tab } = useParams<{ tab?: string }>();
-  const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
 
   const handleTabChange = (value: string) => {
     navigate(value === "home" ? "/dashboard" : `/dashboard/${value}`);
   };
 
   const [user, setUser] = useState<User | null>(null);
-  const [, setAllowedUser] = useState<AllowedUser | null>(null);
+  const [allowedUserData, setAllowedUser] = useState<AllowedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -42,6 +42,11 @@ const Dashboard = () => {
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
   const [showPantryDialog, setShowPantryDialog] = useState(false);
+
+  const isShareOnly = allowedUserData?.access_type === "share_only";
+  const activeTab: TabValue = isShareOnly
+    ? "recipes"
+    : VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
 
   const loadActiveEvent = async () => {
     try {
@@ -274,45 +279,72 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto mb-4 grid-cols-3 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
-            <TabsTrigger value="home" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
-              <Home className="h-4 w-4" />
-              <span className="text-sm">Home</span>
-            </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">Events</span>
-            </TabsTrigger>
-            <TabsTrigger value="recipes" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
-              <BookOpen className="h-4 w-4" />
-              <span className="text-sm">Recipes</span>
-            </TabsTrigger>
-          </TabsList>
+          {isShareOnly ? (
+            <TabsList className="grid w-full max-w-md mx-auto mb-4 grid-cols-1 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
+              <TabsTrigger value="recipes" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+                <BookOpen className="h-4 w-4" />
+                <span className="text-sm">Recipes</span>
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
+              <TabsTrigger value="home" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+                <Home className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Home</span>
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+                <Calendar className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Events</span>
+              </TabsTrigger>
+              <TabsTrigger value="recipes" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+                <BookOpen className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Recipes</span>
+              </TabsTrigger>
+              <TabsTrigger value="mealplan" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+                <CalendarDays className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Meals</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
 
-          <TabsContent value="home">
-            <HomeSection
-              user={user}
-              activeEvent={activeEvent}
-              ingredients={ingredients}
-              setIngredients={setIngredients}
-              isAdmin={userIsAdmin}
-              onEventCreated={handleEventCreated}
-              onRecipeAdded={handleRecipeAdded}
-              onEventUpdated={loadActiveEvent}
-            />
-          </TabsContent>
+          {!isShareOnly && (
+            <>
+              <TabsContent value="home">
+                <HomeSection
+                  user={user}
+                  activeEvent={activeEvent}
+                  ingredients={ingredients}
+                  setIngredients={setIngredients}
+                  isAdmin={userIsAdmin}
+                  onEventCreated={handleEventCreated}
+                  onRecipeAdded={handleRecipeAdded}
+                  onEventUpdated={loadActiveEvent}
+                />
+              </TabsContent>
 
-          <TabsContent value="events">
-            <RecipeClubEvents
-              userId={user?.id || ""}
-              isAdmin={userIsAdmin}
-              onEventChange={loadActiveEvent}
-            />
-          </TabsContent>
+              <TabsContent value="events">
+                <RecipeClubEvents
+                  userId={user?.id || ""}
+                  isAdmin={userIsAdmin}
+                  onEventChange={loadActiveEvent}
+                />
+              </TabsContent>
+            </>
+          )}
 
           <TabsContent value="recipes">
-            <RecipeHub />
+            <RecipeHub
+              userId={user?.id}
+              userEmail={user?.email}
+              accessType={allowedUserData?.access_type || "club"}
+            />
           </TabsContent>
+
+          {!isShareOnly && user?.id && (
+            <TabsContent value="mealplan">
+              <MealPlanPage userId={user.id} />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
 

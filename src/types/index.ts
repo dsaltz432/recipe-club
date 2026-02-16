@@ -152,6 +152,71 @@ export interface CombinedCookPlan {
   tips: string[];
 }
 
+export interface SavedRecipe {
+  id: string;
+  userId: string;
+  recipeId: string;
+  savedAt?: string;
+}
+
+export interface RecipeShare {
+  id: string;
+  recipeId: string;
+  sharedBy: string;
+  sharedWithEmail: string;
+  message?: string;
+  viewedAt?: string;
+  sharedAt?: string;
+  // Joined data
+  recipeName?: string;
+  sharedByName?: string;
+}
+
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  dietaryRestrictions: string[];
+  cuisinePreferences: string[];
+  dislikedIngredients: string[];
+  householdSize: number;
+  cookingSkill: "beginner" | "intermediate" | "advanced";
+  maxCookTimeMinutes: number;
+  updatedAt?: string;
+}
+
+export interface MealPlan {
+  id: string;
+  userId: string;
+  name: string;
+  weekStart: string;
+  status: "draft" | "active" | "completed" | "archived";
+  createdAt?: string;
+}
+
+export interface MealPlanItem {
+  id: string;
+  planId: string;
+  recipeId?: string;
+  dayOfWeek: number; // 0=Sunday..6=Saturday
+  mealType: "breakfast" | "lunch" | "dinner" | "snack";
+  customName?: string;
+  customUrl?: string;
+  sortOrder: number;
+  // Joined data
+  recipeName?: string;
+  recipeUrl?: string;
+}
+
+export interface MealSuggestion {
+  id: string;
+  name: string;
+  cuisine: string;
+  timeEstimate: string;
+  reason: string;
+  recipeId?: string; // if referencing an existing recipe
+  url?: string; // suggested URL for new recipes
+}
+
 export interface ScheduledEvent {
   id: string;
   ingredientId: string;

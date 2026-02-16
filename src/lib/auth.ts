@@ -7,6 +7,7 @@ export interface AllowedUser {
   email: string;
   role: "admin" | "viewer";
   is_club_member: boolean;
+  access_type: "club" | "share_only";
 }
 
 export const isAuthenticated = async (): Promise<boolean> => {
@@ -30,6 +31,7 @@ export const getAllowedUser = async (email: string): Promise<AllowedUser | null>
     email: data.email,
     role: data.role as "admin" | "viewer",
     is_club_member: data.is_club_member,
+    access_type: (data.access_type as "club" | "share_only") || "club",
   };
 };
 

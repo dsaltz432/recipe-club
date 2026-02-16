@@ -70,6 +70,17 @@ const FRACTION_MAP: [number, string][] = [
   [0.875, "7/8"],
 ];
 
+// Words whose trailing "s" is NOT a plural marker (foreign words, etc.)
+const NO_STRIP_S = new Set([
+  "foie gras", "hummus", "couscous", "jus", "bourguignons", "molasses",
+]);
+
+// Naturally plural ingredient names — display as plural even with no quantity
+const ALWAYS_PLURAL = new Set([
+  "tortilla chips", "pita chips", "potato chips", "breadcrumbs",
+  "red pepper flakes", "chili flakes", "oats", "grits",
+]);
+
 const COOKING_ADJECTIVES = [
   "fresh", "dried", "minced", "diced", "chopped", "sliced", "grated",
   "shredded", "crushed", "ground", "toasted", "roasted", "raw", "cooked",
@@ -284,8 +295,10 @@ export function normalizeIngredientName(name: string): string {
     }
   }
 
-  // Basic singularization
-  if (normalized.endsWith("leaves")) {
+  // Basic singularization — skip words whose trailing "s" isn't a plural marker
+  if (ALWAYS_PLURAL.has(normalized) || NO_STRIP_S.has(normalized)) {
+    // foreign words etc. — leave as-is
+  } else if (normalized.endsWith("leaves")) {
     normalized = normalized.slice(0, -6) + "leaf";
   } else if (
     normalized.endsWith("ies") &&
@@ -293,14 +306,15 @@ export function normalizeIngredientName(name: string): string {
   ) {
     normalized = normalized.slice(0, -3) + "y";
   } else if (
-    normalized.endsWith("es") &&
-    !normalized.endsWith("ses") &&
-    !normalized.endsWith("ches") &&
-    !normalized.endsWith("shes") &&
-    !normalized.endsWith("kes") &&
-    !normalized.endsWith("ves") &&
-    normalized.length > 4
+    normalized.length > 4 &&
+    (normalized.endsWith("shes") ||
+     normalized.endsWith("ches") ||
+     normalized.endsWith("xes") ||
+     normalized.endsWith("zes") ||
+     normalized.endsWith("sses") ||
+     normalized.endsWith("oes"))
   ) {
+    // Sibilant / -oes endings: strip "es" (dishes→dish, peaches→peach, tomatoes→tomato)
     normalized = normalized.slice(0, -2);
   } else if (
     normalized.endsWith("s") &&
@@ -605,6 +619,7 @@ const MASS_NOUNS = new Set([
   "soda", "extract", "vanilla", "ghee",
   "allspice", "arugula", "watercress", "asparagus", "paneer", "pancetta",
   "gelatin", "margarine", "seaweed", "molasses", "steak", "noodle",
+  "liquid", "broth",
 ]);
 
 // Full ingredient names that are mass nouns (checked against entire name)
@@ -613,6 +628,7 @@ const MASS_NOUN_NAMES = new Set([
   "half and half",
   "garam masala", "tandoori masala", "italian seasoning", "kasuri methi",
   "gochujang", "pomegranate molasses", "urad dal", "white hominy",
+  "foie gras",
 ]);
 
 // Abbreviated units that should never be pluralized
@@ -651,10 +667,13 @@ export function formatGroceryItem(item: CombinedGroceryItem): string {
     // - there's a unit (e.g. "1 cup blueberries", not "1 cup blueberry")
     const baseName = item.name.split(" ").pop()!;
     const isMassNoun = MASS_NOUNS.has(baseName) || MASS_NOUN_NAMES.has(item.name);
-    const shouldPluralize = !isMassNoun && qty != null && (qty > 1 || !!item.unit);
-    const displayName = shouldPluralize
-      ? simplePluralize(item.name)
-      : item.name;
+    const isAlwaysPlural = ALWAYS_PLURAL.has(item.name);
+    const shouldPluralize = !isMassNoun && !isAlwaysPlural && qty != null && (qty > 1 || !!item.unit);
+    const displayName = isAlwaysPlural
+      ? item.name
+      : shouldPluralize
+        ? simplePluralize(item.name)
+        : item.name;
     parts.push(displayName);
   }
 

@@ -118,7 +118,7 @@ serve(async (req) => {
           continue;
         }
 
-        const usersWithRecipes = new Set(recipes?.map((r) => r.created_by).filter(Boolean) || []);
+        const usersWithRecipes = new Set((recipes ?? []).map((r) => r.created_by).filter(Boolean));
 
         // Send emails to ALL admin emails (not just those who have signed up)
         for (const adminEmail of ADMIN_EMAILS) {
@@ -201,7 +201,7 @@ async function sendReminderEmail(
   };
 
   const timeString = eventTime ? ` at ${formatTime(eventTime)}` : "";
-  const daysText = daysUntilEvent === 1 ? "tomorrow" : `in ${daysUntilEvent} days`;
+  const daysText = `in ${daysUntilEvent} days`;
   const eventUrl = `${APP_BASE_URL}/events/${eventId}`;
 
   let subject: string;
