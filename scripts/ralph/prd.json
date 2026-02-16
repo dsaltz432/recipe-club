@@ -5,8 +5,8 @@
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create batch parsing and evaluation tooling",
-      "description": "As a developer, I want reusable scripts for batch parsing recipes through the edge function and evaluating the parsed output quality, so that I can iteratively improve the AI prompt.",
+      "title": "Create batch parsing script",
+      "description": "As a developer, I want a reusable script for batch parsing recipes through the edge function, so that I can parse slices of recipes efficiently.",
       "acceptanceCriteria": [
         "Create test-combine/scripts/batch-parse.mjs that reads TEST_RECIPES from recipes.ts",
         "Accepts --offset N and --limit N flags to parse a slice of recipes (e.g. --offset 0 --limit 20 for first 20)",
@@ -16,18 +16,31 @@
         "Process with 10 concurrent workers using Promise.all on batched chunks",
         "Auth headers: apikey and Authorization both 'REDACTED'",
         "Log progress per recipe and print summary (parsed, failed, skipped, elapsed time)",
-        "Create test-combine/scripts/evaluate-parsed.mjs that queries recipe_ingredients and recipes from local Supabase REST API",
-        "Evaluation checks: (1) pluralization - names ending in s/es/ies that should be singular, with whitelist for legit words, (2) count units embedded in names - clove/head/bunch/stalk/sprig/piece in name field, (3) prep adjectives - fresh/minced/diced/chopped/crushed/cold/hot in names, excluding qualifiers that change the product, (4) typos - known misspellings like tumeric, (5) category inconsistency - same name different categories + hardcoded rules (water→other, egg→pantry, oils→pantry), (6) non-standard units - not in {tsp,tbsp,cup,oz,lb,quart,gallon,head,bunch,stalk,clove,sprig,piece,slice,strip,can,null}, (7) quantity issues - more than 3 decimal places",
-        "Evaluation outputs JSON to test-combine/evaluation-report.json with {summary: {totalIssues, byType}, issues: [{recipeId, recipeName, ingredientName, issueType, description, suggestedFix}]}",
-        "Both scripts run successfully: node test-combine/scripts/batch-parse.mjs --limit 0 and node test-combine/scripts/evaluate-parsed.mjs",
+        "Script runs successfully with --limit 0 (no-op): node test-combine/scripts/batch-parse.mjs --limit 0",
         "Typecheck passes: npm run build"
       ],
       "priority": 1,
       "passes": false,
-      "notes": "The recipes.ts file exports TEST_RECIPES. To import from .mjs: parse the file with regex (like existing parse-recipes.mjs does) or use a dynamic approach. The existing parse-recipes.mjs in test-combine/ shows patterns. REST API: http://127.0.0.1:54321/rest/v1/. Edge functions: http://127.0.0.1:54321/functions/v1/. For upsert on recipes table, use POST with header 'Prefer: resolution=merge-duplicates' and select to get back the ID. Alternatively, GET recipes?name=eq.{name} first and insert only if not found. Concurrency: split slice into sub-arrays of 2, process 10 sub-arrays concurrently via Promise.all (so ~10 concurrent edge function calls at peak). The evaluate script should handle empty DB gracefully (0 recipes parsed = 0 issues)."
+      "notes": "The recipes.ts file exports TEST_RECIPES. To import from .mjs: parse the file with regex (like existing parse-recipes.mjs does) or use a dynamic approach. The existing parse-recipes.mjs in test-combine/ shows patterns. REST API: http://127.0.0.1:54321/rest/v1/. Edge functions: http://127.0.0.1:54321/functions/v1/. For upsert on recipes table, use POST with header 'Prefer: resolution=merge-duplicates' and select to get back the ID. Alternatively, GET recipes?name=eq.{name} first and insert only if not found. Concurrency: split slice into sub-arrays of 2, process 10 sub-arrays concurrently via Promise.all (so ~10 concurrent edge function calls at peak)."
     },
     {
       "id": "US-002",
+      "title": "Create evaluation script",
+      "description": "As a developer, I want a reusable script for evaluating the quality of parsed recipe ingredients, so that I can identify issues and track improvements across batches.",
+      "acceptanceCriteria": [
+        "Create test-combine/scripts/evaluate-parsed.mjs that queries recipe_ingredients and recipes from local Supabase REST API",
+        "Evaluation checks: (1) pluralization - names ending in s/es/ies that should be singular, with whitelist for legit words, (2) count units embedded in names - clove/head/bunch/stalk/sprig/piece in name field, (3) prep adjectives - fresh/minced/diced/chopped/crushed/cold/hot in names, excluding qualifiers that change the product, (4) typos - known misspellings like tumeric, (5) category inconsistency - same name different categories + hardcoded rules (water→other, egg→pantry, oils→pantry), (6) non-standard units - not in {tsp,tbsp,cup,oz,lb,quart,gallon,head,bunch,stalk,clove,sprig,piece,slice,strip,can,null}, (7) quantity issues - more than 3 decimal places",
+        "Evaluation outputs JSON to test-combine/evaluation-report.json with {summary: {totalIssues, byType}, issues: [{recipeId, recipeName, ingredientName, issueType, description, suggestedFix}]}",
+        "Script handles empty DB gracefully (0 recipes parsed = 0 issues)",
+        "Script runs successfully: node test-combine/scripts/evaluate-parsed.mjs",
+        "Typecheck passes: npm run build"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Auth headers: apikey and Authorization both 'REDACTED'. REST API: http://127.0.0.1:54321/rest/v1/. Query recipe_ingredients?select=name,quantity,unit,raw_text,category,recipe_id and recipes?select=id,name to cross-reference. The whitelist for pluralization should include words like: hummus, couscous, molasses, lemongrass, plus any word ending in -ss, -us, -is."
+    },
+    {
+      "id": "US-003",
       "title": "Parse batch 1 (recipes 1-20), evaluate, and fix prompt",
       "description": "As a developer, I want to parse the first 20 recipes, evaluate the output, and fix the AI prompt for the most common issues so that subsequent batches benefit from improvements.",
       "acceptanceCriteria": [
@@ -41,30 +54,30 @@
         "Existing edge function tests pass: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
         "Typecheck passes: npm run build"
       ],
-      "priority": 2,
+      "priority": 3,
       "passes": false,
       "notes": "This is the FIRST evaluation pass — expect the most issues here. Common issues likely include: plural names (bay leaves, sesame seeds), count units in names (garlic clove), prep adjectives (fresh cilantro), category mismatches (water as beverages), non-standard units (dash, pinch). Prompt files: parse-recipes.mjs lines 62-98, edge function lines 176-219. When fixing the prompt, add concrete examples of correct behavior for each issue type found. Be specific — 'bay leaves should be bay leaf' is better than 'use singular'. After fixing, do NOT re-parse this batch yet — we'll verify with the next batch."
     },
     {
-      "id": "US-003",
+      "id": "US-004",
       "title": "Parse batch 2 (recipes 21-40), evaluate, and fix if needed",
       "description": "As a developer, I want to parse recipes 21-40 with the improved prompt and check if the fixes from batch 1 resolved the issues, fixing any new issue types found.",
       "acceptanceCriteria": [
         "Run: node test-combine/scripts/batch-parse.mjs --offset 20 --limit 20",
         "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "Compare issue counts against batch 1: the issue types fixed in US-002 should appear less or not at all in the new batch",
+        "Compare issue counts against batch 1: the issue types fixed in US-003 should appear less or not at all in the new batch",
         "IF new issue types are found that weren't in batch 1: fix the prompt (both files) to address them",
         "IF no new issues: document 'no new issue types found, prompt is holding' in activity.md",
         "Document in activity.md: issue counts, whether prompt was changed, comparison to batch 1",
         "Edge function tests pass if prompt was changed: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
         "Typecheck passes: npm run build"
       ],
-      "priority": 3,
+      "priority": 4,
       "passes": false,
       "notes": "The evaluation script reports on ALL parsed recipes in the DB (now 40 total). Focus on whether the 20 NEW recipes (batch 2) have the same issue types as batch 1. If batch 2 has zero issues of a type that batch 1 had many of, the prompt fix worked. If a completely new issue type appears (e.g. a cuisine-specific ingredient pattern), add a prompt rule for it. Cross-cuisine variety increases as we parse more recipes, so new patterns may emerge."
     },
     {
-      "id": "US-004",
+      "id": "US-005",
       "title": "Parse batch 3 (recipes 41-60), evaluate, and fix if needed",
       "description": "As a developer, I want to parse recipes 41-60 and continue the iterative improvement cycle.",
       "acceptanceCriteria": [
@@ -76,12 +89,12 @@
         "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
-      "priority": 4,
+      "priority": 5,
       "passes": false,
       "notes": "By batch 3 (60 recipes total), the prompt should be fairly mature. Most common patterns should already be covered. Look for edge cases: unusual ingredients from specific cuisines, metric-only recipes, image-based recipes. If the prompt hasn't needed changes for 2 consecutive batches, it's likely stable."
     },
     {
-      "id": "US-005",
+      "id": "US-006",
       "title": "Parse batch 4 (recipes 61-80), evaluate, and fix if needed",
       "description": "As a developer, I want to parse recipes 61-80 and continue verifying prompt quality.",
       "acceptanceCriteria": [
@@ -93,12 +106,12 @@
         "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
-      "priority": 5,
+      "priority": 6,
       "passes": false,
-      "notes": "Same pattern as US-003/004. At this point we have 80 recipes parsed. If the last 2-3 batches had minimal/no new issues, the prompt is converging."
+      "notes": "Same pattern as US-004/005. At this point we have 80 recipes parsed. If the last 2-3 batches had minimal/no new issues, the prompt is converging."
     },
     {
-      "id": "US-006",
+      "id": "US-007",
       "title": "Parse batch 5 (recipes 81-100), evaluate, and fix if needed",
       "description": "As a developer, I want to parse recipes 81-100 and continue verifying.",
       "acceptanceCriteria": [
@@ -109,12 +122,12 @@
         "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
-      "priority": 6,
+      "priority": 7,
       "passes": false,
       "notes": "100 recipes parsed. Monitor for any new cuisines or recipe styles introducing new patterns."
     },
     {
-      "id": "US-007",
+      "id": "US-008",
       "title": "Parse batch 6 (recipes 101-120), evaluate, and fix if needed",
       "description": "As a developer, I want to parse recipes 101-120 and continue verifying.",
       "acceptanceCriteria": [
@@ -125,12 +138,12 @@
         "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
-      "priority": 7,
+      "priority": 8,
       "passes": false,
       "notes": "120 of 153 recipes parsed. Almost done with the initial pass."
     },
     {
-      "id": "US-008",
+      "id": "US-009",
       "title": "Parse final batch (recipes 121-153), evaluate, and fix if needed",
       "description": "As a developer, I want to parse the remaining 33 recipes and complete the initial pass through all 153.",
       "acceptanceCriteria": [
@@ -142,12 +155,12 @@
         "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
-      "priority": 8,
+      "priority": 9,
       "passes": false,
       "notes": "All 153 recipes are now parsed. The evaluation report now covers everything. The remaining issues are from early batches that were parsed BEFORE prompt fixes. These will be cleaned up in the full re-parse."
     },
     {
-      "id": "US-009",
+      "id": "US-010",
       "title": "Full re-parse of all 153 recipes with final prompt",
       "description": "As a developer, I want to re-parse ALL 153 recipes using the finalized prompt so that every recipe benefits from all accumulated prompt improvements.",
       "acceptanceCriteria": [
@@ -159,12 +172,12 @@
         "Edge function tests pass: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
         "Typecheck passes: npm run build"
       ],
-      "priority": 9,
+      "priority": 10,
       "passes": false,
       "notes": "This is the validation step. With 10 concurrent workers, re-parsing all 153 takes ~5-8 minutes. Every recipe is now parsed with the final, polished prompt. The evaluation should show dramatic improvement over batch 1. If issues remain, they're likely edge cases — make one final round of prompt tweaks and re-parse once more if needed. The --force flag must clear existing recipe_ingredients and recipe_content before re-parsing each recipe."
     },
     {
-      "id": "US-010",
+      "id": "US-011",
       "title": "Sync improved parsed data to recipes.ts",
       "description": "As a developer, I want recipes.ts updated with the final high-quality parsed ingredient data so that the test data reflects the best AI output.",
       "acceptanceCriteria": [
@@ -176,7 +189,7 @@
         "Run final evaluation: node test-combine/scripts/evaluate-parsed.mjs to confirm consistency",
         "Typecheck passes: npm run build"
       ],
-      "priority": 10,
+      "priority": 11,
       "passes": false,
       "notes": "Reuse patterns from existing parse-recipes.mjs: formatIngredients() (line 206) and updateRecipeInSource() (line 214) show how to write ingredients back to the file. Match each DB recipe to the recipes.ts entry by name (the batch-parse script inserts with the same name). The sync must handle all 153 recipes. Read recipes.ts, for each recipe block find it by id, replace the ingredients array, write back."
     }
