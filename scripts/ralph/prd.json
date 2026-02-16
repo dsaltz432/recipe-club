@@ -36,7 +36,7 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Auth headers: apikey and Authorization both 'REDACTED'. REST API: http://127.0.0.1:54321/rest/v1/. Query recipe_ingredients?select=name,quantity,unit,raw_text,category,recipe_id and recipes?select=id,name to cross-reference. The whitelist for pluralization should include words like: hummus, couscous, molasses, lemongrass, plus any word ending in -ss, -us, -is."
     },
     {
