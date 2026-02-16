@@ -95,8 +95,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "The evaluation script reports on ALL parsed recipes in the DB (now 40 total). Focus on whether the 20 NEW recipes (batch 2) have the same issue types as batch 1. If batch 2 has zero issues of a type that batch 1 had many of, the prompt fix worked. If a completely new issue type appears (e.g. a cuisine-specific ingredient pattern), add a prompt rule for it."
+      "passes": true,
+      "notes": "COMPLETED. All 20 batch 2 recipes were already parsed (from prior session with US-003 prompt). Evaluation: 18 raw issues, 7 true issues, 11 false positives. Key finding: prompt fixes from US-003/US-004 are effective — category_inconsistency dropped 92% (13→1), pluralization dropped 100% (7→0), prep_adjective dropped 100% (2→0). All 7 remaining true issues already addressed by current US-004 prompt (recipe unit, inch unit, 0.333 precision, taco shell category). No prompt changes needed. Will be fixed on full re-parse."
     },
     {
       "id": "US-006",

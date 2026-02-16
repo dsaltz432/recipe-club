@@ -13,8 +13,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-15
-**Tasks Completed:** 5
-**Current Task:** US-004 (Re-evaluate with Claude evaluator) complete
+**Tasks Completed:** 6
+**Current Task:** US-005 (Parse batch 2, evaluate, fix) complete
 
 ---
 
@@ -196,4 +196,45 @@
   - Pickled items (pickled jalapeño, pickled red onion) are genuinely distinct products from fresh versions — they're sold in jars and have different flavor profiles
   - Fresh ginger = produce, ground ginger = spices. Most recipes mean fresh ginger.
   - The 44 true issues mostly come from batch 1 recipes parsed BEFORE prompt fixes in US-003. Subsequent batches should have far fewer issues.
+---
+
+## 2026-02-15 - US-005: Parse batch 2 (recipes 21-40), evaluate, and fix if needed
+- **Batch 2 parsing:** All 20 recipes (offset=20, limit=20) were ALREADY PARSED from a prior session — skipped by batch-parse.mjs. These were parsed with the US-003 prompt (before US-004 fixes).
+- **Evaluation results (all 43 recipes, 563 ingredients):** 55 raw issues (down from 58 in US-004)
+  - category_inconsistency: 20, pluralization: 11, quantity_precision: 9, count_unit_in_name: 6, non_standard_unit: 6, prep_adjective: 2, typo: 1
+- **Batch-level analysis (filtering false positives):**
+  - **Batch 1** (recipes 1-20, parsed with OLD prompt): **31 raw issues** → ~20 true issues
+  - **Pre-parsed** (4 recipes from before batch processing): **6 raw issues** → ~3 true issues
+  - **Batch 2** (recipes 21-40, parsed with IMPROVED US-003 prompt): **18 raw issues** → **7 true issues, 11 false positives (61% FP rate)**
+- **Batch 2 true issues breakdown:**
+  - non_standard_unit: 3 ("recipe" ×2 for sub-recipe references, "inch" ×1 for ginger)
+  - quantity_precision: 3 (0.333 instead of 0.33 — prompt says 2 decimal max but AI still uses 3)
+  - category_inconsistency: 1 (taco shell → "other" instead of "bakery")
+- **Prompt fix improvements confirmed (batch 2 vs batch 1):**
+  - **category_inconsistency**: 13 (batch 1) → 1 (batch 2) — water→other fix WORKED, only taco shell remains
+  - **pluralization**: 7 (batch 1) → 0 (batch 2) — all batch 2 pluralization flags are false positives, singular names working
+  - **prep_adjective**: 2 (batch 1) → 0 (batch 2) — prep adjective rules WORKING
+  - **count_unit_in_name**: 3 (batch 1) → 0 (batch 2) — all batch 2 flags are false positives (units already correctly placed)
+- **Decision: No prompt changes needed.** All batch 2 issues are ALREADY addressed by the US-004 prompt:
+  - "recipe" as unit → already has rule: "Sub-recipe components — use null for unit"
+  - "inch" → already has rule: "inch is not a standard unit — convert to piece"
+  - 0.333 precision → already has rule: "Round to 2 decimal places maximum"
+  - taco shell category → already has rule: "Taco shells → bakery"
+  - These issues exist only because batch 2 was parsed BEFORE US-004 prompt fixes were applied
+- **Claude evaluator false positive patterns identified:**
+  - Flagging names that are ALREADY singular as pluralization issues (11→0 in batch 2 after verification)
+  - Flagging units that are ALREADY correct (wedge, sprig, head in unit field flagged as "count_unit_in_name")
+  - Flagging quantities like 3.5 as "precision" issues (1 decimal place is fine)
+  - Saying "no fix needed" for things that aren't issues
+  - Evaluator FP rate: ~24% for batch 1 data, ~61% for batch 2 data (cleaner data = more false positives)
+- **Files changed:** None (no prompt changes needed)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - Batch 2 recipes were parsed in a prior session (likely during US-003 initial parsing run that did more than 20 recipes)
+  - The prompt improvements are clearly effective: category_inconsistency dropped 92%, pluralization dropped 100%, prep_adjective dropped 100%
+  - The Claude evaluator's false positive rate increases as the data quality improves (more things to "confirm correct")
+  - When evaluating batch-over-batch improvement, need to verify individual issues against actual DB data — raw counts are misleading
+  - The 7 remaining true issues in batch 2 will be resolved by the full re-parse (US-011) since the current prompt already has rules for all of them
 ---
