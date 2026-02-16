@@ -13,8 +13,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-15
-**Tasks Completed:** 6
-**Current Task:** US-005 (Parse batch 2, evaluate, fix) complete
+**Tasks Completed:** 7
+**Current Task:** US-006 (Parse batch 3, evaluate, fix) complete
 
 ---
 
@@ -237,4 +237,35 @@
   - The Claude evaluator's false positive rate increases as the data quality improves (more things to "confirm correct")
   - When evaluating batch-over-batch improvement, need to verify individual issues against actual DB data — raw counts are misleading
   - The 7 remaining true issues in batch 2 will be resolved by the full re-parse (US-011) since the current prompt already has rules for all of them
+---
+
+## 2026-02-15 - US-006: Parse batch 3 (recipes 41-60), evaluate, and fix if needed
+- **Batch 3 parsing:** All 20 recipes (offset=40, limit=20) successfully parsed in this session. Required 3 runs due to BOOT_ERROR (503 from concurrency) and Anthropic rate limits (429). All 20 completed.
+- **DB state after batch 3:** 63 recipes, 842 ingredients total.
+- **Evaluation results (all 63 recipes, 842 ingredients):** 83 raw issues
+  - prep_adjective: 19, quantity_precision: 16, category_inconsistency: 16, pluralization: 15, non_standard_unit: 9, count_unit_in_name: 7, typo: 1
+- **Batch 3 analysis (29 raw issues → 3 true issues, 26 false positives = 90% FP rate):**
+  - TRUE: `crispy onion` in Biryani (prep_adjective — "crispy" should be removed)
+  - TRUE: `green cardamom pod` in Biryani (count_unit_in_name — "pod" should be unit=piece)
+  - TRUE: `pork sausage crumbles` in Biscuits and Gravy (pluralization — should be singular)
+  - All other batch 3 issues are FALSE POSITIVES: quantities already ≤2 decimals, names already singular, prep adjectives already removed from name field (evaluator reading raw_text instead of name), units already correctly placed
+- **Batch comparison (true issues only):**
+  - Batch 1 (parsed with OLD prompt): ~20 true issues
+  - Batch 2 (parsed with US-003 prompt): 7 true issues
+  - Batch 3 (parsed with US-004 prompt): 3 true issues — **prompt quality improving dramatically**
+- **Prompt fix decision: No changes needed.** All 3 true issues are from existing issue types (prep_adjective, count_unit_in_name, pluralization) already covered by current prompt rules. These are edge cases in specific recipes, not systemic prompt failures:
+  - "crispy onion" — prompt already says to remove prep adjectives; this is an AI slip on a garnish ingredient
+  - "green cardamom pod" — prompt already says to separate count units from names; AI missed this for a spice
+  - "pork sausage crumbles" — prompt already enforces singular names; "crumbles" is a product brand name edge case
+- **Claude evaluator FP rate trend:** Batch 1 ~24% → Batch 2 ~61% → Batch 3 ~90%. As data quality improves, the evaluator generates more false positives (confirming correct values, reading raw_text instead of parsed names). The evaluator prompt could be improved, but the main parsing prompt is what matters.
+- **Files changed:** None (no prompt changes needed — prompt is stable for 2 consecutive batches)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - The batch-parse script needs 2-3 runs per batch due to BOOT_ERROR (503) from edge function concurrency limits and Anthropic 429 rate limits. Wait ~60s between retries.
+  - Biryani has 30 ingredients — the most complex recipe parsed so far. Only 2 true issues out of 30 ingredients = 93% accuracy even for complex recipes.
+  - The evaluator increasingly flags false positives as data quality improves. Consider improving the evaluator system prompt before the full re-parse (US-011) to reduce noise.
+  - "Crispy onion" is a garnish/topping ingredient listed as a sub-recipe component — these edge cases are hard for the AI to handle perfectly.
+  - The prompt is stable: no new issue types in batch 3 vs batch 2. Category_inconsistency dropped to 0 in batch 3 (was 3 in batch 2, 13 in batch 1).
 ---

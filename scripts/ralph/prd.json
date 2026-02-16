@@ -112,8 +112,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "By batch 3 (60 recipes total), the prompt should be fairly mature. Most common patterns should already be covered. Look for edge cases: unusual ingredients from specific cuisines, metric-only recipes, image-based recipes."
+      "passes": true,
+      "notes": "COMPLETED. All 20 batch 3 recipes parsed successfully. Evaluation: 29 raw issues, 3 true issues, 26 false positives (90% FP rate). No new issue types found. Prompt is stable for 2 consecutive batches. True issues: crispy onion (prep_adjective), green cardamom pod (count_unit_in_name), pork sausage crumbles (pluralization) — all already covered by existing prompt rules. Category_inconsistency dropped to 0 in batch 3."
     },
     {
       "id": "US-007",
