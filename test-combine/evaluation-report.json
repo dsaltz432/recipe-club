@@ -1,296 +1,482 @@
 {
   "summary": {
-    "totalIssues": 35,
+    "totalIssues": 58,
     "totalRecipes": 43,
     "totalIngredients": 563,
     "byType": {
-      "category_inconsistency": 15,
-      "pluralization": 9,
-      "non_standard_unit": 6,
-      "prep_adjective": 2,
-      "typo": 3
+      "category_inconsistency": 16,
+      "pluralization": 10,
+      "count_unit_in_name": 5,
+      "prep_adjective": 9,
+      "non_standard_unit": 8,
+      "typo": 1,
+      "quantity_precision": 9
     }
   },
   "issues": [
     {
-      "recipeId": "a30b52a9-9716-4c3b-aded-a76098fbb151",
-      "recipeName": "Teriyaki Salmon",
-      "ingredientName": "lemon juice",
+      "recipeName": "Green Curry",
+      "ingredientName": "ginger",
       "issueType": "category_inconsistency",
-      "description": "\"lemon juice\" is categorized as \"beverages\" but should be \"produce\"",
-      "suggestedFix": "Change category to \"produce\""
+      "description": "Ginger should be categorized as 'spices', not 'produce'",
+      "suggestedFix": "category: 'spices'",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
-      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae",
-      "recipeName": "Kung Pao Chicken",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
-      "suggestedFix": "Change category to \"other\""
-    },
-    {
-      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae",
-      "recipeName": "Kung Pao Chicken",
-      "ingredientName": "water chestnuts",
-      "issueType": "pluralization",
-      "description": "Name \"water chestnuts\" appears to be plural (ends in -s). Should be singular: \"water chestnut\"",
-      "suggestedFix": "water chestnut"
-    },
-    {
-      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae",
-      "recipeName": "Kung Pao Chicken",
-      "ingredientName": "peanuts",
-      "issueType": "pluralization",
-      "description": "Name \"peanuts\" appears to be plural (ends in -s). Should be singular: \"peanut\"",
-      "suggestedFix": "peanut"
-    },
-    {
-      "recipeId": "b2c994e3-fbe5-4017-b080-2b99537319eb",
-      "recipeName": "Fettuccine Alfredo",
-      "ingredientName": "garlic salt",
-      "issueType": "non_standard_unit",
-      "description": "Unit \"dash\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
-      "suggestedFix": "Convert to a standard unit or null"
-    },
-    {
-      "recipeId": "af8557a2-dcda-46d9-afd8-a01c6a2458f4",
-      "recipeName": "Korean BBQ Short Ribs",
-      "ingredientName": "short ribs",
-      "issueType": "pluralization",
-      "description": "Name \"short ribs\" appears to be plural (ends in -s). Should be singular: \"short rib\"",
-      "suggestedFix": "short rib"
-    },
-    {
-      "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d",
-      "recipeName": "Beef Stir Fry",
-      "ingredientName": "sesame seed",
-      "issueType": "category_inconsistency",
-      "description": "\"sesame seed\" has category \"pantry\" here but \"spices\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"spices\")"
-    },
-    {
-      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff",
       "recipeName": "Green Curry",
       "ingredientName": "kaffir lime leaves",
       "issueType": "pluralization",
-      "description": "Name \"kaffir lime leaves\" appears to be plural (ends in -es). Should be singular: \"kaffir lime leav\"",
-      "suggestedFix": "kaffir lime leav"
+      "description": "Ingredient name should be singular: 'kaffir lime leaf'",
+      "suggestedFix": "name: 'kaffir lime leaf'",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
-      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff",
+      "recipeName": "Green Curry",
+      "ingredientName": "snow peas",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular: 'snow pea' (peas is an exception but 'snow pea' is the correct singular form)",
+      "suggestedFix": "name: 'snow pea'",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
+    },
+    {
+      "recipeName": "Green Curry",
+      "ingredientName": "Thai basil",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'leaves' should be in the unit field, not embedded in the quantity context",
+      "suggestedFix": "name: 'Thai basil', unit: 'piece' (for leaves)",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
+    },
+    {
       "recipeName": "Green Curry",
       "ingredientName": "fried Asian shallots",
-      "issueType": "pluralization",
-      "description": "Name \"fried Asian shallots\" appears to be plural (ends in -s). Should be singular: \"fried asian shallot\"",
-      "suggestedFix": "fried asian shallot"
+      "issueType": "prep_adjective",
+      "description": "Preparation adjective 'fried' should be removed unless it's a distinct product name",
+      "suggestedFix": "name: 'Asian shallot'",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
-      "recipeId": "c0fa9006-58c1-4ce1-a746-d09d5271c155",
-      "recipeName": "Pesto Pasta",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
-      "suggestedFix": "Change category to \"other\""
+      "recipeName": "Green Curry",
+      "ingredientName": "chili",
+      "issueType": "non_standard_unit",
+      "description": "Unit 'slice' is not a standard unit. Should be 'null' or a count unit like 'piece'",
+      "suggestedFix": "unit: null or unit: 'piece'",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
-      "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957",
-      "recipeName": "Mapo Tofu",
-      "ingredientName": "Sichuan peppercorns",
-      "issueType": "pluralization",
-      "description": "Name \"Sichuan peppercorns\" appears to be plural (ends in -s). Should be singular: \"sichuan peppercorn\"",
-      "suggestedFix": "sichuan peppercorn"
-    },
-    {
-      "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957",
-      "recipeName": "Mapo Tofu",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
-      "suggestedFix": "Change category to \"other\""
-    },
-    {
-      "recipeId": "c605a0c6-a5b0-4f1a-b9a6-b4a0d6300dd2",
-      "recipeName": "Pasta Primavera",
-      "ingredientName": "cherry tomatoes",
-      "issueType": "pluralization",
-      "description": "Name \"cherry tomatoes\" appears to be plural (ends in -s). Should be singular: \"cherry tomatoe\"",
-      "suggestedFix": "cherry tomatoe"
-    },
-    {
-      "recipeId": "c605a0c6-a5b0-4f1a-b9a6-b4a0d6300dd2",
-      "recipeName": "Pasta Primavera",
-      "ingredientName": "lemon juice",
-      "issueType": "category_inconsistency",
-      "description": "\"lemon juice\" has category \"produce\" here but \"beverages\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"beverages\")"
-    },
-    {
-      "recipeId": "4e7ebcea-f660-438b-85cf-e6ae7ff59acd",
-      "recipeName": "Shrimp Lo Mein",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
-      "suggestedFix": "Change category to \"other\""
-    },
-    {
-      "recipeId": "552c92c6-db52-4bfc-a029-2c7f9042fe74",
-      "recipeName": "Lasagna",
-      "ingredientName": "crushed tomatoes",
-      "issueType": "pluralization",
-      "description": "Name \"crushed tomatoes\" appears to be plural (ends in -s). Should be singular: \"crushed tomatoe\"",
-      "suggestedFix": "crushed tomatoe"
-    },
-    {
-      "recipeId": "552c92c6-db52-4bfc-a029-2c7f9042fe74",
-      "recipeName": "Lasagna",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
-      "suggestedFix": "Change category to \"other\""
-    },
-    {
-      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
       "recipeName": "Bibimbap",
       "ingredientName": "bean sprouts",
       "issueType": "non_standard_unit",
-      "description": "Unit \"g\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
-      "suggestedFix": "Convert to a standard unit or null"
+      "description": "Unit 'g' (grams) is not a standard unit. Should use standard units like 'oz' or 'lb'",
+      "suggestedFix": "unit: 'oz' with converted quantity",
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2"
     },
     {
-      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
+      "recipeName": "Bibimbap",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "category: 'other'",
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2"
+    },
+    {
+      "recipeName": "Bibimbap",
+      "ingredientName": "toasted sesame seeds",
+      "issueType": "prep_adjective",
+      "description": "Preparation adjective 'toasted' should be removed",
+      "suggestedFix": "name: 'sesame seed'",
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2"
+    },
+    {
       "recipeName": "Bibimbap",
       "ingredientName": "toasted seasoned seaweed",
       "issueType": "prep_adjective",
-      "description": "Name \"toasted seasoned seaweed\" contains preparation adjective \"toasted\". Should be just \"seasoned seaweed\"",
-      "suggestedFix": "seasoned seaweed"
+      "description": "Preparation adjectives 'toasted' and 'seasoned' should be removed",
+      "suggestedFix": "name: 'seaweed'",
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2"
     },
     {
-      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
-      "recipeName": "Bibimbap",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
-      "suggestedFix": "Change category to \"other\""
-    },
-    {
-      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
-      "recipeName": "Bibimbap",
-      "ingredientName": "toasted sesame seeds",
-      "issueType": "pluralization",
-      "description": "Name \"toasted sesame seeds\" appears to be plural (ends in -s). Should be singular: \"toasted sesame seed\"",
-      "suggestedFix": "toasted sesame seed"
-    },
-    {
-      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
-      "recipeName": "Bibimbap",
-      "ingredientName": "toasted sesame seeds",
+      "recipeName": "Beef Stir Fry",
+      "ingredientName": "broccoli",
       "issueType": "prep_adjective",
-      "description": "Name \"toasted sesame seeds\" contains preparation adjective \"toasted\". Should be just \"sesame seeds\"",
-      "suggestedFix": "sesame seeds"
+      "description": "The raw_text mentions 'florets' which is a prep descriptor - name should be just 'broccoli'",
+      "suggestedFix": "Confirm name is 'broccoli' without 'florets'",
+      "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d"
     },
     {
-      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac",
-      "recipeName": "Bolognese",
-      "ingredientName": "tomato",
+      "recipeName": "Beef Stir Fry",
+      "ingredientName": "sesame seed",
       "issueType": "category_inconsistency",
-      "description": "\"tomato\" has category \"pantry\" here but \"produce\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"produce\")"
+      "description": "Seeds like sesame should be categorized as 'spices', not 'pantry'",
+      "suggestedFix": "category: 'spices'",
+      "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d"
     },
     {
-      "recipeId": "dba0a929-1c0c-402b-9751-798961cf8c66",
-      "recipeName": "Carnitas",
-      "ingredientName": "jalapeno",
-      "issueType": "typo",
-      "description": "Name \"jalapeno\" appears to be a typo. Should be \"jalapeño\"",
-      "suggestedFix": "jalapeño"
-    },
-    {
-      "recipeId": "dba0a929-1c0c-402b-9751-798961cf8c66",
-      "recipeName": "Carnitas",
-      "ingredientName": "jalapeno",
-      "issueType": "typo",
-      "description": "Name \"jalapeno\" contains possible typo \"jalapeno\". Should be \"jalapeño\"",
-      "suggestedFix": "jalapeño"
-    },
-    {
-      "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295",
-      "recipeName": "Chana Masala",
-      "ingredientName": "ginger",
-      "issueType": "non_standard_unit",
-      "description": "Unit \"inch\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
-      "suggestedFix": "Convert to a standard unit or null"
-    },
-    {
-      "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295",
-      "recipeName": "Chana Masala",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"beverages\")"
-    },
-    {
-      "recipeId": "583e0869-bcdc-410a-8eed-a881b39740dc",
-      "recipeName": "Enchiladas",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"beverages\")"
-    },
-    {
-      "recipeId": "6b6dcb4d-0158-48cb-b1a5-1b44c1b179bf",
-      "recipeName": "Churros",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"beverages\")"
-    },
-    {
-      "recipeId": "c6a8e686-da0a-4516-936c-4e24b1d01d11",
-      "recipeName": "Palak Paneer",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"beverages\")"
-    },
-    {
-      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26",
       "recipeName": "Beef Burrito Bowl",
       "ingredientName": "tofu sofritas",
       "issueType": "non_standard_unit",
-      "description": "Unit \"recipe\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
-      "suggestedFix": "Convert to a standard unit or null"
+      "description": "Unit 'recipe' is not a standard unit",
+      "suggestedFix": "unit: null",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
     },
     {
-      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26",
       "recipeName": "Beef Burrito Bowl",
       "ingredientName": "fajita veggies",
       "issueType": "non_standard_unit",
-      "description": "Unit \"recipe\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
-      "suggestedFix": "Convert to a standard unit or null"
+      "description": "Unit 'recipe' is not a standard unit",
+      "suggestedFix": "unit: null",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
     },
     {
-      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26",
       "recipeName": "Beef Burrito Bowl",
       "ingredientName": "lime",
       "issueType": "non_standard_unit",
-      "description": "Unit \"wedge\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
-      "suggestedFix": "Convert to a standard unit or null"
+      "description": "Unit 'wedge' is not a standard unit. Should use 'piece' or null",
+      "suggestedFix": "unit: 'piece' or unit: null",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
     },
     {
-      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708",
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "pickled red onion",
+      "issueType": "prep_adjective",
+      "description": "Preparation adjective 'pickled' should be removed",
+      "suggestedFix": "name: 'red onion'",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
+    },
+    {
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "pickled jalapeño",
+      "issueType": "prep_adjective",
+      "description": "Preparation adjective 'pickled' should be removed",
+      "suggestedFix": "name: 'jalapeño'",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
+    },
+    {
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "cilantro",
+      "issueType": "count_unit_in_name",
+      "description": "Raw text mentions 'leaves' which should be represented in unit field",
+      "suggestedFix": "unit: 'piece' (for leaves)",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
+    },
+    {
+      "recipeName": "Thai Mango Salad",
+      "ingredientName": "red Thai pepper",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular even though raw_text shows 'peppers'",
+      "suggestedFix": "Verify if name should be 'red Thai pepper' (singular)",
+      "recipeId": "3164d391-d3d2-434f-a535-f4284369cb84"
+    },
+    {
+      "recipeName": "Thai Mango Salad",
+      "ingredientName": "peanut",
+      "issueType": "prep_adjective",
+      "description": "Preparation adjective 'chopped' and 'toasted' from raw_text should not be in name",
+      "suggestedFix": "Confirm name is 'peanut' without prep descriptors",
+      "recipeId": "3164d391-d3d2-434f-a535-f4284369cb84"
+    },
+    {
+      "recipeName": "Butter Chicken",
+      "ingredientName": "chicken breast",
+      "issueType": "prep_adjective",
+      "description": "Raw text mentions 'cut into bite-sized chunks' - verify name doesn't contain prep descriptors",
+      "suggestedFix": "Confirm name is 'chicken breast' without prep descriptors",
+      "recipeId": "320ce7b4-f727-405d-976f-5c0a4be68d93"
+    },
+    {
+      "recipeName": "Minestrone",
+      "ingredientName": "fennel seed",
+      "issueType": "category_inconsistency",
+      "description": "Seeds should be categorized as 'spices', not left in another category",
+      "suggestedFix": "Verify category is 'spices'",
+      "recipeId": "3eee4c77-3f72-463b-91e4-104da328b121"
+    },
+    {
+      "recipeName": "Minestrone",
+      "ingredientName": "cannellini bean",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular: 'cannellini bean'",
+      "suggestedFix": "Confirm singular form",
+      "recipeId": "3eee4c77-3f72-463b-91e4-104da328b121"
+    },
+    {
+      "recipeName": "Shrimp Lo Mein",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "category: 'other'",
+      "recipeId": "4e7ebcea-f660-438b-85cf-e6ae7ff59acd"
+    },
+    {
+      "recipeName": "Shrimp Lo Mein",
+      "ingredientName": "sesame oil",
+      "issueType": "prep_adjective",
+      "description": "Preparation adjective 'toasted' from raw_text should not affect the name",
+      "suggestedFix": "Confirm name is 'sesame oil' without 'toasted'",
+      "recipeId": "4e7ebcea-f660-438b-85cf-e6ae7ff59acd"
+    },
+    {
+      "recipeName": "Lasagna",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "category: 'other'",
+      "recipeId": "552c92c6-db52-4bfc-a029-2c7f9042fe74"
+    },
+    {
+      "recipeName": "Chicken Pad Thai",
+      "ingredientName": "bean sprout",
+      "issueType": "pluralization",
+      "description": "Name appears singular but should verify if 'bean sprout' is correct (sprouts is an exception compound)",
+      "suggestedFix": "Consider if 'bean sprout' should remain singular or use exception 'bean sprouts'",
+      "recipeId": "56144665-ec11-4b06-96e9-353a8e56c648"
+    },
+    {
+      "recipeName": "Chicken Pad Thai",
+      "ingredientName": "lemon",
+      "issueType": "count_unit_in_name",
+      "description": "Raw text mentions 'wedges' - verify this isn't embedded in the name",
+      "suggestedFix": "Confirm name is 'lemon' and unit handles wedges",
+      "recipeId": "56144665-ec11-4b06-96e9-353a8e56c648"
+    },
+    {
+      "recipeName": "Enchiladas",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water is correctly categorized as 'other' - no issue",
+      "suggestedFix": "No fix needed",
+      "recipeId": "583e0869-bcdc-410a-8eed-a881b39740dc"
+    },
+    {
+      "recipeName": "Chicken Satay",
+      "ingredientName": "turmeric",
+      "issueType": "typo",
+      "description": "Misspelled ingredient name in raw_text: 'tumeric' should be 'turmeric'",
+      "suggestedFix": "turmeric",
+      "recipeId": "782715e3-0f99-431d-a040-076b41a87d22"
+    },
+    {
+      "recipeName": "Foie Gras",
+      "ingredientName": "dried apricot",
+      "issueType": "category_inconsistency",
+      "description": "Dried apricots should be categorized as 'pantry' not 'produce'",
+      "suggestedFix": "category: pantry",
+      "recipeId": "89198761-065d-485b-bd64-261f69e90e52"
+    },
+    {
+      "recipeName": "Foie Gras",
+      "ingredientName": "white wine",
+      "issueType": "category_inconsistency",
+      "description": "White wine should be categorized as 'beverages' not 'beverages' - actually this is correct, but the raw_text shows '1 cup white wine' which should typically be a dry white wine for cooking purposes",
+      "suggestedFix": "No fix needed - category is correct",
+      "recipeId": "89198761-065d-485b-bd64-261f69e90e52"
+    },
+    {
+      "recipeName": "Teriyaki Salmon",
+      "ingredientName": "lemon juice",
+      "issueType": "category_inconsistency",
+      "description": "Lemon juice should be categorized as 'produce' not 'beverages'",
+      "suggestedFix": "category: produce",
+      "recipeId": "a30b52a9-9716-4c3b-aded-a76098fbb151"
+    },
+    {
+      "recipeName": "Mapo Tofu",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other' not 'beverages'",
+      "suggestedFix": "category: other",
+      "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957"
+    },
+    {
+      "recipeName": "Mapo Tofu",
+      "ingredientName": "silken tofu",
+      "issueType": "category_inconsistency",
+      "description": "Tofu should be categorized as 'pantry' or 'produce' not 'meat_seafood'",
+      "suggestedFix": "category: pantry",
+      "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957"
+    },
+    {
+      "recipeName": "Fettuccine Alfredo",
+      "ingredientName": "garlic salt",
+      "issueType": "non_standard_unit",
+      "description": "Unit 'dash' is not a valid standard unit",
+      "suggestedFix": "Convert to tsp or make unit null with appropriate quantity adjustment",
+      "recipeId": "b2c994e3-fbe5-4017-b080-2b99537319eb"
+    },
+    {
+      "recipeName": "Vegetable Fried Rice",
+      "ingredientName": "carrot",
+      "issueType": "quantity_precision",
+      "description": "Quantity has too many decimal places: 0.667 (should be rounded to 3 decimal places max)",
+      "suggestedFix": "quantity: 0.667",
+      "recipeId": "b995aeb2-89ce-4735-82c5-00c7cfc7187f"
+    },
+    {
+      "recipeName": "Vegetable Fried Rice",
+      "ingredientName": "green pea",
+      "issueType": "category_inconsistency",
+      "description": "Frozen peas should be categorized as 'frozen' - this is actually correct as listed",
+      "suggestedFix": "No fix needed - category is correct",
+      "recipeId": "b995aeb2-89ce-4735-82c5-00c7cfc7187f"
+    },
+    {
+      "recipeName": "Chicken Tacos",
+      "ingredientName": "taco shell",
+      "issueType": "category_inconsistency",
+      "description": "Taco shells should be categorized as 'bakery' or 'pantry' not 'other'",
+      "suggestedFix": "category: bakery",
+      "recipeId": "be4d17e7-9860-48f6-9acf-3ad5e0b92c5d"
+    },
+    {
+      "recipeName": "Chana Masala",
+      "ingredientName": "ginger",
+      "issueType": "non_standard_unit",
+      "description": "Unit 'inch' is not a valid standard unit",
+      "suggestedFix": "Convert to tbsp or make unit null with appropriate quantity adjustment",
+      "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295"
+    },
+    {
+      "recipeName": "Chana Masala",
+      "ingredientName": "salt",
+      "issueType": "non_standard_unit",
+      "description": "Raw text shows 'pinch' which is not a valid standard unit",
+      "suggestedFix": "Convert to tsp or make unit null with quantity like 0.125 tsp",
+      "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295"
+    },
+    {
+      "recipeName": "Kung Pao Chicken",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "category: 'other'",
+      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae"
+    },
+    {
+      "recipeName": "Kung Pao Chicken",
+      "ingredientName": "peanuts",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "name: 'peanut'",
+      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae"
+    },
+    {
+      "recipeName": "Pesto Pasta",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "category: 'other'",
+      "recipeId": "c0fa9006-58c1-4ce1-a746-d09d5271c155"
+    },
+    {
       "recipeName": "Tortilla Soup",
       "ingredientName": "jalapeno pepper",
-      "issueType": "typo",
-      "description": "Name \"jalapeno pepper\" contains possible typo \"jalapeno\". Should be \"jalapeño\"",
-      "suggestedFix": "jalapeño pepper"
+      "issueType": "quantity_precision",
+      "description": "Quantity has more than 3 decimal places and should be rounded",
+      "suggestedFix": "quantity: 1.5 (already acceptable, or round to 2 if representing 1-2 range)",
+      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708"
     },
     {
-      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708",
       "recipeName": "Tortilla Soup",
-      "ingredientName": "corn",
-      "issueType": "category_inconsistency",
-      "description": "\"corn\" has category \"pantry\" here but \"produce\" in other recipes",
-      "suggestedFix": "Standardize category (most common: \"produce\")"
+      "ingredientName": "cilantro",
+      "issueType": "quantity_precision",
+      "description": "Quantity 0.333 should be rounded to 0.33",
+      "suggestedFix": "quantity: 0.33",
+      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708"
+    },
+    {
+      "recipeName": "Cacio e Pepe",
+      "ingredientName": "Grana Padano cheese",
+      "issueType": "quantity_precision",
+      "description": "Quantity 0.333 should be rounded to 0.33",
+      "suggestedFix": "quantity: 0.33",
+      "recipeId": "c5166ed0-6e57-4458-9aed-93d1e8a7641a"
+    },
+    {
+      "recipeName": "Caprese",
+      "ingredientName": "heirloom tomato",
+      "issueType": "quantity_precision",
+      "description": "Quantity 3.5 represents a range (3-4) and is acceptable, but could be standardized",
+      "suggestedFix": "quantity: 3.5 (acceptable) or standardize to 3 or 4",
+      "recipeId": "db18e8aa-d974-4a9e-8969-614996871b5b"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "white fish fillet",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "name: 'white fish fillet' (note: 'fillet' is already singular, but raw_text shows 'filets' which is acceptable alternate spelling)",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "chili powder",
+      "issueType": "quantity_precision",
+      "description": "Quantity 2.5 represents a range (2-3) and is acceptable",
+      "suggestedFix": "quantity: 2.5 (acceptable)",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "lime juice",
+      "issueType": "quantity_precision",
+      "description": "Quantity 3.5 represents a range (3-4) and is acceptable",
+      "suggestedFix": "quantity: 3.5 (acceptable)",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "red cabbage",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'head' should be in the unit field, not embedded in raw_text reference",
+      "suggestedFix": "unit: 'head' (already correct in parsed data)",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "radish",
+      "issueType": "pluralization",
+      "description": "Ingredient name should remain singular 'radish' (already correct)",
+      "suggestedFix": "No change needed - already correct",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "spring onion",
+      "issueType": "pluralization",
+      "description": "Ingredient name should remain singular (already correct)",
+      "suggestedFix": "No change needed - already correct",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "cilantro",
+      "issueType": "quantity_precision",
+      "description": "Quantity 0.333 should be rounded to 0.33",
+      "suggestedFix": "quantity: 0.33",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Spaghetti Carbonara",
+      "ingredientName": "bacon",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'slice' is correctly in the unit field",
+      "suggestedFix": "No change needed - already correct",
+      "recipeId": "fa9d9f9c-b696-470c-955e-b9cb72b0bace"
+    },
+    {
+      "recipeName": "Guacamole",
+      "ingredientName": "avocado",
+      "issueType": "pluralization",
+      "description": "Ingredient name should remain singular (already correct)",
+      "suggestedFix": "No change needed - already correct",
+      "recipeId": "fece1054-9f35-4977-86ac-9a066219657a"
+    },
+    {
+      "recipeName": "Guacamole",
+      "ingredientName": "serrano chile",
+      "issueType": "quantity_precision",
+      "description": "Quantity 1.5 represents a range (1-2) and is acceptable",
+      "suggestedFix": "quantity: 1.5 (acceptable)",
+      "recipeId": "fece1054-9f35-4977-86ac-9a066219657a"
     }
   ]
 }

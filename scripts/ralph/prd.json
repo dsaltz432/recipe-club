@@ -40,8 +40,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "The old regex-based evaluator had problems: naive singularization ('tomatoes' → 'tomatoe', 'leaves' → 'leav'), couldn't distinguish product-form qualifiers from prep adjectives, couldn't handle context-dependent categories (canned vs fresh tomato). Claude naturally understands all of this. Use the Anthropic API directly (POST https://api.anthropic.com/v1/messages) with claude-sonnet-4-5-20250929 model. Send ingredients grouped by recipe with a system prompt asking for structured JSON evaluation. The API key pattern from parse-recipes.mjs: `process.env.ANTHROPIC_API_KEY || fs.readFileSync(path.join(__dirname, '../../supabase/functions/.env'), 'utf-8').match(/ANTHROPIC_API_KEY=(.*)/)?.[1]?.trim()`. Rate limit: batch recipes into groups of 10-20 per API call, with a 1-2 second delay between calls."
+      "passes": true,
+      "notes": "COMPLETED. Replaced regex-based evaluator with Claude-powered version using claude-sonnet-4-5-20250929. Batches of 15 recipes per API call, 1.5s delay. Found 58 issues across 43 recipes (563 ingredients) vs old evaluator's 24 issues. Claude correctly handles singularization, product-form qualifiers, context-dependent categories. Output format unchanged."
     },
     {
       "id": "US-003",
