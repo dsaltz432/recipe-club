@@ -20,7 +20,7 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "The recipes.ts file exports TEST_RECIPES. To import from .mjs: parse the file with regex (like existing parse-recipes.mjs does) or use a dynamic approach. The existing parse-recipes.mjs in test-combine/ shows patterns. REST API: http://127.0.0.1:54321/rest/v1/. Edge functions: http://127.0.0.1:54321/functions/v1/. For upsert on recipes table, use POST with header 'Prefer: resolution=merge-duplicates' and select to get back the ID. Alternatively, GET recipes?name=eq.{name} first and insert only if not found. Concurrency: split slice into sub-arrays of 2, process 10 sub-arrays concurrently via Promise.all (so ~10 concurrent edge function calls at peak)."
     },
     {
