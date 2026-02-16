@@ -13,8 +13,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-16
-**Tasks Completed:** 10
-**Current Task:** US-009 (Parse batch 6, evaluate, fix) complete
+**Tasks Completed:** 11
+**Current Task:** US-010 (Parse final batch, evaluate) complete
 
 ---
 
@@ -385,4 +385,58 @@
   - "Sleeve" as a unit for crackers is a real measurement (a sleeve of saltine crackers ≈ 40 crackers) but it's not in the standard unit list. The AI should have converted it.
   - Vanilla extract category (spices vs pantry) is genuinely ambiguous — "spices" is defensible since it's shelved in the spice section of most stores, though "pantry" would also be valid. No need to add a specific rule.
   - At 122 recipes and 1581 ingredients, the evaluator uses 9 batches of 15 recipes. One batch had a JSON parse failure but this doesn't affect the batch-6-specific analysis.
+---
+
+## 2026-02-16 - US-010: Parse final batch (recipes 121-153), evaluate, and fix if needed
+- **Final batch parsing:** 33 recipes attempted (offset=120, limit=33). 28 parsed successfully across 5 runs. 5 recipes have persistent URL failures — not transient, these are broken/blocked URLs.
+- **5 permanently failing recipes:**
+  1. **Hetty McKinnon's Flourless Soy Sauce Brownies** — 404 (page removed/URL broken)
+  2. **Roasted Fennel Pasta** — 429 (food52.com persistently rate-limiting)
+  3. **Crunchy Creamy Cucumber Avocado Salad** — 429 (persistently rate-limited)
+  4. **Skirt Steak with Jammy Shallots** — 403 (site blocking scraping)
+  5. **Whole Lemon Salad** — 400 (Anthropic API "Could not process image" — page contains unparseable image content)
+- **DB state after final batch:** 154 recipes (153 from recipes.ts + 1 pre-existing), 1898 ingredients total. 149 recipe_content entries with status=completed, 5 stuck in status=parsing (the failed URLs).
+- **Recipes with 0 ingredients (6 total):** 5 URL failures above + "Double Tofu Caesar Sandwich" (Instagram Reel from batch 6). 148 recipes have ingredients.
+- **Evaluation results (all 154 recipes, 1898 ingredients):** 111 raw issues (note: 3 evaluator batches had JSON parse failures from rate limits, so ~45 recipes' issues are missing from the count)
+  - count_unit_in_name: 33
+  - category_inconsistency: 25
+  - quantity_precision: 16
+  - pluralization: 13
+  - prep_adjective: 12
+  - non_standard_unit: 10
+  - typo: 2
+- **Final batch (batch 7) analysis (14 raw issues → ~4 true issues, ~10 false positives = 71% FP rate):**
+  - TRUE: `rock salt` in Pommes Dauphine (non_standard_unit — "pinch" not standard)
+  - TRUE: `coconut milk` in Coconut Creamed Kale (category_inconsistency — should be "pantry" not "dairy")
+  - TRUE: `ginger` in Coconut Creamed Kale (non_standard_unit — "inch" not standard)
+  - TRUE: `sliced almond` in Trout Amandine (prep_adjective — "sliced" should be removed)
+  - FALSE POSITIVES: 2× pluralization (already singular), 2× category (already correct), 4× count_unit_in_name (already correct or ingredient name, not unit), 1× prep_adjective (only in raw_text), 1× count_unit_in_name (correct as-is)
+- **Batch comparison (true issues only, across all batches):**
+  - Batch 1 (parsed with OLD prompt): ~20 true issues
+  - Batch 2 (parsed with US-003 prompt): 7 true issues
+  - Batch 3 (parsed with US-004 prompt): 3 true issues
+  - Batch 4 (parsed with US-004 prompt): 1 true issue
+  - Batch 5 (parsed with US-004 prompt): 2 true issues
+  - Batch 6 (parsed with US-004 prompt): 1 true issue
+  - Batch 7/final (parsed with US-004 prompt): **~4 true issues** — all existing issue types
+- **Overall initial-pass statistics across all 153 recipes:**
+  - 148 recipes parsed with ingredients, 6 with 0 ingredients (5 broken URLs + 1 Instagram Reel)
+  - 1898 total ingredients parsed
+  - 111 raw evaluator issues (with 3 batches missing due to evaluator fetch errors)
+  - Estimated ~30-40 true issues across all 153 recipes, rest are evaluator false positives
+  - Most true issues come from batches 1-2 (parsed with earlier prompts before fixes). The full re-parse (US-011) will fix these.
+  - No new issue types found in any batch since batch 2
+  - Prompt has been stable for **6 consecutive batches** (batches 2-7)
+- **Prompt fix decision: No changes needed.** All batch 7 true issues are from existing issue types already covered by current prompt rules. These are AI execution edge cases, not systemic prompt failures.
+- **Files changed:** None (no prompt changes needed — prompt stable for 6+ batches)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - 5 of 153 recipes have permanently broken/blocked URLs — these will have 0 ingredients in the DB and recipes.ts. This is expected and acceptable.
+  - The food52.com website is particularly aggressive with rate limiting (429 errors persist even after 2+ minute waits)
+  - Some recipe pages contain images that Anthropic's API cannot process (400 "Could not process image" error)
+  - The evaluator's fetch errors (3 out of 10 batches) mean the 111 issue count is an undercount — actual total is likely 140-160 raw issues, with ~40-50 true issues
+  - The vast majority of true issues (~80%) come from batches 1-2 which were parsed with earlier, less-refined prompts
+  - For the full re-parse (US-011), the 5 broken URLs will still fail — consider marking them as "unparseable" in the DB or skipping them
 ---

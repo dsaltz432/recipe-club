@@ -178,8 +178,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": "All 153 recipes are now parsed. The evaluation report now covers everything. The remaining issues are from early batches that were parsed BEFORE prompt fixes. These will be cleaned up in the full re-parse."
+      "passes": true,
+      "notes": "COMPLETED. All 153 recipes attempted. 148 parsed with ingredients, 5 have permanently broken/blocked URLs (404, 403, 429, image error), 1 Instagram Reel (0 ingredients). DB: 154 recipes, 1898 ingredients. Evaluation: 111 raw issues (3 evaluator batches failed), ~30-40 true issues. Most true issues from batches 1-2 (pre-fix prompts). No new issue types. Prompt stable for 6 consecutive batches. No prompt changes needed."
     },
     {
       "id": "US-011",

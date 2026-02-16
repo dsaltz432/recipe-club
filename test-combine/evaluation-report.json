@@ -1,33 +1,81 @@
 {
   "summary": {
-    "totalIssues": 104,
-    "totalRecipes": 122,
-    "totalIngredients": 1581,
+    "totalIssues": 111,
+    "totalRecipes": 154,
+    "totalIngredients": 1898,
     "byType": {
-      "non_standard_unit": 13,
-      "category_inconsistency": 30,
-      "pluralization": 9,
-      "count_unit_in_name": 23,
+      "category_inconsistency": 25,
       "quantity_precision": 16,
-      "typo": 2,
-      "prep_adjective": 11
+      "count_unit_in_name": 33,
+      "prep_adjective": 12,
+      "pluralization": 13,
+      "non_standard_unit": 10,
+      "typo": 2
     }
   },
   "issues": [
     {
+      "recipeName": "Stuffed Grape Leaves",
+      "ingredientName": "grape leaves in brine",
+      "issueType": "category_inconsistency",
+      "description": "Jarred/canned/brined grape leaves are a shelf-stable pantry item, not 'other'",
+      "suggestedFix": "category: pantry",
+      "recipeId": "01394111-9567-45eb-bb9b-50ae5ad108c2"
+    },
+    {
       "recipeName": "Biryani",
-      "ingredientName": "bean sprouts",
-      "issueType": "non_standard_unit",
-      "description": "Unit 'g' is not a standard unit. Must be one of: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null.",
-      "suggestedFix": "Convert 350g to standard units (approximately 12.3 oz) or use null unit with quantity as a count",
+      "ingredientName": "yoghurt",
+      "issueType": "quantity_precision",
+      "description": "Quantity 0.67 has more than 2 decimal places and should be rounded",
+      "suggestedFix": "quantity: 0.67 (already acceptable precision)",
       "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
     },
     {
       "recipeName": "Biryani",
-      "ingredientName": "water",
+      "ingredientName": "ginger",
       "issueType": "category_inconsistency",
-      "description": "Water should be categorized as 'other', never 'beverages'",
-      "suggestedFix": "Change category from 'beverages' to 'other'",
+      "description": "Fresh ginger is a root vegetable and should be categorized as produce, not spices",
+      "suggestedFix": "category: produce (already correct)",
+      "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
+    },
+    {
+      "recipeName": "Biryani",
+      "ingredientName": "ground turmeric",
+      "issueType": "quantity_precision",
+      "description": "Quantity 0.13 should be rounded to 2 decimal places",
+      "suggestedFix": "quantity: 0.13 (already acceptable precision)",
+      "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
+    },
+    {
+      "recipeName": "Biryani",
+      "ingredientName": "clove",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'clove' should be in the unit field, not embedded in the name",
+      "suggestedFix": "name: clove, unit: piece (or leave as null if referring to the spice itself)",
+      "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
+    },
+    {
+      "recipeName": "Biryani",
+      "ingredientName": "star anise",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit implied but quantity is 1 with null unit",
+      "suggestedFix": "unit: piece",
+      "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
+    },
+    {
+      "recipeName": "Biryani",
+      "ingredientName": "green cardamom pod",
+      "issueType": "count_unit_in_name",
+      "description": "'pod' is a count unit that should be in the unit field",
+      "suggestedFix": "name: green cardamom, unit: piece",
+      "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
+    },
+    {
+      "recipeName": "Biryani",
+      "ingredientName": "crispy onion",
+      "issueType": "prep_adjective",
+      "description": "Name contains preparation adjective 'crispy'",
+      "suggestedFix": "name: onion",
       "recipeId": "016afc00-50c5-494c-ac19-07a6964fe2e3"
     },
     {
@@ -35,427 +83,470 @@
       "ingredientName": "red seedless grape",
       "issueType": "pluralization",
       "description": "Ingredient name should be singular",
-      "suggestedFix": "Change 'red seedless grape' to 'red seedless grape' (already singular, no fix needed)",
+      "suggestedFix": "name: red seedless grape (already singular)",
       "recipeId": "01f57bab-8cad-4926-80c4-f39372169bb5"
+    },
+    {
+      "recipeName": "Waldorf Salad",
+      "ingredientName": "walnut",
+      "issueType": "prep_adjective",
+      "description": "Name contains preparation adjective 'toasted'",
+      "suggestedFix": "Remove 'toasted' from raw text parsing",
+      "recipeId": "01f57bab-8cad-4926-80c4-f39372169bb5"
+    },
+    {
+      "recipeName": "Green Curry",
+      "ingredientName": "ginger",
+      "issueType": "category_inconsistency",
+      "description": "Fresh ginger is a root vegetable and should be categorized as produce",
+      "suggestedFix": "category: produce (already correct)",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
+    },
+    {
+      "recipeName": "Green Curry",
+      "ingredientName": "kaffir lime leaves",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "name: kaffir lime leaf",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
       "recipeName": "Green Curry",
       "ingredientName": "snow peas",
       "issueType": "pluralization",
-      "description": "Should be 'snow pea' (singular)",
-      "suggestedFix": "Change 'snow peas' to 'snow pea'",
+      "description": "While 'peas' is typically an exception, 'snow peas' should be singular as a compound vegetable name",
+      "suggestedFix": "name: snow pea",
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
+    },
+    {
+      "recipeName": "Green Curry",
+      "ingredientName": "Thai basil",
+      "issueType": "count_unit_in_name",
+      "description": "The raw text shows '16 Thai basil leaves' - 'leaves' is a count unit",
+      "suggestedFix": "unit: piece or leaf",
       "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
       "recipeName": "Green Curry",
       "ingredientName": "chili",
       "issueType": "non_standard_unit",
-      "description": "Unit 'slice' is not a standard unit",
-      "suggestedFix": "Change unit from 'slice' to 'piece' or null",
+      "description": "Unit 'slice' is not a valid standard unit",
+      "suggestedFix": "unit: null or piece",
       "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff"
     },
     {
       "recipeName": "Vegan Crab Cakes",
       "ingredientName": "chickpea",
       "issueType": "category_inconsistency",
-      "description": "Canned chickpeas should be categorized as 'pantry' (correct as is, no issue)",
+      "description": "Canned chickpeas are a shelf-stable pantry item",
+      "suggestedFix": "category: pantry (already correct)",
       "recipeId": "05779704-fed5-4831-b0a7-3658667c9d1c"
     },
     {
       "recipeName": "Vegan Crab Cakes",
       "ingredientName": "artichoke heart",
       "issueType": "category_inconsistency",
-      "description": "Canned artichoke hearts should be categorized as 'pantry' (correct as is, no issue)",
+      "description": "Canned artichoke hearts are a shelf-stable pantry item",
+      "suggestedFix": "category: pantry (already correct)",
+      "recipeId": "05779704-fed5-4831-b0a7-3658667c9d1c"
+    },
+    {
+      "recipeName": "Vegan Crab Cakes",
+      "ingredientName": "panko breadcrumbs",
+      "issueType": "category_inconsistency",
+      "description": "Panko breadcrumbs are a bakery item",
+      "suggestedFix": "category: bakery",
       "recipeId": "05779704-fed5-4831-b0a7-3658667c9d1c"
     },
     {
       "recipeName": "Bibimbap",
-      "ingredientName": "ginger",
-      "issueType": "category_inconsistency",
-      "description": "Fresh ginger root should be categorized as 'produce' (it is a root vegetable), not 'spices'",
-      "suggestedFix": "This ingredient is correctly categorized as 'produce'",
+      "ingredientName": "bean sprouts",
+      "issueType": "non_standard_unit",
+      "description": "Unit 'g' (grams) is not a valid standard unit",
+      "suggestedFix": "unit: oz (convert 350g to approximately 12.3 oz)",
       "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2"
+    },
+    {
+      "recipeName": "Bibimbap",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "category: other",
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2"
+    },
+    {
+      "recipeName": "Beef Stir Fry",
+      "ingredientName": "broccoli",
+      "issueType": "prep_adjective",
+      "description": "Raw text shows 'florets' which is a preparation form descriptor",
+      "suggestedFix": "Ensure name does not include 'florets'",
+      "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d"
+    },
+    {
+      "recipeName": "Beef Stir Fry",
+      "ingredientName": "sesame seed",
+      "issueType": "prep_adjective",
+      "description": "Name should not contain preparation adjective 'toasted'",
+      "suggestedFix": "Remove 'toasted' from parsing",
+      "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d"
     },
     {
       "recipeName": "Beef Stir Fry",
       "ingredientName": "sesame seed",
       "issueType": "category_inconsistency",
       "description": "Seeds should be categorized as 'spices'",
-      "suggestedFix": "Change category from 'pantry' to 'spices'",
+      "suggestedFix": "category: spices",
       "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d"
+    },
+    {
+      "recipeName": "Tom Kha Gai",
+      "ingredientName": "makrut lime leaf",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "name: makrut lime leaf (already singular)",
+      "recipeId": "16903391-5d8b-4289-a7ed-63c515cc30c1"
+    },
+    {
+      "recipeName": "Tom Kha Gai",
+      "ingredientName": "Thai chili",
+      "issueType": "count_unit_in_name",
+      "description": "Quantity shows range '1-3' which suggests count unit should be specified",
+      "suggestedFix": "unit: piece",
+      "recipeId": "16903391-5d8b-4289-a7ed-63c515cc30c1"
+    },
+    {
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "black bean",
+      "issueType": "category_inconsistency",
+      "description": "Cooked black beans (canned) are a shelf-stable pantry item",
+      "suggestedFix": "category: pantry (already correct)",
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
     },
     {
       "recipeName": "Beef Burrito Bowl",
       "ingredientName": "tofu sofritas",
       "issueType": "non_standard_unit",
-      "description": "Unit 'recipe' is not a standard unit",
-      "suggestedFix": "Change unit to null or use a standard unit like 'cup'",
+      "description": "Unit 'recipe' is not a valid standard unit",
+      "suggestedFix": "unit: null",
       "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
     },
     {
       "recipeName": "Beef Burrito Bowl",
       "ingredientName": "fajita veggies",
       "issueType": "non_standard_unit",
-      "description": "Unit 'recipe' is not a standard unit",
-      "suggestedFix": "Change unit to null or use a standard unit like 'cup'",
+      "description": "Unit 'recipe' is not a valid standard unit",
+      "suggestedFix": "unit: null",
       "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
     },
     {
       "recipeName": "Beef Burrito Bowl",
       "ingredientName": "lime",
       "issueType": "non_standard_unit",
-      "description": "Unit 'wedge' is not a standard unit",
-      "suggestedFix": "Change unit to 'piece' or null",
+      "description": "Unit 'wedge' is not a valid standard unit",
+      "suggestedFix": "unit: piece or null",
       "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26"
+    },
+    {
+      "recipeName": "Pesto alla Trapanese",
+      "ingredientName": "cherry tomato",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "name: cherry tomato (already singular)",
+      "recipeId": "1eb4e79f-402f-4525-8064-5ccdd7feb415"
     },
     {
       "recipeName": "Pho",
       "ingredientName": "ginger",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'piece' should be in the unit field, not embedded in the name",
-      "suggestedFix": "Change name to 'ginger' and unit to 'piece'",
+      "description": "'piece' is a count unit that should be in the unit field",
+      "suggestedFix": "name: ginger, unit: piece",
+      "recipeId": "22d2b3e6-2241-449f-8469-50fce97b898a"
+    },
+    {
+      "recipeName": "Pho",
+      "ingredientName": "pho noodles",
+      "issueType": "pluralization",
+      "description": "While noodles is typically an exception, quantity shows '6 to 8 servings' which is non-standard",
+      "suggestedFix": "Consider parsing as unit: null or serving",
       "recipeId": "22d2b3e6-2241-449f-8469-50fce97b898a"
     },
     {
       "recipeName": "Pho",
       "ingredientName": "bean sprout",
       "issueType": "pluralization",
-      "description": "Should be 'bean sprout' (already singular, no issue)",
+      "description": "While 'sprouts' is typically plural, this should be 'bean sprout' singular",
+      "suggestedFix": "name: bean sprout (already singular)",
       "recipeId": "22d2b3e6-2241-449f-8469-50fce97b898a"
     },
     {
       "recipeName": "Pho",
       "ingredientName": "lime",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'piece' should be in the unit field, not embedded in the name",
-      "suggestedFix": "Change unit from 'piece' to null (lime is already the name, unit should be null or 'piece' for wedges)",
+      "description": "'piece' is embedded in description (wedges are pieces)",
+      "suggestedFix": "unit: piece",
       "recipeId": "22d2b3e6-2241-449f-8469-50fce97b898a"
+    },
+    {
+      "recipeName": "Meatloaf",
+      "ingredientName": "ketchup",
+      "issueType": "quantity_precision",
+      "description": "Quantity has more than 2 decimal places (0.333)",
+      "suggestedFix": "0.33",
+      "recipeId": "488b201a-f067-4d3e-a0ec-7d685930a8a6"
+    },
+    {
+      "recipeName": "Shrimp Lo Mein",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'beverages'",
+      "suggestedFix": "other",
+      "recipeId": "4e7ebcea-f660-438b-85cf-e6ae7ff59acd"
     },
     {
       "recipeName": "Lasagna",
       "ingredientName": "water",
       "issueType": "category_inconsistency",
       "description": "Water should be categorized as 'other', not 'beverages'",
-      "suggestedFix": "category: 'other'",
+      "suggestedFix": "other",
       "recipeId": "552c92c6-db52-4bfc-a029-2c7f9042fe74"
     },
     {
-      "recipeName": "Lamb Kebabs",
-      "ingredientName": "skewer",
-      "issueType": "category_inconsistency",
-      "description": "Skewers are cooking utensils/equipment, not an ingredient. Should likely be removed from ingredient list",
-      "suggestedFix": "Remove from ingredients or recategorize if truly needed",
-      "recipeId": "557e1f2a-db1c-425f-ab68-40b5044f7015"
+      "recipeName": "Beer-Battered Fish with Malt Vinegar Aioli",
+      "ingredientName": "lemon",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'piece' should be in the unit field, not in the name",
+      "suggestedFix": "Remove 'piece' from unit field, keep name as 'lemon' with unit as null or 'piece' as appropriate",
+      "recipeId": "50361f3f-dde9-4286-89e1-db9f93d2e833"
     },
     {
       "recipeName": "Lamb Kebabs",
       "ingredientName": "shredded red cabbage, carrot and mint salad",
-      "issueType": "category_inconsistency",
-      "description": "This appears to be a prepared dish/side, not a single ingredient. Should be broken down into individual ingredients or removed",
-      "suggestedFix": "Break down into separate ingredients or remove from list",
+      "issueType": "prep_adjective",
+      "description": "Name contains preparation adjective 'shredded'",
+      "suggestedFix": "red cabbage, carrot and mint salad",
       "recipeId": "557e1f2a-db1c-425f-ab68-40b5044f7015"
     },
     {
       "recipeName": "Chicken Pad Thai",
-      "ingredientName": "bean sprout",
-      "issueType": "pluralization",
-      "description": "Should be plural 'bean sprouts' as this is a compound product name exception",
-      "suggestedFix": "name: 'bean sprouts'",
+      "ingredientName": "crushed red pepper",
+      "issueType": "category_inconsistency",
+      "description": "Crushed red pepper is a distinct jarred/prepared spice product and should remain 'crushed red pepper' in name",
+      "suggestedFix": "No change needed - this is actually correct as 'crushed red pepper' is a product name exception",
       "recipeId": "56144665-ec11-4b06-96e9-353a8e56c648"
     },
     {
       "recipeName": "Enchiladas",
       "ingredientName": "green bell pepper",
       "issueType": "quantity_precision",
-      "description": "Quantity has excessive precision: 0.333 should be rounded to 0.33",
-      "suggestedFix": "quantity: 0.33",
+      "description": "Quantity has more than 2 decimal places (0.333)",
+      "suggestedFix": "0.33",
       "recipeId": "583e0869-bcdc-410a-8eed-a881b39740dc"
     },
     {
-      "recipeName": "Churros",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "Water should be categorized as 'other', not left uncategorized",
-      "suggestedFix": "category: 'other'",
-      "recipeId": "6b6dcb4d-0158-48cb-b1a5-1b44c1b179bf"
-    },
-    {
       "recipeName": "Clam Chowder",
-      "ingredientName": "chicken bouillon cube",
-      "issueType": "count_unit_in_name",
-      "description": "The count unit 'cube' should be in the unit field, not embedded in the name",
-      "suggestedFix": "name: 'chicken bouillon', unit: 'cube'",
+      "ingredientName": "flour",
+      "issueType": "quantity_precision",
+      "description": "Quantity has more than 2 decimal places (0.33)",
+      "suggestedFix": "0.33 is acceptable, but 0.33 → no change needed. Actually 0.33 is fine as is.",
       "recipeId": "5e1db199-08db-42da-83d1-d285e0710e6e"
     },
     {
       "recipeName": "Clam Chowder",
       "ingredientName": "smoked paprika",
       "issueType": "quantity_precision",
-      "description": "Quantity 0.13 should be rounded to 0.12 (2 decimal places)",
-      "suggestedFix": "quantity: 0.12",
+      "description": "Quantity has more than 2 decimal places (0.13)",
+      "suggestedFix": "0.13 is acceptable (2 decimal places)",
       "recipeId": "5e1db199-08db-42da-83d1-d285e0710e6e"
     },
     {
       "recipeName": "Clam Chowder",
       "ingredientName": "black pepper",
       "issueType": "quantity_precision",
-      "description": "Quantity 0.13 should be rounded to 0.12 (2 decimal places)",
-      "suggestedFix": "quantity: 0.12",
+      "description": "Quantity has more than 2 decimal places (0.13)",
+      "suggestedFix": "0.13 is acceptable (2 decimal places)",
       "recipeId": "5e1db199-08db-42da-83d1-d285e0710e6e"
     },
     {
-      "recipeName": "Penne Arrabbiata",
-      "ingredientName": "red cayenne pepper",
+      "recipeName": "Cobb Salad",
+      "ingredientName": "bacon",
       "issueType": "count_unit_in_name",
-      "description": "This appears to be a fresh chile pepper which should have unit 'piece' or similar, not embedded as a count description",
-      "suggestedFix": "name: 'cayenne pepper' (or 'red chile pepper'), quantity: 1, unit: 'piece'",
-      "recipeId": "68607a20-3457-49ed-8418-939c52a99f69"
+      "description": "Count unit 'slice' should be in the unit field, not embedded in raw_text description",
+      "suggestedFix": "unit should be 'slice' (already correct)",
+      "recipeId": "657f509f-0d06-4b4f-8f88-22299f2b1415"
+    },
+    {
+      "recipeName": "Cobb Salad",
+      "ingredientName": "sour cream",
+      "issueType": "quantity_precision",
+      "description": "Quantity has more than 2 decimal places (0.333)",
+      "suggestedFix": "0.33",
+      "recipeId": "657f509f-0d06-4b4f-8f88-22299f2b1415"
+    },
+    {
+      "recipeName": "Pommes Dauphine",
+      "ingredientName": "rock salt",
+      "issueType": "non_standard_unit",
+      "description": "Unit 'pinch' is not a standard unit",
+      "suggestedFix": "Convert to tsp or use null unit",
+      "recipeId": "65fc160f-dcfe-404e-b32d-4636b497e21f"
+    },
+    {
+      "recipeName": "Shortcut Banh Mi with Pickled Carrots and Daikon",
+      "ingredientName": "mint",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'sprig' should be in the unit field with a quantity value, not null quantity",
+      "suggestedFix": "Set quantity to a number and unit='sprig'",
+      "recipeId": "681d2267-af1d-463f-a7be-4f2123a23cf2"
+    },
+    {
+      "recipeName": "Shortcut Banh Mi with Pickled Carrots and Daikon",
+      "ingredientName": "cilantro",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'sprig' should be in the unit field with a quantity value, not null quantity",
+      "suggestedFix": "Set quantity to a number and unit='sprig'",
+      "recipeId": "681d2267-af1d-463f-a7be-4f2123a23cf2"
     },
     {
       "recipeName": "Penne Arrabbiata",
       "ingredientName": "chilli flakes",
       "issueType": "typo",
-      "description": "Inconsistent spelling - should match 'chili flakes' (American spelling) or use 'red pepper flakes'",
-      "suggestedFix": "name: 'red pepper flakes' or 'chili flakes'",
+      "description": "Inconsistent spelling - should be 'chili flakes' or use standard term 'red pepper flakes'",
+      "suggestedFix": "red pepper flakes",
       "recipeId": "68607a20-3457-49ed-8418-939c52a99f69"
+    },
+    {
+      "recipeName": "Korma",
+      "ingredientName": "ghee",
+      "issueType": "category_inconsistency",
+      "description": "Ghee should be categorized as 'dairy', not 'pantry'",
+      "suggestedFix": "category should be 'dairy'",
+      "recipeId": "6d11ddaf-c998-417e-97a5-ec823b6e82e4"
     },
     {
       "recipeName": "Korma",
       "ingredientName": "cinnamon",
       "issueType": "non_standard_unit",
-      "description": "Unit 'inch' is not a valid standard unit for ingredients",
-      "suggestedFix": "Use null unit or convert to a standard measurement",
+      "description": "Unit 'inch' is not a standard unit",
+      "suggestedFix": "Use 'piece' or null unit with quantity describing size in the name",
       "recipeId": "6d11ddaf-c998-417e-97a5-ec823b6e82e4"
-    },
-    {
-      "recipeName": "Cheeseburger",
-      "ingredientName": "cheese",
-      "issueType": "non_standard_unit",
-      "description": "Unit 'slice' is not a valid standard unit",
-      "suggestedFix": "Change unit to null or use 'oz'",
-      "recipeId": "704740af-3f55-45fa-bc20-cefde641cf60"
     },
     {
       "recipeName": "Cheeseburger",
       "ingredientName": "burger bun",
       "issueType": "count_unit_in_name",
-      "description": "The ingredient name contains a count unit concept but unit is null",
-      "suggestedFix": "Consider using unit='piece' with quantity=4, or keep as is if 'bun' is the base ingredient",
+      "description": "Count unit 'bun' should be in the unit field, not embedded in the name",
+      "suggestedFix": "name='burger' unit='bun' (or keep as is if 'burger bun' is the standard product name)",
       "recipeId": "704740af-3f55-45fa-bc20-cefde641cf60"
-    },
-    {
-      "recipeName": "Greek Salad",
-      "ingredientName": "romaine lettuce",
-      "issueType": "count_unit_in_name",
-      "description": "'head' should be in the unit field, not implied in the name",
-      "suggestedFix": "name='romaine lettuce' with unit='head' (already correct in data)",
-      "recipeId": "749fe88e-59c2-4fd0-be3c-379a3a52b628"
     },
     {
       "recipeName": "Banana Bread",
       "ingredientName": "banana",
       "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places: 2.33",
-      "suggestedFix": "Round to 2.33 (already at 2 decimals, no issue)",
+      "description": "Quantity has more than 2 decimal places (2.33 should be rounded)",
+      "suggestedFix": "quantity: 2.33",
       "recipeId": "7628ffc5-5623-4445-b696-2aa99af759a9"
-    },
-    {
-      "recipeName": "Nicoise Salad",
-      "ingredientName": "boston lettuce",
-      "issueType": "count_unit_in_name",
-      "description": "'head' should be in the unit field",
-      "suggestedFix": "name='boston lettuce' with unit='head' (already correct in data)",
-      "recipeId": "76a9eb98-a5c4-4c1c-a93f-ba79ed4d78b7"
     },
     {
       "recipeName": "Chicken Satay",
       "ingredientName": "turmeric",
       "issueType": "typo",
-      "description": "Ingredient name is misspelled in raw_text as 'tumeric'",
-      "suggestedFix": "Correct spelling is 'turmeric' (already correct in parsed name)",
+      "description": "Misspelled ingredient name in raw_text ('tumeric' should be 'turmeric')",
+      "suggestedFix": "Verify spelling is 'turmeric'",
       "recipeId": "782715e3-0f99-431d-a040-076b41a87d22"
     },
     {
       "recipeName": "Chicken Satay",
       "ingredientName": "garlic",
       "issueType": "count_unit_in_name",
-      "description": "'clove' should be in the unit field, not mentioned separately",
-      "suggestedFix": "name='garlic' unit='clove' (already correct in data)",
+      "description": "Count unit 'clove' should be in the unit field, not left as 'clove' when raw text shows '4 garlic cloves'",
+      "suggestedFix": "Correctly has unit='clove', no fix needed (false alarm - this is already correct)",
       "recipeId": "782715e3-0f99-431d-a040-076b41a87d22"
     },
     {
-      "recipeName": "Chicken Satay",
-      "ingredientName": "lemongrass",
-      "issueType": "count_unit_in_name",
-      "description": "'stalk' should be in the unit field",
-      "suggestedFix": "name='lemongrass' with unit='stalk' (already correct in data)",
-      "recipeId": "782715e3-0f99-431d-a040-076b41a87d22"
+      "recipeName": "Dal Makhani",
+      "ingredientName": "hot water",
+      "issueType": "prep_adjective",
+      "description": "Name contains temperature adjective 'hot' which is a preparation descriptor, not a product identifier",
+      "suggestedFix": "name='water'",
+      "recipeId": "7b819bb6-c1eb-435e-9b9c-53912ce23e24"
+    },
+    {
+      "recipeName": "Coconut Creamed Kale",
+      "ingredientName": "coconut milk",
+      "issueType": "category_inconsistency",
+      "description": "Coconut milk should be categorized as 'pantry' (shelf-stable canned product), not 'dairy'",
+      "suggestedFix": "category='pantry'",
+      "recipeId": "8659f91b-6427-4833-9a5d-d4dd12d2616b"
+    },
+    {
+      "recipeName": "Coconut Creamed Kale",
+      "ingredientName": "ginger",
+      "issueType": "non_standard_unit",
+      "description": "Unit 'inch' is not a valid standard unit",
+      "suggestedFix": "Convert to standard unit or use null",
+      "recipeId": "8659f91b-6427-4833-9a5d-d4dd12d2616b"
     },
     {
       "recipeName": "Foie Gras",
-      "ingredientName": "dried apricot",
-      "issueType": "category_inconsistency",
-      "description": "Dried apricots should be categorized as 'pantry' (shelf-stable dried fruit), not 'produce'",
-      "suggestedFix": "Change category to 'pantry'",
+      "ingredientName": "foie gras",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'piece' is in unit field but raw text says 'one ounce pieces' - may need review",
+      "suggestedFix": "Verify if unit should be 'oz' or 'piece'",
       "recipeId": "89198761-065d-485b-bd64-261f69e90e52"
     },
     {
       "recipeName": "Foie Gras",
       "ingredientName": "bread",
       "issueType": "count_unit_in_name",
-      "description": "'piece' should be in the unit field",
-      "suggestedFix": "name='bread' with unit='piece' (already correct in data)",
+      "description": "Unit is 'piece' which is correct, but raw text shows this is already properly separated",
+      "suggestedFix": "No fix needed (already correct)",
       "recipeId": "89198761-065d-485b-bd64-261f69e90e52"
     },
     {
-      "recipeName": "French Onion Soup",
-      "ingredientName": "thyme",
+      "recipeName": "Foie Gras",
+      "ingredientName": "dried apricot",
       "issueType": "category_inconsistency",
-      "description": "Fresh thyme should be 'produce' based on raw_text indicating fresh herbs, but parsed as 'spices' which is for dried",
-      "suggestedFix": "If fresh thyme, use category='produce'; if dried, keep 'spices'",
-      "recipeId": "8baad415-3788-4c28-b10c-d7c1b9035889"
+      "description": "Dried apricots are shelf-stable dried fruit and should be categorized as 'pantry', not 'produce'",
+      "suggestedFix": "category='pantry'",
+      "recipeId": "89198761-065d-485b-bd64-261f69e90e52"
     },
     {
       "recipeName": "French Onion Soup",
       "ingredientName": "French bread",
       "issueType": "count_unit_in_name",
-      "description": "'slice' should be in the unit field",
-      "suggestedFix": "name='French bread' unit='slice' (already correct in data)",
+      "description": "Count unit 'slice' should be in unit field; 'French bread' is the product name",
+      "suggestedFix": "name='French bread' (unit='slice' is already correct)",
       "recipeId": "8baad415-3788-4c28-b10c-d7c1b9035889"
     },
     {
       "recipeName": "Pozole",
       "ingredientName": "guajillo chili pod",
-      "issueType": "pluralization",
-      "description": "Ingredient name should be singular",
-      "suggestedFix": "Change to 'guajillo chili pod' (already singular, no issue)",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'pod' should be in the unit field, not embedded in the name",
+      "suggestedFix": "name='guajillo chili' unit='pod'",
       "recipeId": "8ee356f2-6184-4583-aae5-cdfb6a0e3ba3"
     },
     {
       "recipeName": "Pozole",
-      "ingredientName": "cabbage",
-      "issueType": "count_unit_in_name",
-      "description": "'head' should be in the unit field",
-      "suggestedFix": "name='cabbage' with unit='head' (already correct in data)",
-      "recipeId": "8ee356f2-6184-4583-aae5-cdfb6a0e3ba3"
-    },
-    {
-      "recipeName": "Pozole",
-      "ingredientName": "cilantro",
-      "issueType": "count_unit_in_name",
-      "description": "'bunch' should be in the unit field",
-      "suggestedFix": "name='cilantro' with unit='bunch' (already correct in data)",
-      "recipeId": "8ee356f2-6184-4583-aae5-cdfb6a0e3ba3"
-    },
-    {
-      "recipeName": "Pozole",
-      "ingredientName": "red radish",
-      "issueType": "count_unit_in_name",
-      "description": "'bunch' should be in the unit field",
-      "suggestedFix": "name='red radish' with unit='bunch' (already correct in data)",
-      "recipeId": "8ee356f2-6184-4583-aae5-cdfb6a0e3ba3"
-    },
-    {
-      "recipeName": "Tabbouleh Wrap",
-      "ingredientName": "lemon",
-      "issueType": "count_unit_in_name",
-      "description": "The ingredient represents individual lemons (count unit), but uses null as unit",
-      "suggestedFix": "name='lemon' with unit=null is acceptable when quantity represents whole items",
-      "recipeId": "8f61ccd8-889c-4365-975c-d2a46195903d"
-    },
-    {
-      "recipeName": "Teriyaki Salmon",
-      "ingredientName": "lemon juice",
+      "ingredientName": "tostada shell",
       "issueType": "category_inconsistency",
-      "description": "Lemon juice should be categorized as 'produce', not 'beverages'",
-      "suggestedFix": "category='produce'",
-      "recipeId": "a30b52a9-9716-4c3b-aded-a76098fbb151"
-    },
-    {
-      "recipeName": "Cinnamon Rolls",
-      "ingredientName": "margarine",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places: 0.33333334326744",
-      "suggestedFix": "quantity=0.33",
-      "recipeId": "a45331ea-e2d8-418a-87dc-5a9d55523d02"
-    },
-    {
-      "recipeName": "Cinnamon Rolls",
-      "ingredientName": "butter",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places: 0.33333334326744",
-      "suggestedFix": "quantity=0.33",
-      "recipeId": "a45331ea-e2d8-418a-87dc-5a9d55523d02"
-    },
-    {
-      "recipeName": "Cinnamon Rolls",
-      "ingredientName": "salt",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places: 0.13 (should be rounded to 0.13)",
-      "suggestedFix": "quantity=0.13",
-      "recipeId": "a45331ea-e2d8-418a-87dc-5a9d55523d02"
-    },
-    {
-      "recipeName": "Asian Sesame Salad",
-      "ingredientName": "cilantro",
-      "issueType": "category_inconsistency",
-      "description": "Fresh herbs like cilantro should be categorized as 'produce'",
-      "suggestedFix": "category='produce' (already correct)",
-      "recipeId": "a561586a-a08d-4a77-8561-73cf4366ced5"
-    },
-    {
-      "recipeName": "Grilled Pork Chops",
-      "ingredientName": "red pepper flakes",
-      "issueType": "non_standard_unit",
-      "description": "Unit should be null or a standard unit, not 'tsp' when no quantity is provided",
-      "suggestedFix": "unit=null (since quantity is null)",
-      "recipeId": "add7850a-f457-479b-a07a-b7f12cccbdb1"
+      "description": "Tostada shells are a baked/fried bread product and should be categorized as 'bakery', not 'pantry'",
+      "suggestedFix": "category='bakery'",
+      "recipeId": "8ee356f2-6184-4583-aae5-cdfb6a0e3ba3"
     },
     {
       "recipeName": "Mapo Tofu",
       "ingredientName": "water",
       "issueType": "category_inconsistency",
       "description": "Water should be categorized as 'other', not 'beverages'",
-      "suggestedFix": "category: \"other\"",
+      "suggestedFix": "category: 'other'",
       "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957"
-    },
-    {
-      "recipeName": "Korean BBQ Short Ribs",
-      "ingredientName": "garlic",
-      "issueType": "prep_adjective",
-      "description": "Name contains preparation adjective 'minced' which should be removed",
-      "suggestedFix": "name: \"garlic\"",
-      "recipeId": "af8557a2-dcda-46d9-afd8-a01c6a2458f4"
-    },
-    {
-      "recipeName": "Korean BBQ Short Ribs",
-      "ingredientName": "ginger",
-      "issueType": "prep_adjective",
-      "description": "Name contains preparation adjective 'minced' which should be removed",
-      "suggestedFix": "name: \"ginger\"",
-      "recipeId": "af8557a2-dcda-46d9-afd8-a01c6a2458f4"
     },
     {
       "recipeName": "Chicken Pot Pie",
       "ingredientName": "butter",
       "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.33333334326744)",
-      "suggestedFix": "quantity: 0.33",
-      "recipeId": "b0741ce2-884b-41e6-8aa7-0b75d221f092"
-    },
-    {
-      "recipeName": "Chicken Pot Pie",
-      "ingredientName": "onion",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.33333334326744)",
-      "suggestedFix": "quantity: 0.33",
-      "recipeId": "b0741ce2-884b-41e6-8aa7-0b75d221f092"
-    },
-    {
-      "recipeName": "Chicken Pot Pie",
-      "ingredientName": "all-purpose flour",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.33333334326744)",
+      "description": "Quantity 0.33 should be rounded to 2 decimal places",
       "suggestedFix": "quantity: 0.33",
       "recipeId": "b0741ce2-884b-41e6-8aa7-0b75d221f092"
     },
@@ -463,7 +554,7 @@
       "recipeName": "Chicken Pot Pie",
       "ingredientName": "milk",
       "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.66666668653488)",
+      "description": "Quantity 0.67 should be rounded to 2 decimal places",
       "suggestedFix": "quantity: 0.67",
       "recipeId": "b0741ce2-884b-41e6-8aa7-0b75d221f092"
     },
@@ -471,112 +562,72 @@
       "recipeName": "Fettuccine Alfredo",
       "ingredientName": "garlic salt",
       "issueType": "non_standard_unit",
-      "description": "Unit 'dash' is not a standard unit. Should be converted or set to null",
-      "suggestedFix": "unit: null",
+      "description": "Unit 'dash' is not a standard unit. Should be null or converted to a standard measurement",
+      "suggestedFix": "unit: null or convert to tsp",
       "recipeId": "b2c994e3-fbe5-4017-b080-2b99537319eb"
     },
     {
-      "recipeName": "Dip",
-      "ingredientName": "garlic",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"garlic\"",
-      "recipeId": "b2d346b2-8edc-45b5-9b43-1ff942997609"
+      "recipeName": "Cheesy White Bean Tomato Bake",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'other' - wait, this is already correct",
+      "suggestedFix": "No fix needed - already 'other'",
+      "recipeId": "bb110c92-1e2e-4c9a-a294-2e20ae5040cc"
     },
     {
-      "recipeName": "Bolognese",
-      "ingredientName": "chicken liver",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"chicken liver\"",
-      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac"
-    },
-    {
-      "recipeName": "Bolognese",
-      "ingredientName": "onion",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"onion\"",
-      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac"
-    },
-    {
-      "recipeName": "Bolognese",
-      "ingredientName": "garlic",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"garlic\"",
-      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac"
-    },
-    {
-      "recipeName": "Bolognese",
-      "ingredientName": "sage",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"sage\"",
-      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac"
-    },
-    {
-      "recipeName": "Bolognese",
-      "ingredientName": "parsley",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"parsley\"",
-      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac"
+      "recipeName": "Braised Fennel",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "Water should be categorized as 'other', not 'other' - already correct",
+      "suggestedFix": "No fix needed - already 'other'",
+      "recipeId": "bd809a14-9384-4a46-a50b-e1e70f025908"
     },
     {
       "recipeName": "Vegetable Fried Rice",
       "ingredientName": "carrot",
       "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.66666668653488)",
+      "description": "Quantity has more than 2 decimal places",
       "suggestedFix": "quantity: 0.67",
       "recipeId": "b995aeb2-89ce-4735-82c5-00c7cfc7187f"
     },
     {
-      "recipeName": "Vegetable Fried Rice",
-      "ingredientName": "garlic",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"garlic\"",
-      "recipeId": "b995aeb2-89ce-4735-82c5-00c7cfc7187f"
-    },
-    {
-      "recipeName": "Chicken Tacos",
-      "ingredientName": "garlic",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'minced' (noted in raw_text)",
-      "suggestedFix": "name: \"garlic\"",
-      "recipeId": "be4d17e7-9860-48f6-9acf-3ad5e0b92c5d"
-    },
-    {
-      "recipeName": "Chicken Tacos",
-      "ingredientName": "taco shell",
-      "issueType": "category_inconsistency",
-      "description": "Taco shells should be categorized as 'bakery', not 'other'",
-      "suggestedFix": "category: \"bakery\"",
-      "recipeId": "be4d17e7-9860-48f6-9acf-3ad5e0b92c5d"
+      "recipeName": "Chicken Larb",
+      "ingredientName": "Thai bird chili",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'chili' appears to be embedded in the name when unit is null",
+      "suggestedFix": "name: 'Thai bird chili' (this is actually correct - 'chili' is the ingredient name, not a count unit)",
+      "recipeId": "bccf3934-68e4-4c58-95a5-bfe57e1c7ad7"
     },
     {
       "recipeName": "Chana Masala",
       "ingredientName": "ginger",
       "issueType": "non_standard_unit",
-      "description": "Unit 'inch' is not a standard unit. Should be converted or set to null",
-      "suggestedFix": "unit: null",
+      "description": "Unit 'inch' is not a standard unit",
+      "suggestedFix": "Change unit to 'piece' and adjust quantity appropriately, or use null unit with adjusted name",
       "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295"
     },
     {
       "recipeName": "Chana Masala",
-      "ingredientName": "water",
-      "issueType": "category_inconsistency",
-      "description": "Water should be categorized as 'other', not left without proper categorization",
-      "suggestedFix": "category: \"other\"",
+      "ingredientName": "bay leaf",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "Change name from 'bay leaf' to 'bay leaf' (already singular, no issue)",
       "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295"
+    },
+    {
+      "recipeName": "Kung Pao Chicken",
+      "ingredientName": "white wine",
+      "issueType": "category_inconsistency",
+      "description": "White wine should be categorized as 'pantry' or 'condiments', not 'beverages'",
+      "suggestedFix": "Change category from 'beverages' to 'condiments'",
+      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae"
     },
     {
       "recipeName": "Kung Pao Chicken",
       "ingredientName": "water",
       "issueType": "category_inconsistency",
       "description": "Water should be categorized as 'other', not 'beverages'",
-      "suggestedFix": "category: \"other\"",
+      "suggestedFix": "Change category from 'beverages' to 'other'",
       "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae"
     },
     {
@@ -584,15 +635,7 @@
       "ingredientName": "water chestnuts",
       "issueType": "category_inconsistency",
       "description": "Canned water chestnuts should be categorized as 'pantry', not 'other'",
-      "suggestedFix": "category: \"pantry\"",
-      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae"
-    },
-    {
-      "recipeName": "Kung Pao Chicken",
-      "ingredientName": "garlic",
-      "issueType": "prep_adjective",
-      "description": "Name should not contain preparation adjective 'chopped' (noted in raw_text)",
-      "suggestedFix": "name: \"garlic\"",
+      "suggestedFix": "Change category from 'other' to 'pantry'",
       "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae"
     },
     {
@@ -600,247 +643,263 @@
       "ingredientName": "water",
       "issueType": "category_inconsistency",
       "description": "Water should be categorized as 'other', not 'beverages'",
-      "suggestedFix": "category: \"other\"",
+      "suggestedFix": "Change category from 'beverages' to 'other'",
       "recipeId": "c0fa9006-58c1-4ce1-a746-d09d5271c155"
     },
     {
       "recipeName": "Tomato Soup",
       "ingredientName": "onion",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'slice' should be in unit field, not embedded in name",
-      "suggestedFix": "name: \"onion\", unit: \"slice\"",
+      "description": "Count unit 'slice' should be in the unit field, not embedded in quantity/description",
+      "suggestedFix": "Change unit from 'slice' to 'slice' (already correct, no issue)",
       "recipeId": "c31d13a3-18f3-42e3-b3b5-029ddd3a1b8e"
     },
     {
-      "recipeName": "Fried Artichokes with Lemony Garlic Aioli",
-      "ingredientName": "baby artichoke heart",
+      "recipeName": "Tortilla Soup",
+      "ingredientName": "jalapeno pepper",
       "issueType": "pluralization",
       "description": "Ingredient name should be singular",
-      "suggestedFix": "baby artichoke",
-      "recipeId": "c58462c2-63d8-4aae-8911-0f0353b1fbc4"
+      "suggestedFix": "Change name from 'jalapeno pepper' to 'jalapeno pepper' (already singular, no issue)",
+      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708"
     },
     {
-      "recipeName": "Vindaloo",
-      "ingredientName": "ghee",
-      "issueType": "category_inconsistency",
-      "description": "Ghee is a cooking fat/oil and should be in pantry category, not dairy",
-      "suggestedFix": "category: dairy",
-      "recipeId": "cf8bfb8f-6f54-4ead-b89e-e215543725c2"
+      "recipeName": "Tortilla Soup",
+      "ingredientName": "cilantro",
+      "issueType": "quantity_precision",
+      "description": "Quantity has more than 2 decimal places",
+      "suggestedFix": "Round 0.333 to 0.33",
+      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708"
+    },
+    {
+      "recipeName": "Cacio e Pepe",
+      "ingredientName": "Pecorino Romano cheese",
+      "issueType": "quantity_precision",
+      "description": "Quantity has more than 2 decimal places",
+      "suggestedFix": "Round 0.333 to 0.33",
+      "recipeId": "c5166ed0-6e57-4458-9aed-93d1e8a7641a"
+    },
+    {
+      "recipeName": "Pasta Primavera",
+      "ingredientName": "cherry tomatoes",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "Change name from 'cherry tomatoes' to 'cherry tomato'",
+      "recipeId": "c605a0c6-a5b0-4f1a-b9a6-b4a0d6300dd2"
     },
     {
       "recipeName": "Gobi 65",
       "ingredientName": "cauliflower",
-      "issueType": "pluralization",
-      "description": "Ingredient name contains preparation descriptor 'florets' which should be removed",
-      "suggestedFix": "cauliflower",
+      "issueType": "count_unit_in_name",
+      "description": "The ingredient refers to 'florets' which is a form description, but the base ingredient is correct",
+      "suggestedFix": "Name is correct as 'cauliflower'",
       "recipeId": "d18450c3-460d-44d1-a796-994fc7c27ce3"
     },
     {
-      "recipeName": "Grilled Shrimp Skewers",
-      "ingredientName": "skewer",
-      "issueType": "category_inconsistency",
-      "description": "Skewers are cooking equipment/tools, not an ingredient that should be tracked",
-      "suggestedFix": "This item should likely be removed from ingredients list as it is equipment",
-      "recipeId": "e0520b95-179a-4710-af47-07c289917318"
-    },
-    {
-      "recipeName": "Atlantic Beach Pie",
-      "ingredientName": "saltine cracker",
-      "issueType": "non_standard_unit",
-      "description": "Unit 'sleeve' is not a standard unit",
-      "suggestedFix": "Convert to standard unit like 'oz' or use null with quantity adjusted",
-      "recipeId": "e57b19cb-dbaa-4bee-93be-bb7012a25b02"
-    },
-    {
-      "recipeName": "Caprese",
-      "ingredientName": "heirloom tomato",
-      "issueType": "pluralization",
-      "description": "Ingredient name should be singular",
-      "suggestedFix": "heirloom tomato",
-      "recipeId": "db18e8aa-d974-4a9e-8969-614996871b5b"
-    },
-    {
-      "recipeName": "Cornbread",
-      "ingredientName": "white sugar",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places",
-      "suggestedFix": "0.67",
-      "recipeId": "dbfe55ed-0ad2-4faa-983c-f3b272249bd7"
-    },
-    {
-      "recipeName": "Chocolate Guinness Cake",
-      "ingredientName": "vanilla extract",
-      "issueType": "category_inconsistency",
-      "description": "Vanilla extract is a baking ingredient/flavoring that belongs in pantry, not spices",
-      "suggestedFix": "category: pantry",
-      "recipeId": "d86c7cdb-185e-4a7e-9564-1b587573c583"
-    },
-    {
-      "recipeName": "Pound Cake",
-      "ingredientName": "vanilla extract",
-      "issueType": "category_inconsistency",
-      "description": "Vanilla extract is a baking ingredient/flavoring that belongs in pantry, not spices",
-      "suggestedFix": "category: pantry",
-      "recipeId": "dc13c3a2-8c76-4ae9-9c6d-0ecfd4e3dfbc"
-    },
-    {
-      "recipeName": "Brownies",
-      "ingredientName": "unsweetened cocoa powder",
-      "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.33 is shown in raw_text as 0.33333334326744)",
-      "suggestedFix": "0.33",
-      "recipeId": "e5f5b8a6-51b7-4a8f-8347-d6944cc9b758"
-    },
-    {
-      "recipeName": "Beer Can Chicken",
-      "ingredientName": "beer",
-      "issueType": "non_standard_unit",
-      "description": "Unit 'can' is not in the valid units list",
-      "suggestedFix": "Change unit to 'cup' or 'oz' with appropriate quantity conversion",
-      "recipeId": "e6b236c5-860d-4ab9-ad3b-cca6fc8c0bd7"
-    },
-    {
-      "recipeName": "Beer Can Chicken",
-      "ingredientName": "thyme",
-      "issueType": "category_inconsistency",
-      "description": "Fresh thyme should be categorized as 'produce' when fresh, but the raw_text mentions 'dried thyme' as an alternative. This appears to be fresh thyme, but the category should be 'spices' if it's the dried form.",
-      "suggestedFix": "Verify if this is fresh or dried thyme. If fresh, keep 'produce'. If dried, change to 'spices'.",
-      "recipeId": "e6b236c5-860d-4ab9-ad3b-cca6fc8c0bd7"
-    },
-    {
-      "recipeName": "Falafel",
-      "ingredientName": "chickpea",
-      "issueType": "pluralization",
-      "description": "Ingredient name should be singular",
-      "suggestedFix": "chickpea",
-      "recipeId": "e95302fb-9d8b-4783-b0d0-d638bf901846"
-    },
-    {
-      "recipeName": "Falafel",
-      "ingredientName": "garlic",
+      "recipeName": "Gobi 65",
+      "ingredientName": "curry leaves",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'clove' is in the unit field correctly, but raw_text shows '2 cloves of garlic' which should be parsed as name='garlic' unit='clove' quantity=2",
-      "suggestedFix": "Ensure unit parsing is consistent (this appears correct already)",
-      "recipeId": "e95302fb-9d8b-4783-b0d0-d638bf901846"
+      "description": "Count unit 'sprig' should be in the unit field",
+      "suggestedFix": "Change name to 'curry leaf' (singular) and ensure unit is 'sprig'",
+      "recipeId": "d18450c3-460d-44d1-a796-994fc7c27ce3"
     },
     {
-      "recipeName": "Falafel",
-      "ingredientName": "salt",
-      "issueType": "category_inconsistency",
-      "description": "Salt should be categorized as 'spices', not 'pantry'",
-      "suggestedFix": "Change category to 'spices'",
-      "recipeId": "e95302fb-9d8b-4783-b0d0-d638bf901846"
+      "recipeName": "Kale Pesto Pizza",
+      "ingredientName": "low-moisture part-skim mozzarella cheese",
+      "issueType": "prep_adjective",
+      "description": "Name contains preparation adjective 'grated'",
+      "suggestedFix": "Remove 'grated' from consideration (it's in raw_text but not in parsed name, so no issue)",
+      "recipeId": "d4b54fe7-90b0-4e85-8f43-9151773474ff"
     },
     {
-      "recipeName": "Split Pea Soup",
-      "ingredientName": "bacon",
+      "recipeName": "Mom's Korokke (Croquette)",
+      "ingredientName": "russet potato",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'slice' should be in the unit field, not embedded in name",
-      "suggestedFix": "Keep name as 'bacon' with unit='slice' quantity=6",
-      "recipeId": "ede2abe3-b503-4228-b878-a5d62a74f108"
+      "description": "The ingredient name 'russet potato' appears to be missing a plural form check, but the quantity indicates multiple units. However, the name should remain singular per guidelines.",
+      "suggestedFix": "Name is correct as 'russet potato' (singular)",
+      "recipeId": "edfee1aa-dbd9-440d-8674-7b5cc82acffc"
     },
     {
-      "recipeName": "Split Pea Soup",
-      "ingredientName": "thyme",
-      "issueType": "count_unit_in_name",
-      "description": "Count unit 'sprig' should be in the unit field, not embedded in name",
-      "suggestedFix": "Keep name as 'thyme' with unit='sprig' quantity=2",
-      "recipeId": "ede2abe3-b503-4228-b878-a5d62a74f108"
-    },
-    {
-      "recipeName": "Split Pea Soup",
-      "ingredientName": "lemon",
-      "issueType": "non_standard_unit",
-      "description": "Unit 'piece' is valid, but the raw text shows 'lemon' should likely not have a specific count unit",
-      "suggestedFix": "Consider using null unit or 'piece' as appropriate",
-      "recipeId": "ede2abe3-b503-4228-b878-a5d62a74f108"
+      "recipeName": "Trout Amandine",
+      "ingredientName": "sliced almond",
+      "issueType": "prep_adjective",
+      "description": "The name contains the preparation adjective 'sliced'",
+      "suggestedFix": "almond",
+      "recipeId": "efde12c6-fabf-41e1-a6f2-ae52c24778c6"
     },
     {
       "recipeName": "Fish Tacos",
-      "ingredientName": "lime juice",
+      "ingredientName": "cilantro",
       "issueType": "quantity_precision",
-      "description": "Quantity 3.5 is acceptable, but verify if this is intentional or should be rounded",
-      "suggestedFix": "3.5 (no change needed if intentional)",
+      "description": "Quantity 0.333 has more than 2 decimal places",
+      "suggestedFix": "0.33",
       "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Fish Tacos",
+      "ingredientName": "spring onion",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "green onion",
+      "recipeId": "f2e67710-dfcb-47c7-b9b3-1bc7cf48965f"
+    },
+    {
+      "recipeName": "Shakshuka",
+      "ingredientName": "garlic",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'clove' should be in the unit field, not embedded in raw_text parsing",
+      "suggestedFix": "Ensure unit field captures 'clove' correctly (appears correct in data)",
+      "recipeId": "f33fe927-a200-4885-9c5f-cd2cb4578e12"
     },
     {
       "recipeName": "Shakshuka",
       "ingredientName": "tomato paste",
       "issueType": "category_inconsistency",
-      "description": "Tomato paste should be categorized as 'pantry', not 'condiments'",
-      "suggestedFix": "Change category to 'pantry'",
+      "description": "Tomato paste is a pantry item, not a condiment",
+      "suggestedFix": "pantry",
       "recipeId": "f33fe927-a200-4885-9c5f-cd2cb4578e12"
     },
     {
       "recipeName": "Chocolate Chip Cookies",
       "ingredientName": "walnut",
-      "issueType": "category_inconsistency",
-      "description": "Walnuts should be categorized as 'pantry' (nuts are shelf-stable pantry items)",
-      "suggestedFix": "Change category to 'pantry'",
+      "issueType": "prep_adjective",
+      "description": "The raw text shows 'chopped walnuts' but name should be singular without prep adjective",
+      "suggestedFix": "walnut (singular, no 'chopped')",
       "recipeId": "f4db53ab-bed6-4e56-8612-a04a93254a6e"
     },
     {
       "recipeName": "Chimichurri Steak",
-      "ingredientName": "red chili",
-      "issueType": "category_inconsistency",
-      "description": "Fresh red chili should be categorized as 'produce'",
-      "suggestedFix": "Verify category is 'produce' (appears correct)",
+      "ingredientName": "garlic",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'clove' should be in the unit field",
+      "suggestedFix": "Ensure unit='clove' is properly set (appears correct)",
       "recipeId": "f4f298ef-5573-4451-bcee-c98e9801d5f8"
     },
     {
-      "recipeName": "Steak",
-      "ingredientName": "rosemary",
-      "issueType": "count_unit_in_name",
-      "description": "Count unit 'sprig' should be in the unit field, not embedded in name",
-      "suggestedFix": "Keep name as 'rosemary' with unit='sprig' quantity=3",
-      "recipeId": "f5748e4e-9f5c-4d94-a0be-a3b59188621c"
+      "recipeName": "Chimichurri Steak",
+      "ingredientName": "parsley",
+      "issueType": "prep_adjective",
+      "description": "The raw text shows 'finely minced parsley leaves' but name should not contain prep details",
+      "suggestedFix": "parsley",
+      "recipeId": "f4f298ef-5573-4451-bcee-c98e9801d5f8"
     },
     {
       "recipeName": "Coleslaw",
       "ingredientName": "black pepper",
       "issueType": "quantity_precision",
-      "description": "Quantity has more than 2 decimal places (0.13 should be 0.13, which is acceptable, but verify if 1/8 tsp = 0.125 should be used)",
-      "suggestedFix": "0.13 (acceptable) or 0.13 (rounded from 0.125)",
+      "description": "Quantity 0.13 should be rounded to 2 decimal places (already is, but 1/8 = 0.125)",
+      "suggestedFix": "0.13 is acceptable (rounds 0.125)",
       "recipeId": "f6ffd8c6-c59c-40ca-a298-1d5b40d61146"
     },
     {
       "recipeName": "Sticky and Spicy Baked Cauliflower",
       "ingredientName": "cauliflower",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'head' should be in the unit field, not embedded in name",
-      "suggestedFix": "Keep name as 'cauliflower' with unit='head' quantity=1",
+      "description": "Count unit 'head' should be in the unit field",
+      "suggestedFix": "unit='head'",
+      "recipeId": "f8e6ef49-19b2-483f-8ba4-f26508a91b76"
+    },
+    {
+      "recipeName": "Sticky and Spicy Baked Cauliflower",
+      "ingredientName": "scallion",
+      "issueType": "pluralization",
+      "description": "Ingredient name should be singular",
+      "suggestedFix": "scallion (but 'scallions' in raw text suggests plural usage - keep as scallion singular)",
       "recipeId": "f8e6ef49-19b2-483f-8ba4-f26508a91b76"
     },
     {
       "recipeName": "Spaghetti Carbonara",
       "ingredientName": "bacon",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'slice' should be in the unit field, not embedded in name",
-      "suggestedFix": "Keep name as 'bacon' with unit='slice' quantity=8",
+      "description": "Count unit 'slice' should be in the unit field",
+      "suggestedFix": "unit='slice'",
       "recipeId": "fa9d9f9c-b696-470c-955e-b9cb72b0bace"
+    },
+    {
+      "recipeName": "Spaghetti Carbonara",
+      "ingredientName": "garlic",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'clove' should be in the unit field",
+      "suggestedFix": "unit='clove'",
+      "recipeId": "fa9d9f9c-b696-470c-955e-b9cb72b0bace"
+    },
+    {
+      "recipeName": "Spaghetti Carbonara",
+      "ingredientName": "parsley",
+      "issueType": "prep_adjective",
+      "description": "The raw text shows 'chopped fresh parsley' but name should not contain prep adjectives",
+      "suggestedFix": "parsley",
+      "recipeId": "fa9d9f9c-b696-470c-955e-b9cb72b0bace"
+    },
+    {
+      "recipeName": "Elote",
+      "ingredientName": "garlic",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit 'clove' should be in the unit field",
+      "suggestedFix": "unit='clove'",
+      "recipeId": "fe717be9-ecaf-4eb6-b34c-79a62a960450"
     },
     {
       "recipeName": "Elote",
       "ingredientName": "corn",
       "issueType": "count_unit_in_name",
-      "description": "Count unit 'ear' should be in the unit field, not embedded in name",
-      "suggestedFix": "Keep name as 'corn' with unit='ear' quantity=4",
+      "description": "Count unit 'ear' should be in the unit field",
+      "suggestedFix": "unit='ear'",
       "recipeId": "fe717be9-ecaf-4eb6-b34c-79a62a960450"
     },
     {
       "recipeName": "Chicken Shawarma",
-      "ingredientName": "pickle",
-      "issueType": "category_inconsistency",
-      "description": "Pickles are a prepared/jarred product and should be categorized as 'condiments'",
-      "suggestedFix": "Verify category is 'condiments' (appears correct)",
+      "ingredientName": "chicken thigh",
+      "issueType": "count_unit_in_name",
+      "description": "While 'piece' could be used, the raw parsing seems correct with quantity=8",
+      "suggestedFix": "Keep as is or consider unit='piece'",
       "recipeId": "feb0bcc7-2a27-49a8-928f-0a0f45554fa4"
+    },
+    {
+      "recipeName": "Chicken Shawarma",
+      "ingredientName": "pita",
+      "issueType": "count_unit_in_name",
+      "description": "Count unit could be 'piece' in unit field",
+      "suggestedFix": "Consider unit='piece'",
+      "recipeId": "feb0bcc7-2a27-49a8-928f-0a0f45554fa4"
+    },
+    {
+      "recipeName": "Chicken Shawarma",
+      "ingredientName": "tahini sauce",
+      "issueType": "count_unit_in_name",
+      "description": "This seems to be a serving suggestion rather than ingredient with quantity",
+      "suggestedFix": "Verify if this needs quantity or is optional garnish",
+      "recipeId": "feb0bcc7-2a27-49a8-928f-0a0f45554fa4"
+    },
+    {
+      "recipeName": "Chicken Shawarma",
+      "ingredientName": "pickle",
+      "issueType": "pluralization",
+      "description": "Raw text shows 'Pickles' (plural) but name should be singular",
+      "suggestedFix": "pickle",
+      "recipeId": "feb0bcc7-2a27-49a8-928f-0a0f45554fa4"
+    },
+    {
+      "recipeName": "Guacamole",
+      "ingredientName": "serrano chile",
+      "issueType": "count_unit_in_name",
+      "description": "Quantity shows 1.5 units, but the item count nature suggests this may need review",
+      "suggestedFix": "Verify quantity handling for partial chile units",
+      "recipeId": "fece1054-9f35-4977-86ac-9a066219657a"
+    },
+    {
+      "recipeName": "Guacamole",
+      "ingredientName": "tomato",
+      "issueType": "prep_adjective",
+      "description": "The raw text shows 'chopped' but this should not be in name",
+      "suggestedFix": "tomato",
+      "recipeId": "fece1054-9f35-4977-86ac-9a066219657a"
     },
     {
       "recipeName": "Guacamole",
       "ingredientName": "tortilla chips",
       "issueType": "category_inconsistency",
-      "description": "Tortilla chips should be categorized as 'bakery' not 'other'",
-      "suggestedFix": "category: \"bakery\"",
+      "description": "Tortilla chips should be categorized as 'bakery', not 'other'",
+      "suggestedFix": "bakery",
       "recipeId": "fece1054-9f35-4977-86ac-9a066219657a"
     }
   ]
