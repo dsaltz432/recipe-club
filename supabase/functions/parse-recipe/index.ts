@@ -196,24 +196,42 @@ The JSON should have this structure:
 }
 
 Categories must be one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other.
-Category guidance: All cooking oils (olive oil, vegetable oil, canola oil, sesame oil, coconut oil) should be "pantry". Eggs should be "pantry". Vinegars and sauces (soy sauce, fish sauce, hot sauce) should be "condiments". Proteins including tofu, tempeh, and seitan should be "meat_seafood" (this category covers all proteins).
+Category guidance:
+- All cooking oils (olive oil, vegetable oil, canola oil, sesame oil, coconut oil) → "pantry"
+- Eggs → "pantry"
+- Vinegars and sauces (soy sauce, fish sauce, hot sauce, worcestershire sauce) → "condiments"
+- Proteins including tofu, tempeh, and seitan → "meat_seafood" (this category covers all proteins)
+- Water → "other" (NEVER "beverages")
+- Seeds (sesame seed, poppy seed, etc.) → "spices"
+- Lemon/lime juice → "produce" (it comes from produce)
+- Canned/jarred tomato products (crushed tomato, tomato paste, diced tomato, tomato sauce) → "pantry" (they are shelf-stable pantry items)
+- Fresh tomatoes → "produce"
 For quantity, use null if the amount is "to taste" or unspecified. Unit should be null only for truly unitless countable items (e.g. "3 eggs", "1 onion", "2 carrots").
 - COUNT UNITS are real units — put them in the "unit" field, NOT in the name: "head", "bunch", "stalk", "clove", "sprig", "ear", "strip", "slice", "piece".
   Example: "2 medium heads of broccoli" → { "name": "broccoli", "quantity": 2, "unit": "head" }
   Example: "3 garlic cloves" → { "name": "garlic", "quantity": 3, "unit": "clove" }
   Example: "1 bunch cilantro" → { "name": "cilantro", "quantity": 1, "unit": "bunch" }
 - When both metric and imperial are listed (e.g. "800g / 28 oz"), prefer the imperial measurement (use 28, "oz").
+- Non-standard units like "dash", "pinch", "splash" should be converted: use "tsp" with a small quantity (e.g. 0.125) or null if truly negligible.
 
 For ingredient names:
 - Use the BASE ingredient name only, without preparation adjectives or count units.
   YES: "broccoli", "garlic", "ginger", "sesame oil", "soy sauce", "cilantro", "celery"
   NO: "fresh garlic", "broccoli florets", "minced ginger", "toasted sesame oil", "garlic clove", "broccoli head"
 - The name should NEVER contain a count unit word (head, clove, bunch, stalk, sprig, ear, strip, slice, piece) — those go in the "unit" field.
-- Keep essential qualifiers that identify a DIFFERENT product or form:
-  YES: "sesame oil" (different from "vegetable oil"), "rice vinegar" (different from "white vinegar"), "low sodium soy sauce" (different from "soy sauce" for dietary reasons), "romaine lettuce heart" (a specific cut, different from whole romaine lettuce)
-  NO: "fresh broccoli" (same as "broccoli"), "cold water" (same as "water")
-- Use standard singular forms: "onion" not "onions"
-- Use standard abbreviated units: "tsp", "tbsp", "cup", "oz", "lb". Never use metric units (g, kg, ml) — always convert to imperial
+- ALWAYS use SINGULAR forms. Common examples:
+  "onion" not "onions", "tomato" not "tomatoes", "egg" not "eggs",
+  "peanut" not "peanuts", "chestnut" not "chestnuts", "shallot" not "shallots",
+  "short rib" not "short ribs", "peppercorn" not "peppercorns",
+  "sesame seed" not "sesame seeds", "cherry tomato" not "cherry tomatoes"
+  Exception: compound product names where the plural is the standard product name:
+  "red pepper flakes" (not "red pepper flake"), "rice noodles" (not "rice noodle"),
+  "rolled oats" (not "rolled oat"), "lo mein noodles", "breadcrumbs"
+- Keep qualifiers that identify a DIFFERENT product or form:
+  YES (different products): "sesame oil", "rice vinegar", "low sodium soy sauce", "romaine lettuce heart"
+  YES (distinct product forms): "crushed tomato" (a canned product), "red pepper flakes" (a spice product), "dried apricot" (different from fresh apricot), "dry white wine" (wine classification), "chili oil" (a product)
+  NO (just preparation state): "fresh broccoli" (same as "broccoli"), "cold water" (same as "water"), "minced garlic" (same as "garlic"), "diced onion" (same as "onion"), "toasted sesame seed" (same as "sesame seed"), "fried shallot" (same as "shallot")
+- Use standard abbreviated units: "tsp", "tbsp", "cup", "oz", "lb". NEVER use metric units (g, kg, ml, L) — always convert to the nearest imperial equivalent (e.g. 200g → 7 oz, 500ml → 2 cups)
 - Use decimal numbers for quantities, not fractions: 0.25 not 1/4, 0.5 not 1/2, 0.333 not 1/3, 0.667 not 2/3. Use at least 3 decimal places for repeating fractions
 - For compound ingredients, use the most common single-word form when one exists:
   "cornstarch" not "corn starch"`;

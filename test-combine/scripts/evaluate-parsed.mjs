@@ -75,7 +75,7 @@ const PLURAL_WHITELIST = new Set([
   "aioli", "tzatziki", "sumac",
   "asparagus", "arugula",
   "chickpeas",
-  "grits", "oats",
+  "grits", "oats", "rolled oats",
   "capers",
   "artichoke hearts",
   "brussels sprouts",
@@ -84,6 +84,10 @@ const PLURAL_WHITELIST = new Set([
   "breadcrumbs",
   "noodles", "sprouts",
   "greens",
+  // Compound product names where plural is standard
+  "red pepper flakes", "chili flakes", "chilli flakes",
+  "rice noodles", "lo mein noodles", "egg noodles", "ramen noodles", "udon noodles", "soba noodles",
+  "foie gras",
 ]);
 
 // Category rules — specific ingredients must be in specific categories
@@ -109,9 +113,15 @@ const CATEGORY_RULES = {
   "white vinegar": "condiments",
   "apple cider vinegar": "condiments",
   "red wine vinegar": "condiments",
+  "lemon juice": "produce",
+  "lime juice": "produce",
   ketchup: "condiments",
   mustard: "condiments",
   mayonnaise: "condiments",
+  "crushed tomato": "pantry",
+  "tomato paste": "pantry",
+  "diced tomato": "pantry",
+  "tomato sauce": "pantry",
 };
 
 const KNOWN_TYPOS = {
@@ -254,8 +264,11 @@ function checkPrepAdjectives(ingredient, recipeName) {
 
       if (remaining.length < 2) continue;
 
-      if (adj === "dried" && isHerbOrSpice(remaining)) continue;
+      if (adj === "dried" && (isHerbOrSpice(remaining) || isDriedProduct(remaining))) continue;
       if (adj === "roasted" && isDistinctRoastedProduct(remaining)) continue;
+      if (adj === "dry" && isWineOrAlcohol(remaining)) continue;
+      if (adj === "hot" && isHotProduct(remaining)) continue;
+      if (adj === "crushed" && isCrushedProduct(remaining)) continue;
 
       issues.push({
         recipeId: ingredient.recipe_id,
@@ -281,7 +294,13 @@ function isHerbOrSpice(name) {
 }
 
 function isDistinctRoastedProduct(name) {
-  const products = ["red pepper", "red peppers", "garlic", "peanut", "peanuts", "sesame"];
+  const products = ["red pepper", "red peppers", "garlic", "peanut", "peanuts", "sesame", "chili oil"];
+  return products.some((p) => name.includes(p));
+}
+
+function isDriedProduct(name) {
+  // Dried fruits and other products where "dried" changes the identity
+  const products = ["apricot", "cranberry", "cherry", "fig", "date", "mango", "pineapple", "tomato", "mushroom", "shrimp", "pasta"];
   return products.some((p) => name.includes(p));
 }
 
@@ -390,6 +409,21 @@ function checkQuantityIssues(ingredient, recipeName) {
   }
 
   return issues;
+}
+
+function isWineOrAlcohol(name) {
+  const terms = ["wine", "vermouth", "sherry", "marsala"];
+  return terms.some((t) => name.includes(t));
+}
+
+function isHotProduct(name) {
+  const terms = ["sauce", "paste", "pepper", "chili", "chile"];
+  return terms.some((t) => name.includes(t));
+}
+
+function isCrushedProduct(name) {
+  const terms = ["tomato", "red pepper", "pepper flakes"];
+  return terms.some((t) => name.includes(t));
 }
 
 // ---------- Main ----------

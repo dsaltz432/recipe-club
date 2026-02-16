@@ -1,0 +1,207 @@
+{
+  "summary": {
+    "totalIssues": 24,
+    "totalRecipes": 24,
+    "totalIngredients": 314,
+    "byType": {
+      "category_inconsistency": 10,
+      "pluralization": 10,
+      "non_standard_unit": 2,
+      "prep_adjective": 2
+    }
+  },
+  "issues": [
+    {
+      "recipeId": "a30b52a9-9716-4c3b-aded-a76098fbb151",
+      "recipeName": "Teriyaki Salmon",
+      "ingredientName": "lemon juice",
+      "issueType": "category_inconsistency",
+      "description": "\"lemon juice\" is categorized as \"beverages\" but should be \"produce\"",
+      "suggestedFix": "Change category to \"produce\""
+    },
+    {
+      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae",
+      "recipeName": "Kung Pao Chicken",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
+      "suggestedFix": "Change category to \"other\""
+    },
+    {
+      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae",
+      "recipeName": "Kung Pao Chicken",
+      "ingredientName": "water chestnuts",
+      "issueType": "pluralization",
+      "description": "Name \"water chestnuts\" appears to be plural (ends in -s). Should be singular: \"water chestnut\"",
+      "suggestedFix": "water chestnut"
+    },
+    {
+      "recipeId": "bf8534d3-3e0e-4f0a-9492-3398541686ae",
+      "recipeName": "Kung Pao Chicken",
+      "ingredientName": "peanuts",
+      "issueType": "pluralization",
+      "description": "Name \"peanuts\" appears to be plural (ends in -s). Should be singular: \"peanut\"",
+      "suggestedFix": "peanut"
+    },
+    {
+      "recipeId": "fece1054-9f35-4977-86ac-9a066219657a",
+      "recipeName": "Guacamole",
+      "ingredientName": "tortilla chips",
+      "issueType": "pluralization",
+      "description": "Name \"tortilla chips\" appears to be plural (ends in -s). Should be singular: \"tortilla chip\"",
+      "suggestedFix": "tortilla chip"
+    },
+    {
+      "recipeId": "b2c994e3-fbe5-4017-b080-2b99537319eb",
+      "recipeName": "Fettuccine Alfredo",
+      "ingredientName": "garlic salt",
+      "issueType": "non_standard_unit",
+      "description": "Unit \"dash\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
+      "suggestedFix": "Convert to a standard unit or null"
+    },
+    {
+      "recipeId": "af8557a2-dcda-46d9-afd8-a01c6a2458f4",
+      "recipeName": "Korean BBQ Short Ribs",
+      "ingredientName": "short ribs",
+      "issueType": "pluralization",
+      "description": "Name \"short ribs\" appears to be plural (ends in -s). Should be singular: \"short rib\"",
+      "suggestedFix": "short rib"
+    },
+    {
+      "recipeId": "15643cdc-e3a3-4fc0-a4bc-bfc652091c2d",
+      "recipeName": "Beef Stir Fry",
+      "ingredientName": "sesame seed",
+      "issueType": "category_inconsistency",
+      "description": "\"sesame seed\" has category \"pantry\" here but \"spices\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"spices\")"
+    },
+    {
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff",
+      "recipeName": "Green Curry",
+      "ingredientName": "kaffir lime leaves",
+      "issueType": "pluralization",
+      "description": "Name \"kaffir lime leaves\" appears to be plural (ends in -es). Should be singular: \"kaffir lime leav\"",
+      "suggestedFix": "kaffir lime leav"
+    },
+    {
+      "recipeId": "0366ec3d-4e3b-4b27-ac95-020a809a1bff",
+      "recipeName": "Green Curry",
+      "ingredientName": "fried Asian shallots",
+      "issueType": "pluralization",
+      "description": "Name \"fried Asian shallots\" appears to be plural (ends in -s). Should be singular: \"fried asian shallot\"",
+      "suggestedFix": "fried asian shallot"
+    },
+    {
+      "recipeId": "c0fa9006-58c1-4ce1-a746-d09d5271c155",
+      "recipeName": "Pesto Pasta",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
+      "suggestedFix": "Change category to \"other\""
+    },
+    {
+      "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957",
+      "recipeName": "Mapo Tofu",
+      "ingredientName": "Sichuan peppercorns",
+      "issueType": "pluralization",
+      "description": "Name \"Sichuan peppercorns\" appears to be plural (ends in -s). Should be singular: \"sichuan peppercorn\"",
+      "suggestedFix": "sichuan peppercorn"
+    },
+    {
+      "recipeId": "af0ad4a2-efc8-4830-98ed-0a78c6741957",
+      "recipeName": "Mapo Tofu",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
+      "suggestedFix": "Change category to \"other\""
+    },
+    {
+      "recipeId": "c605a0c6-a5b0-4f1a-b9a6-b4a0d6300dd2",
+      "recipeName": "Pasta Primavera",
+      "ingredientName": "cherry tomatoes",
+      "issueType": "pluralization",
+      "description": "Name \"cherry tomatoes\" appears to be plural (ends in -s). Should be singular: \"cherry tomatoe\"",
+      "suggestedFix": "cherry tomatoe"
+    },
+    {
+      "recipeId": "c605a0c6-a5b0-4f1a-b9a6-b4a0d6300dd2",
+      "recipeName": "Pasta Primavera",
+      "ingredientName": "lemon juice",
+      "issueType": "category_inconsistency",
+      "description": "\"lemon juice\" has category \"produce\" here but \"beverages\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"beverages\")"
+    },
+    {
+      "recipeId": "4e7ebcea-f660-438b-85cf-e6ae7ff59acd",
+      "recipeName": "Shrimp Lo Mein",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
+      "suggestedFix": "Change category to \"other\""
+    },
+    {
+      "recipeId": "552c92c6-db52-4bfc-a029-2c7f9042fe74",
+      "recipeName": "Lasagna",
+      "ingredientName": "crushed tomatoes",
+      "issueType": "pluralization",
+      "description": "Name \"crushed tomatoes\" appears to be plural (ends in -s). Should be singular: \"crushed tomatoe\"",
+      "suggestedFix": "crushed tomatoe"
+    },
+    {
+      "recipeId": "552c92c6-db52-4bfc-a029-2c7f9042fe74",
+      "recipeName": "Lasagna",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
+      "suggestedFix": "Change category to \"other\""
+    },
+    {
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
+      "recipeName": "Bibimbap",
+      "ingredientName": "bean sprouts",
+      "issueType": "non_standard_unit",
+      "description": "Unit \"g\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
+      "suggestedFix": "Convert to a standard unit or null"
+    },
+    {
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
+      "recipeName": "Bibimbap",
+      "ingredientName": "toasted seasoned seaweed",
+      "issueType": "prep_adjective",
+      "description": "Name \"toasted seasoned seaweed\" contains preparation adjective \"toasted\". Should be just \"seasoned seaweed\"",
+      "suggestedFix": "seasoned seaweed"
+    },
+    {
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
+      "recipeName": "Bibimbap",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" is categorized as \"beverages\" but should be \"other\"",
+      "suggestedFix": "Change category to \"other\""
+    },
+    {
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
+      "recipeName": "Bibimbap",
+      "ingredientName": "toasted sesame seeds",
+      "issueType": "pluralization",
+      "description": "Name \"toasted sesame seeds\" appears to be plural (ends in -s). Should be singular: \"toasted sesame seed\"",
+      "suggestedFix": "toasted sesame seed"
+    },
+    {
+      "recipeId": "066af8fa-f857-46f7-b23d-2301900c4bd2",
+      "recipeName": "Bibimbap",
+      "ingredientName": "toasted sesame seeds",
+      "issueType": "prep_adjective",
+      "description": "Name \"toasted sesame seeds\" contains preparation adjective \"toasted\". Should be just \"sesame seeds\"",
+      "suggestedFix": "sesame seeds"
+    },
+    {
+      "recipeId": "b4a6db1a-212d-4701-b8a2-ea6899ac32ac",
+      "recipeName": "Bolognese",
+      "ingredientName": "tomato",
+      "issueType": "category_inconsistency",
+      "description": "\"tomato\" has category \"pantry\" here but \"produce\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"produce\")"
+    }
+  ]
+}

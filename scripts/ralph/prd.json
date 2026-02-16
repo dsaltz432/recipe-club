@@ -55,7 +55,7 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This is the FIRST evaluation pass — expect the most issues here. Common issues likely include: plural names (bay leaves, sesame seeds), count units in names (garlic clove), prep adjectives (fresh cilantro), category mismatches (water as beverages), non-standard units (dash, pinch). Prompt files: parse-recipes.mjs lines 62-98, edge function lines 176-219. When fixing the prompt, add concrete examples of correct behavior for each issue type found. Be specific — 'bay leaves should be bay leaf' is better than 'use singular'. After fixing, do NOT re-parse this batch yet — we'll verify with the next batch."
     },
     {
