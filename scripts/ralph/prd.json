@@ -1,135 +1,184 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/e2e-test-flows-update",
-  "description": "Update E2E_TEST_FLOWS.md with comprehensive manual test flows for all new features: Recipe Saving, Personal Recipes, Recipe Sharing, RecipeHub subtab navigation, and Meal Planning",
+  "branchName": "ralph/ingredient-quality-audit",
+  "description": "Iteratively parse all 153 test recipes in batches of 20, evaluating and fixing the AI prompt after each batch. Each batch benefits from all prior prompt improvements. Final step: re-parse all 153 with the polished prompt and sync to recipes.ts.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add Recipe Saving E2E test flows (Section 15)",
-      "description": "As a tester, I want manual E2E test flows for the recipe saving/bookmarking feature so that I can verify save/unsave functionality across the app.",
+      "title": "Create batch parsing and evaluation tooling",
+      "description": "As a developer, I want reusable scripts for batch parsing recipes through the edge function and evaluating the parsed output quality, so that I can iteratively improve the AI prompt.",
       "acceptanceCriteria": [
-        "Section 15 'Recipe Saving' added to E2E_TEST_FLOWS.md after Section 14",
-        "Flow 15.1: Save a club recipe - click bookmark icon on RecipeCard in Club Recipes tab, verify filled purple bookmark appears, verify toast 'Recipe saved to collection'",
-        "Flow 15.2: Unsave a recipe - click filled bookmark icon, verify icon goes unfilled, verify toast 'Recipe removed from collection'",
-        "Flow 15.3: View saved recipes in My Recipes tab - save a club recipe, switch to 'My Recipes' subtab, verify saved recipe appears with ingredient tag and 'Saved' indicator",
-        "Flow 15.4: Bookmark not shown on personal recipes - add a personal recipe, verify no bookmark icon on it in My Recipes tab",
-        "Flow 15.5: Save persists across page navigation - save a recipe, navigate away and back to Recipes tab, verify recipe still shows as saved",
-        "Formatting matches existing E2E_TEST_FLOWS.md style (numbered steps, **Verify:** markers)",
-        "npm run build passes",
-        "npm run lint passes"
+        "Create test-combine/scripts/batch-parse.mjs that reads TEST_RECIPES from recipes.ts",
+        "Accepts --offset N and --limit N flags to parse a slice of recipes (e.g. --offset 0 --limit 20 for first 20)",
+        "Accepts --force flag to re-parse recipes that already have completed status",
+        "For each recipe: upsert into 'recipes' table via REST API (POST http://127.0.0.1:54321/rest/v1/recipes with Prefer: resolution=merge-duplicates). Fields: {name, url, created_by: null, event_id: null, ingredient_id: null}. Use ON CONFLICT on name to get existing ID",
+        "For each recipe: call parse-recipe edge function (POST http://127.0.0.1:54321/functions/v1/parse-recipe) with {recipeId, recipeUrl, recipeName}",
+        "Process with 10 concurrent workers using Promise.all on batched chunks",
+        "Auth headers: apikey and Authorization both 'REDACTED'",
+        "Log progress per recipe and print summary (parsed, failed, skipped, elapsed time)",
+        "Create test-combine/scripts/evaluate-parsed.mjs that queries recipe_ingredients and recipes from local Supabase REST API",
+        "Evaluation checks: (1) pluralization - names ending in s/es/ies that should be singular, with whitelist for legit words, (2) count units embedded in names - clove/head/bunch/stalk/sprig/piece in name field, (3) prep adjectives - fresh/minced/diced/chopped/crushed/cold/hot in names, excluding qualifiers that change the product, (4) typos - known misspellings like tumeric, (5) category inconsistency - same name different categories + hardcoded rules (water→other, egg→pantry, oils→pantry), (6) non-standard units - not in {tsp,tbsp,cup,oz,lb,quart,gallon,head,bunch,stalk,clove,sprig,piece,slice,strip,can,null}, (7) quantity issues - more than 3 decimal places",
+        "Evaluation outputs JSON to test-combine/evaluation-report.json with {summary: {totalIssues, byType}, issues: [{recipeId, recipeName, ingredientName, issueType, description, suggestedFix}]}",
+        "Both scripts run successfully: node test-combine/scripts/batch-parse.mjs --limit 0 and node test-combine/scripts/evaluate-parsed.mjs",
+        "Typecheck passes: npm run build"
       ],
       "priority": 1,
       "passes": false,
-      "notes": "Read src/components/recipes/SaveRecipeButton.tsx (63 lines) and src/components/recipes/RecipeHub.tsx (lines 385-395 for handleSaveToggle, lines 527-534 for RecipeCard rendering with isSaved prop). The bookmark icon is a Lucide Bookmark that shows filled purple when saved. saved_recipes table is a simple user_id + recipe_id junction."
+      "notes": "The recipes.ts file exports TEST_RECIPES. To import from .mjs: parse the file with regex (like existing parse-recipes.mjs does) or use a dynamic approach. The existing parse-recipes.mjs in test-combine/ shows patterns. REST API: http://127.0.0.1:54321/rest/v1/. Edge functions: http://127.0.0.1:54321/functions/v1/. For upsert on recipes table, use POST with header 'Prefer: resolution=merge-duplicates' and select to get back the ID. Alternatively, GET recipes?name=eq.{name} first and insert only if not found. Concurrency: split slice into sub-arrays of 2, process 10 sub-arrays concurrently via Promise.all (so ~10 concurrent edge function calls at peak). The evaluate script should handle empty DB gracefully (0 recipes parsed = 0 issues)."
     },
     {
       "id": "US-002",
-      "title": "Add Personal Recipes E2E test flows (Section 16)",
-      "description": "As a tester, I want manual E2E test flows for personal recipe management so that I can verify adding, viewing, and managing personal recipes.",
+      "title": "Parse batch 1 (recipes 1-20), evaluate, and fix prompt",
+      "description": "As a developer, I want to parse the first 20 recipes, evaluate the output, and fix the AI prompt for the most common issues so that subsequent batches benefit from improvements.",
       "acceptanceCriteria": [
-        "Section 16 'Personal Recipes' added to E2E_TEST_FLOWS.md after Section 15",
-        "Flow 16.1: Add personal recipe with name and URL - click 'My Recipes' subtab, click 'Add Recipe' button, fill name + URL, submit. Verify toast 'Personal recipe added!', recipe appears in list",
-        "Flow 16.2: Add personal recipe name only - submit with name only (no URL). Verify recipe created, no 'View recipe' link shown on card",
-        "Flow 16.3: URL validation - enter invalid URL (not starting with http/https), verify red border + error message 'URL must start with http:// or https://'",
-        "Flow 16.4: Personal badge - verify personal recipes show purple 'Personal' badge on RecipeCard",
-        "Flow 16.5: Empty state - with no personal or saved recipes, verify empty state message 'No personal recipes yet. Add one or save a club recipe!'",
-        "Flow 16.6: Cancel dialog - open Add Recipe dialog, type a name, click Cancel, reopen dialog, verify fields are cleared",
-        "Flow 16.7: Share personal recipe - verify Share button is available on personal recipes",
-        "Formatting matches existing E2E_TEST_FLOWS.md style",
-        "npm run build passes",
-        "npm run lint passes"
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 0 --limit 20",
+        "Verify 20 recipes parsed successfully (check parse log output)",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "Read evaluation-report.json and identify ALL issue types and their frequency",
+        "Fix the AI prompts in BOTH files based on findings: test-combine/parse-recipes.mjs (SYSTEM_PROMPT) and supabase/functions/parse-recipe/index.ts (systemPrompt)",
+        "The ingredient parsing rules in both prompts must be identical (structural differences for description/servings/instructions are OK)",
+        "Document in activity.md: issue counts by type, specific prompt changes made, before counts",
+        "Existing edge function tests pass: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
+        "Typecheck passes: npm run build"
       ],
       "priority": 2,
       "passes": false,
-      "notes": "Read src/components/recipes/AddPersonalRecipeDialog.tsx (145 lines). Creates recipe with event_id: null, ingredient_id: null. The 'Add Recipe' button only shows when subTab === 'personal' && userId. RecipeHub.tsx line 498-507 for the button. The dialog clears fields on close (onOpenChange handler lines 71-75). RecipeCard determines isPersonal based on recipe.isPersonal flag."
+      "notes": "This is the FIRST evaluation pass — expect the most issues here. Common issues likely include: plural names (bay leaves, sesame seeds), count units in names (garlic clove), prep adjectives (fresh cilantro), category mismatches (water as beverages), non-standard units (dash, pinch). Prompt files: parse-recipes.mjs lines 62-98, edge function lines 176-219. When fixing the prompt, add concrete examples of correct behavior for each issue type found. Be specific — 'bay leaves should be bay leaf' is better than 'use singular'. After fixing, do NOT re-parse this batch yet — we'll verify with the next batch."
     },
     {
       "id": "US-003",
-      "title": "Add Recipe Sharing E2E test flows (Section 17)",
-      "description": "As a tester, I want manual E2E test flows for recipe sharing so that I can verify the share dialog, email sending, shared-with-me view, and share-only user access.",
+      "title": "Parse batch 2 (recipes 21-40), evaluate, and fix if needed",
+      "description": "As a developer, I want to parse recipes 21-40 with the improved prompt and check if the fixes from batch 1 resolved the issues, fixing any new issue types found.",
       "acceptanceCriteria": [
-        "Section 17 'Recipe Sharing' added to E2E_TEST_FLOWS.md after Section 16",
-        "Flow 17.1: Share recipe via dialog - click Share icon on any recipe card, verify dialog opens with recipe name in description, enter valid email + optional message, click Share. Verify toast 'Recipe shared with {email}!'",
-        "Flow 17.2: Email validation - type invalid email, verify red border + 'Please enter a valid email address', verify Share button disabled",
-        "Flow 17.3: Duplicate share prevention - share same recipe to same email twice, verify toast error 'This recipe has already been shared with this email'",
-        "Flow 17.4: View Shared with Me tab - switch to 'Shared with Me' subtab. Verify shared recipes displayed with: recipe name, 'Shared by {name}', personal message (if provided), date, 'Shared' badge",
-        "Flow 17.5: New badge on unviewed shares - verify unviewed shares show purple 'New' badge",
-        "Flow 17.6: Mark as viewed via View Recipe - click 'View Recipe' link on a shared recipe with URL. Verify 'New' badge disappears after returning to the tab",
-        "Flow 17.7: Mark as viewed button - for shares without URL, verify 'Mark as Viewed' button appears. Click it, verify 'New' badge disappears",
-        "Flow 17.8: Empty shared state - with no shares, verify empty state with Share2 icon and 'No recipes have been shared with you yet.'",
-        "Flow 17.9: Share-only user access - log in as share-only user (access_type='share_only'). Verify: only 'Shared with Me' subtab visible, no 'Club Recipes' or 'My Recipes' tabs, no Home/Events tabs",
-        "Flow 17.10: Dev mode sharing - in dev mode, share a recipe. Verify: direct DB insert (no edge function call), recipe share still created successfully",
-        "Formatting matches existing E2E_TEST_FLOWS.md style",
-        "npm run build passes",
-        "npm run lint passes"
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 20 --limit 20",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "Compare issue counts against batch 1: the issue types fixed in US-002 should appear less or not at all in the new batch",
+        "IF new issue types are found that weren't in batch 1: fix the prompt (both files) to address them",
+        "IF no new issues: document 'no new issue types found, prompt is holding' in activity.md",
+        "Document in activity.md: issue counts, whether prompt was changed, comparison to batch 1",
+        "Edge function tests pass if prompt was changed: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
+        "Typecheck passes: npm run build"
       ],
       "priority": 3,
       "passes": false,
-      "notes": "Read src/components/recipes/ShareRecipeDialog.tsx (174 lines) and src/components/recipes/SharedWithMeSection.tsx (191 lines). The ShareRecipeDialog has dev mode branch (lines 46-63) that inserts directly to recipe_shares instead of calling the edge function. SharedWithMeSection queries recipe_shares joined with recipes and profiles. The share-only user logic is in RecipeHub.tsx line 44 (defaults subTab to 'shared') and lines 425-444 (hides club/personal tabs). The 23505 error code is PostgreSQL unique violation."
+      "notes": "The evaluation script reports on ALL parsed recipes in the DB (now 40 total). Focus on whether the 20 NEW recipes (batch 2) have the same issue types as batch 1. If batch 2 has zero issues of a type that batch 1 had many of, the prompt fix worked. If a completely new issue type appears (e.g. a cuisine-specific ingredient pattern), add a prompt rule for it. Cross-cuisine variety increases as we parse more recipes, so new patterns may emerge."
     },
     {
       "id": "US-004",
-      "title": "Add RecipeHub Subtab Navigation E2E test flows (Section 18)",
-      "description": "As a tester, I want manual E2E test flows for the RecipeHub subtab navigation so that I can verify switching between Club, My Recipes, and Shared with Me tabs.",
+      "title": "Parse batch 3 (recipes 41-60), evaluate, and fix if needed",
+      "description": "As a developer, I want to parse recipes 41-60 and continue the iterative improvement cycle.",
       "acceptanceCriteria": [
-        "Section 18 'RecipeHub Subtab Navigation' added to E2E_TEST_FLOWS.md after Section 17",
-        "Flow 18.1: Default tab - navigate to Recipes tab on dashboard. Verify 'Club Recipes' subtab is active (purple background), club recipes displayed",
-        "Flow 18.2: Switch to My Recipes - click 'My Recipes' subtab. Verify: tab highlights purple, personal recipes + saved club recipes shown, 'Add Recipe' button visible, ingredient filter hidden",
-        "Flow 18.3: Switch to Shared with Me - click 'Shared with Me' subtab. Verify: tab highlights purple, shared recipes or empty state shown, search bar and ingredient filter hidden",
-        "Flow 18.4: Search across tabs - enter search term on Club tab, verify results filter. Switch to My Recipes, verify search still filters. Verify search works on recipe names and note content",
-        "Flow 18.5: Ingredient filter (Club only) - on Club tab, select ingredient from dropdown. Verify recipes filtered. Switch to My Recipes, verify ingredient filter is not shown",
-        "Flow 18.6: Loading states - switch tabs rapidly. Verify loading spinner appears briefly during data fetch",
-        "Formatting matches existing E2E_TEST_FLOWS.md style",
-        "npm run build passes",
-        "npm run lint passes"
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 40 --limit 20",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "IF new issue types found: fix prompt (both files)",
+        "IF no new issues in the batch 3 recipes: document 'prompt is stable' in activity.md",
+        "Document comparison to previous batches in activity.md",
+        "Edge function tests pass if prompt was changed",
+        "Typecheck passes: npm run build"
       ],
       "priority": 4,
       "passes": false,
-      "notes": "Read src/components/recipes/RecipeHub.tsx. Subtabs defined as type RecipeSubTab = 'club' | 'personal' | 'shared'. The subtab buttons are at lines 424-455. Ingredient filter only renders when subTab === 'club' (line 480). Search filters on recipe name + note text (lines 398-411). loadRecipes() switches between loadClubRecipes() and loadPersonalRecipes() based on subTab. Shared tab renders SharedWithMeSection directly."
+      "notes": "By batch 3 (60 recipes total), the prompt should be fairly mature. Most common patterns should already be covered. Look for edge cases: unusual ingredients from specific cuisines, metric-only recipes, image-based recipes. If the prompt hasn't needed changes for 2 consecutive batches, it's likely stable."
     },
     {
       "id": "US-005",
-      "title": "Add Meal Planning E2E test flows (Section 19)",
-      "description": "As a tester, I want manual E2E test flows for the meal planning system so that I can verify the weekly grid, meal CRUD, preferences, AI suggestions, and chat panel.",
+      "title": "Parse batch 4 (recipes 61-80), evaluate, and fix if needed",
+      "description": "As a developer, I want to parse recipes 61-80 and continue verifying prompt quality.",
       "acceptanceCriteria": [
-        "Section 19 'Meal Planning' added to E2E_TEST_FLOWS.md after Section 18",
-        "Flow 19.1: Navigate to Meal Plan tab - click 'Meals' tab on dashboard. Verify: 'Meal Plan' heading, 'Preferences' and 'Get Suggestions' buttons, week navigation, 7-day x 3-meal grid (breakfast/lunch/dinner)",
-        "Flow 19.2: Week navigation - click right arrow for next week. Verify dates update. Click left arrow for previous week. Verify dates update. Click 'Today' to return to current week",
-        "Flow 19.3: Add meal via empty slot - click an empty grid slot. Verify pending slot banner appears ('Adding meal for {Day} {mealType}'). Verify cancel link in banner works",
-        "Flow 19.4: Add AI suggestion to pending slot - with pending slot active, click 'Get Suggestions'. Click a suggestion card. Verify meal appears in the selected slot, pending banner disappears, toast 'Added \"{name}\" to plan'",
-        "Flow 19.5: Add suggestion without pending slot - without clicking a slot first, click a suggestion. Verify it goes to next available dinner slot. If all dinner slots filled, verify error toast 'All dinner slots are filled. Click an empty slot first.'",
-        "Flow 19.6: Remove meal - click the X button on an occupied slot. Verify meal removed, toast 'Meal removed', slot returns to empty state",
-        "Flow 19.7: User preferences dialog - click 'Preferences' button. Verify dialog with: dietary restrictions (multi-select), cuisine preferences (multi-select), disliked ingredients (multi-select), household size (number), cooking skill (beginner/intermediate/advanced), max cook time (minutes)",
-        "Flow 19.8: Save preferences - fill out preferences and save. Verify toast confirmation, preferences persist after closing/reopening dialog",
-        "Flow 19.9: AI suggestions panel - click 'Get Suggestions'. Verify 3 suggestion cards appear with: name, cuisine tag, time estimate, reason. Verify each has an 'Add to Plan' button",
-        "Flow 19.10: AI chat panel - type a message (e.g., 'I want something spicy') and press Enter/send. Verify: user message appears in chat, assistant response appears, new suggestions refresh based on request",
-        "Flow 19.11: Dev mode suggestions - in dev mode, click 'Get Suggestions'. Verify mock suggestions appear (Mediterranean Quinoa Bowl, Honey Garlic Salmon, One-Pot Pasta Primavera) without errors",
-        "Flow 19.12: Week persistence - add meals to a week, navigate away, navigate back to same week. Verify meals are still present",
-        "Flow 19.13: Loading state - on initial load, verify spinner displays while meal plan loads",
-        "Formatting matches existing E2E_TEST_FLOWS.md style",
-        "npm run build passes",
-        "npm run lint passes"
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 60 --limit 20",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "IF new issue types found: fix prompt (both files)",
+        "IF no new issues in batch 4 recipes: document 'prompt stable for 2+ batches'",
+        "Document in activity.md",
+        "Edge function tests pass if prompt was changed",
+        "Typecheck passes: npm run build"
       ],
       "priority": 5,
       "passes": false,
-      "notes": "Read src/components/mealplan/MealPlanPage.tsx (433 lines) for the main orchestrator. Key sub-components: WeekNavigation.tsx (prev/next/today buttons + date range display), MealPlanGrid.tsx (63 lines, 7 days x 3 meal types), MealPlanSlot.tsx (individual slot with add/remove), AISuggestionPanel.tsx (shows MealSuggestion cards), AIChatPanel.tsx (chat input + message history), PreferencesDialog.tsx (form with all preference fields). Dev mode mock suggestions are hardcoded at lines 279-301 of MealPlanPage.tsx. The grid shows DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] and MEAL_TYPES = ['breakfast','lunch','dinner'] (no snack - only 3 meal types, not 4). The pendingSlot state (line 41) controls the 'Adding meal for...' banner."
+      "notes": "Same pattern as US-003/004. At this point we have 80 recipes parsed. If the last 2-3 batches had minimal/no new issues, the prompt is converging."
     },
     {
       "id": "US-006",
-      "title": "Update environment notes and known issues for new features",
-      "description": "As a tester, I want the Test Environment Notes and Known Issues sections updated so that the document reflects all new feature considerations.",
+      "title": "Parse batch 5 (recipes 81-100), evaluate, and fix if needed",
+      "description": "As a developer, I want to parse recipes 81-100 and continue verifying.",
       "acceptanceCriteria": [
-        "Test Environment Notes section updated with: share-only user access type note, dev mode recipe sharing (direct DB insert vs edge function), meal plan AI suggestions (mock data in dev mode)",
-        "Known Issues table updated if any known issues exist for new features",
-        "Add note about feature flag or disabled features related to new features if any",
-        "Add note about share-only test user setup (access_type in allowed_users table)",
-        "Formatting matches existing E2E_TEST_FLOWS.md style",
-        "npm run build passes",
-        "npm run lint passes"
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 80 --limit 20",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "IF new issue types found: fix prompt (both files)",
+        "IF no new issues: document stability in activity.md",
+        "Edge function tests pass if prompt was changed",
+        "Typecheck passes: npm run build"
       ],
       "priority": 6,
       "passes": false,
-      "notes": "Read the bottom of E2E_TEST_FLOWS.md (lines 520-539) for the existing Known Issues and Test Environment Notes sections. Key new environment notes: (1) share-only users need access_type='share_only' in allowed_users table, (2) recipe sharing in dev mode bypasses edge function and inserts directly to recipe_shares, (3) meal plan AI suggestions return mock data in dev mode (see MealPlanPage.tsx lines 277-309), (4) meal plan grid uses 3 meal types (breakfast/lunch/dinner), not 4 as originally planned."
+      "notes": "100 recipes parsed. Monitor for any new cuisines or recipe styles introducing new patterns."
+    },
+    {
+      "id": "US-007",
+      "title": "Parse batch 6 (recipes 101-120), evaluate, and fix if needed",
+      "description": "As a developer, I want to parse recipes 101-120 and continue verifying.",
+      "acceptanceCriteria": [
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 100 --limit 20",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "IF new issue types found: fix prompt (both files)",
+        "IF no new issues: document stability in activity.md",
+        "Edge function tests pass if prompt was changed",
+        "Typecheck passes: npm run build"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "120 of 153 recipes parsed. Almost done with the initial pass."
+    },
+    {
+      "id": "US-008",
+      "title": "Parse final batch (recipes 121-153), evaluate, and fix if needed",
+      "description": "As a developer, I want to parse the remaining 33 recipes and complete the initial pass through all 153.",
+      "acceptanceCriteria": [
+        "Run: node test-combine/scripts/batch-parse.mjs --offset 120 --limit 33",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "Verify all 153 recipes have been parsed (query recipe_content count)",
+        "IF new issue types found: fix prompt (both files)",
+        "Document final initial-pass statistics in activity.md: total issues remaining by type across all 153 recipes",
+        "Edge function tests pass if prompt was changed",
+        "Typecheck passes: npm run build"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "All 153 recipes are now parsed. The evaluation report now covers everything. The remaining issues are from early batches that were parsed BEFORE prompt fixes. These will be cleaned up in the full re-parse."
+    },
+    {
+      "id": "US-009",
+      "title": "Full re-parse of all 153 recipes with final prompt",
+      "description": "As a developer, I want to re-parse ALL 153 recipes using the finalized prompt so that every recipe benefits from all accumulated prompt improvements.",
+      "acceptanceCriteria": [
+        "Run: node test-combine/scripts/batch-parse.mjs --force (re-parse all 153)",
+        "Run: node test-combine/scripts/evaluate-parsed.mjs",
+        "Total issues should be near zero — if not, make final prompt adjustments and re-parse once more",
+        "Save final report as test-combine/final-evaluation-report.json",
+        "Document in activity.md: final issue counts, comparison to initial batch 1 counts, overall improvement percentage",
+        "Edge function tests pass: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
+        "Typecheck passes: npm run build"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "This is the validation step. With 10 concurrent workers, re-parsing all 153 takes ~5-8 minutes. Every recipe is now parsed with the final, polished prompt. The evaluation should show dramatic improvement over batch 1. If issues remain, they're likely edge cases — make one final round of prompt tweaks and re-parse once more if needed. The --force flag must clear existing recipe_ingredients and recipe_content before re-parsing each recipe."
+    },
+    {
+      "id": "US-010",
+      "title": "Sync improved parsed data to recipes.ts",
+      "description": "As a developer, I want recipes.ts updated with the final high-quality parsed ingredient data so that the test data reflects the best AI output.",
+      "acceptanceCriteria": [
+        "Create test-combine/scripts/sync-to-recipes.mjs that reads parsed ingredients from DB and updates recipes.ts",
+        "For each recipe in DB: query recipe_ingredients ordered by sort_order, format as TestRecipe.ingredients format ({name, quantity, unit, category, rawText})",
+        "Map DB field raw_text → TypeScript rawText",
+        "Preserve recipe order, id, name, cuisine, url in recipes.ts — only update ingredients arrays",
+        "Write recipes.ts maintaining existing formatting (type/interface exports, const structure)",
+        "Run final evaluation: node test-combine/scripts/evaluate-parsed.mjs to confirm consistency",
+        "Typecheck passes: npm run build"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Reuse patterns from existing parse-recipes.mjs: formatIngredients() (line 206) and updateRecipeInSource() (line 214) show how to write ingredients back to the file. Match each DB recipe to the recipes.ts entry by name (the batch-parse script inserts with the same name). The sync must handle all 153 recipes. Read recipes.ts, for each recipe block find it by id, replace the ingredients array, write back."
     }
   ]
 }
