@@ -212,8 +212,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "Reuse patterns from existing parse-recipes.mjs: formatIngredients() (line 206) and updateRecipeInSource() (line 214) show how to write ingredients back to the file. Match each DB recipe to the recipes.ts entry by name (the batch-parse script inserts with the same name). The sync must handle all 153 recipes. Read recipes.ts, for each recipe block find it by id, replace the ingredients array, write back."
+      "passes": true,
+      "notes": "COMPLETED. Created sync-to-recipes.mjs script. Synced 147 recipes from DB to recipes.ts (1898 ingredients). 6 recipes have no ingredients (5 broken URLs + 1 Instagram Reel) — their empty arrays preserved. Both builds pass (main project + test-combine). recipes.ts updated from 264,831 to 269,735 chars."
     }
   ]
 }

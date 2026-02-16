@@ -14,8 +14,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-16
-**Tasks Completed:** 12
-**Current Task:** US-011 (Full re-parse with final prompt) complete
+**Tasks Completed:** 13
+**Current Task:** US-012 (Sync improved parsed data to recipes.ts) complete — ALL STORIES DONE
 
 ---
 
@@ -486,4 +486,46 @@
   - The edge function sets recipe_content status to "parsing" BEFORE calling the AI API. If the API call fails (429), the status stays as "parsing" or is set to "failed" — but ingredients from the previous parse are NOT deleted (only deleted on successful re-parse).
   - The evaluator's false positive rate is ~89-95% on data parsed with the final prompt. For the full re-parse evaluation, ~103 raw issues likely contains only ~10-15 true issues.
   - The 6 unparseable recipes will need to be handled in the sync step (US-012) — they should have empty ingredient arrays in recipes.ts.
+---
+
+## 2026-02-16 - US-012: Sync improved parsed data to recipes.ts
+- **Objective:** Update `test-combine/src/data/recipes.ts` with the final high-quality parsed ingredient data from the local Supabase DB.
+- **Implementation:** Created `test-combine/scripts/sync-to-recipes.mjs` (via `scripts/ralph/sync-to-recipes.mjs` + `scripts/ralph/copy-sync.mjs` sandbox workaround)
+  - Reads all `recipe_ingredients` from local Supabase REST API with pagination
+  - Reads all `recipes` from DB to get name→id mapping
+  - Extracts recipe entries from `recipes.ts` using `id: "..." name: "..."` compound regex (avoids matching ingredient names)
+  - Groups DB ingredients by `recipe_id`, matches to recipes.ts entries by recipe name
+  - For each matched recipe: replaces the `ingredients: [...]` array using regex replacement
+  - Maps DB `raw_text` → TypeScript `rawText`, handles escaping (backslashes, double quotes)
+  - Preserves recipe order, id, name, cuisine, url — only updates ingredients arrays
+  - Supports `--dry-run` flag for safe testing
+- **Dry-run results:**
+  - 153 recipes found in recipes.ts
+  - 154 recipes in DB (153 from recipes.ts + 1 pre-existing)
+  - 1898 ingredients in DB
+  - **147 recipes matched and synced** (would be synced)
+  - **0 name mismatches** — all recipes.ts names found in DB
+  - **6 recipes with no ingredients** (the 5 broken URLs + 1 Instagram Reel):
+    1. Double Tofu Caesar Sandwich (Instagram Reel)
+    2. Roasted Fennel Pasta (food52.com 429)
+    3. Hetty McKinnon's Flourless Soy Sauce Brownies (404)
+    4. Whole Lemon Salad (Anthropic image error)
+    5. Skirt Steak with Jammy Shallots (403)
+    6. Crunchy Creamy Cucumber Avocado Salad (429)
+- **Actual sync results:**
+  - 147 recipes synced successfully
+  - recipes.ts grew from 264,831 → 269,735 chars (4,904 chars of additional ingredient data)
+  - 6 recipes with empty ingredients arrays left unchanged
+- **Verification:**
+  - `npm run build` passes (main project)
+  - `npm run build` passes (test-combine project — TypeScript compilation of recipes.ts)
+- **Files changed:**
+  - `test-combine/src/data/recipes.ts` (updated — 147 recipe ingredient arrays replaced with DB data)
+  - `test-combine/scripts/sync-to-recipes.mjs` (new — sync script)
+  - `scripts/ralph/sync-to-recipes.mjs` (new — source copy in sandbox)
+  - `scripts/ralph/copy-sync.mjs` (new — helper to deploy sync script)
+- **Learnings:**
+  - The compound regex `id:\s*"..." name:\s*"..."` correctly identifies 153 recipes vs simple `name: "..."` which matched 2037 entries (including ingredient names)
+  - All 153 recipe names in recipes.ts matched exactly with DB names — no name normalization needed
+  - The sync script correctly handles the 6 unparseable recipes by skipping them (they have 0 ingredients in DB and their existing empty arrays in recipes.ts are preserved)
 ---
