@@ -234,7 +234,13 @@ For ingredient names:
 - Use standard abbreviated units: "tsp", "tbsp", "cup", "oz", "lb". NEVER use metric units (g, kg, ml, L) — always convert to the nearest imperial equivalent (e.g. 200g → 7 oz, 500ml → 2 cups)
 - Use decimal numbers for quantities, not fractions: 0.25 not 1/4, 0.5 not 1/2, 0.333 not 1/3, 0.667 not 2/3. Use at least 3 decimal places for repeating fractions
 - For compound ingredients, use the most common single-word form when one exists:
-  "cornstarch" not "corn starch"`;
+  "cornstarch" not "corn starch"
+- Use proper diacritical marks for ingredient names: "jalapeño" not "jalapeno", "crème fraîche" not "creme fraiche", "añejo" not "anejo"
+- "wedge" is not a standard unit — convert to "piece": e.g. "1 lime wedge" → { "name": "lime", "quantity": 1, "unit": "piece" }
+- "inch" is not a standard unit — convert to "piece": e.g. "1 inch ginger" → { "name": "ginger", "quantity": 1, "unit": "piece" }
+- Sub-recipe components (e.g. "1 recipe fajita veggies") — use null for unit and 1 for quantity: { "name": "fajita veggies", "quantity": 1, "unit": null }
+- "fresh mozzarella" is a DISTINCT product from regular mozzarella — keep the qualifier "fresh mozzarella"
+- "dry oregano" / "dried oregano" are distinct from fresh oregano — keep as "dried oregano"`;
 
     // Call Anthropic API
     const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {

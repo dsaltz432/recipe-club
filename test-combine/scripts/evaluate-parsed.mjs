@@ -88,6 +88,8 @@ const PLURAL_WHITELIST = new Set([
   "red pepper flakes", "chili flakes", "chilli flakes",
   "rice noodles", "lo mein noodles", "egg noodles", "ramen noodles", "udon noodles", "soba noodles",
   "foie gras",
+  // Compound product / recipe names where plural is standard
+  "tortilla chips", "tofu sofritas", "fajita veggies",
 ]);
 
 // Category rules — specific ingredients must be in specific categories
@@ -265,6 +267,8 @@ function checkPrepAdjectives(ingredient, recipeName) {
       if (remaining.length < 2) continue;
 
       if (adj === "dried" && (isHerbOrSpice(remaining) || isDriedProduct(remaining))) continue;
+      if (adj === "fresh" && isFreshProduct(remaining)) continue;
+      if (adj === "dry" && isDryHerb(remaining)) continue;
       if (adj === "roasted" && isDistinctRoastedProduct(remaining)) continue;
       if (adj === "dry" && isWineOrAlcohol(remaining)) continue;
       if (adj === "hot" && isHotProduct(remaining)) continue;
@@ -424,6 +428,18 @@ function isHotProduct(name) {
 function isCrushedProduct(name) {
   const terms = ["tomato", "red pepper", "pepper flakes"];
   return terms.some((t) => name.includes(t));
+}
+
+function isFreshProduct(name) {
+  // Products where "fresh" changes the identity (fresh mozzarella vs regular mozzarella)
+  const products = ["mozzarella", "pasta", "ginger", "turmeric", "ricotta"];
+  return products.some((p) => name.includes(p));
+}
+
+function isDryHerb(name) {
+  // "dry oregano" or "dried oregano" are distinct from fresh herbs
+  const herbs = ["oregano", "basil", "thyme", "rosemary", "parsley", "dill", "sage", "tarragon", "marjoram"];
+  return herbs.some((h) => name.includes(h));
 }
 
 // ---------- Main ----------

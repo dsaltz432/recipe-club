@@ -1,13 +1,14 @@
 {
   "summary": {
-    "totalIssues": 24,
-    "totalRecipes": 24,
-    "totalIngredients": 314,
+    "totalIssues": 35,
+    "totalRecipes": 43,
+    "totalIngredients": 563,
     "byType": {
-      "category_inconsistency": 10,
-      "pluralization": 10,
-      "non_standard_unit": 2,
-      "prep_adjective": 2
+      "category_inconsistency": 15,
+      "pluralization": 9,
+      "non_standard_unit": 6,
+      "prep_adjective": 2,
+      "typo": 3
     }
   },
   "issues": [
@@ -42,14 +43,6 @@
       "issueType": "pluralization",
       "description": "Name \"peanuts\" appears to be plural (ends in -s). Should be singular: \"peanut\"",
       "suggestedFix": "peanut"
-    },
-    {
-      "recipeId": "fece1054-9f35-4977-86ac-9a066219657a",
-      "recipeName": "Guacamole",
-      "ingredientName": "tortilla chips",
-      "issueType": "pluralization",
-      "description": "Name \"tortilla chips\" appears to be plural (ends in -s). Should be singular: \"tortilla chip\"",
-      "suggestedFix": "tortilla chip"
     },
     {
       "recipeId": "b2c994e3-fbe5-4017-b080-2b99537319eb",
@@ -201,6 +194,102 @@
       "ingredientName": "tomato",
       "issueType": "category_inconsistency",
       "description": "\"tomato\" has category \"pantry\" here but \"produce\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"produce\")"
+    },
+    {
+      "recipeId": "dba0a929-1c0c-402b-9751-798961cf8c66",
+      "recipeName": "Carnitas",
+      "ingredientName": "jalapeno",
+      "issueType": "typo",
+      "description": "Name \"jalapeno\" appears to be a typo. Should be \"jalapeño\"",
+      "suggestedFix": "jalapeño"
+    },
+    {
+      "recipeId": "dba0a929-1c0c-402b-9751-798961cf8c66",
+      "recipeName": "Carnitas",
+      "ingredientName": "jalapeno",
+      "issueType": "typo",
+      "description": "Name \"jalapeno\" contains possible typo \"jalapeno\". Should be \"jalapeño\"",
+      "suggestedFix": "jalapeño"
+    },
+    {
+      "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295",
+      "recipeName": "Chana Masala",
+      "ingredientName": "ginger",
+      "issueType": "non_standard_unit",
+      "description": "Unit \"inch\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
+      "suggestedFix": "Convert to a standard unit or null"
+    },
+    {
+      "recipeId": "bef39d1a-b9c4-4a41-b1be-09819434f295",
+      "recipeName": "Chana Masala",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"beverages\")"
+    },
+    {
+      "recipeId": "583e0869-bcdc-410a-8eed-a881b39740dc",
+      "recipeName": "Enchiladas",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"beverages\")"
+    },
+    {
+      "recipeId": "6b6dcb4d-0158-48cb-b1a5-1b44c1b179bf",
+      "recipeName": "Churros",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"beverages\")"
+    },
+    {
+      "recipeId": "c6a8e686-da0a-4516-936c-4e24b1d01d11",
+      "recipeName": "Palak Paneer",
+      "ingredientName": "water",
+      "issueType": "category_inconsistency",
+      "description": "\"water\" has category \"other\" here but \"beverages\" in other recipes",
+      "suggestedFix": "Standardize category (most common: \"beverages\")"
+    },
+    {
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26",
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "tofu sofritas",
+      "issueType": "non_standard_unit",
+      "description": "Unit \"recipe\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
+      "suggestedFix": "Convert to a standard unit or null"
+    },
+    {
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26",
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "fajita veggies",
+      "issueType": "non_standard_unit",
+      "description": "Unit \"recipe\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
+      "suggestedFix": "Convert to a standard unit or null"
+    },
+    {
+      "recipeId": "18c32220-23e9-4772-9d2d-5df1d61f4e26",
+      "recipeName": "Beef Burrito Bowl",
+      "ingredientName": "lime",
+      "issueType": "non_standard_unit",
+      "description": "Unit \"wedge\" is not in the standard set. Standard units: tsp, tbsp, cup, oz, lb, quart, gallon, head, bunch, stalk, clove, sprig, piece, slice, strip, can, ear, or null",
+      "suggestedFix": "Convert to a standard unit or null"
+    },
+    {
+      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708",
+      "recipeName": "Tortilla Soup",
+      "ingredientName": "jalapeno pepper",
+      "issueType": "typo",
+      "description": "Name \"jalapeno pepper\" contains possible typo \"jalapeno\". Should be \"jalapeño\"",
+      "suggestedFix": "jalapeño pepper"
+    },
+    {
+      "recipeId": "c3cd86b8-9ab2-45d4-acef-056e082e8708",
+      "recipeName": "Tortilla Soup",
+      "ingredientName": "corn",
+      "issueType": "category_inconsistency",
+      "description": "\"corn\" has category \"pantry\" here but \"produce\" in other recipes",
       "suggestedFix": "Standardize category (most common: \"produce\")"
     }
   ]
