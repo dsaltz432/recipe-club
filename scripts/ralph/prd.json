@@ -161,8 +161,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": "120 of 153 recipes parsed. Almost done with the initial pass."
+      "passes": true,
+      "notes": "COMPLETED. All 20 batch 6 recipes parsed successfully (3 runs for BOOT_ERROR/rate limits). 'Double Tofu Caesar Sandwich' returned 0 ingredients (Instagram Reel URL — not parseable). Evaluation: 13 raw issues, 1 true issue (saltine cracker unit='sleeve' non-standard), 12 false positives (92% FP rate). No new issue types found. Prompt stable for 5 consecutive batches. No prompt changes needed."
     },
     {
       "id": "US-010",

@@ -13,8 +13,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-16
-**Tasks Completed:** 9
-**Current Task:** US-008 (Parse batch 5, evaluate, fix) complete
+**Tasks Completed:** 10
+**Current Task:** US-009 (Parse batch 6, evaluate, fix) complete
 
 ---
 
@@ -349,4 +349,40 @@
   - At 103 recipes and 1363 ingredients, the evaluator uses 7 batches of 15 recipes. Evaluation takes ~2 minutes including rate limit waits.
   - The evaluator's JSON parsing occasionally fails on rate-limited retries (batch 1/7 returned 0 issues due to truncated JSON response). This doesn't affect the batch 5 analysis since those recipes are in later evaluation batches.
   - Middle Eastern cuisine ingredients are handled well by the prompt — spices (sumac, Aleppo pepper, za'atar), specialty items (grape leaves in brine, phyllo dough, tahini), and fresh herbs all categorized correctly.
+---
+
+## 2026-02-16 - US-009: Parse batch 6 (recipes 101-120), evaluate, and fix if needed
+- **Batch 6 parsing:** All 20 recipes (offset=100, limit=20) successfully parsed. Required 3 runs: first run parsed 11 (8 BOOT_ERROR 503, 1 already parsed from prior session), second run hit Anthropic 429 rate limit on all 8 remaining, third run (after 65s wait) completed all 8.
+- **Notable:** "Double Tofu Caesar Sandwich" returned 0 ingredients — its URL is an Instagram Reel (`instagram.com/reels/`) which the edge function cannot parse for recipe data. This is expected; the recipe will have no ingredients in the DB.
+- **DB state after batch 6:** 122 recipes, 1581 ingredients total.
+- **Batch 6 recipes:** Fried Artichokes with Lemony Garlic Aioli, Macaroni and Cheese, Vegan Crab Cakes, Cheesy Hasselback Potato Gratin, Atlantic Beach Pie, Manicotti with Cheese Filling and Bolognese Sauce, Cornmeal Fritters, Gobi 65, Beer-Battered Fish with Malt Vinegar Aioli, Artichoke Soup with Pesto, Rice Noodles with Garlicky Cashew Sauce, Double Tofu Caesar Sandwich, Beer Bread, Coconut Rice, Cantonese Soy Sauce Pan-Fried Noodles, Chicken Satay, Chocolate Guinness Cake, Yellow Chicken Adobo, Sticky and Spicy Baked Cauliflower, Split Pea Soup
+- **Evaluation results (all 122 recipes, 1581 ingredients):** 104 raw issues
+  - category_inconsistency: 30, count_unit_in_name: 23, quantity_precision: 16, non_standard_unit: 13, prep_adjective: 11, pluralization: 9, typo: 2
+  - Note: Batch 2/9 of evaluation had JSON parse failure (0 issues captured from that batch) — some issues may be underreported.
+- **Batch 6 analysis (13 raw issues → 1 true issue, 12 false positives = 92% FP rate):**
+  - TRUE: `saltine cracker` in Atlantic Beach Pie (non_standard_unit — unit="sleeve" is not a standard unit; should be converted to oz/piece/null)
+  - FALSE POSITIVES breakdown:
+    - 5× count_unit_in_name: units already correctly in unit field (garlic unit=clove, lemongrass unit=stalk, bacon unit=slice, thyme unit=sprig, cauliflower unit=head) — evaluator confirming correct values
+    - 3× category_inconsistency: chickpea and artichoke heart already correctly "pantry"; evaluator flagged vanilla extract as "pantry" but "spices" is reasonable for a flavoring extract
+    - 2× pluralization: "baby artichoke heart" is the product name (frozen baby artichoke hearts), cauliflower already clean
+    - 1× typo: turmeric already correctly spelled in name field (raw_text has "tumeric" but name is correct)
+    - 1× non_standard_unit: lemon with unit=piece is valid
+- **Batch comparison (true issues only):**
+  - Batch 1 (parsed with OLD prompt): ~20 true issues
+  - Batch 2 (parsed with US-003 prompt): 7 true issues
+  - Batch 3 (parsed with US-004 prompt): 3 true issues
+  - Batch 4 (parsed with US-004 prompt): 1 true issue
+  - Batch 5 (parsed with US-004 prompt): 2 true issues
+  - Batch 6 (parsed with US-004 prompt): **1 true issue** — prompt quality remains excellent
+- **Prompt fix decision: No changes needed.** The single true issue ("sleeve" unit) is an uncommon measurement unit that the AI encountered for the first time. The prompt already has rules for non-standard units — this is an AI execution edge case, not a systemic prompt failure. No new issue types found. Prompt is stable for **5 consecutive batches** (batches 2-6) with no new issue types.
+- **Evaluator FP rate trend:** 24% → 61% → 90% → 95% → 89% → 92% (stabilizing around 89-95%)
+- **Files changed:** None (no prompt changes needed — prompt stable for 5+ batches)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - Instagram Reel URLs cannot be parsed for recipe data — the edge function's URL fetcher doesn't extract structured recipe content from Instagram. "Double Tofu Caesar Sandwich" has 0 ingredients as a result. This is expected and doesn't count as a failure.
+  - "Sleeve" as a unit for crackers is a real measurement (a sleeve of saltine crackers ≈ 40 crackers) but it's not in the standard unit list. The AI should have converted it.
+  - Vanilla extract category (spices vs pantry) is genuinely ambiguous — "spices" is defensible since it's shelved in the spice section of most stores, though "pantry" would also be valid. No need to add a specific rule.
+  - At 122 recipes and 1581 ingredients, the evaluator uses 9 batches of 15 recipes. One batch had a JSON parse failure but this doesn't affect the batch-6-specific analysis.
 ---
