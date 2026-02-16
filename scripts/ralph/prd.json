@@ -77,8 +77,8 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": "This is a calibration step. The Claude evaluator should find fewer false positives (no more 'tomatoe' suggestions) and may find issues the regex evaluator missed entirely. Compare the two reports side by side. This establishes the true baseline for measuring improvement in subsequent batches. Do NOT re-parse — just re-evaluate the existing data."
+      "passes": true,
+      "notes": "COMPLETED. Analyzed Claude evaluator report (58 raw issues) vs regex evaluator (24 issues). After filtering, 44 true issues and 14 false positives. Claude found 3 new issue types: quantity_precision (4), count_unit_in_name (3), typo (1). Prompt fixes applied to both files: quantity rounding to 2 decimals, dried fruits->pantry, taco shells->bakery, pickled items as product-form qualifiers. Evaluator improved: ginger=produce, tofu=meat_seafood, better quantity precision rules."
     },
     {
       "id": "US-005",

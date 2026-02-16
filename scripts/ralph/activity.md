@@ -13,8 +13,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-15
-**Tasks Completed:** 4
-**Current Task:** US-002 (Claude evaluator) complete
+**Tasks Completed:** 5
+**Current Task:** US-004 (Re-evaluate with Claude evaluator) complete
 
 ---
 
@@ -150,4 +150,50 @@
   - Response parsing: strip markdown code fences if present before JSON.parse
   - The ginger category debate (produce vs spices) is context-dependent — Claude may flag this differently than expected
   - `slice` as a unit is actually valid (in VALID_UNITS) — Claude sometimes flags it incorrectly as non-standard; future refinement may add this to the system prompt
+---
+
+## 2026-02-15 - US-004: Re-evaluate batch 1 with Claude-powered evaluator and fix prompt
+- **Objective:** Calibrate Claude evaluator against existing parsed data, compare with old regex evaluator, fix prompt for newly-discovered issues
+- **Claude evaluator results (43 recipes, 563 ingredients):** 58 raw issues reported
+  - After filtering false positives: **44 true issues**, **14 false positives**
+  - False positive types: Claude flagging already-correct values (quantities like 1.5/2.5/3.5 as "precision" issues, confirming already-correct names, stating "no fix needed")
+- **Comparison: Claude evaluator vs regex evaluator:**
+  - Regex evaluator: 24 issues across 4 types (pluralization, category_inconsistency, prep_adjective, non_standard_unit)
+  - Claude evaluator: 44 true issues across 7 types — **3 new issue types** discovered:
+    1. **quantity_precision** (4 issues) — quantities like 0.333, 0.667 should be 0.33, 0.67
+    2. **count_unit_in_name** (3 issues) — leaves/wedges embedded in names instead of unit field
+    3. **typo** (1 issue) — "tumeric" should be "turmeric" in raw_text
+  - Claude found more category issues (13 vs 9): ginger, dried apricot, silken tofu, taco shell
+  - Claude found more non-standard units (8 vs 2): recipe, wedge, inch, dash, pinch, g
+  - Claude was much more accurate on pluralization (6 true issues vs regex's 15 with many false positives)
+  - Claude correctly identified pickled items as product-form qualifiers (regex did not distinguish)
+- **False positives from regex that Claude correctly handles:**
+  - No "tomatoe" type suggestions (regex had naive singularization)
+  - Compound product names (rice noodles, red pepper flakes) correctly not flagged
+  - Context-dependent categories understood natively
+- **Prompt changes made (both `supabase/functions/parse-recipe/index.ts` and `test-combine/parse-recipes.mjs`):**
+  1. **Quantity precision fix** — Changed from "at least 3 decimal places for repeating fractions" to "Round to 2 decimal places maximum (0.33 not 0.333, 0.67 not 0.667)"
+  2. **Dried fruits category** — Added: "Dried fruits (dried apricot, dried cranberry, dried cherry, etc.) -> pantry"
+  3. **Taco shells/tortilla chips** — Added: "Taco shells, tortilla chips, pita chips -> bakery"
+  4. **Pickled products** — Added "pickled jalapeño" and "pickled red onion" as product-form qualifiers to keep (distinct prepared products, not prep adjectives)
+- **Evaluator improvements (`test-combine/scripts/evaluate-parsed.mjs`):**
+  - Added: fresh ginger root -> "produce" (not "spices") — it is a root vegetable
+  - Added: tofu/tempeh/seitan correctly "meat_seafood" — do not flag
+  - Added: dried fruits -> "pantry", taco shells -> "bakery" rules
+  - Added: "pickled" as product-form qualifier exception
+  - Fixed quantity_precision to flag >2 decimal places (not >3), and not flag values like 1.5, 2.5, 3.5
+- **Decision: ginger category** — Fresh ginger is "produce" (it is a root vegetable you buy in the produce section). Ground ginger would be "spices", but when recipes say "ginger" they mean fresh ginger root. The Claude evaluator was wrong to suggest "spices" — added explicit rule to prevent this false positive.
+- **Files changed:**
+  - `supabase/functions/parse-recipe/index.ts` (prompt updated — 3 changes)
+  - `test-combine/parse-recipes.mjs` (prompt updated — 3 identical changes)
+  - `test-combine/scripts/evaluate-parsed.mjs` (evaluator system prompt improved — 5 changes)
+- **Verification:**
+  - Edge function tests pass (30/30): `npx vitest run tests/unit/edge-functions/parse-recipe.test.ts`
+  - `npm run build` passes
+- **Learnings for future iterations:**
+  - Claude evaluator produces ~24% false positives (14/58) — many are "confirming already correct" items. Future refinement: instruct Claude to ONLY report genuine issues, never "confirm correct" items
+  - The quantity_precision issue was CAUSED by our prompt saying "at least 3 decimal places" — prompt was actively encouraging the wrong behavior
+  - Pickled items (pickled jalapeño, pickled red onion) are genuinely distinct products from fresh versions — they're sold in jars and have different flavor profiles
+  - Fresh ginger = produce, ground ginger = spices. Most recipes mean fresh ginger.
+  - The 44 true issues mostly come from batch 1 recipes parsed BEFORE prompt fixes in US-003. Subsequent batches should have far fewer issues.
 ---

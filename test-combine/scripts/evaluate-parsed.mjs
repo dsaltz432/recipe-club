@@ -132,7 +132,7 @@ ${VALID_CATEGORIES.join(", ")}
    EXCEPTIONS that stay plural: compound product names like "red pepper flakes", "rice noodles", "breadcrumbs", "brussels sprouts", "chickpeas", "oats", "capers", "greens", "peas", "sprouts", "grits". Words ending in -ss/-us/-is are not plural.
 
 2. **prep_adjective** — Names should NOT contain preparation adjectives (minced, diced, chopped, sliced, grated, toasted, melted, softened, peeled, etc.).
-   EXCEPTIONS to keep: "dried" for dried fruits/products (dried apricot, dried cranberry), "dry" for wines (dry white wine), "fresh" when it identifies a distinct product (fresh mozzarella, fresh pasta), "roasted" for distinct products (roasted red pepper, roasted garlic), "hot" for product names (hot sauce, hot chile paste), "crushed" for products (crushed tomato, crushed red pepper, red pepper flakes).
+   EXCEPTIONS to keep: "dried" for dried fruits/products (dried apricot, dried cranberry), "dry" for wines (dry white wine), "fresh" when it identifies a distinct product (fresh mozzarella, fresh pasta), "roasted" for distinct products (roasted red pepper, roasted garlic), "hot" for product names (hot sauce, hot chile paste), "crushed" for products (crushed tomato, crushed red pepper, red pepper flakes), "pickled" for distinct jarred/prepared products (pickled jalapeño, pickled red onion, pickled ginger).
 
 3. **category_inconsistency** — Check that the category makes sense:
    - Water → "other" (NEVER "beverages")
@@ -143,7 +143,10 @@ ${VALID_CATEGORIES.join(", ")}
    - Seeds (sesame, poppy, etc.) → "spices"
    - Canned/processed tomato products (crushed tomato, tomato paste, diced tomato, tomato sauce) → "pantry"
    - Fresh tomatoes → "produce"
+   - Dried fruits (dried apricot, dried cranberry, dried cherry, etc.) → "pantry" (shelf-stable)
+   - Taco shells, tortilla chips, pita chips → "bakery"
    - Fresh fruits/vegetables → "produce"
+   - Fresh ginger root → "produce" (it is a root vegetable, NOT "spices")
    - Dried spices/herbs → "spices"
    - Flour, sugar, rice, pasta, canned goods → "pantry"
    - Butter, cream, cheese, milk, yogurt → "dairy"
@@ -154,7 +157,7 @@ ${VALID_CATEGORIES.join(", ")}
 
 5. **typo** — Misspelled ingredient names (e.g. "tumeric" → "turmeric", "parsely" → "parsley").
 
-6. **quantity_precision** — Quantities with more than 3 decimal places should be rounded.
+6. **quantity_precision** — Quantities with more than 2 decimal places should be rounded (e.g. 0.333 should be 0.33, 0.667 should be 0.67). Values like 0.5, 1.5, 2.5, 3.5 are perfectly fine and should NOT be flagged.
 
 7. **count_unit_in_name** — Count units like "clove", "head", "bunch", "stalk", "sprig", "piece", "ear", "strip", "slice" should be in the unit field, not embedded in the name. E.g. "garlic clove" should be name="garlic" unit="clove".
 
@@ -176,7 +179,10 @@ IMPORTANT: Only flag genuine issues. Do NOT flag:
 - Product-form qualifiers that should be kept (dried apricot, crushed tomato, red pepper flakes, dry white wine)
 - Standard plural exceptions (breadcrumbs, chickpeas, oats, noodles, etc.)
 - Correct categories
-- Valid units including null`;
+- Valid units including null
+- Tofu/tempeh/seitan are correctly categorized as "meat_seafood" (covers all proteins)
+- Fresh ginger is correctly "produce" (it is a root vegetable)
+- Values like 0.5, 1.5, 2.5, 3.5 are NOT precision issues`;
 
   const userContent = recipeBatch
     .map(({ recipeName, ingredients }) => {

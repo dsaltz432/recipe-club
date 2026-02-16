@@ -85,6 +85,8 @@ Category guidance:
 - Lemon/lime juice → "produce" (it comes from produce)
 - Canned/jarred tomato products (crushed tomato, tomato paste, diced tomato, tomato sauce) → "pantry" (they are shelf-stable pantry items)
 - Fresh tomatoes → "produce"
+- Dried fruits (dried apricot, dried cranberry, dried cherry, etc.) → "pantry" (they are shelf-stable)
+- Taco shells, tortilla chips, pita chips → "bakery"
 For quantity, use null if the amount is "to taste" or unspecified. Unit should be null only for truly unitless countable items (e.g. "3 eggs", "1 onion", "2 carrots").
 - COUNT UNITS are real units — put them in the "unit" field, NOT in the name: "head", "bunch", "stalk", "clove", "sprig", "ear", "strip", "slice", "piece".
   Example: "2 medium heads of broccoli" → { "name": "broccoli", "quantity": 2, "unit": "head" }
@@ -108,10 +110,10 @@ For ingredient names:
   "rolled oats" (not "rolled oat"), "lo mein noodles", "breadcrumbs"
 - Keep qualifiers that identify a DIFFERENT product or form:
   YES (different products): "sesame oil", "rice vinegar", "low sodium soy sauce", "romaine lettuce heart"
-  YES (distinct product forms): "crushed tomato" (a canned product), "red pepper flakes" (a spice product), "dried apricot" (different from fresh apricot), "dry white wine" (wine classification), "chili oil" (a product)
+  YES (distinct product forms): "crushed tomato" (a canned product), "red pepper flakes" (a spice product), "dried apricot" (different from fresh apricot), "dry white wine" (wine classification), "chili oil" (a product), "pickled jalapeño" (a distinct jarred product), "pickled red onion" (a distinct prepared product)
   NO (just preparation state): "fresh broccoli" (same as "broccoli"), "cold water" (same as "water"), "minced garlic" (same as "garlic"), "diced onion" (same as "onion"), "toasted sesame seed" (same as "sesame seed"), "fried shallot" (same as "shallot")
 - Use standard abbreviated units: "tsp", "tbsp", "cup", "oz", "lb". NEVER use metric units (g, kg, ml, L) — always convert to the nearest imperial equivalent (e.g. 200g → 7 oz, 500ml → 2 cups)
-- Use decimal numbers for quantities, not fractions: 0.25 not 1/4, 0.5 not 1/2, 0.333 not 1/3, 0.667 not 2/3. Use at least 3 decimal places for repeating fractions
+- Use decimal numbers for quantities, not fractions: 0.25 not 1/4, 0.5 not 1/2, 0.33 not 1/3, 0.67 not 2/3. Round to 2 decimal places maximum (0.33 not 0.333, 0.67 not 0.667)
 - For compound ingredients, use the most common single-word form when one exists:
   "cornstarch" not "corn starch"
 - Use proper diacritical marks for ingredient names: "jalapeño" not "jalapeno", "crème fraîche" not "creme fraiche", "añejo" not "anejo"
