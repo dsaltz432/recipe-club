@@ -49,22 +49,42 @@ serve(async (req) => {
 
 Your tasks:
 1. SEMANTIC MERGING: Combine items that are the same real ingredient but appear separately.
-   - "broccoli floret" + "broccoli" → one "broccoli" entry (sum quantities if compatible units)
+   - "broccoli floret" + "broccoli" → one "broccoli" entry
    - "garlic clove" + "garlic" → one "garlic" entry
    - "cold water" + "water" → one "water" entry
 2. KEEP SEPARATE: Items that are genuinely different products.
    - "sesame oil" ≠ "vegetable oil" (different products)
    - "rice vinegar" ≠ "white vinegar" (different products)
-   - "crushed tomatoes" ≠ "tomato" ≠ "tomato sauce" (different products)
+   - "crushed tomatoes" ≠ "tomato" ≠ "tomato sauce" (different forms/products)
+   - "chicken breast" ≠ "chicken broth" (different products)
+   - "fresh ginger" ≠ "ground ginger" (different forms — keep separate)
 3. If no merges are needed, return items unchanged.
 
-Rules:
+## MUST-MERGE ingredient variants (same grocery item):
+- ALL salt types → "salt": "kosher salt", "sea salt", "table salt", "flaky salt", "coarse salt"
+- ALL onion colors → "onion": "yellow onion", "white onion", "sweet onion" (but NOT "red onion", "green onion", "shallot")
+- ALL plain oil → "vegetable oil": "oil", "vegetable oil", "canola oil", "neutral oil"
+- ALL olive oil → "olive oil": "olive oil", "extra virgin olive oil", "extra-virgin olive oil", "EVOO"
+- ALL butter → "butter": "butter", "unsalted butter", "salted butter"
+- Cheese + "cheese" suffix → base name: "parmesan cheese" → "parmesan", "mozzarella cheese" → "mozzarella"
+- Ground spice + spice → spice name: "ground turmeric" → "turmeric", "ground cumin" → "cumin", "ground cinnamon" → "cinnamon"
+- "black pepper" + "ground black pepper" → "black pepper"
+- "bay leaf" + "dried bay leaf" → "bay leaf"
+- "green onion" + "scallion" + "spring onion" → "green onion"
+
+## Unit conversion rules (MUST convert before summing):
+- 1 tbsp = 3 tsp (ALWAYS convert tsp↔tbsp to the smaller unit before summing, then simplify)
+- 1 cup = 16 tbsp = 48 tsp
+- 1 lb = 16 oz
+- When BOTH items have convertible units (tsp/tbsp, cup/tbsp, oz/lb), convert to the smaller unit, sum, then express in the larger unit if the result is clean (e.g. 6 tsp → 2 tbsp)
+- When units are INCOMPATIBLE and cannot be converted (e.g. "clove" vs "tsp", "bunch" vs "tsp", "piece" vs "tbsp"), use the unit from the item with the larger quantity. Do NOT simply add the numbers together — the smaller quantity's number should be dropped or estimated.
+- When one item has a unit and another has null unit, keep the unit and add the quantities.
+
+## Rules:
 - Preserve the most specific category assignment
 - Combine sourceRecipes arrays (deduplicated)
 - Return raw numeric quantities — do NOT format as fractions or strings
-- When merging items with the same unit, sum the quantities
-- When merging items with incompatible units, keep the larger quantity's unit and set the other to null
-- Items without any quantity: use null for totalQuantity
+- Items where ALL inputs have null quantity: use null for totalQuantity
 - Use clean base ingredient names (e.g. "broccoli" not "broccoli floret")
 - Never use metric units (g, kg, ml) — convert to imperial (oz, lb, tsp, tbsp, cup)
 

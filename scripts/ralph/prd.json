@@ -56,7 +56,7 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This is the first real test. Expect issues like: ingredients not being merged when they should be, quantities getting lost, units being mishandled. The combine prompt (in supabase/functions/combine-ingredients/index.ts systemPrompt) is relatively simple compared to parse-recipe — there's room for improvement. Focus on the most common issue types first."
     },
     {
