@@ -16,8 +16,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-16
-**Tasks Completed:** 1
-**Current Task:** US-001 complete
+**Tasks Completed:** 2
+**Current Task:** US-002 complete
 
 ---
 
@@ -33,4 +33,20 @@
   - The evaluate-claude.mjs pattern (API key loading, fetch pagination, report writing) is the template for all scripts
   - Recipes ordered by `id` for deterministic grouping; 148 of 154 have ingredients
   - Pre-combine quantity is numeric string (e.g. "2.5"); edge function returns totalQuantity as number
+---
+
+## 2026-02-16 - US-002: Create Claude-powered combine evaluator
+- Created `scripts/ralph/evaluate-combined.mjs` — reads combine-results.json and uses Claude (sonnet-4-5) to evaluate merge quality
+- Evaluates 7 issue types: missed_merge, wrong_merge, quantity_error, unit_error, name_cleaning, category_error, source_recipes_error
+- Batches 5 event groups per Claude API call (larger payloads than parse evaluation since both input+output are sent)
+- Uses 8192 max_tokens (vs 4096 for parse evaluator) to handle larger combined input/output payloads
+- Outputs report to `combine-evaluation-report.json` with `{summary: {totalIssues, totalGroups, byType}, issues: [...]}`
+- Rate limit handling: waits 60s and retries once on 429 errors
+- Handles empty/missing results file gracefully (writes empty report)
+- **Files changed:** `scripts/ralph/evaluate-combined.mjs` (new), `scripts/ralph/activity.md` (updated)
+- **Learnings for future iterations:**
+  - The evaluate-claude.mjs script is in `scripts/ralph/` (not `test-combine/scripts/` as referenced in the PRD notes)
+  - Combine evaluation requires both INPUT (preCombined) and OUTPUT (combined) in the prompt — key difference from parse evaluation
+  - BATCH_SIZE=5 is appropriate for combine evaluation (vs 15 for parse) since each group's data is much larger
+  - max_tokens=8192 needed since combine evaluation responses can be larger with 5 groups of input+output comparisons
 ---

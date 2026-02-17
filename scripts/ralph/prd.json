@@ -38,7 +38,7 @@
         "Script runs without errors when given valid combine-results.json"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the pattern from test-combine/scripts/evaluate-parsed.mjs for structure (API key loading, Claude API call pattern, batch processing, rate limit handling, report format). Key difference: each evaluation batch contains both INPUT (preCombined) and OUTPUT (combined) so Claude can compare them. Claude should check that every input item maps to exactly one output item, quantities are preserved or correctly summed, and no information is lost."
     },
     {
