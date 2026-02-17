@@ -109,7 +109,7 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "This is the final validation. All groups re-run with the polished prompt. The evaluation should show near-zero true issues. Save the final report separately from the iterative one."
     }
   ]

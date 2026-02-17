@@ -13,7 +13,7 @@
       }
     ],
     "preCombinedCount": 53,
-    "combinedCount": 46,
+    "combinedCount": 43,
     "preCombined": [
       {
         "name": "grape leaves in brine",
@@ -514,7 +514,7 @@
         ]
       },
       {
-        "name": "extra virgin olive oil",
+        "name": "olive oil",
         "totalQuantity": null,
         "unit": null,
         "category": "pantry",
@@ -523,12 +523,13 @@
         ]
       },
       {
-        "name": "yellow onion",
-        "totalQuantity": 1,
+        "name": "onion",
+        "totalQuantity": 3,
         "unit": null,
         "category": "produce",
         "sourceRecipes": [
-          "Stuffed Grape Leaves"
+          "Stuffed Grape Leaves",
+          "Biryani"
         ]
       },
       {
@@ -541,12 +542,14 @@
         ]
       },
       {
-        "name": "kosher salt",
-        "totalQuantity": null,
-        "unit": null,
+        "name": "salt",
+        "totalQuantity": 8.25,
+        "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
-          "Stuffed Grape Leaves"
+          "Stuffed Grape Leaves",
+          "Biryani",
+          "Waldorf Salad"
         ]
       },
       {
@@ -626,7 +629,7 @@
       {
         "name": "lemon juice",
         "totalQuantity": 3,
-        "unit": "tbsp",
+        "unit": null,
         "category": "produce",
         "sourceRecipes": [
           "Stuffed Grape Leaves",
@@ -653,7 +656,7 @@
       },
       {
         "name": "water",
-        "totalQuantity": 0.5,
+        "totalQuantity": 0.63,
         "unit": "cup",
         "category": "other",
         "sourceRecipes": [
@@ -662,8 +665,8 @@
       },
       {
         "name": "vegetable oil",
-        "totalQuantity": 2,
-        "unit": "tbsp",
+        "totalQuantity": 1.13,
+        "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
           "Biryani"
@@ -751,16 +754,6 @@
         ]
       },
       {
-        "name": "salt",
-        "totalQuantity": 4.25,
-        "unit": "tsp",
-        "category": "spices",
-        "sourceRecipes": [
-          "Biryani",
-          "Waldorf Salad"
-        ]
-      },
-      {
         "name": "clove",
         "totalQuantity": 10,
         "unit": null,
@@ -770,7 +763,7 @@
         ]
       },
       {
-        "name": "dried bay leaf",
+        "name": "bay leaf",
         "totalQuantity": 5,
         "unit": null,
         "category": "spices",
@@ -799,24 +792,6 @@
       {
         "name": "basmati rice",
         "totalQuantity": 2.25,
-        "unit": "cup",
-        "category": "pantry",
-        "sourceRecipes": [
-          "Biryani"
-        ]
-      },
-      {
-        "name": "onion",
-        "totalQuantity": 2,
-        "unit": null,
-        "category": "produce",
-        "sourceRecipes": [
-          "Biryani"
-        ]
-      },
-      {
-        "name": "oil",
-        "totalQuantity": 1,
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
@@ -932,7 +907,7 @@
       }
     ],
     "preCombinedCount": 78,
-    "combinedCount": 70,
+    "combinedCount": 68,
     "preCombined": [
       {
         "name": "Thai green curry paste",
@@ -1727,7 +1702,7 @@
         ]
       },
       {
-        "name": "white sugar",
+        "name": "sugar",
         "totalQuantity": 2,
         "unit": "tsp",
         "category": "pantry",
@@ -1737,12 +1712,14 @@
       },
       {
         "name": "salt",
-        "totalQuantity": 2.13,
+        "totalQuantity": 3.63,
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
           "Green Curry",
-          "Jerk Chicken"
+          "Jerk Chicken",
+          "Vegan Crab Cakes",
+          "Bibimbap"
         ]
       },
       {
@@ -1919,15 +1896,6 @@
         ]
       },
       {
-        "name": "sea salt",
-        "totalQuantity": 1,
-        "unit": "tsp",
-        "category": "spices",
-        "sourceRecipes": [
-          "Vegan Crab Cakes"
-        ]
-      },
-      {
         "name": "old bay seasoning",
         "totalQuantity": 2,
         "unit": "tsp",
@@ -2076,15 +2044,6 @@
         "totalQuantity": 4.2,
         "unit": "oz",
         "category": "produce",
-        "sourceRecipes": [
-          "Bibimbap"
-        ]
-      },
-      {
-        "name": "fine sea salt",
-        "totalQuantity": 0.5,
-        "unit": "tsp",
-        "category": "spices",
         "sourceRecipes": [
           "Bibimbap"
         ]
@@ -2300,7 +2259,7 @@
       }
     ],
     "preCombinedCount": 56,
-    "combinedCount": 51,
+    "combinedCount": 50,
     "preCombined": [
       {
         "name": "vegetable oil",
@@ -2899,7 +2858,7 @@
         ]
       },
       {
-        "name": "extra-virgin olive oil",
+        "name": "olive oil",
         "totalQuantity": 1,
         "unit": "tbsp",
         "category": "pantry",
@@ -2917,12 +2876,13 @@
         ]
       },
       {
-        "name": "sweet onion",
-        "totalQuantity": 1,
+        "name": "onion",
+        "totalQuantity": 2,
         "unit": null,
         "category": "produce",
         "sourceRecipes": [
-          "Easy Provencal Fish"
+          "Easy Provencal Fish",
+          "Beef Stew"
         ]
       },
       {
@@ -2963,7 +2923,7 @@
       },
       {
         "name": "salt",
-        "totalQuantity": 0.5,
+        "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
@@ -3139,15 +3099,6 @@
         ]
       },
       {
-        "name": "onion",
-        "totalQuantity": 1,
-        "unit": null,
-        "category": "produce",
-        "sourceRecipes": [
-          "Beef Stew"
-        ]
-      },
-      {
         "name": "celery",
         "totalQuantity": 1,
         "unit": "stalk",
@@ -3166,7 +3117,7 @@
         ]
       },
       {
-        "name": "ground paprika",
+        "name": "paprika",
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
@@ -3647,7 +3598,7 @@
         ]
       },
       {
-        "name": "kosher salt",
+        "name": "salt",
         "totalQuantity": null,
         "unit": null,
         "category": "spices",
@@ -3739,7 +3690,7 @@
         ]
       },
       {
-        "name": "Pecorino cheese",
+        "name": "Pecorino",
         "totalQuantity": 0.5,
         "unit": "cup",
         "category": "dairy",
@@ -3920,7 +3871,7 @@
         ]
       },
       {
-        "name": "scallion",
+        "name": "green onion",
         "totalQuantity": 0.5,
         "unit": "cup",
         "category": "produce",
@@ -4400,7 +4351,7 @@
         ]
       },
       {
-        "name": "scallion",
+        "name": "green onion",
         "totalQuantity": null,
         "unit": null,
         "category": "produce",
@@ -4559,7 +4510,7 @@
         ]
       },
       {
-        "name": "cheddar cheese",
+        "name": "cheddar",
         "totalQuantity": 8,
         "unit": "oz",
         "category": "dairy",
@@ -4586,7 +4537,7 @@
         ]
       },
       {
-        "name": "white sugar",
+        "name": "sugar",
         "totalQuantity": 3.25,
         "unit": "cup",
         "category": "pantry",
@@ -4634,7 +4585,7 @@
         ]
       },
       {
-        "name": "ground cinnamon",
+        "name": "cinnamon",
         "totalQuantity": 3.5,
         "unit": "tsp",
         "category": "spices",
@@ -4701,7 +4652,7 @@
       }
     ],
     "preCombinedCount": 62,
-    "combinedCount": 57,
+    "combinedCount": 53,
     "preCombined": [
       {
         "name": "saffron thread",
@@ -5292,12 +5243,13 @@
         ]
       },
       {
-        "name": "spring onion",
+        "name": "green onion",
         "totalQuantity": 7,
         "unit": "oz",
         "category": "produce",
         "sourceRecipes": [
-          "Bean Confit with Lemon Saffron and All the Alliums"
+          "Bean Confit with Lemon Saffron and All the Alliums",
+          "Thai Mango Salad"
         ]
       },
       {
@@ -5310,13 +5262,14 @@
         ]
       },
       {
-        "name": "extra-virgin olive oil",
-        "totalQuantity": 1.03,
-        "unit": "cup",
+        "name": "olive oil",
+        "totalQuantity": 20.5,
+        "unit": "tbsp",
         "category": "pantry",
         "sourceRecipes": [
           "Bean Confit with Lemon Saffron and All the Alliums",
-          "Polenta Lasagna with Spinach and Herby Ricotta"
+          "Polenta Lasagna with Spinach and Herby Ricotta",
+          "BBQ Ribs"
         ]
       },
       {
@@ -5356,12 +5309,15 @@
         ]
       },
       {
-        "name": "flaky sea salt",
-        "totalQuantity": null,
-        "unit": null,
+        "name": "salt",
+        "totalQuantity": 3,
+        "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
-          "Bean Confit with Lemon Saffron and All the Alliums"
+          "Bean Confit with Lemon Saffron and All the Alliums",
+          "Polenta Lasagna with Spinach and Herby Ricotta",
+          "BBQ Ribs",
+          "Thai Mango Salad"
         ]
       },
       {
@@ -5374,19 +5330,10 @@
         ]
       },
       {
-        "name": "unsalted butter",
+        "name": "butter",
         "totalQuantity": 4,
         "unit": "tbsp",
         "category": "dairy",
-        "sourceRecipes": [
-          "Polenta Lasagna with Spinach and Herby Ricotta"
-        ]
-      },
-      {
-        "name": "kosher salt",
-        "totalQuantity": 1.5,
-        "unit": "tbsp",
-        "category": "spices",
         "sourceRecipes": [
           "Polenta Lasagna with Spinach and Herby Ricotta"
         ]
@@ -5411,7 +5358,7 @@
       },
       {
         "name": "parmesan",
-        "totalQuantity": 2.13,
+        "totalQuantity": 2,
         "unit": "cup",
         "category": "dairy",
         "sourceRecipes": [
@@ -5503,8 +5450,8 @@
       },
       {
         "name": "garlic",
-        "totalQuantity": 4,
-        "unit": "clove",
+        "totalQuantity": 3,
+        "unit": "tbsp",
         "category": "produce",
         "sourceRecipes": [
           "Polenta Lasagna with Spinach and Herby Ricotta",
@@ -5513,7 +5460,7 @@
       },
       {
         "name": "mozzarella",
-        "totalQuantity": 1.38,
+        "totalQuantity": 1.375,
         "unit": "lb",
         "category": "dairy",
         "sourceRecipes": [
@@ -5612,16 +5559,6 @@
         ]
       },
       {
-        "name": "salt",
-        "totalQuantity": 3,
-        "unit": "tsp",
-        "category": "spices",
-        "sourceRecipes": [
-          "BBQ Ribs",
-          "Thai Mango Salad"
-        ]
-      },
-      {
         "name": "cumin",
         "totalQuantity": 0.5,
         "unit": "tsp",
@@ -5635,15 +5572,6 @@
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
-        "sourceRecipes": [
-          "BBQ Ribs"
-        ]
-      },
-      {
-        "name": "olive oil",
-        "totalQuantity": 4,
-        "unit": "tbsp",
-        "category": "pantry",
         "sourceRecipes": [
           "BBQ Ribs"
         ]
@@ -5741,15 +5669,6 @@
       {
         "name": "carrot",
         "totalQuantity": 1,
-        "unit": null,
-        "category": "produce",
-        "sourceRecipes": [
-          "Thai Mango Salad"
-        ]
-      },
-      {
-        "name": "green onion",
-        "totalQuantity": 2,
         "unit": null,
         "category": "produce",
         "sourceRecipes": [
@@ -6094,7 +6013,7 @@
     "combined": [
       {
         "name": "butter",
-        "totalQuantity": 1,
+        "totalQuantity": 1.125,
         "unit": "cup",
         "category": "dairy",
         "sourceRecipes": [
@@ -6933,7 +6852,9 @@
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
-          "Fattoush"
+          "Fattoush",
+          "Minestrone",
+          "Baba Ganoush"
         ]
       },
       {
@@ -6959,7 +6880,7 @@
         ]
       },
       {
-        "name": "romaine lettuce",
+        "name": "romaine lettuce heart",
         "totalQuantity": 1,
         "unit": "head",
         "category": "produce",
@@ -6968,7 +6889,7 @@
         ]
       },
       {
-        "name": "cucumber",
+        "name": "english cucumber",
         "totalQuantity": 1,
         "unit": null,
         "category": "produce",
@@ -6977,7 +6898,7 @@
         ]
       },
       {
-        "name": "tomato",
+        "name": "roma tomato",
         "totalQuantity": 7,
         "unit": null,
         "category": "produce",
@@ -7072,16 +6993,6 @@
         ]
       },
       {
-        "name": "extra virgin olive oil",
-        "totalQuantity": 0.25,
-        "unit": "cup",
-        "category": "pantry",
-        "sourceRecipes": [
-          "Minestrone",
-          "Baba Ganoush"
-        ]
-      },
-      {
         "name": "onion",
         "totalQuantity": 0.75,
         "unit": "cup",
@@ -7146,13 +7057,12 @@
         ]
       },
       {
-        "name": "potato",
+        "name": "Yukon gold potato",
         "totalQuantity": 1,
-        "unit": "lb",
+        "unit": null,
         "category": "produce",
         "sourceRecipes": [
-          "Minestrone",
-          "Samosa Filling"
+          "Minestrone"
         ]
       },
       {
@@ -7192,7 +7102,7 @@
         ]
       },
       {
-        "name": "Parmesan cheese",
+        "name": "parmesan",
         "totalQuantity": null,
         "unit": null,
         "category": "dairy",
@@ -7237,8 +7147,17 @@
         ]
       },
       {
+        "name": "potato",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Samosa Filling"
+        ]
+      },
+      {
         "name": "vegetable oil",
-        "totalQuantity": 4.125,
+        "totalQuantity": 4.13,
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
@@ -7429,7 +7348,7 @@
       }
     ],
     "preCombinedCount": 68,
-    "combinedCount": 54,
+    "combinedCount": 55,
     "preCombined": [
       {
         "name": "ground beef",
@@ -8070,8 +7989,8 @@
       },
       {
         "name": "onion",
-        "totalQuantity": 2,
-        "unit": "cup",
+        "totalQuantity": 2.5,
+        "unit": null,
         "category": "produce",
         "sourceRecipes": [
           "Meatloaf",
@@ -8101,24 +8020,24 @@
       },
       {
         "name": "salt",
-        "totalQuantity": 1,
-        "unit": "tsp",
-        "category": "spices",
-        "sourceRecipes": [
-          "Meatloaf",
-          "Cornmeal Fritters",
-          "Aloo Gobi"
-        ]
-      },
-      {
-        "name": "pepper",
-        "totalQuantity": 0.5,
+        "totalQuantity": 4,
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
           "Meatloaf",
           "Corn Chowder",
+          "Cornmeal Fritters",
+          "Aloo Gobi",
           "Yellow Chicken Adobo"
+        ]
+      },
+      {
+        "name": "pepper",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Meatloaf"
         ]
       },
       {
@@ -8214,18 +8133,17 @@
         ]
       },
       {
-        "name": "potato",
-        "totalQuantity": 1.5,
-        "unit": "cup",
+        "name": "yukon gold potato",
+        "totalQuantity": 2,
+        "unit": null,
         "category": "produce",
         "sourceRecipes": [
-          "Corn Chowder",
-          "Aloo Gobi"
+          "Corn Chowder"
         ]
       },
       {
-        "name": "kosher salt",
-        "totalQuantity": 3,
+        "name": "black pepper",
+        "totalQuantity": 0.5,
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
@@ -8288,9 +8206,18 @@
         ]
       },
       {
-        "name": "cauliflower",
-        "totalQuantity": 2,
+        "name": "potato",
+        "totalQuantity": 1.5,
         "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Aloo Gobi"
+        ]
+      },
+      {
+        "name": "cauliflower",
+        "totalQuantity": 2.5,
+        "unit": "head",
         "category": "produce",
         "sourceRecipes": [
           "Aloo Gobi",
@@ -8308,8 +8235,8 @@
       },
       {
         "name": "ginger",
-        "totalQuantity": 0.5,
-        "unit": "tbsp",
+        "totalQuantity": 1.5,
+        "unit": "piece",
         "category": "produce",
         "sourceRecipes": [
           "Aloo Gobi",
@@ -8319,7 +8246,7 @@
       {
         "name": "garlic",
         "totalQuantity": 6.5,
-        "unit": "tbsp",
+        "unit": "clove",
         "category": "produce",
         "sourceRecipes": [
           "Aloo Gobi",
@@ -8345,7 +8272,7 @@
         ]
       },
       {
-        "name": "oil",
+        "name": "vegetable oil",
         "totalQuantity": 6,
         "unit": "tbsp",
         "category": "pantry",
@@ -8536,7 +8463,7 @@
         ]
       },
       {
-        "name": "scallion",
+        "name": "green onion",
         "totalQuantity": null,
         "unit": null,
         "category": "produce",
@@ -9013,7 +8940,7 @@
       {
         "name": "garlic",
         "totalQuantity": 4,
-        "unit": "clove",
+        "unit": "tbsp",
         "category": "produce",
         "sourceRecipes": [
           "Shrimp Lo Mein",
@@ -9087,8 +9014,8 @@
       },
       {
         "name": "cornstarch",
-        "totalQuantity": 7,
-        "unit": "tsp",
+        "totalQuantity": 5,
+        "unit": "tbsp",
         "category": "pantry",
         "sourceRecipes": [
           "Shrimp Lo Mein",
@@ -9097,7 +9024,7 @@
       },
       {
         "name": "dark soy sauce",
-        "totalQuantity": 3.5,
+        "totalQuantity": 2.5,
         "unit": "tbsp",
         "category": "condiments",
         "sourceRecipes": [
@@ -9171,9 +9098,9 @@
         ]
       },
       {
-        "name": "kosher salt",
-        "totalQuantity": 4,
-        "unit": "tbsp",
+        "name": "salt",
+        "totalQuantity": 7,
+        "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
           "Beef Recipe Link",
@@ -9236,7 +9163,7 @@
         ]
       },
       {
-        "name": "unsalted butter",
+        "name": "butter",
         "totalQuantity": 1,
         "unit": "tbsp",
         "category": "dairy",
@@ -9299,7 +9226,7 @@
         ]
       },
       {
-        "name": "extra-virgin olive oil",
+        "name": "olive oil",
         "totalQuantity": 0.5,
         "unit": "cup",
         "category": "pantry",
@@ -9949,9 +9876,9 @@
         "category": "spices",
         "sourceRecipes": [
           "Rice Noodles with Garlicky Cashew Sauce",
-          "Lamb Kebabs",
           "Mashed Potatoes",
-          "Lasagna"
+          "Lasagna",
+          "Lamb Kebabs"
         ]
       },
       {
@@ -10031,7 +9958,7 @@
       },
       {
         "name": "onion",
-        "totalQuantity": 1,
+        "totalQuantity": 0.5,
         "unit": "cup",
         "category": "produce",
         "sourceRecipes": [
@@ -10076,7 +10003,7 @@
         ]
       },
       {
-        "name": "white sugar",
+        "name": "sugar",
         "totalQuantity": 2,
         "unit": "tbsp",
         "category": "pantry",
@@ -10313,7 +10240,7 @@
       }
     ],
     "preCombinedCount": 57,
-    "combinedCount": 49,
+    "combinedCount": 48,
     "preCombined": [
       {
         "name": "kosher salt",
@@ -10947,7 +10874,7 @@
         ]
       },
       {
-        "name": "ground green cardamom",
+        "name": "cardamom",
         "totalQuantity": 0.13,
         "unit": "tsp",
         "category": "spices",
@@ -11013,7 +10940,7 @@
       },
       {
         "name": "vegetable oil",
-        "totalQuantity": 0.33,
+        "totalQuantity": 0.31,
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
@@ -11031,13 +10958,14 @@
         ]
       },
       {
-        "name": "white sugar",
-        "totalQuantity": 4,
-        "unit": "tbsp",
+        "name": "sugar",
+        "totalQuantity": 1.75,
+        "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
           "Chicken Pad Thai",
-          "Chicken Tikka Masala"
+          "Chicken Tikka Masala",
+          "Mysore Pak (Chickpea Fudge)"
         ]
       },
       {
@@ -11281,15 +11209,6 @@
       {
         "name": "chickpea flour",
         "totalQuantity": 1,
-        "unit": "cup",
-        "category": "pantry",
-        "sourceRecipes": [
-          "Mysore Pak (Chickpea Fudge)"
-        ]
-      },
-      {
-        "name": "sugar",
-        "totalQuantity": 1.5,
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
@@ -11838,7 +11757,7 @@
         ]
       },
       {
-        "name": "vegetable oil",
+        "name": "canola oil",
         "totalQuantity": 2,
         "unit": "tbsp",
         "category": "pantry",
@@ -12114,7 +12033,7 @@
         ]
       },
       {
-        "name": "oregano",
+        "name": "dried oregano",
         "totalQuantity": 1,
         "unit": "tbsp",
         "category": "spices",
@@ -12738,7 +12657,7 @@
         ]
       },
       {
-        "name": "white sugar",
+        "name": "sugar",
         "totalQuantity": 2.13,
         "unit": "cup",
         "category": "pantry",
@@ -13619,7 +13538,7 @@
       },
       {
         "name": "olive oil",
-        "totalQuantity": 9.25,
+        "totalQuantity": 10,
         "unit": "tbsp",
         "category": "pantry",
         "sourceRecipes": [
@@ -13677,7 +13596,7 @@
         ]
       },
       {
-        "name": "white sugar",
+        "name": "sugar",
         "totalQuantity": 11.5,
         "unit": "tbsp",
         "category": "pantry",
@@ -13785,7 +13704,15 @@
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
-          "Churros",
+          "Churros"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "totalQuantity": 2,
+        "unit": "inch",
+        "category": "spices",
+        "sourceRecipes": [
           "Korma"
         ]
       },
@@ -13880,7 +13807,7 @@
         ]
       },
       {
-        "name": "green cardamom",
+        "name": "cardamom",
         "totalQuantity": 2,
         "unit": null,
         "category": "spices",
@@ -13918,15 +13845,6 @@
       {
         "name": "clove",
         "totalQuantity": 4,
-        "unit": null,
-        "category": "spices",
-        "sourceRecipes": [
-          "Korma"
-        ]
-      },
-      {
-        "name": "cardamom",
-        "totalQuantity": 1,
         "unit": null,
         "category": "spices",
         "sourceRecipes": [
@@ -14237,7 +14155,7 @@
       {
         "name": "black pepper",
         "totalQuantity": null,
-        "unit": "tsp",
+        "unit": null,
         "category": "spices",
         "sourceRecipes": [
           "Mac and Cheese",
@@ -14390,7 +14308,7 @@
         ]
       },
       {
-        "name": "oregano",
+        "name": "dried oregano",
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
@@ -14979,8 +14897,8 @@
         "category": "spices",
         "sourceRecipes": [
           "Banana Bread",
-          "Nicoise Salad",
-          "Dal Makhani"
+          "Dal Makhani",
+          "Nicoise Salad"
         ]
       },
       {
@@ -15460,7 +15378,7 @@
       }
     ],
     "preCombinedCount": 34,
-    "combinedCount": 31,
+    "combinedCount": 30,
     "preCombined": [
       {
         "name": "unsalted butter",
@@ -15830,12 +15748,13 @@
         ]
       },
       {
-        "name": "granulated sugar",
-        "totalQuantity": 2,
-        "unit": "tbsp",
+        "name": "sugar",
+        "totalQuantity": 1.625,
+        "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
-          "Beer Bread"
+          "Beer Bread",
+          "Sugar Cookies"
         ]
       },
       {
@@ -15851,15 +15770,6 @@
         "name": "baking soda",
         "totalQuantity": 1,
         "unit": "tsp",
-        "category": "pantry",
-        "sourceRecipes": [
-          "Sugar Cookies"
-        ]
-      },
-      {
-        "name": "white sugar",
-        "totalQuantity": 1.5,
-        "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
           "Sugar Cookies"
@@ -16548,7 +16458,7 @@
       },
       {
         "name": "water",
-        "totalQuantity": 5.1875,
+        "totalQuantity": 5.19,
         "unit": "quart",
         "category": "other",
         "sourceRecipes": [
@@ -17138,7 +17048,7 @@
         ]
       },
       {
-        "name": "oregano",
+        "name": "dried oregano",
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
@@ -17147,7 +17057,7 @@
         ]
       },
       {
-        "name": "basil",
+        "name": "dried basil",
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
@@ -17238,7 +17148,7 @@
         ]
       },
       {
-        "name": "dill",
+        "name": "dried dill weed",
         "totalQuantity": 2,
         "unit": "tsp",
         "category": "spices",
@@ -17898,7 +17808,7 @@
       },
       {
         "name": "black pepper",
-        "totalQuantity": 1.5,
+        "totalQuantity": 0.5,
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
@@ -17973,7 +17883,7 @@
         ]
       },
       {
-        "name": "Dijon mustard",
+        "name": "dijon mustard",
         "totalQuantity": 1,
         "unit": "tbsp",
         "category": "condiments",
@@ -18604,7 +18514,7 @@
       },
       {
         "name": "lemon",
-        "totalQuantity": 1,
+        "totalQuantity": 2,
         "unit": null,
         "category": "produce",
         "sourceRecipes": [
@@ -18677,7 +18587,7 @@
       },
       {
         "name": "lemon zest",
-        "totalQuantity": 3,
+        "totalQuantity": 1,
         "unit": "tsp",
         "category": "produce",
         "sourceRecipes": [
@@ -19311,7 +19221,7 @@
       },
       {
         "name": "butter",
-        "totalQuantity": 0.5800000000000001,
+        "totalQuantity": 0.58,
         "unit": "cup",
         "category": "dairy",
         "sourceRecipes": [
@@ -20378,8 +20288,8 @@
       },
       {
         "name": "onion",
-        "totalQuantity": 2.83,
-        "unit": "oz",
+        "totalQuantity": 3.16,
+        "unit": "cup",
         "category": "produce",
         "sourceRecipes": [
           "Korean BBQ Short Ribs",
@@ -20825,7 +20735,7 @@
       },
       {
         "name": "butter",
-        "totalQuantity": 20,
+        "totalQuantity": 17,
         "unit": "tbsp",
         "category": "dairy",
         "sourceRecipes": [
@@ -22440,7 +22350,7 @@
         ]
       },
       {
-        "name": "cumin powder",
+        "name": "cumin",
         "totalQuantity": 3,
         "unit": "tsp",
         "category": "spices",
@@ -22568,7 +22478,7 @@
         ]
       },
       {
-        "name": "coriander powder",
+        "name": "coriander",
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
@@ -22586,7 +22496,7 @@
         ]
       },
       {
-        "name": "turmeric powder",
+        "name": "turmeric",
         "totalQuantity": 0.5,
         "unit": "tsp",
         "category": "spices",
@@ -26867,7 +26777,7 @@
       }
     ],
     "preCombinedCount": 40,
-    "combinedCount": 37,
+    "combinedCount": 38,
     "preCombined": [
       {
         "name": "dried chickpea",
@@ -27321,8 +27231,8 @@
         ]
       },
       {
-        "name": "flour",
-        "totalQuantity": 2.25,
+        "name": "all-purpose flour",
+        "totalQuantity": 2.08,
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
@@ -27427,7 +27337,6 @@
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
-          "Scones",
           "Scones"
         ]
       },
@@ -27471,6 +27380,15 @@
         "name": "chocolate chip",
         "totalQuantity": 1,
         "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Scones"
+        ]
+      },
+      {
+        "name": "coarse sugar",
+        "totalQuantity": null,
+        "unit": null,
         "category": "pantry",
         "sourceRecipes": [
           "Scones"
@@ -28871,8 +28789,8 @@
       },
       {
         "name": "salt",
-        "totalQuantity": null,
-        "unit": null,
+        "totalQuantity": 3.75,
+        "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
           "Chocolate Chip Cookies",
@@ -29534,8 +29452,8 @@
       },
       {
         "name": "parmesan",
-        "totalQuantity": 0.625,
-        "unit": "cup",
+        "totalQuantity": 10,
+        "unit": "tbsp",
         "category": "dairy",
         "sourceRecipes": [
           "Spaghetti Carbonara"
