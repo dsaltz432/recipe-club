@@ -20,7 +20,7 @@
         "Script runs successfully with --limit 0 (no-op): node test-combine/scripts/batch-combine.mjs --limit 0"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "DB has 154 recipes and 1898 ingredients. ~6 recipes have 0 ingredients (broken URLs) — skip those when forming groups. The pre-combine step should be simple: lowercase name grouping + quantity sum by unit. The edge function handles semantic merging. The combine-ingredients edge function expects: {preCombined: [{name, quantity (string|null), unit (string|null), category, sourceRecipes}]}. Note quantity is a STRING (or null), formatted as fraction like '1 1/2' — see src/lib/groceryList.ts decimalToFraction(). For simplicity, just pass the numeric quantity as a string. The edge function returns {success, items: [{name, totalQuantity (number|null), unit, category, sourceRecipes}]}. Reference: test-combine/scripts/batch-parse.mjs for the fetch/auth pattern."
     },
     {
