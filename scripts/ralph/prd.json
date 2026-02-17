@@ -1,219 +1,116 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/ingredient-quality-audit",
-  "description": "Iteratively parse all 153 test recipes in batches of 20, evaluating and fixing the AI prompt after each batch. Each batch benefits from all prior prompt improvements. Final step: re-parse all 153 with the polished prompt and sync to recipes.ts.",
+  "branchName": "ralph/combine-ingredients-audit",
+  "description": "Test the combine-ingredients edge function by simulating event scenarios (groups of 3-5 recipes), running the naive pre-combine then the AI semantic merge, and using Claude to evaluate whether ingredients were combined correctly. Iteratively improve the combine prompt based on findings.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create batch parsing script",
-      "description": "As a developer, I want a reusable script for batch parsing recipes through the edge function, so that I can parse slices of recipes efficiently.",
+      "title": "Create batch-combine script",
+      "description": "As a developer, I want a script that groups recipes into simulated events, pre-combines their ingredients, calls the combine-ingredients edge function, and saves results for evaluation.",
       "acceptanceCriteria": [
-        "Create test-combine/scripts/batch-parse.mjs that reads TEST_RECIPES from recipes.ts",
-        "Accepts --offset N and --limit N flags to parse a slice of recipes (e.g. --offset 0 --limit 20 for first 20)",
-        "Accepts --force flag to re-parse recipes that already have completed status",
-        "For each recipe: upsert into 'recipes' table via REST API (POST http://127.0.0.1:54321/rest/v1/recipes with Prefer: resolution=merge-duplicates). Fields: {name, url, created_by: null, event_id: null, ingredient_id: null}. Use ON CONFLICT on name to get existing ID",
-        "For each recipe: call parse-recipe edge function (POST http://127.0.0.1:54321/functions/v1/parse-recipe) with {recipeId, recipeUrl, recipeName}",
-        "Process with 10 concurrent workers using Promise.all on batched chunks",
+        "Create test-combine/scripts/batch-combine.mjs that queries all recipes and ingredients from local Supabase DB",
+        "Groups recipes into random but deterministic 'events' of 3-5 recipes each (use recipe index as seed so groups are reproducible)",
+        "For each event group: collects all ingredients from those recipes, performs a simple pre-combine (group by lowercase name + unit, sum quantities, collect sourceRecipes), formats as PreCombinedInput[]",
+        "Calls the combine-ingredients edge function (POST http://127.0.0.1:54321/functions/v1/combine-ingredients) with {preCombined} body",
         "Auth headers: apikey and Authorization both 'REDACTED'",
-        "Log progress per recipe and print summary (parsed, failed, skipped, elapsed time)",
-        "Script runs successfully with --limit 0 (no-op): node test-combine/scripts/batch-parse.mjs --limit 0",
-        "Typecheck passes: npm run build"
+        "Accepts --offset N and --limit N flags to process a slice of event groups",
+        "Saves results to test-combine/combine-results.json: array of {groupIndex, recipes: [{name}], preCombinedCount, combinedCount, preCombined: [...], combined: [...]}",
+        "Appends to existing results file if it exists (merges by groupIndex, replacing duplicates)",
+        "Logs progress per group and prints summary (groups processed, total pre-combined items, total combined items, merge ratio)",
+        "Script runs successfully with --limit 0 (no-op): node test-combine/scripts/batch-combine.mjs --limit 0"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "ALREADY COMPLETED. Do not re-implement. The script exists at test-combine/scripts/batch-parse.mjs and works correctly."
+      "passes": false,
+      "notes": "DB has 154 recipes and 1898 ingredients. ~6 recipes have 0 ingredients (broken URLs) — skip those when forming groups. The pre-combine step should be simple: lowercase name grouping + quantity sum by unit. The edge function handles semantic merging. The combine-ingredients edge function expects: {preCombined: [{name, quantity (string|null), unit (string|null), category, sourceRecipes}]}. Note quantity is a STRING (or null), formatted as fraction like '1 1/2' — see src/lib/groceryList.ts decimalToFraction(). For simplicity, just pass the numeric quantity as a string. The edge function returns {success, items: [{name, totalQuantity (number|null), unit, category, sourceRecipes}]}. Reference: test-combine/scripts/batch-parse.mjs for the fetch/auth pattern."
     },
     {
       "id": "US-002",
-      "title": "Replace evaluation script with Claude-powered evaluator",
-      "description": "As a developer, I want the evaluation script to use Claude's linguistic knowledge instead of brittle regex rules, so that ingredient quality issues are detected more accurately with correct suggested fixes.",
+      "title": "Create Claude-powered combine evaluator",
+      "description": "As a developer, I want an evaluation script that uses Claude to assess whether the combine-ingredients function correctly merged ingredients for each event group.",
       "acceptanceCriteria": [
-        "Replace test-combine/scripts/evaluate-parsed.mjs with a Claude-powered version",
-        "Script queries recipe_ingredients and recipes from local Supabase REST API (same as before)",
-        "Groups ingredients by recipe and sends them to Claude (Anthropic API) in batches for evaluation",
-        "Claude evaluates each ingredient for: (1) pluralization issues (e.g. 'tomatoes' should be 'tomato'), (2) prep adjectives that should be removed vs kept (e.g. remove 'toasted' from 'toasted sesame seed' but keep 'dried' in 'dried apricot'), (3) category correctness (water should be 'other' not 'beverages', canned tomato products should be 'pantry', fresh produce should be 'produce'), (4) unit standardization (use tsp/tbsp/cup/oz/lb/quart/gallon/head/bunch/stalk/clove/sprig/piece/slice/strip/can/ear/null), (5) typos and misspellings, (6) quantity reasonableness, (7) count units embedded in names (e.g. 'garlic clove' should be name='garlic' unit='clove')",
-        "Uses ANTHROPIC_API_KEY from environment or from supabase/functions/.env (same pattern as test-combine/parse-recipes.mjs lines 19-21)",
-        "Outputs same JSON format to test-combine/evaluation-report.json: {summary: {totalIssues, totalRecipes, totalIngredients, byType}, issues: [{recipeId, recipeName, ingredientName, issueType, description, suggestedFix}]}",
-        "Processes recipes in batches of 10-20 per Claude API call to stay within token limits",
-        "Script handles empty DB gracefully (0 recipes = 0 issues)",
-        "Script runs successfully against the 24 already-parsed recipes: node test-combine/scripts/evaluate-parsed.mjs",
-        "Typecheck passes: npm run build"
+        "Create test-combine/scripts/evaluate-combined.mjs that reads test-combine/combine-results.json",
+        "For each event group: sends the preCombined input AND the combined output to Claude for evaluation",
+        "Claude evaluates: (1) missed_merge — items that should have been merged but weren't (e.g. 'garlic' and 'garlic clove' both in output), (2) wrong_merge — items that were incorrectly merged (e.g. 'sesame oil' merged with 'olive oil'), (3) quantity_error — quantities not summed correctly after merge, (4) unit_error — wrong unit choice when merging incompatible units, (5) name_cleaning — output names should be clean base names (no prep adjectives, no count units), (6) category_error — wrong category in output, (7) source_recipes_error — sourceRecipes not correctly combined/deduplicated",
+        "Uses ANTHROPIC_API_KEY from environment or from supabase/functions/.env",
+        "Processes event groups in batches of 5 per Claude API call (combine results are larger than parsed ingredients)",
+        "Outputs to test-combine/combine-evaluation-report.json: {summary: {totalIssues, totalGroups, byType}, issues: [{groupIndex, recipes, issueType, description, inputItems, outputItem, suggestedFix}]}",
+        "Script handles empty results file gracefully",
+        "Script runs without errors when given valid combine-results.json"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "COMPLETED. Replaced regex-based evaluator with Claude-powered version using claude-sonnet-4-5-20250929. Batches of 15 recipes per API call, 1.5s delay. Found 58 issues across 43 recipes (563 ingredients) vs old evaluator's 24 issues. Claude correctly handles singularization, product-form qualifiers, context-dependent categories. Output format unchanged."
+      "passes": false,
+      "notes": "Follow the pattern from test-combine/scripts/evaluate-parsed.mjs for structure (API key loading, Claude API call pattern, batch processing, rate limit handling, report format). Key difference: each evaluation batch contains both INPUT (preCombined) and OUTPUT (combined) so Claude can compare them. Claude should check that every input item maps to exactly one output item, quantities are preserved or correctly summed, and no information is lost."
     },
     {
       "id": "US-003",
-      "title": "Parse batch 1 (recipes 1-20), evaluate, and fix prompt",
-      "description": "As a developer, I want to parse the first 20 recipes, evaluate the output, and fix the AI prompt for the most common issues so that subsequent batches benefit from improvements.",
+      "title": "Run batch 1 (groups 1-10), evaluate, and fix combine prompt",
+      "description": "As a developer, I want to combine the first 10 event groups, evaluate the output, and fix the combine-ingredients prompt for common issues.",
       "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 0 --limit 20",
-        "Verify 20 recipes parsed successfully (check parse log output)",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "Read evaluation-report.json and identify ALL issue types and their frequency",
-        "Fix the AI prompts in BOTH files based on findings: test-combine/parse-recipes.mjs (SYSTEM_PROMPT) and supabase/functions/parse-recipe/index.ts (systemPrompt)",
-        "The ingredient parsing rules in both prompts must be identical (structural differences for description/servings/instructions are OK)",
-        "Document in activity.md: issue counts by type, specific prompt changes made, before counts",
-        "Existing edge function tests pass: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
+        "Run: node test-combine/scripts/batch-combine.mjs --offset 0 --limit 10",
+        "Verify 10 groups processed successfully",
+        "Run: node test-combine/scripts/evaluate-combined.mjs",
+        "Read combine-evaluation-report.json and identify ALL issue types and their frequency",
+        "Fix the combine prompt in supabase/functions/combine-ingredients/index.ts based on findings",
+        "Document in activity.md: issue counts by type, specific prompt changes made",
+        "Existing edge function tests pass: npx vitest run tests/unit/edge-functions/combine-ingredients.test.ts",
         "Typecheck passes: npm run build"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "ALREADY COMPLETED. Batch 1 was parsed and evaluated. Prompt fixes were applied to both files: singularization rules, category rules (water→other, seeds→spices, lemon juice→produce, canned tomato→pantry), product-form qualifier preservation (dried apricot, dry wine, crushed tomato, red pepper flakes), prep adjective removal (toasted sesame seed), non-standard unit conversion (dash/pinch→tsp or null), metric conversion reinforcement. 35 issues found initially, reduced to 24 after evaluator improvements. See activity.md for full details."
+      "passes": false,
+      "notes": "This is the first real test. Expect issues like: ingredients not being merged when they should be, quantities getting lost, units being mishandled. The combine prompt (in supabase/functions/combine-ingredients/index.ts systemPrompt) is relatively simple compared to parse-recipe — there's room for improvement. Focus on the most common issue types first."
     },
     {
       "id": "US-004",
-      "title": "Re-evaluate batch 1 with Claude-powered evaluator and fix prompt if needed",
-      "description": "As a developer, I want to re-evaluate the already-parsed batch 1 recipes using the new Claude-powered evaluator to get a more accurate baseline, and fix any newly-discovered issues in the prompt.",
+      "title": "Run batch 2 (groups 11-20), evaluate, and fix if needed",
+      "description": "As a developer, I want to combine groups 11-20 with the improved prompt and verify the fixes from batch 1 are working.",
       "acceptanceCriteria": [
-        "Run: node test-combine/scripts/evaluate-parsed.mjs (now Claude-powered)",
-        "Compare findings against the previous regex-based evaluation (35 issues initially, 24 after evaluator tweaks)",
-        "Identify any new issue types that the regex evaluator missed",
-        "Identify any false positives from the regex evaluator that Claude correctly ignores",
-        "IF Claude finds new issue types: fix the prompt (both files) to address them",
-        "Document in activity.md: Claude evaluator results vs regex evaluator results, any new prompt changes",
-        "Edge function tests pass if prompt was changed: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
+        "Run: node test-combine/scripts/batch-combine.mjs --offset 10 --limit 10",
+        "Run: node test-combine/scripts/evaluate-combined.mjs",
+        "Compare issue counts against batch 1: fixed issue types should appear less or not at all",
+        "IF new issue types found: fix the prompt in supabase/functions/combine-ingredients/index.ts",
+        "IF no new issues: document 'prompt is stable' in activity.md",
+        "Document comparison to batch 1 in activity.md",
+        "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "COMPLETED. Analyzed Claude evaluator report (58 raw issues) vs regex evaluator (24 issues). After filtering, 44 true issues and 14 false positives. Claude found 3 new issue types: quantity_precision (4), count_unit_in_name (3), typo (1). Prompt fixes applied to both files: quantity rounding to 2 decimals, dried fruits->pantry, taco shells->bakery, pickled items as product-form qualifiers. Evaluator improved: ginger=produce, tofu=meat_seafood, better quantity precision rules."
+      "passes": false,
+      "notes": "Compare directly to batch 1 results. If the issue types from US-003 are now reduced/eliminated, the prompt fixes are working."
     },
     {
       "id": "US-005",
-      "title": "Parse batch 2 (recipes 21-40), evaluate, and fix if needed",
-      "description": "As a developer, I want to parse recipes 21-40 with the improved prompt and check if the fixes from batch 1 resolved the issues, fixing any new issue types found.",
+      "title": "Run remaining groups, evaluate, and confirm stability",
+      "description": "As a developer, I want to combine all remaining event groups and confirm the prompt is stable.",
       "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 20 --limit 20",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "Compare issue counts against batch 1: the issue types fixed in US-003 should appear less or not at all in the new batch",
-        "IF new issue types are found that weren't in batch 1: fix the prompt (both files) to address them",
-        "IF no new issues: document 'no new issue types found, prompt is holding' in activity.md",
-        "Document in activity.md: issue counts, whether prompt was changed, comparison to batch 1",
-        "Edge function tests pass if prompt was changed: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
+        "Run: node test-combine/scripts/batch-combine.mjs --offset 20 (processes all remaining groups)",
+        "Run: node test-combine/scripts/evaluate-combined.mjs",
+        "IF new issue types found: fix the prompt and re-run affected groups",
+        "IF no new issues: document 'prompt stable' in activity.md",
+        "Document final statistics in activity.md: total groups, total issues by type, merge ratio",
+        "Edge function tests pass if prompt was changed",
         "Typecheck passes: npm run build"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "COMPLETED. All 20 batch 2 recipes were already parsed (from prior session with US-003 prompt). Evaluation: 18 raw issues, 7 true issues, 11 false positives. Key finding: prompt fixes from US-003/US-004 are effective — category_inconsistency dropped 92% (13→1), pluralization dropped 100% (7→0), prep_adjective dropped 100% (2→0). All 7 remaining true issues already addressed by current US-004 prompt (recipe unit, inch unit, 0.333 precision, taco shell category). No prompt changes needed. Will be fixed on full re-parse."
+      "passes": false,
+      "notes": "This processes all remaining groups. Expected ~20-30 groups depending on how many recipes have ingredients. After this, we should have full coverage of all 148 parseable recipes."
     },
     {
       "id": "US-006",
-      "title": "Parse batch 3 (recipes 41-60), evaluate, and fix if needed",
-      "description": "As a developer, I want to parse recipes 41-60 and continue the iterative improvement cycle.",
+      "title": "Full re-run all groups with final prompt and final evaluation",
+      "description": "As a developer, I want to re-run ALL event groups with the finalized combine prompt to ensure consistent quality across all groups.",
       "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 40 --limit 20",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "IF new issue types found: fix prompt (both files)",
-        "IF no new issues in the batch 3 recipes: document 'prompt is stable' in activity.md",
-        "Document comparison to previous batches in activity.md",
-        "Edge function tests pass if prompt was changed",
+        "Delete or clear test-combine/combine-results.json to start fresh",
+        "Run: node test-combine/scripts/batch-combine.mjs (all groups, no offset/limit)",
+        "Run: node test-combine/scripts/evaluate-combined.mjs",
+        "Total issues should be near zero — if not, make final prompt adjustments and re-run",
+        "Save final report as test-combine/combine-final-evaluation-report.json",
+        "Document in activity.md: final issue counts, comparison to batch 1 counts, overall improvement",
+        "Edge function tests pass: npx vitest run tests/unit/edge-functions/combine-ingredients.test.ts",
         "Typecheck passes: npm run build"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "COMPLETED. All 20 batch 3 recipes parsed successfully. Evaluation: 29 raw issues, 3 true issues, 26 false positives (90% FP rate). No new issue types found. Prompt is stable for 2 consecutive batches. True issues: crispy onion (prep_adjective), green cardamom pod (count_unit_in_name), pork sausage crumbles (pluralization) — all already covered by existing prompt rules. Category_inconsistency dropped to 0 in batch 3."
-    },
-    {
-      "id": "US-007",
-      "title": "Parse batch 4 (recipes 61-80), evaluate, and fix if needed",
-      "description": "As a developer, I want to parse recipes 61-80 and continue verifying prompt quality.",
-      "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 60 --limit 20",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "IF new issue types found: fix prompt (both files)",
-        "IF no new issues in batch 4 recipes: document 'prompt stable for 2+ batches'",
-        "Document in activity.md",
-        "Edge function tests pass if prompt was changed",
-        "Typecheck passes: npm run build"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "COMPLETED. All 20 batch 4 recipes parsed successfully (3 runs needed for BOOT_ERROR/rate limits). Evaluation: 20 raw issues, 1 true issue (0.125 quantity precision), 19 false positives (95% FP rate). No new issue types found. Prompt stable for 3 consecutive batches. The single true issue (0.125 should be 0.13) is already covered by existing prompt rules — an AI execution edge case, not a systemic failure. No prompt changes needed."
-    },
-    {
-      "id": "US-008",
-      "title": "Parse batch 5 (recipes 81-100), evaluate, and fix if needed",
-      "description": "As a developer, I want to parse recipes 81-100 and continue verifying.",
-      "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 80 --limit 20",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "IF new issue types found: fix prompt (both files)",
-        "IF no new issues: document stability in activity.md",
-        "Edge function tests pass if prompt was changed",
-        "Typecheck passes: npm run build"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "COMPLETED. All 20 batch 5 recipes parsed successfully (3 runs for BOOT_ERROR/rate limits). Evaluation: 19 raw issues, 2 true issues (frozen chopped spinach prep_adjective, tomato paste category), 17 false positives (89% FP rate). No new issue types found. Prompt stable for 4 consecutive batches. Both true issues already covered by existing prompt rules — AI execution edge cases, not systemic failures. No prompt changes needed."
-    },
-    {
-      "id": "US-009",
-      "title": "Parse batch 6 (recipes 101-120), evaluate, and fix if needed",
-      "description": "As a developer, I want to parse recipes 101-120 and continue verifying.",
-      "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 100 --limit 20",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "IF new issue types found: fix prompt (both files)",
-        "IF no new issues: document stability in activity.md",
-        "Edge function tests pass if prompt was changed",
-        "Typecheck passes: npm run build"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "COMPLETED. All 20 batch 6 recipes parsed successfully (3 runs for BOOT_ERROR/rate limits). 'Double Tofu Caesar Sandwich' returned 0 ingredients (Instagram Reel URL — not parseable). Evaluation: 13 raw issues, 1 true issue (saltine cracker unit='sleeve' non-standard), 12 false positives (92% FP rate). No new issue types found. Prompt stable for 5 consecutive batches. No prompt changes needed."
-    },
-    {
-      "id": "US-010",
-      "title": "Parse final batch (recipes 121-153), evaluate, and fix if needed",
-      "description": "As a developer, I want to parse the remaining 33 recipes and complete the initial pass through all 153.",
-      "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --offset 120 --limit 33",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "Verify all 153 recipes have been parsed (query recipe_content count)",
-        "IF new issue types found: fix prompt (both files)",
-        "Document final initial-pass statistics in activity.md: total issues remaining by type across all 153 recipes",
-        "Edge function tests pass if prompt was changed",
-        "Typecheck passes: npm run build"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "COMPLETED. All 153 recipes attempted. 148 parsed with ingredients, 5 have permanently broken/blocked URLs (404, 403, 429, image error), 1 Instagram Reel (0 ingredients). DB: 154 recipes, 1898 ingredients. Evaluation: 111 raw issues (3 evaluator batches failed), ~30-40 true issues. Most true issues from batches 1-2 (pre-fix prompts). No new issue types. Prompt stable for 6 consecutive batches. No prompt changes needed."
-    },
-    {
-      "id": "US-011",
-      "title": "Full re-parse of all 153 recipes with final prompt",
-      "description": "As a developer, I want to re-parse ALL 153 recipes using the finalized prompt so that every recipe benefits from all accumulated prompt improvements.",
-      "acceptanceCriteria": [
-        "Run: node test-combine/scripts/batch-parse.mjs --force (re-parse all 153)",
-        "Run: node test-combine/scripts/evaluate-parsed.mjs",
-        "Total issues should be near zero — if not, make final prompt adjustments and re-parse once more",
-        "Save final report as test-combine/final-evaluation-report.json",
-        "Document in activity.md: final issue counts, comparison to initial batch 1 counts, overall improvement percentage",
-        "Edge function tests pass: npx vitest run tests/unit/edge-functions/parse-recipe.test.ts",
-        "Typecheck passes: npm run build"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "COMPLETED. All 148 parseable recipes re-parsed with final prompt (batches of 10, 65s cooldowns). 6 recipes unparseable (5 broken URLs + 1 Instagram Reel). Final evaluation: 103 raw issues across ~90 evaluated recipes (4/10 evaluator batches failed). Estimated ~10-15 true issues = ~0.1-0.17/recipe. 85-90% improvement over initial batch 1 rate (~1.0/recipe). No prompt changes needed — remaining issues are sporadic AI edge cases. Final report saved as test-combine/final-evaluation-report.json."
-    },
-    {
-      "id": "US-012",
-      "title": "Sync improved parsed data to recipes.ts",
-      "description": "As a developer, I want recipes.ts updated with the final high-quality parsed ingredient data so that the test data reflects the best AI output.",
-      "acceptanceCriteria": [
-        "Create test-combine/scripts/sync-to-recipes.mjs that reads parsed ingredients from DB and updates recipes.ts",
-        "For each recipe in DB: query recipe_ingredients ordered by sort_order, format as TestRecipe.ingredients format ({name, quantity, unit, category, rawText})",
-        "Map DB field raw_text → TypeScript rawText",
-        "Preserve recipe order, id, name, cuisine, url in recipes.ts — only update ingredients arrays",
-        "Write recipes.ts maintaining existing formatting (type/interface exports, const structure)",
-        "Run final evaluation: node test-combine/scripts/evaluate-parsed.mjs to confirm consistency",
-        "Typecheck passes: npm run build"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "COMPLETED. Created sync-to-recipes.mjs script. Synced 147 recipes from DB to recipes.ts (1898 ingredients). 6 recipes have no ingredients (5 broken URLs + 1 Instagram Reel) — their empty arrays preserved. Both builds pass (main project + test-combine). recipes.ts updated from 264,831 to 269,735 chars."
+      "passes": false,
+      "notes": "This is the final validation. All groups re-run with the polished prompt. The evaluation should show near-zero true issues. Save the final report separately from the iterative one."
     }
   ]
 }
