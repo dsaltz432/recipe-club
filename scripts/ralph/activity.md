@@ -16,8 +16,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-16
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ---
 
@@ -155,4 +155,73 @@
 - `quantity_error` increased because the evaluator catches more unit conversion math errors now. The AI is not reliably doing tsp↔tbsp math. Adding explicit examples may help.
 - Batch 2 merge ratio (14.0%) is better than batch 1 (11.3%), suggesting the prompt improvements are helping with actual merging even if the evaluator finds more issues.
 - Some issues are inherent to the LLM (arithmetic errors) and may not be fully fixable via prompt changes alone.
+---
+
+## 2026-02-16 - US-005: Run remaining groups, evaluate, and confirm stability
+
+### What was implemented
+- Ran `batch-combine.mjs --offset 20` — 18 groups (20-37) processed with latest US-004 prompt, 708 pre-combined → 626 combined (11.6% reduction)
+- Ran `evaluate-combined.mjs` on all 38 groups (batches 1+2+3)
+- Analyzed batch 3 (groups 20-37) issues in detail, identified false positives vs real issues
+- Made minor prompt fix based on findings
+
+### Full evaluation results (all 38 groups):
+| Issue Type | All 38 groups | Batch 1 (0-9, old prompt) | Batch 2 (10-19) | Batch 3 (20-37, latest) |
+|------------|--------------|--------------------------|-----------------|------------------------|
+| missed_merge | 47 | 19 | 25 | 3 |
+| wrong_merge | 23 | 1 | 4 | 18 |
+| quantity_error | 16 | 1 | 10 | 5 |
+| unit_error | 25 | 11 | 2 | 12 |
+| name_cleaning | 12 | 3 | 1 | 8 |
+| source_recipes_error | 3 | 1 | 0 | 2 |
+| category_error | 1 | 0 | 1 | 0 |
+| **TOTAL** | **127** | **36** | **43** | **48** |
+| **Per-group rate** | **3.3** | **3.6** | **4.3** | **2.7** |
+
+### Batch 3 analysis — false positive breakdown:
+- **wrong_merge (18)**: ~8 false positives (evaluator admits merge/conversion was correct), ~5 debatable (salt/butter merge is intended per our prompt rules), ~3-5 real issues (neutral oil, black peppercorn vs ground, incompatible units)
+- **unit_error (12)**: ~5 false positives (evaluator confirms math is correct), ~4 real issues (strip→tsp, clove→tbsp wrong math, butter 8.33 cup error, oz+cup mixed)
+- **name_cleaning (8)**: ~7 false positives (evaluator flags "white sugar"→"sugar", "ground cumin"→"cumin", "mozzarella cheese"→"mozzarella" — ALL intended behavior per our prompt rules)
+- **quantity_error (5)**: ~2 false positives, ~3 real (Dijon mustard lost, flour wrong math, rounding)
+- **missed_merge (3)**: ~2 false positives (evaluator admits "no issue"), 1 real (green onion+scallion in group 35)
+- **source_recipes_error (2)**: Real but minor
+- **Estimated true issue rate**: ~12-15 real issues in 18 groups (~0.7-0.8/group)
+
+### Key findings:
+1. **missed_merge dramatically improved**: 19→25→3 across batches. The MUST-MERGE table is working well for batch 3.
+2. **wrong_merge increased** but mostly due to evaluator false positives — evaluator disagrees with our deliberate merge rules (salt types, butter, neutral oil).
+3. **name_cleaning mostly false positives** — evaluator flags intended simplifications (cheese suffix removal, ground spice→spice name, sugar type→sugar).
+4. **Remaining real issues are primarily AI arithmetic errors** in unit conversion — inherent LLM limitation, not fixable by prompt alone.
+5. **Per-group rate best in batch 3 (2.7)** with true issue rate ~0.7-0.8/group.
+
+### Prompt changes made to `supabase/functions/combine-ingredients/index.ts`:
+1. Added "black peppercorn" ≠ "black pepper" to KEEP SEPARATE (whole peppercorns ≠ ground pepper)
+2. Added "cinnamon stick" ≠ "cinnamon" / "ground cinnamon" to KEEP SEPARATE
+3. Added "strip" to incompatible unit examples
+
+### Files changed
+- `supabase/functions/combine-ingredients/index.ts` (minor prompt update)
+- `scripts/ralph/combine-results.json` (re-ran groups 20-37)
+- `scripts/ralph/combine-evaluation-report.json` (full 38-group evaluation)
+- `scripts/ralph/activity.md` (updated)
+- `scripts/ralph/analyze-eval.mjs` (new, analysis helper)
+- `scripts/ralph/fix-prompt.mjs` (new, prompt fix helper)
+
+### Quality checks
+- Build: ✅
+- Tests: ✅ (10/10 edge function tests pass)
+
+### Final statistics
+- Total groups: 38 (from 148 parseable recipes)
+- Total pre-combined: 1690 items
+- Total combined: 1485 items
+- Overall merge ratio: 12.1% reduction
+- Total evaluator issues: 127 (estimated ~40-50 true issues, rest are false positives)
+
+### Learnings for future iterations
+- The evaluator has a very high false positive rate (~50-60%) — it flags intended behavior (salt merge, butter merge, cheese suffix removal, ground spice simplification) as issues. For US-006 final evaluation, consider updating the evaluator prompt to exclude known-intentional behaviors.
+- Batch 3's missed_merge count of 3 (vs 19 and 25 in earlier batches) confirms the MUST-MERGE table approach is effective.
+- The remaining real issues are dominated by AI arithmetic errors in unit conversion. These are inherent to LLMs and would require a fundamentally different approach (e.g., programmatic conversion pre-AI) to fully eliminate.
+- "strip" as a unit (e.g., "lemon zest 2 strip") is incompatible with volume units — now documented in prompt.
+- Whole spices (peppercorn, cinnamon stick) should be kept separate from their ground forms — now documented in prompt.
 ---

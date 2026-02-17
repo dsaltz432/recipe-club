@@ -1,14 +1,14 @@
 {
   "summary": {
-    "totalIssues": 98,
-    "totalGroups": 20,
+    "totalIssues": 127,
+    "totalGroups": 38,
     "byType": {
-      "missed_merge": 43,
-      "quantity_error": 14,
-      "source_recipes_error": 4,
-      "unit_error": 16,
-      "wrong_merge": 7,
-      "name_cleaning": 13,
+      "missed_merge": 47,
+      "quantity_error": 16,
+      "unit_error": 25,
+      "wrong_merge": 23,
+      "source_recipes_error": 3,
+      "name_cleaning": 12,
       "category_error": 1
     }
   },
@@ -21,28 +21,12 @@
         "Waldorf Salad"
       ],
       "issueType": "missed_merge",
-      "description": "Two different forms of salt ('kosher salt' and 'salt') were not merged. They should be combined as they refer to the same ingredient.",
-      "inputItems": [
-        "kosher salt",
-        "salt"
-      ],
-      "outputItem": "kosher salt",
-      "suggestedFix": "Merge into single 'salt' item with combined quantities (4.25 tsp + null)"
-    },
-    {
-      "groupIndex": 0,
-      "recipes": [
-        "Stuffed Grape Leaves",
-        "Biryani",
-        "Waldorf Salad"
-      ],
-      "issueType": "missed_merge",
-      "description": "Two different forms of onion ('yellow onion' and 'onion') were not merged. They should be combined as they refer to the same ingredient.",
+      "description": "Two 'onion' items not merged: 'yellow onion' and 'onion' should be combined as they refer to the same ingredient",
       "inputItems": [
         "yellow onion",
         "onion"
       ],
-      "outputItem": "yellow onion",
+      "outputItem": null,
       "suggestedFix": "Merge into single 'onion' item with totalQuantity: 3, sourceRecipes: ['Stuffed Grape Leaves', 'Biryani']"
     },
     {
@@ -52,13 +36,14 @@
         "Biryani",
         "Waldorf Salad"
       ],
-      "issueType": "quantity_error",
-      "description": "Input has two separate salt entries (2.25 tsp and 2 tbsp) which should be converted to the same unit and summed correctly. Output shows only 4.25 tsp.",
+      "issueType": "missed_merge",
+      "description": "Multiple salt items not merged: 'kosher salt', 'salt' (2.25 tsp), and 'salt' (2 tbsp) should be combined",
       "inputItems": [
+        "kosher salt",
         "salt"
       ],
       "outputItem": "salt",
-      "suggestedFix": "Convert 2 tbsp to tsp (6 tsp) and add to 2.25 tsp = 8.25 tsp total, or convert all to tbsp"
+      "suggestedFix": "Merge into single 'salt' item with quantity combining all salt entries, sourceRecipes: ['Stuffed Grape Leaves', 'Biryani', 'Waldorf Salad']"
     },
     {
       "groupIndex": 0,
@@ -67,13 +52,28 @@
         "Biryani",
         "Waldorf Salad"
       ],
-      "issueType": "source_recipes_error",
-      "description": "Two yoghurt entries in input with different quantities (0.67 cup and null) but output only shows 0.67 cup with single sourceRecipes entry. The null quantity yoghurt also came from Biryani.",
+      "issueType": "quantity_error",
+      "description": "Water quantities not correctly summed: input has 0.5 cup and 2 tbsp, output shows only 0.5 cup",
+      "inputItems": [
+        "water"
+      ],
+      "outputItem": "water",
+      "suggestedFix": "Convert 2 tbsp to 0.125 cup and add to 0.5 cup for total of 0.625 cup, or show as '0.5 cup, 2 tbsp'"
+    },
+    {
+      "groupIndex": 0,
+      "recipes": [
+        "Stuffed Grape Leaves",
+        "Biryani",
+        "Waldorf Salad"
+      ],
+      "issueType": "missed_merge",
+      "description": "Multiple yoghurt items not merged: yoghurt with 0.67 cup and yoghurt with null quantity should be combined",
       "inputItems": [
         "yoghurt"
       ],
       "outputItem": "yoghurt",
-      "suggestedFix": "Output should show totalQuantity: 0.67 (or at least 0.67) and include both Biryani references in sourceRecipes"
+      "suggestedFix": "Merge into single 'yoghurt' item with totalQuantity: 0.67 cup (keeping the quantity from non-null input)"
     },
     {
       "groupIndex": 0,
@@ -82,13 +82,13 @@
         "Biryani",
         "Waldorf Salad"
       ],
-      "issueType": "source_recipes_error",
-      "description": "Two cilantro entries in input with different quantities (1 cup and null) but output only shows 1 cup. Both came from Biryani but this is not reflected.",
+      "issueType": "missed_merge",
+      "description": "Multiple cilantro items not merged: cilantro with 1 cup and cilantro with null quantity should be combined",
       "inputItems": [
         "cilantro"
       ],
       "outputItem": "cilantro",
-      "suggestedFix": "Merge cilantro entries properly - totalQuantity should be at least 1 cup"
+      "suggestedFix": "Merge into single 'cilantro' item with totalQuantity: 1 cup"
     },
     {
       "groupIndex": 0,
@@ -98,27 +98,12 @@
         "Waldorf Salad"
       ],
       "issueType": "unit_error",
-      "description": "Lemon juice has different units in input (2 with null unit from Stuffed Grape Leaves, 1 tbsp from Waldorf Salad) but output shows 3 tbsp. The conversion assumes the null unit was tbsp, which may not be accurate.",
+      "description": "Lemon juice unit conversion error: input has '2' (null unit) and '1 tbsp', output shows '3 tbsp' but first input likely means 2 whole lemons, not tablespoons",
       "inputItems": [
         "lemon juice"
       ],
       "outputItem": "lemon juice",
-      "suggestedFix": "Clarify unit conversion or keep items separate if units are truly different"
-    },
-    {
-      "groupIndex": 0,
-      "recipes": [
-        "Stuffed Grape Leaves",
-        "Biryani",
-        "Waldorf Salad"
-      ],
-      "issueType": "quantity_error",
-      "description": "Water appears twice in input (0.5 cup and 2 tbsp) but output only shows 0.5 cup, missing the 2 tbsp quantity.",
-      "inputItems": [
-        "water"
-      ],
-      "outputItem": "water",
-      "suggestedFix": "Combine water quantities: convert 2 tbsp to cups (0.125 cup) + 0.5 cup = 0.625 cup total"
+      "suggestedFix": "Keep units separate or clarify: '2 lemon, 1 tbsp' or convert appropriately"
     },
     {
       "groupIndex": 1,
@@ -128,61 +113,132 @@
         "Bibimbap",
         "Jerk Chicken"
       ],
-      "issueType": "quantity_error",
-      "description": "Garlic has two inputs with different units (4 cloves and 1.25 tsp) but output shows 5.25 cloves. Converting 1.25 tsp to cloves is not standard - should keep separate or note mixed units.",
-      "inputItems": [
-        "garlic"
-      ],
-      "outputItem": "garlic",
-      "suggestedFix": "Keep garlic quantities in original units or clearly note mixed units (4 cloves + 1.25 tsp)"
-    },
-    {
-      "groupIndex": 1,
-      "recipes": [
-        "Green Curry",
-        "Vegan Crab Cakes",
-        "Bibimbap",
-        "Jerk Chicken"
-      ],
-      "issueType": "quantity_error",
-      "description": "Lemon juice appears twice with different units (0.5 with null unit, 3 tsp) but output shows 3.5 tsp, assuming null unit was tsp.",
-      "inputItems": [
-        "lemon juice"
-      ],
-      "outputItem": "lemon juice",
-      "suggestedFix": "Clarify unit for 0.5 quantity or keep separate if truly different measurements"
-    },
-    {
-      "groupIndex": 1,
-      "recipes": [
-        "Green Curry",
-        "Vegan Crab Cakes",
-        "Bibimbap",
-        "Jerk Chicken"
-      ],
-      "issueType": "quantity_error",
-      "description": "Lime juice has two inputs (0.5 with null unit from Green Curry, 0.5 cup from Jerk Chicken) but output shows 1 cup, assuming the null unit was cup.",
-      "inputItems": [
-        "lime juice"
-      ],
-      "outputItem": "lime juice",
-      "suggestedFix": "Clarify unit conversion or note mixed units"
-    },
-    {
-      "groupIndex": 1,
-      "recipes": [
-        "Green Curry",
-        "Vegan Crab Cakes",
-        "Bibimbap",
-        "Jerk Chicken"
-      ],
-      "issueType": "source_recipes_error",
-      "description": "Parsley appears twice in input (1 bunch and 1 tsp) both from Vegan Crab Cakes, but output only shows 1 bunch with single sourceRecipes entry.",
+      "issueType": "missed_merge",
+      "description": "Parsley items not merged: parsley with '1 bunch' and parsley with '1 tsp' should be combined",
       "inputItems": [
         "parsley"
       ],
       "outputItem": "parsley",
-      "suggestedFix": "Merge parsley quantities properly (1 bunch + 1 tsp)"
+      "suggestedFix": "Merge into single 'parsley' item with totalQuantity showing both: '1 bunch, 1 tsp' or convert to common unit"
+    },
+    {
+      "groupIndex": 1,
+      "recipes": [
+        "Green Curry",
+        "Vegan Crab Cakes",
+        "Bibimbap",
+        "Jerk Chicken"
+      ],
+      "issueType": "unit_error",
+      "description": "Lime juice unit error: input has '0.5' (null unit) and '0.5 cup', output shows '1 cup' but first input likely means 0.5 lime, not 0.5 cup",
+      "inputItems": [
+        "lime juice"
+      ],
+      "outputItem": "lime juice",
+      "suggestedFix": "Keep separate or clarify conversion: '0.5 lime, 0.5 cup' or properly convert"
+    },
+    {
+      "groupIndex": 1,
+      "recipes": [
+        "Green Curry",
+        "Vegan Crab Cakes",
+        "Bibimbap",
+        "Jerk Chicken"
+      ],
+      "issueType": "unit_error",
+      "description": "Lemon juice unit error: input has '0.5' (null unit) and '3 tsp', output shows '3.5 tsp' but first input likely means 0.5 lemon, not 0.5 tsp",
+      "inputItems": [
+        "lemon juice"
+      ],
+      "outputItem": "lemon juice",
+      "suggestedFix": "Keep separate or clarify: '0.5 lemon, 3 tsp'"
+    },
+    {
+      "groupIndex": 2,
+      "recipes": [
+        "Beef Stir Fry",
+        "Easy Provencal Fish",
+        "Tom Kha Gai",
+        "Beef Stew",
+        "Beef Burrito Bowl"
+      ],
+      "issueType": "missed_merge",
+      "description": "Multiple salt items not merged: 'kosher salt', 'table salt', 'salt', 'sea salt' should all be combined",
+      "inputItems": [
+        "kosher salt",
+        "table salt",
+        "salt",
+        "sea salt"
+      ],
+      "outputItem": "salt",
+      "suggestedFix": "Merge all salt varieties into single 'salt' item"
+    },
+    {
+      "groupIndex": 2,
+      "recipes": [
+        "Beef Stir Fry",
+        "Easy Provencal Fish",
+        "Tom Kha Gai",
+        "Beef Stew",
+        "Beef Burrito Bowl"
+      ],
+      "issueType": "missed_merge",
+      "description": "Multiple black pepper items not merged: 'black pepper' (null), 'black pepper' (null), and 'ground black pepper' (0.5 tsp) should be combined",
+      "inputItems": [
+        "black pepper",
+        "ground black pepper"
+      ],
+      "outputItem": "black pepper",
+      "suggestedFix": "Merge into single 'black pepper' item with totalQuantity: 0.5 tsp"
+    },
+    {
+      "groupIndex": 4,
+      "recipes": [
+        "Stir-Fried Cucumber with Tofu",
+        "Broccoli Cheddar Soup",
+        "Carrot Cake",
+        "Blueberry Muffins"
+      ],
+      "issueType": "unit_error",
+      "description": "Vegetable oil unit conversion error: input has '3 tbsp', '1.58 cup', output incorrectly shows '4.58 cup' - should convert tbsp to cup first (3 tbsp = 0.1875 cup)",
+      "inputItems": [
+        "vegetable oil"
+      ],
+      "outputItem": "vegetable oil",
+      "suggestedFix": "Convert 3 tbsp to 0.1875 cup, then add to 1.58 cup for total of 1.7675 cup"
+    },
+    {
+      "groupIndex": 4,
+      "recipes": [
+        "Stir-Fried Cucumber with Tofu",
+        "Broccoli Cheddar Soup",
+        "Carrot Cake",
+        "Blueberry Muffins"
+      ],
+      "issueType": "unit_error",
+      "description": "Carrot unit mismatch: input has '1' (null unit) and '3 cup', output shows '3 cup' but lost the first carrot",
+      "inputItems": [
+        "carrot"
+      ],
+      "outputItem": "carrot",
+      "suggestedFix": "Combine as '1 whole, 3 cup' or convert to common unit"
+    },
+    {
+      "groupIndex": 4,
+      "recipes": [
+        "Stir-Fried Cucumber with Tofu",
+        "Broccoli Cheddar Soup",
+        "Carrot Cake",
+        "Blueberry Muffins"
+      ],
+      "issueType": "missed_merge",
+      "description": "Milk items not merged: 'whole milk' (2 cup) and 'milk' (0.33 cup) should be combined",
+      "inputItems": [
+        "whole milk",
+        "milk"
+      ],
+      "outputItem": "milk",
+      "suggestedFix": "Merge into single 'milk' item with totalQuantity: 2.33 cup"
     },
     {
       "groupIndex": 5,
@@ -194,31 +250,13 @@
         "Thai Mango Salad"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'spring onion' (7 oz) and 'green onion' (2 units) which are the same ingredient but were not merged in the output",
+      "description": "spring onion and green onion refer to the same ingredient and should have been merged",
       "inputItems": [
         "spring onion",
         "green onion"
       ],
       "outputItem": null,
-      "suggestedFix": "Merge into single 'green onion' item with combined sourceRecipes from both inputs"
-    },
-    {
-      "groupIndex": 5,
-      "recipes": [
-        "Bean Confit with Lemon Saffron and All the Alliums",
-        "Polenta Lasagna with Spinach and Herby Ricotta",
-        "Baked Ziti",
-        "BBQ Ribs",
-        "Thai Mango Salad"
-      ],
-      "issueType": "wrong_merge",
-      "description": "Input has 'garlic' (1 clove, 3 tbsp) and 'garlic powder' (2 tsp) which were incorrectly merged. Fresh garlic and garlic powder are different forms and should remain separate",
-      "inputItems": [
-        "garlic",
-        "garlic powder"
-      ],
-      "outputItem": "garlic",
-      "suggestedFix": "Keep 'garlic' and 'garlic powder' as separate items in output"
+      "suggestedFix": "Merge into single item: name='green onion', totalQuantity=9, unit='oz', sourceRecipes=['Bean Confit with Lemon Saffron and All the Alliums', 'Thai Mango Salad']"
     },
     {
       "groupIndex": 5,
@@ -230,12 +268,13 @@
         "Thai Mango Salad"
       ],
       "issueType": "unit_error",
-      "description": "Input 'garlic' has quantity 1 clove and 3 tbsp (different units), but output shows totalQuantity 4 with unit 'clove'. Cannot merge different units without proper conversion",
+      "description": "garlic merged items with different units (clove and tbsp) without proper conversion or unit selection",
       "inputItems": [
-        "garlic"
+        "garlic (1 clove)",
+        "garlic (3 tbsp)"
       ],
-      "outputItem": "garlic",
-      "suggestedFix": "Keep garlic items with different units separate, or note that quantities in different units need conversion"
+      "outputItem": "garlic (4 clove)",
+      "suggestedFix": "Keep separate or convert properly: garlic from Polenta=1 clove, garlic from BBQ Ribs=3 tbsp (cannot directly add cloves and tbsp)"
     },
     {
       "groupIndex": 5,
@@ -247,49 +286,13 @@
         "Thai Mango Salad"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'mozzarella' (1 lb) and 'mozzarella cheese' (6 oz) which are the same ingredient but were incorrectly merged. Output shows 1.38 lb total",
-      "inputItems": [
-        "mozzarella",
-        "mozzarella cheese"
-      ],
-      "outputItem": "mozzarella",
-      "suggestedFix": "Correct - these were properly merged. No issue."
-    },
-    {
-      "groupIndex": 5,
-      "recipes": [
-        "Bean Confit with Lemon Saffron and All the Alliums",
-        "Polenta Lasagna with Spinach and Herby Ricotta",
-        "Baked Ziti",
-        "BBQ Ribs",
-        "Thai Mango Salad"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input has 'parmesan' (2 cup) and 'parmesan cheese' (2 tbsp) which are the same ingredient. Output correctly merged them into 2.13 cup total",
-      "inputItems": [
-        "parmesan",
-        "parmesan cheese"
-      ],
-      "outputItem": "parmesan",
-      "suggestedFix": "Correct - these were properly merged. No issue."
-    },
-    {
-      "groupIndex": 5,
-      "recipes": [
-        "Bean Confit with Lemon Saffron and All the Alliums",
-        "Polenta Lasagna with Spinach and Herby Ricotta",
-        "Baked Ziti",
-        "BBQ Ribs",
-        "Thai Mango Salad"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input has 'olive oil' (4 tbsp) and 'extra-virgin olive oil' (1 cup, 0.5 tbsp) but they were kept separate. These should be merged as the same ingredient type",
+      "description": "olive oil and extra-virgin olive oil should have been merged as they are semantically the same ingredient",
       "inputItems": [
         "olive oil",
         "extra-virgin olive oil"
       ],
       "outputItem": null,
-      "suggestedFix": "Merge into single 'olive oil' or 'extra-virgin olive oil' with combined quantities"
+      "suggestedFix": "Merge into single item: name='olive oil', totalQuantity=5.03, unit='tbsp' (or convert to common unit), sourceRecipes=['BBQ Ribs', 'Bean Confit with Lemon Saffron and All the Alliums', 'Polenta Lasagna with Spinach and Herby Ricotta']"
     },
     {
       "groupIndex": 6,
@@ -299,13 +302,13 @@
         "Milk Bread"
       ],
       "issueType": "wrong_merge",
-      "description": "Input has 'butter' (1 cup) and 'unsalted butter' (2 tbsp) which were incorrectly merged into single 'butter' item. These are different varieties (salted vs unsalted) and may need to be kept separate",
+      "description": "butter and unsalted butter were merged, but these should remain separate as one is salted and one is unsalted",
       "inputItems": [
-        "butter",
-        "unsalted butter"
+        "butter (1 cup)",
+        "unsalted butter (2 tbsp)"
       ],
-      "outputItem": "butter",
-      "suggestedFix": "Keep separate or note the variety difference in the merged item"
+      "outputItem": "butter (1 cup)",
+      "suggestedFix": "Keep separate: 'butter' for Butter Chicken and 'unsalted butter' for Aged Cheddar and Beer Dip"
     },
     {
       "groupIndex": 6,
@@ -315,12 +318,13 @@
         "Milk Bread"
       ],
       "issueType": "missed_merge",
-      "description": "Input has duplicate 'pretzel rod' entries (0.25 cup and null quantity) that should have been combined in pre-combine phase, but output only shows one",
+      "description": "Two pretzel rod entries should have been merged",
       "inputItems": [
-        "pretzel rod"
+        "pretzel rod (0.25 cup)",
+        "pretzel rod (null)"
       ],
-      "outputItem": "pretzel rod",
-      "suggestedFix": "Output correctly shows single pretzel rod item. No issue."
+      "outputItem": "pretzel rod (0.25 cup)",
+      "suggestedFix": "Merge into single item: name='pretzel rod', totalQuantity=0.25, unit='cup', sourceRecipes=['Aged Cheddar and Beer Dip']"
     },
     {
       "groupIndex": 6,
@@ -330,13 +334,12 @@
         "Milk Bread"
       ],
       "issueType": "source_recipes_error",
-      "description": "Output 'salt' item missing 'Milk Bread' from sourceRecipes. Input shows salt from Butter Chicken, Aged Cheddar and Beer Dip, and kosher salt from Milk Bread should all merge",
+      "description": "kosher salt output missing Milk Bread in sourceRecipes",
       "inputItems": [
-        "salt",
         "kosher salt"
       ],
       "outputItem": "salt",
-      "suggestedFix": "Include 'Milk Bread' in sourceRecipes for salt output item"
+      "suggestedFix": "salt sourceRecipes should include 'Milk Bread' (kosher salt is a type of salt and was merged)"
     },
     {
       "groupIndex": 7,
@@ -347,13 +350,13 @@
         "Baba Ganoush"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'olive oil' (null quantity, 0.33 cup) and 'extra virgin olive oil' (0.25 cup, null quantity) which are the same ingredient but kept separate in output",
+      "description": "olive oil and extra virgin olive oil should have been merged as they are semantically the same ingredient",
       "inputItems": [
         "olive oil",
         "extra virgin olive oil"
       ],
       "outputItem": null,
-      "suggestedFix": "Merge into single 'olive oil' or 'extra-virgin olive oil' item with combined quantities and sourceRecipes"
+      "suggestedFix": "Merge into single item: name='olive oil', totalQuantity=0.58, unit='cup', sourceRecipes=['Fattoush', 'Minestrone', 'Baba Ganoush']"
     },
     {
       "groupIndex": 7,
@@ -364,44 +367,15 @@
         "Baba Ganoush"
       ],
       "issueType": "name_cleaning",
-      "description": "Output has 'romaine lettuce' but input was 'romaine lettuce heart'. The word 'heart' is a specific part/form qualifier that should be preserved",
+      "description": "Output contains descriptive adjectives that should be removed from ingredient names",
       "inputItems": [
-        "romaine lettuce heart"
+        "romaine lettuce heart",
+        "english cucumber",
+        "roma tomato",
+        "Yukon gold potato"
       ],
-      "outputItem": "romaine lettuce",
-      "suggestedFix": "Keep as 'romaine lettuce heart' or note that 'heart' is a product form qualifier"
-    },
-    {
-      "groupIndex": 7,
-      "recipes": [
-        "Fattoush",
-        "Minestrone",
-        "Samosa Filling",
-        "Baba Ganoush"
-      ],
-      "issueType": "name_cleaning",
-      "description": "Output has 'cucumber' but input was 'english cucumber'. 'English' is a variety qualifier that should be preserved",
-      "inputItems": [
-        "english cucumber"
-      ],
-      "outputItem": "cucumber",
-      "suggestedFix": "Keep as 'english cucumber' to preserve variety information"
-    },
-    {
-      "groupIndex": 7,
-      "recipes": [
-        "Fattoush",
-        "Minestrone",
-        "Samosa Filling",
-        "Baba Ganoush"
-      ],
-      "issueType": "name_cleaning",
-      "description": "Output has 'tomato' but input was 'roma tomato'. 'Roma' is a variety qualifier that should be preserved",
-      "inputItems": [
-        "roma tomato"
-      ],
-      "outputItem": "tomato",
-      "suggestedFix": "Keep as 'roma tomato' to preserve variety information"
+      "outputItem": "romaine lettuce, cucumber, tomato, potato",
+      "suggestedFix": "Names should be: 'romaine lettuce' (or just 'lettuce'), 'cucumber', 'tomato', 'potato'"
     },
     {
       "groupIndex": 7,
@@ -412,49 +386,13 @@
         "Baba Ganoush"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'kosher salt' and 'salt' which should be merged (kosher salt is a type of salt)",
+      "description": "kosher salt and salt should have been merged",
       "inputItems": [
         "kosher salt",
         "salt"
       ],
       "outputItem": "salt",
-      "suggestedFix": "Output correctly merged these items into 'salt'. No issue."
-    },
-    {
-      "groupIndex": 7,
-      "recipes": [
-        "Fattoush",
-        "Minestrone",
-        "Samosa Filling",
-        "Baba Ganoush"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input has 'Yukon gold potato' and 'potato' which should be merged",
-      "inputItems": [
-        "Yukon gold potato",
-        "potato"
-      ],
-      "outputItem": "potato",
-      "suggestedFix": "Output correctly merged these. No issue."
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "wrong_merge",
-      "description": "Input has 'onion', 'yellow onion', and 'white onion' which were incorrectly merged. Yellow and white onions are different varieties",
-      "inputItems": [
-        "onion",
-        "yellow onion",
-        "white onion"
-      ],
-      "outputItem": "onion",
-      "suggestedFix": "Keep onion varieties separate or note variety differences"
+      "suggestedFix": "Already merged in output, but verify sourceRecipes includes both Fattoush and Baba Ganoush for kosher salt entries"
     },
     {
       "groupIndex": 8,
@@ -466,14 +404,31 @@
         "Yellow Chicken Adobo"
       ],
       "issueType": "unit_error",
-      "description": "Output shows 'onion' with totalQuantity 2 cup, but inputs have mixed units (1 unit, 0.5 unit, 1 cup, 1 unit). Cannot properly sum items with different units",
+      "description": "ginger merged items with different units (tbsp and piece) without proper handling",
       "inputItems": [
-        "onion",
-        "yellow onion",
-        "white onion"
+        "ginger (0.5 tbsp)",
+        "ginger (1 piece)"
       ],
-      "outputItem": "onion",
-      "suggestedFix": "Keep items with different units separate or convert to common unit"
+      "outputItem": "ginger (0.5 tbsp)",
+      "suggestedFix": "Keep separate or note unit incompatibility: ginger from Aloo Gobi=0.5 tbsp, ginger from Yellow Chicken Adobo=1 piece"
+    },
+    {
+      "groupIndex": 8,
+      "recipes": [
+        "Meatloaf",
+        "Corn Chowder",
+        "Cornmeal Fritters",
+        "Aloo Gobi",
+        "Yellow Chicken Adobo"
+      ],
+      "issueType": "unit_error",
+      "description": "garlic merged items with different units (tbsp and clove) without proper conversion",
+      "inputItems": [
+        "garlic (0.5 tbsp)",
+        "garlic (6 clove)"
+      ],
+      "outputItem": "garlic (6.5 tbsp)",
+      "suggestedFix": "Cannot directly add tbsp and cloves - need conversion or keep separate"
     },
     {
       "groupIndex": 8,
@@ -485,15 +440,85 @@
         "Yellow Chicken Adobo"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'salt', 'kosher salt', and 'pepper', 'black pepper' which should each be merged",
+      "description": "oil and vegetable oil should have been merged",
       "inputItems": [
-        "salt",
-        "kosher salt",
+        "oil (3 tbsp)",
+        "vegetable oil (3 tbsp)"
+      ],
+      "outputItem": "oil (6 tbsp)",
+      "suggestedFix": "Already merged in output - verify this is correct (oil merged with vegetable oil)"
+    },
+    {
+      "groupIndex": 8,
+      "recipes": [
+        "Meatloaf",
+        "Corn Chowder",
+        "Cornmeal Fritters",
+        "Aloo Gobi",
+        "Yellow Chicken Adobo"
+      ],
+      "issueType": "missed_merge",
+      "description": "turmeric and ground turmeric should have been merged",
+      "inputItems": [
+        "turmeric (0.25 tsp)",
+        "ground turmeric (2 tbsp)"
+      ],
+      "outputItem": "turmeric (2.25 tbsp)",
+      "suggestedFix": "Already merged in output, but unit conversion from tsp to tbsp may be incorrect (0.25 tsp ≠ 0.08 tbsp, output shows 2.25 tbsp which is wrong)"
+    },
+    {
+      "groupIndex": 8,
+      "recipes": [
+        "Meatloaf",
+        "Corn Chowder",
+        "Cornmeal Fritters",
+        "Aloo Gobi",
+        "Yellow Chicken Adobo"
+      ],
+      "issueType": "missed_merge",
+      "description": "pepper, black pepper, and white pepper - black pepper and pepper likely the same",
+      "inputItems": [
         "pepper",
         "black pepper"
       ],
-      "outputItem": null,
-      "suggestedFix": "Output shows these were merged. Verify sourceRecipes are complete."
+      "outputItem": "pepper (0.5 tsp)",
+      "suggestedFix": "Merge pepper and black pepper (white pepper is different and should stay separate): name='black pepper', totalQuantity=0.5, unit='tsp'"
+    },
+    {
+      "groupIndex": 8,
+      "recipes": [
+        "Meatloaf",
+        "Corn Chowder",
+        "Cornmeal Fritters",
+        "Aloo Gobi",
+        "Yellow Chicken Adobo"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output contains variety-specific names that could be simplified",
+      "inputItems": [
+        "yellow onion",
+        "white onion"
+      ],
+      "outputItem": "onion",
+      "suggestedFix": "Already simplified to 'onion' in output which is correct for grocery shopping"
+    },
+    {
+      "groupIndex": 8,
+      "recipes": [
+        "Meatloaf",
+        "Corn Chowder",
+        "Cornmeal Fritters",
+        "Aloo Gobi",
+        "Yellow Chicken Adobo"
+      ],
+      "issueType": "unit_error",
+      "description": "cauliflower merged items with different units (cup and head) without proper handling",
+      "inputItems": [
+        "cauliflower (2 cup)",
+        "cauliflower (0.5 head)"
+      ],
+      "outputItem": "cauliflower (2 cup)",
+      "suggestedFix": "Keep separate or convert: 2 cup + 0.5 head cannot be directly combined"
     },
     {
       "groupIndex": 8,
@@ -505,12 +530,13 @@
         "Yellow Chicken Adobo"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'butter' (2 tbsp) from Corn Chowder and Cornmeal Fritters. Output correctly merged them",
+      "description": "kosher salt and salt should have been merged",
       "inputItems": [
-        "butter"
+        "kosher salt",
+        "salt"
       ],
-      "outputItem": "butter",
-      "suggestedFix": "Correct merge. No issue."
+      "outputItem": "salt",
+      "suggestedFix": "Verify kosher salt entries are included in merged 'salt' sourceRecipes"
     },
     {
       "groupIndex": 8,
@@ -521,32 +547,13 @@
         "Aloo Gobi",
         "Yellow Chicken Adobo"
       ],
-      "issueType": "missed_merge",
-      "description": "Input has 'yukon gold potato' and 'potato' which should be merged",
+      "issueType": "name_cleaning",
+      "description": "yukon gold potato should be simplified to potato",
       "inputItems": [
-        "yukon gold potato",
-        "potato"
+        "yukon gold potato"
       ],
       "outputItem": "potato",
-      "suggestedFix": "Output correctly merged these. No issue."
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "unit_error",
-      "description": "Input 'potato' has mixed units (2 null units, 1.5 cup), output shows 1.5 cup which may be incorrect",
-      "inputItems": [
-        "yukon gold potato",
-        "potato"
-      ],
-      "outputItem": "potato",
-      "suggestedFix": "Keep items with different units separate or properly convert"
+      "suggestedFix": "Already simplified in output which is correct"
     },
     {
       "groupIndex": 8,
@@ -558,100 +565,13 @@
         "Yellow Chicken Adobo"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'cauliflower' (2 cup) and 'cauliflower' (0.5 head) with different units that were merged into 2 cup total, losing the 0.5 head quantity",
-      "inputItems": [
-        "cauliflower"
-      ],
-      "outputItem": "cauliflower",
-      "suggestedFix": "Keep items with incompatible units separate or note both quantities"
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "unit_error",
-      "description": "Input 'ginger' has mixed units (0.5 tbsp, 1 piece) but output shows 0.5 tbsp, losing the '1 piece' quantity",
-      "inputItems": [
-        "ginger"
-      ],
-      "outputItem": "ginger",
-      "suggestedFix": "Keep items with different units separate"
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "unit_error",
-      "description": "Input 'garlic' has mixed units (0.5 tbsp, 6 clove) but output shows 6.5 tbsp, incorrectly converting cloves to tbsp",
-      "inputItems": [
-        "garlic"
-      ],
-      "outputItem": "garlic",
-      "suggestedFix": "Keep items with different units separate or note conversion assumptions"
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input has 'oil' (3 tbsp) and 'vegetable oil' (3 tbsp) which should be merged as same ingredient",
-      "inputItems": [
-        "oil",
-        "vegetable oil"
-      ],
-      "outputItem": "oil",
-      "suggestedFix": "Output correctly merged these to 6 tbsp. No issue."
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input has 'bay leaf' and 'dried bay leaf' which should be merged",
+      "description": "dried bay leaf and bay leaf should have been merged",
       "inputItems": [
         "bay leaf",
         "dried bay leaf"
       ],
-      "outputItem": "bay leaf",
-      "suggestedFix": "Output correctly merged these to 11 total. No issue."
-    },
-    {
-      "groupIndex": 8,
-      "recipes": [
-        "Meatloaf",
-        "Corn Chowder",
-        "Cornmeal Fritters",
-        "Aloo Gobi",
-        "Yellow Chicken Adobo"
-      ],
-      "issueType": "wrong_merge",
-      "description": "Input has 'turmeric' (0.25 tsp) and 'ground turmeric' (2 tbsp) which were merged but unit conversion from tsp to tbsp may be incorrect. Output shows 2.25 tbsp",
-      "inputItems": [
-        "turmeric",
-        "ground turmeric"
-      ],
-      "outputItem": "turmeric",
-      "suggestedFix": "Verify unit conversion: 0.25 tsp ≈ 0.083 tbsp, so total should be ~2.083 tbsp, not 2.25 tbsp"
+      "outputItem": "bay leaf (11)",
+      "suggestedFix": "Already merged in output which is correct"
     },
     {
       "groupIndex": 9,
@@ -661,12 +581,13 @@
         "Beer-Battered Fish with Malt Vinegar Aioli"
       ],
       "issueType": "unit_error",
-      "description": "Input 'garlic' has mixed units (3 clove, 1 tbsp) but output shows 4 clove total, incorrectly converting tbsp to clove",
+      "description": "garlic merged items with different units (clove and tbsp) without proper conversion",
       "inputItems": [
-        "garlic"
+        "garlic (3 clove)",
+        "garlic (1 tbsp)"
       ],
-      "outputItem": "garlic",
-      "suggestedFix": "Keep items with different units separate"
+      "outputItem": "garlic (4 clove)",
+      "suggestedFix": "Cannot directly add cloves and tbsp - need conversion or keep separate"
     },
     {
       "groupIndex": 9,
@@ -676,12 +597,13 @@
         "Beer-Battered Fish with Malt Vinegar Aioli"
       ],
       "issueType": "unit_error",
-      "description": "Input 'cornstarch' has 4 tsp and 1 tbsp. Output shows 7 tsp but 1 tbsp = 3 tsp, so total should be 7 tsp. This appears correct",
+      "description": "cornstarch merged with different units (tsp and tbsp) and conversion appears incorrect",
       "inputItems": [
-        "cornstarch"
+        "cornstarch (4 tsp)",
+        "cornstarch (1 tbsp)"
       ],
-      "outputItem": "cornstarch",
-      "suggestedFix": "Correct conversion. No issue."
+      "outputItem": "cornstarch (7 tsp)",
+      "suggestedFix": "4 tsp + 1 tbsp = 4 tsp + 3 tsp = 7 tsp (actually correct, no issue)"
     },
     {
       "groupIndex": 9,
@@ -691,46 +613,13 @@
         "Beer-Battered Fish with Malt Vinegar Aioli"
       ],
       "issueType": "missed_merge",
-      "description": "Input has 'soy sauce', 'dark soy sauce', and 'light soy sauce' which are different varieties and were correctly kept separate in output",
+      "description": "soy sauce, dark soy sauce, and light soy sauce - dark soy sauce appears twice and should be merged",
       "inputItems": [
-        "soy sauce",
-        "dark soy sauce",
-        "light soy sauce"
+        "dark soy sauce (2 tbsp)",
+        "dark soy sauce (1.5 tsp)"
       ],
-      "outputItem": null,
-      "suggestedFix": "Correct - these are different soy sauce varieties. No issue."
-    },
-    {
-      "groupIndex": 9,
-      "recipes": [
-        "Shrimp Lo Mein",
-        "Beef Recipe Link",
-        "Beer-Battered Fish with Malt Vinegar Aioli"
-      ],
-      "issueType": "unit_error",
-      "description": "Input 'kosher salt' has 3 tsp and 1 tbsp. Output shows 4 tbsp but should be 4 tsp (3 tsp + 1 tbsp = 3 + 3 = 6 tsp = 2 tbsp). Calculation error",
-      "inputItems": [
-        "kosher salt"
-      ],
-      "outputItem": "kosher salt",
-      "suggestedFix": "Correct calculation: 3 tsp + 1 tbsp (3 tsp) = 6 tsp = 2 tbsp, not 4 tbsp"
-    },
-    {
-      "groupIndex": 10,
-      "recipes": [
-        "Rice Noodles with Garlicky Cashew Sauce",
-        "Mashed Potatoes",
-        "Lasagna",
-        "Lamb Kebabs"
-      ],
-      "issueType": "unit_error",
-      "description": "Input onion quantities with different units (0.5 cup and 0.5 null) were merged to output 1 cup, but this appears to be an incorrect conversion. The second input had unit null (likely meaning '0.5 onion'), which cannot be directly converted to cups.",
-      "inputItems": [
-        "onion (0.5 cup)",
-        "onion (0.5 null)"
-      ],
-      "outputItem": "onion (1 cup)",
-      "suggestedFix": "Keep unit as null and sum quantities: totalQuantity: 1, unit: null, or keep separate if units are fundamentally incompatible"
+      "outputItem": "dark soy sauce (3.5 tbsp)",
+      "suggestedFix": "Already merged in output which is correct"
     },
     {
       "groupIndex": 10,
@@ -741,14 +630,14 @@
         "Lamb Kebabs"
       ],
       "issueType": "quantity_error",
-      "description": "Black pepper quantities were incorrectly summed. Input has 1.75 tsp from two recipes and 0.25 tsp from Lasagna, but some inputs with null quantities were also present. The output shows 2 tsp but sourceRecipes includes all four recipes, suggesting null quantities were treated as 0 when they should increase the total or be preserved.",
+      "description": "Black pepper quantities not correctly summed. Input has 1.75 tsp from two recipes and one null quantity. Output shows 2 tsp but sourceRecipes includes all four recipes (one with null). Should be at least 1.75 tsp.",
       "inputItems": [
-        "black pepper (1.75 tsp)",
-        "black pepper (null)",
-        "ground black pepper (0.25 tsp)"
+        "black pepper: 1.75 tsp",
+        "black pepper: null",
+        "ground black pepper: 0.25 tsp"
       ],
-      "outputItem": "black pepper (2 tsp)",
-      "suggestedFix": "If nulls are present, output should be 'at least 2' or null to indicate unknown total quantity"
+      "outputItem": "black pepper: 2 tsp",
+      "suggestedFix": "totalQuantity should be 2 tsp (1.75 + 0.25), and sourceRecipes should only include recipes with actual quantities or explicitly handle null quantities"
     },
     {
       "groupIndex": 10,
@@ -759,466 +648,471 @@
         "Lamb Kebabs"
       ],
       "issueType": "missed_merge",
-      "description": "Salt variations were not properly merged. Input has 'sea salt' (null), 'salt' (null), and 'salt' (2.75 tsp). These should all merge into a single 'salt' entry.",
+      "description": "Salt items not merged. 'sea salt' (null quantity) and 'salt' (2.75 tsp) should be merged into single 'salt' entry.",
       "inputItems": [
         "sea salt",
-        "salt (null)",
-        "salt (2.75 tsp)"
-      ],
-      "outputItem": "salt (2.75 tsp)",
-      "suggestedFix": "Merge all salt types into one entry: name='salt', totalQuantity=2.75, unit='tsp', sourceRecipes including all four recipes"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "missed_merge",
-      "description": "Different salt variations were not merged. Input has 'kosher salt' appearing three times with different quantities, 'salt' (1.5 tsp), and 'sea salt' (0.5 tsp). All should merge into one 'salt' entry.",
-      "inputItems": [
-        "kosher salt (null)",
-        "kosher salt (1 tbsp)",
-        "kosher salt (2.25 tsp)",
-        "salt (1.5 tsp)",
-        "sea salt (0.5 tsp)"
-      ],
-      "outputItem": "salt (1.5 tsp)",
-      "suggestedFix": "Merge all salt types: convert 1 tbsp to tsp (3 tsp), sum all: 3 + 2.25 + 1.5 + 0.5 = 7.25 tsp, plus null quantities from first kosher salt"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "quantity_error",
-      "description": "Ghee quantities incorrectly summed. Input has 'ghee' (3 tbsp) from two recipes and 'ghee' (1 cup) from Mysore Pak. Output shows 1.19 cup, but 3 tbsp = 0.1875 cup, so total should be 1.1875 cup (not 1.19).",
-      "inputItems": [
-        "ghee (3 tbsp)",
-        "ghee (1 cup)"
-      ],
-      "outputItem": "ghee (1.19 cup)",
-      "suggestedFix": "Correct quantity: totalQuantity: 1.1875, unit: 'cup' (or keep as mixed units: 3 tbsp + 1 cup)"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "unit_error",
-      "description": "Chicken breast quantities with different units merged incorrectly. Input has '1 lb' and '8 null' (likely 8 pieces). Output shows '9 null', but this mixes weight and count units inappropriately.",
-      "inputItems": [
-        "chicken breast (1 lb)",
-        "chicken breast (8 null)"
-      ],
-      "outputItem": "chicken breast (9 null)",
-      "suggestedFix": "Cannot simply add 1 lb to 8 pieces. Should keep separate or note incompatible units"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "unit_error",
-      "description": "Vegetable oil quantities with vastly different units merged incorrectly. Input has '0.25 cup' and '1 tbsp'. Output shows '0.33 cup', but 1 tbsp = 0.0625 cup, so total should be 0.3125 cup (not 0.33).",
-      "inputItems": [
-        "vegetable oil (0.25 cup)",
-        "vegetable oil (1 tbsp)"
-      ],
-      "outputItem": "vegetable oil (0.33 cup)",
-      "suggestedFix": "Correct quantity: totalQuantity: 0.3125, unit: 'cup'"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "missed_merge",
-      "description": "Ground cumin and cumin should be merged as they refer to the same spice (ground is the standard form).",
-      "inputItems": [
-        "ground cumin (0.5 tsp)",
-        "ground cumin (1 tbsp)"
-      ],
-      "outputItem": "cumin (1.5 tsp)",
-      "suggestedFix": "Output name should be 'cumin' but quantities need unit conversion: 1 tbsp = 3 tsp, so 0.5 + 3 = 3.5 tsp (not 1.5 tsp shown)"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "quantity_error",
-      "description": "Cumin quantity calculation is wrong. Input has 'ground cumin' (0.5 tsp) and 'ground cumin' (1 tbsp). 1 tbsp = 3 tsp, so total should be 3.5 tsp, not 1.5 tsp.",
-      "inputItems": [
-        "ground cumin (0.5 tsp)",
-        "ground cumin (1 tbsp)"
-      ],
-      "outputItem": "cumin (1.5 tsp)",
-      "suggestedFix": "totalQuantity: 3.5, unit: 'tsp'"
-    },
-    {
-      "groupIndex": 11,
-      "recipes": [
-        "Stuffed Onions",
-        "Chicken Pad Thai",
-        "Enchiladas",
-        "Chicken Tikka Masala",
-        "Mysore Pak (Chickpea Fudge)"
-      ],
-      "issueType": "missed_merge",
-      "description": "Cardamom variations not merged. Input has 'green cardamom' (2 null) and 'cardamom' (1 null). These likely refer to the same ingredient.",
-      "inputItems": [
-        "green cardamom (2)",
-        "cardamom (1)"
-      ],
-      "outputItem": "green cardamom (2), cardamom (1)",
-      "suggestedFix": "Merge into single entry: name='cardamom', totalQuantity=3, unit=null"
-    },
-    {
-      "groupIndex": 12,
-      "recipes": [
-        "Chicken Fajitas",
-        "Clam Chowder",
-        "Moussaka"
-      ],
-      "issueType": "wrong_merge",
-      "description": "Canola oil was incorrectly renamed to 'vegetable oil'. While similar, these are distinct products and the original name should be preserved.",
-      "inputItems": [
-        "canola oil (2 tbsp)"
-      ],
-      "outputItem": "vegetable oil (2 tbsp)",
-      "suggestedFix": "Keep original name: 'canola oil'"
-    },
-    {
-      "groupIndex": 12,
-      "recipes": [
-        "Chicken Fajitas",
-        "Clam Chowder",
-        "Moussaka"
-      ],
-      "issueType": "missed_merge",
-      "description": "Salt and kosher salt should be merged into a single 'salt' entry.",
-      "inputItems": [
-        "salt (1.75 tsp)",
-        "kosher salt (null)"
-      ],
-      "outputItem": "salt (1.75 tsp)",
-      "suggestedFix": "Merge into one entry with sourceRecipes from both"
-    },
-    {
-      "groupIndex": 12,
-      "recipes": [
-        "Chicken Fajitas",
-        "Clam Chowder",
-        "Moussaka"
-      ],
-      "issueType": "unit_error",
-      "description": "Olive oil with mixed units merged incorrectly. Input has '3 tbsp' from Chicken Fajitas and 'null' unit with '0.53 cup' from Moussaka. Output shows '3.53 cup', but 3 tbsp = 0.1875 cup, so total should be 0.72 cup.",
-      "inputItems": [
-        "olive oil (3 tbsp)",
-        "olive oil (0.53 cup)",
-        "olive oil (null)"
-      ],
-      "outputItem": "olive oil (3.53 cup)",
-      "suggestedFix": "Convert 3 tbsp to 0.1875 cup, sum with 0.53 cup = 0.72 cup (the null entry needs clarification)"
-    },
-    {
-      "groupIndex": 12,
-      "recipes": [
-        "Chicken Fajitas",
-        "Clam Chowder",
-        "Moussaka"
-      ],
-      "issueType": "missed_merge",
-      "description": "Flour and all purpose flour should be merged as they are the same ingredient.",
-      "inputItems": [
-        "flour (0.33 cup)",
-        "all purpose flour (0.67 cup)"
-      ],
-      "outputItem": "flour (1 cup)",
-      "suggestedFix": "Output is correct but name should be clarified: 'all-purpose flour'"
-    },
-    {
-      "groupIndex": 12,
-      "recipes": [
-        "Chicken Fajitas",
-        "Clam Chowder",
-        "Moussaka"
-      ],
-      "issueType": "missed_merge",
-      "description": "Dried oregano variations not merged. Input has 'dried oregano' (0.5 tsp) and 'dried oregano' (1 tbsp). These should be merged.",
-      "inputItems": [
-        "dried oregano (0.5 tsp)",
-        "dried oregano (1 tbsp)"
-      ],
-      "outputItem": "oregano (1 tbsp)",
-      "suggestedFix": "Convert units: 1 tbsp = 3 tsp, so 0.5 + 3 = 3.5 tsp total, not 1 tbsp"
-    },
-    {
-      "groupIndex": 12,
-      "recipes": [
-        "Chicken Fajitas",
-        "Clam Chowder",
-        "Moussaka"
-      ],
-      "issueType": "quantity_error",
-      "description": "Oregano quantity incorrect. Input has 'dried oregano' (0.5 tsp) and 'dried oregano' (1 tbsp). Should be 3.5 tsp total, not 1 tbsp.",
-      "inputItems": [
-        "dried oregano (0.5 tsp)",
-        "dried oregano (1 tbsp)"
-      ],
-      "outputItem": "oregano (1 tbsp)",
-      "suggestedFix": "totalQuantity: 3.5, unit: 'tsp'"
-    },
-    {
-      "groupIndex": 13,
-      "recipes": [
-        "Lemon Bars",
-        "Cobb Salad",
-        "Pommes Dauphine",
-        "Shortcut Banh Mi with Pickled Carrots and Daikon"
-      ],
-      "issueType": "missed_merge",
-      "description": "Salt variations not merged. Input has 'salt' appearing twice (one null, one 0.25 tsp), 'kosher salt' (0.75 tsp), and 'rock salt' (2 tsp). All should merge into 'salt'.",
-      "inputItems": [
-        "salt (null)",
-        "salt (0.25 tsp)",
-        "kosher salt (0.75 tsp)",
-        "rock salt (2 tsp)"
-      ],
-      "outputItem": "salt (3 tsp)",
-      "suggestedFix": "Merge all salt types: 0.25 + 0.75 + 2 = 3 tsp (correct), but should include null quantity entry"
-    },
-    {
-      "groupIndex": 13,
-      "recipes": [
-        "Lemon Bars",
-        "Cobb Salad",
-        "Pommes Dauphine",
-        "Shortcut Banh Mi with Pickled Carrots and Daikon"
-      ],
-      "issueType": "missed_merge",
-      "description": "Sugar varieties not fully merged. Input has 'sugar' (3 tsp total), 'white sugar' (2 cup), 'white sugar' (2.5 tbsp), and 'white sugar' (0.5 cup). Output shows separate 'white sugar' and 'sugar' entries.",
-      "inputItems": [
-        "sugar (3 tsp)",
-        "white sugar (2 cup)",
-        "white sugar (2.5 tbsp)",
-        "white sugar (0.5 cup)",
-        "sugar (2 tbsp)"
-      ],
-      "outputItem": "white sugar (2.13 cup), sugar missing",
-      "suggestedFix": "Merge all into 'sugar': convert all to cups and sum"
-    },
-    {
-      "groupIndex": 13,
-      "recipes": [
-        "Lemon Bars",
-        "Cobb Salad",
-        "Pommes Dauphine",
-        "Shortcut Banh Mi with Pickled Carrots and Daikon"
-      ],
-      "issueType": "quantity_error",
-      "description": "White sugar calculation appears incorrect. Input has 2 cup + 2.5 tbsp + 0.5 cup + (3 tsp from 'sugar'). 2.5 tbsp ≈ 0.156 cup, 3 tsp ≈ 0.0625 cup. Total should be ~2.72 cup, not 2.13 cup.",
-      "inputItems": [
-        "white sugar (2 cup)",
-        "white sugar (2.5 tbsp)",
-        "white sugar (0.5 cup)",
-        "sugar (3 tsp)",
-        "sugar (2 tbsp)"
-      ],
-      "outputItem": "white sugar (2.13 cup)",
-      "suggestedFix": "Recalculate: 2 + 0.5 + 0.156 (2.5 tbsp) + 0.125 (2 tbsp) + 0.0625 (3 tsp) ≈ 2.84 cup"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "missed_merge",
-      "description": "Salt variations not merged. Input has 'kosher salt' appearing 3 times with different quantities, 'salt' (0.75 tsp), and 'sea salt' (0.5 tsp). All should merge.",
-      "inputItems": [
-        "kosher salt (1 tbsp)",
-        "kosher salt (2.25 tsp)",
-        "kosher salt (null)",
-        "salt (0.75 tsp)",
-        "sea salt (0.5 tsp)"
-      ],
-      "outputItem": "salt (5.5 tsp)",
-      "suggestedFix": "Convert 1 tbsp to 3 tsp: 3 + 2.25 + 0.75 + 0.5 = 6.5 tsp (not 5.5), plus null quantity"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "quantity_error",
-      "description": "Salt quantity incorrect. Input kosher salt includes 1 tbsp (=3 tsp) + 2.25 tsp + 0.75 tsp + 0.5 tsp = 6.5 tsp, not 5.5 tsp.",
-      "inputItems": [
-        "kosher salt (1 tbsp)",
-        "kosher salt (2.25 tsp)",
-        "salt (0.75 tsp)",
-        "sea salt (0.5 tsp)"
-      ],
-      "outputItem": "salt (5.5 tsp)",
-      "suggestedFix": "totalQuantity: 6.5, unit: 'tsp'"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "unit_error",
-      "description": "Olive oil merged with mixed units incorrectly. Input has 'extra virgin olive oil' (4 tbsp), 'olive oil' (3 tbsp), and 'olive oil' (0.25 cup). Output shows 9.25 tbsp but should be in consistent unit.",
-      "inputItems": [
-        "extra virgin olive oil (4 tbsp)",
-        "olive oil (3 tbsp)",
-        "olive oil (0.25 cup)"
-      ],
-      "outputItem": "olive oil (9.25 tbsp)",
-      "suggestedFix": "0.25 cup = 4 tbsp, so 4 + 3 + 4 = 11 tbsp, not 9.25 tbsp"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "quantity_error",
-      "description": "Olive oil quantity wrong. 4 tbsp + 3 tbsp + 0.25 cup (=4 tbsp) = 11 tbsp, not 9.25 tbsp.",
-      "inputItems": [
-        "extra virgin olive oil (4 tbsp)",
-        "olive oil (3 tbsp)",
-        "olive oil (0.25 cup)"
-      ],
-      "outputItem": "olive oil (9.25 tbsp)",
-      "suggestedFix": "totalQuantity: 11, unit: 'tbsp'"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "quantity_error",
-      "description": "White sugar quantity incorrect. Input has 0.5 tsp + 2.5 tbsp + 0.5 cup. Converting: 2.5 tbsp = 7.5 tsp, 0.5 cup = 24 tsp. Total = 32 tsp = 10.67 tbsp, not 11.5 tbsp.",
-      "inputItems": [
-        "white sugar (0.5 tsp)",
-        "white sugar (2.5 tbsp)",
-        "white sugar (0.5 cup)"
-      ],
-      "outputItem": "white sugar (11.5 tbsp)",
-      "suggestedFix": "totalQuantity: 10.67, unit: 'tbsp'"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "unit_error",
-      "description": "Vegetable oil quantities merged incorrectly. Input has '2 tbsp' and '2 quart'. Output shows only '2 quart', losing the 2 tbsp.",
-      "inputItems": [
-        "vegetable oil (2 tbsp)",
-        "vegetable oil (2 quart)"
-      ],
-      "outputItem": "vegetable oil (2 quart)",
-      "suggestedFix": "Convert 2 tbsp to quarts (0.03125 qt) and add: 2.03125 quart, or keep as '2 quart + 2 tbsp'"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "missed_merge",
-      "description": "Cinnamon variations not merged. Input has 'ground cinnamon' (1 tsp) and 'cinnamon' (2 inch). These are different forms but output combined them incorrectly.",
-      "inputItems": [
-        "ground cinnamon (1 tsp)",
-        "cinnamon (2 inch)"
-      ],
-      "outputItem": "cinnamon (1 tsp)",
-      "suggestedFix": "These are different forms (ground vs stick) and should be kept separate or properly noted"
-    },
-    {
-      "groupIndex": 14,
-      "recipes": [
-        "Penne Arrabbiata",
-        "Grilled Chicken Breast",
-        "Churros",
-        "Lemon Parmesan Smashed Broccoli",
-        "Korma"
-      ],
-      "issueType": "missed_merge",
-      "description": "Yogurt variations not merged. Input has 'plain yogurt' appearing twice (3 tbsp and 0.25 cup). Output shows only 7 tbsp total.",
-      "inputItems": [
-        "plain yogurt (3 tbsp)",
-        "plain yogurt (0.25 cup)"
-      ],
-      "outputItem": "plain yogurt (7 tbsp)",
-      "suggestedFix": "0.25 cup = 4 tbsp, so 3 + 4 = 7 tbsp (correct)"
-    },
-    {
-      "groupIndex": 15,
-      "recipes": [
-        "Mac and Cheese",
-        "Cheeseburger",
-        "Greek Salad"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'kosher salt' and 'salt' should have been merged as they refer to the same ingredient",
-      "inputItems": [
-        "kosher salt",
         "salt"
       ],
       "outputItem": "salt",
-      "suggestedFix": "Merge both into 'salt' with totalQuantity: 0.5, sourceRecipes: ['Mac and Cheese', 'Cheeseburger']"
+      "suggestedFix": "Merge both salt entries into single 'salt' item with totalQuantity: 2.75 tsp and all sourceRecipes"
+    },
+    {
+      "groupIndex": 10,
+      "recipes": [
+        "Rice Noodles with Garlicky Cashew Sauce",
+        "Mashed Potatoes",
+        "Lasagna",
+        "Lamb Kebabs"
+      ],
+      "issueType": "unit_error",
+      "description": "Onion units incorrectly converted. Input has 0.5 cup and 0.5 null unit. Output shows 1 cup, but this assumes both inputs are in cups which is incorrect.",
+      "inputItems": [
+        "onion: 0.5 cup",
+        "onion: 0.5 null"
+      ],
+      "outputItem": "onion: 1 cup",
+      "suggestedFix": "Cannot reliably convert 0.5 (no unit) to cups. Should keep separate or use a common count unit like 'null'"
+    },
+    {
+      "groupIndex": 11,
+      "recipes": [
+        "Stuffed Onions",
+        "Chicken Pad Thai",
+        "Enchiladas",
+        "Chicken Tikka Masala",
+        "Mysore Pak (Chickpea Fudge)"
+      ],
+      "issueType": "missed_merge",
+      "description": "Kosher salt and salt not merged. Three separate 'kosher salt' entries in input should all be merged with 'salt'.",
+      "inputItems": [
+        "kosher salt: null",
+        "kosher salt: 2.25 tsp",
+        "kosher salt: null",
+        "salt: 1.5 tsp"
+      ],
+      "outputItem": "salt: 1.5 tsp",
+      "suggestedFix": "Merge all salt/kosher salt entries into single 'salt' with totalQuantity: 1.5 tsp (from quantified entries)"
+    },
+    {
+      "groupIndex": 11,
+      "recipes": [
+        "Stuffed Onions",
+        "Chicken Pad Thai",
+        "Enchiladas",
+        "Chicken Tikka Masala",
+        "Mysore Pak (Chickpea Fudge)"
+      ],
+      "issueType": "quantity_error",
+      "description": "Chicken breast quantities incorrectly summed. Input has 1 lb and 8 null units. Output shows 9 null but should preserve the 1 lb quantity.",
+      "inputItems": [
+        "chicken breast: 1 lb",
+        "chicken breast: 8 null"
+      ],
+      "outputItem": "chicken breast: 9 null",
+      "suggestedFix": "Should show totalQuantity with unit 'lb' for the 1 lb, and handle the 8 count separately or note mixed units"
+    },
+    {
+      "groupIndex": 11,
+      "recipes": [
+        "Stuffed Onions",
+        "Chicken Pad Thai",
+        "Enchiladas",
+        "Chicken Tikka Masala",
+        "Mysore Pak (Chickpea Fudge)"
+      ],
+      "issueType": "missed_merge",
+      "description": "Ground cumin and cumin not merged into single entry.",
+      "inputItems": [
+        "ground cumin: 0.5 tsp",
+        "ground cumin: 1 tbsp"
+      ],
+      "outputItem": "cumin: 1.5 tsp",
+      "suggestedFix": "Already correctly merged but unit conversion needs verification: 1 tbsp = 3 tsp, so 0.5 + 3 = 3.5 tsp, not 1.5 tsp"
+    },
+    {
+      "groupIndex": 11,
+      "recipes": [
+        "Stuffed Onions",
+        "Chicken Pad Thai",
+        "Enchiladas",
+        "Chicken Tikka Masala",
+        "Mysore Pak (Chickpea Fudge)"
+      ],
+      "issueType": "quantity_error",
+      "description": "Cumin quantity calculation error. Input has 0.5 tsp and 1 tbsp (=3 tsp). Output shows 1.5 tsp but should be 3.5 tsp.",
+      "inputItems": [
+        "ground cumin: 0.5 tsp",
+        "ground cumin: 1 tbsp"
+      ],
+      "outputItem": "cumin: 1.5 tsp",
+      "suggestedFix": "totalQuantity should be 3.5 tsp (0.5 tsp + 3 tsp)"
+    },
+    {
+      "groupIndex": 11,
+      "recipes": [
+        "Stuffed Onions",
+        "Chicken Pad Thai",
+        "Enchiladas",
+        "Chicken Tikka Masala",
+        "Mysore Pak (Chickpea Fudge)"
+      ],
+      "issueType": "missed_merge",
+      "description": "Ghee entries not merged. Input has three separate ghee entries that should be combined.",
+      "inputItems": [
+        "ghee: 3 tbsp",
+        "ghee: 1 cup"
+      ],
+      "outputItem": "ghee: 1.19 cup",
+      "suggestedFix": "Should be 1.1875 cup (3 tbsp = 0.1875 cup + 1 cup)"
+    },
+    {
+      "groupIndex": 11,
+      "recipes": [
+        "Stuffed Onions",
+        "Chicken Pad Thai",
+        "Enchiladas",
+        "Chicken Tikka Masala",
+        "Mysore Pak (Chickpea Fudge)"
+      ],
+      "issueType": "missed_merge",
+      "description": "Plain yogurt entries not merged correctly. Input has two separate entries that were merged but quantity is wrong.",
+      "inputItems": [
+        "plain yogurt: 3 tbsp",
+        "plain yogurt: 0.25 cup"
+      ],
+      "outputItem": "plain yogurt: 7 tbsp",
+      "suggestedFix": "totalQuantity should be 7 tbsp (3 tbsp + 4 tbsp from 0.25 cup) - this is actually correct"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Canola oil merged with olive oil as 'vegetable oil'. These are different types of oils and should be kept separate.",
+      "inputItems": [
+        "canola oil: 2 tbsp"
+      ],
+      "outputItem": "vegetable oil: 2 tbsp",
+      "suggestedFix": "Keep 'canola oil' separate from other oils"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "quantity_error",
+      "description": "Olive oil quantity calculation error. Input has 3 tbsp and 0.53 cup (plus one null). Output shows 3.53 cup but should convert and sum correctly.",
+      "inputItems": [
+        "olive oil: 3 tbsp",
+        "olive oil: null",
+        "olive oil: 0.53 cup"
+      ],
+      "outputItem": "olive oil: 3.53 cup",
+      "suggestedFix": "Should be approximately 0.72 cup (3 tbsp = 0.1875 cup + 0.53 cup)"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "missed_merge",
+      "description": "Yellow onion and onion not merged.",
+      "inputItems": [
+        "onion: 1 null",
+        "yellow onion: 2 null"
+      ],
+      "outputItem": "onion: 3 null",
+      "suggestedFix": "Already correctly merged"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "missed_merge",
+      "description": "Flour and all purpose flour not merged.",
+      "inputItems": [
+        "flour: 0.33 cup",
+        "all purpose flour: 0.67 cup"
+      ],
+      "outputItem": "flour: 1 cup",
+      "suggestedFix": "Already correctly merged"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "missed_merge",
+      "description": "Dried oregano entries not merged.",
+      "inputItems": [
+        "dried oregano: 0.5 tsp",
+        "dried oregano: 1 tbsp"
+      ],
+      "outputItem": "oregano: 1 tbsp",
+      "suggestedFix": "Should convert to common unit: 1 tbsp + 0.5 tsp = 1.17 tbsp (or 3.5 tsp)"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "quantity_error",
+      "description": "Oregano quantity calculation error. Input has 0.5 tsp and 1 tbsp. Output shows 1 tbsp but should sum them.",
+      "inputItems": [
+        "dried oregano: 0.5 tsp",
+        "dried oregano: 1 tbsp"
+      ],
+      "outputItem": "oregano: 1 tbsp",
+      "suggestedFix": "totalQuantity should be 3.5 tsp (or 1.17 tbsp)"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "missed_merge",
+      "description": "Ground cinnamon and cinnamon should stay separate as these could be different forms.",
+      "inputItems": [
+        "ground cinnamon: 1 tsp"
+      ],
+      "outputItem": "cinnamon: 1 tsp",
+      "suggestedFix": "This is acceptable - ground cinnamon can be cleaned to 'cinnamon'"
+    },
+    {
+      "groupIndex": 12,
+      "recipes": [
+        "Chicken Fajitas",
+        "Clam Chowder",
+        "Moussaka"
+      ],
+      "issueType": "missed_merge",
+      "description": "Kosher salt not merged with salt.",
+      "inputItems": [
+        "kosher salt: null"
+      ],
+      "outputItem": "salt: 1.75 tsp",
+      "suggestedFix": "Merge kosher salt with salt"
+    },
+    {
+      "groupIndex": 13,
+      "recipes": [
+        "Lemon Bars",
+        "Cobb Salad",
+        "Pommes Dauphine",
+        "Shortcut Banh Mi with Pickled Carrots and Daikon"
+      ],
+      "issueType": "missed_merge",
+      "description": "Salt entries not merged. Input has multiple salt types (kosher salt, salt, rock salt) that should be merged.",
+      "inputItems": [
+        "salt: null",
+        "salt: 0.25 tsp",
+        "kosher salt: 0.75 tsp",
+        "rock salt: 2 tsp"
+      ],
+      "outputItem": "salt: 3 tsp",
+      "suggestedFix": "All salt types should merge to single 'salt' entry with totalQuantity: 3 tsp"
+    },
+    {
+      "groupIndex": 13,
+      "recipes": [
+        "Lemon Bars",
+        "Cobb Salad",
+        "Pommes Dauphine",
+        "Shortcut Banh Mi with Pickled Carrots and Daikon"
+      ],
+      "issueType": "missed_merge",
+      "description": "Flour and all-purpose flour not merged.",
+      "inputItems": [
+        "all-purpose flour: 2.25 cup",
+        "flour: 1 cup"
+      ],
+      "outputItem": "all-purpose flour: 3.25 cup",
+      "suggestedFix": "Already correctly merged"
+    },
+    {
+      "groupIndex": 13,
+      "recipes": [
+        "Lemon Bars",
+        "Cobb Salad",
+        "Pommes Dauphine",
+        "Shortcut Banh Mi with Pickled Carrots and Daikon"
+      ],
+      "issueType": "quantity_error",
+      "description": "Sugar quantity calculation error. Input has 3 tsp and 2 tbsp sugar. Output shows 2.13 cup but unit conversion seems wrong.",
+      "inputItems": [
+        "sugar: 3 tsp",
+        "sugar: 2 tbsp"
+      ],
+      "outputItem": "white sugar: 2.13 cup",
+      "suggestedFix": "3 tsp = 1 tbsp. Total should be 3 tbsp = 0.1875 cup. Plus white sugar 2 cup = 2.1875 cup"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "missed_merge",
+      "description": "Kosher salt entries not merged with salt.",
+      "inputItems": [
+        "kosher salt: 1 tbsp",
+        "kosher salt: 2.25 tsp",
+        "kosher salt: null",
+        "salt: 0.75 tsp",
+        "sea salt: 0.5 tsp"
+      ],
+      "outputItem": "salt: 5.5 tsp",
+      "suggestedFix": "Merge all salt types. 1 tbsp = 3 tsp, so total: 3 + 2.25 + 0.75 + 0.5 = 6.5 tsp"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "quantity_error",
+      "description": "Salt quantity calculation error. Should be 6.5 tsp not 5.5 tsp.",
+      "inputItems": [
+        "kosher salt: 1 tbsp",
+        "kosher salt: 2.25 tsp",
+        "salt: 0.75 tsp",
+        "sea salt: 0.5 tsp"
+      ],
+      "outputItem": "salt: 5.5 tsp",
+      "suggestedFix": "totalQuantity should be 6.5 tsp"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "missed_merge",
+      "description": "Extra virgin olive oil and olive oil not merged.",
+      "inputItems": [
+        "extra virgin olive oil: 4 tbsp",
+        "olive oil: 3 tbsp",
+        "olive oil: 0.25 cup"
+      ],
+      "outputItem": "olive oil: 9.25 tbsp",
+      "suggestedFix": "Already correctly merged - 4 + 3 + 4 (from 0.25 cup) = 11 tbsp, not 9.25"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "quantity_error",
+      "description": "Olive oil quantity calculation error. Input: 4 tbsp + 3 tbsp + 0.25 cup (4 tbsp) = 11 tbsp, not 9.25 tbsp.",
+      "inputItems": [
+        "extra virgin olive oil: 4 tbsp",
+        "olive oil: 3 tbsp",
+        "olive oil: 0.25 cup"
+      ],
+      "outputItem": "olive oil: 9.25 tbsp",
+      "suggestedFix": "totalQuantity should be 11 tbsp"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "quantity_error",
+      "description": "White sugar quantity error. Input has 0.5 tsp, 2.5 tbsp, and 0.5 cup. Output shows 11.5 tbsp but conversion seems incorrect.",
+      "inputItems": [
+        "white sugar: 0.5 tsp",
+        "white sugar: 2.5 tbsp",
+        "white sugar: 0.5 cup"
+      ],
+      "outputItem": "white sugar: 11.5 tbsp",
+      "suggestedFix": "0.5 tsp = 0.167 tbsp, 0.5 cup = 8 tbsp. Total: 0.167 + 2.5 + 8 = 10.67 tbsp"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "quantity_error",
+      "description": "Vegetable oil quantity error. Input has 2 tbsp and 2 quart. Output shows 2 quart but should include the 2 tbsp.",
+      "inputItems": [
+        "vegetable oil: 2 tbsp",
+        "vegetable oil: 2 quart"
+      ],
+      "outputItem": "vegetable oil: 2 quart",
+      "suggestedFix": "Should be 2 quart + 2 tbsp (or convert to common unit)"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "missed_merge",
+      "description": "Ground cinnamon and cinnamon not merged. Also has different units (tsp vs inch).",
+      "inputItems": [
+        "ground cinnamon: 1 tsp",
+        "cinnamon: 2 inch"
+      ],
+      "outputItem": "cinnamon: 1 tsp",
+      "suggestedFix": "Cannot reliably merge tsp with inch unit - these should stay separate or note mixed units"
+    },
+    {
+      "groupIndex": 14,
+      "recipes": [
+        "Penne Arrabbiata",
+        "Grilled Chicken Breast",
+        "Churros",
+        "Lemon Parmesan Smashed Broccoli",
+        "Korma"
+      ],
+      "issueType": "missed_merge",
+      "description": "Plain yogurt entries not merged.",
+      "inputItems": [
+        "plain yogurt: 3 tbsp",
+        "plain yogurt: 0.25 cup"
+      ],
+      "outputItem": "plain yogurt: 7 tbsp",
+      "suggestedFix": "Already correctly merged: 3 tbsp + 4 tbsp (from 0.25 cup) = 7 tbsp"
     },
     {
       "groupIndex": 15,
@@ -1227,43 +1121,30 @@
         "Cheeseburger",
         "Greek Salad"
       ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'cheddar' should be 'cheddar cheese' to maintain clarity, or input 'cheddar cheese' was unnecessarily shortened",
+      "issueType": "missed_merge",
+      "description": "Input had 'salt' (0.5 tsp) and 'kosher salt' (no quantity) which are the same ingredient and should be merged, but output only shows 'salt' with sourceRecipes including both Mac and Cheese and Cheeseburger",
       "inputItems": [
-        "cheddar cheese"
+        "salt",
+        "kosher salt"
       ],
-      "outputItem": "cheddar",
-      "suggestedFix": "Keep full name 'cheddar cheese' for clarity"
+      "outputItem": "salt",
+      "suggestedFix": "Correctly merged - this is actually correct behavior, not an issue"
     },
     {
-      "groupIndex": 15,
+      "groupIndex": 16,
       "recipes": [
-        "Mac and Cheese",
-        "Cheeseburger",
-        "Greek Salad"
+        "Banana Bread",
+        "Nicoise Salad",
+        "Chicken Satay",
+        "Dal Makhani"
       ],
       "issueType": "name_cleaning",
-      "description": "Output name 'feta' should be 'feta cheese' to maintain clarity, or input 'feta cheese' was unnecessarily shortened",
+      "description": "Output contains 'extra-virgin olive oil' cleaned to 'olive oil' which is correct, but input had 'extra-virgin olive oil' and output shows 'olive oil'",
       "inputItems": [
-        "feta cheese"
+        "extra-virgin olive oil"
       ],
-      "outputItem": "feta",
-      "suggestedFix": "Keep full name 'feta cheese' for clarity"
-    },
-    {
-      "groupIndex": 15,
-      "recipes": [
-        "Mac and Cheese",
-        "Cheeseburger",
-        "Greek Salad"
-      ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'oregano' should be 'dried oregano' to preserve the product-form qualifier",
-      "inputItems": [
-        "dried oregano"
-      ],
-      "outputItem": "oregano",
-      "suggestedFix": "Keep 'dried oregano' to distinguish from fresh oregano"
+      "outputItem": "olive oil",
+      "suggestedFix": "This is correct - name was properly cleaned"
     },
     {
       "groupIndex": 16,
@@ -1274,13 +1155,48 @@
         "Dal Makhani"
       ],
       "issueType": "missed_merge",
-      "description": "Input 'butter' and 'unsalted butter' should have been merged as they refer to the same ingredient",
+      "description": "Input had 'salt' (0.25 tsp from Banana Bread), 'salt' (null from Nicoise Salad), and 'sea salt' (1 tsp from Dal Makhani). Output merged them all but quantity shows 1.25 tsp which should be at least 1.25 tsp (0.25 + 1 + unknown from Nicoise)",
+      "inputItems": [
+        "salt",
+        "salt",
+        "sea salt"
+      ],
+      "outputItem": "salt",
+      "suggestedFix": "Correct merge - quantity is correct (0.25 + 1 = 1.25, null doesn't add)"
+    },
+    {
+      "groupIndex": 16,
+      "recipes": [
+        "Banana Bread",
+        "Nicoise Salad",
+        "Chicken Satay",
+        "Dal Makhani"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input had 'water' (4.25 cup) and 'hot water' (2 cup). These were merged into single 'water' with 6.25 cup total. While semantically similar, 'hot water' is a distinct preparation state that might be important for recipe execution",
+      "inputItems": [
+        "water",
+        "hot water"
+      ],
+      "outputItem": "water",
+      "suggestedFix": "Keep separate: 'water' (4.25 cup) and 'hot water' (2 cup) OR merge with note about hot water requirement"
+    },
+    {
+      "groupIndex": 16,
+      "recipes": [
+        "Banana Bread",
+        "Nicoise Salad",
+        "Chicken Satay",
+        "Dal Makhani"
+      ],
+      "issueType": "missed_merge",
+      "description": "Input had 'butter' (0.5 cup from Banana Bread) and 'unsalted butter' (3 tbsp from Dal Makhani). These should be merged but need unit conversion. Output shows 'butter' with 0.69 cup, but 3 tbsp = 0.1875 cup, so 0.5 + 0.1875 = 0.6875, not 0.69",
       "inputItems": [
         "butter",
         "unsalted butter"
       ],
       "outputItem": "butter",
-      "suggestedFix": "Merge into 'butter' with totalQuantity: 0.69 cup, sourceRecipes: ['Banana Bread', 'Dal Makhani']"
+      "suggestedFix": "Correct the quantity to 0.6875 cup (or 0.69 is acceptable rounding)"
     },
     {
       "groupIndex": 16,
@@ -1291,63 +1207,13 @@
         "Dal Makhani"
       ],
       "issueType": "missed_merge",
-      "description": "Input 'extra-virgin olive oil' should have been merged with other olive oil if present, or kept as 'olive oil'",
-      "inputItems": [
-        "extra-virgin olive oil"
-      ],
-      "outputItem": "olive oil",
-      "suggestedFix": "The merge is correct; 'extra-virgin olive oil' → 'olive oil' is appropriate semantic merging"
-    },
-    {
-      "groupIndex": 16,
-      "recipes": [
-        "Banana Bread",
-        "Nicoise Salad",
-        "Chicken Satay",
-        "Dal Makhani"
-      ],
-      "issueType": "unit_error",
-      "description": "Input 'shallot' has mixed units (3 tbsp + 1 with null unit), output shows 4 tbsp which incorrectly assumes the null-unit shallot is 1 tbsp",
+      "description": "Input had 'shallot' (3 tbsp) and 'shallot' (1 unit). Output shows 'shallot' with 4 tbsp, which incorrectly assumes 1 shallot = 1 tbsp. These have incompatible units and should either be kept separate or converted properly",
       "inputItems": [
         "shallot (3 tbsp)",
-        "shallot (1 null unit)"
+        "shallot (1 null)"
       ],
       "outputItem": "shallot",
-      "suggestedFix": "Output should be totalQuantity: 3, unit: 'tbsp' (keeping only the measurable quantity, or noting the additional whole shallot separately)"
-    },
-    {
-      "groupIndex": 16,
-      "recipes": [
-        "Banana Bread",
-        "Nicoise Salad",
-        "Chicken Satay",
-        "Dal Makhani"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'salt' and 'sea salt' should have been merged as they refer to the same ingredient",
-      "inputItems": [
-        "salt",
-        "sea salt"
-      ],
-      "outputItem": "salt",
-      "suggestedFix": "Merge into 'salt' with totalQuantity: 1.25 tsp, sourceRecipes: ['Banana Bread', 'Nicoise Salad', 'Dal Makhani']"
-    },
-    {
-      "groupIndex": 16,
-      "recipes": [
-        "Banana Bread",
-        "Nicoise Salad",
-        "Chicken Satay",
-        "Dal Makhani"
-      ],
-      "issueType": "quantity_error",
-      "description": "Input 'water' has quantities 4.25 cup + 2 cup (hot water), output shows 6.25 cup which is correct arithmetic but 'hot water' is semantically different and should be noted",
-      "inputItems": [
-        "water (4.25 cup)",
-        "hot water (2 cup)"
-      ],
-      "outputItem": "water",
-      "suggestedFix": "The merge and quantity are technically correct, but this is acceptable"
+      "suggestedFix": "Either keep separate with different units, or note mixed units: '3 tbsp + 1 whole'"
     },
     {
       "groupIndex": 17,
@@ -1359,67 +1225,14 @@
         "Foie Gras"
       ],
       "issueType": "wrong_merge",
-      "description": "Multiple 'unsalted butter' inputs merged with 'butter' input, but they should all be merged as the same ingredient. The first 'unsalted butter' (null quantity) appears to be missing from output entirely",
+      "description": "Input had three separate 'unsalted butter' entries (null, 4 tbsp, and within 'butter' 1 cup). The output merged all butter into single entry with 20 tbsp, but this incorrectly converts 1 cup butter to 16 tbsp when it should only merge the unsalted butter instances (4 tbsp + null = at least 4 tbsp), keeping regular butter separate",
       "inputItems": [
         "unsalted butter (null)",
-        "unsalted butter (4 tbsp)",
-        "butter (1 cup)"
+        "butter (1 cup)",
+        "unsalted butter (4 tbsp)"
       ],
       "outputItem": "butter",
-      "suggestedFix": "All butter variants should merge to 'butter' with totalQuantity: 20 tbsp (which is correct: 0 + 4 + 16 tbsp from 1 cup)"
-    },
-    {
-      "groupIndex": 17,
-      "recipes": [
-        "Beer Bread",
-        "Sugar Cookies",
-        "Cheesy Hasselback Potato Gratin",
-        "Coconut Creamed Kale",
-        "Foie Gras"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'kosher salt' appears twice and should have been merged before reaching semantic merge stage, or should merge with other salt if present",
-      "inputItems": [
-        "kosher salt (1 tsp)",
-        "kosher salt (null)"
-      ],
-      "outputItem": "salt",
-      "suggestedFix": "Merge into 'salt' with totalQuantity: 1, sourceRecipes: ['Beer Bread', 'Cheesy Hasselback Potato Gratin', 'Coconut Creamed Kale', 'Foie Gras']"
-    },
-    {
-      "groupIndex": 17,
-      "recipes": [
-        "Beer Bread",
-        "Sugar Cookies",
-        "Cheesy Hasselback Potato Gratin",
-        "Coconut Creamed Kale",
-        "Foie Gras"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'granulated sugar' and 'white sugar' should have been merged as they refer to the same ingredient",
-      "inputItems": [
-        "granulated sugar",
-        "white sugar"
-      ],
-      "outputItem": null,
-      "suggestedFix": "Merge into 'sugar' with totalQuantity combining 2 tbsp + 1.5 cup (converted to same unit)"
-    },
-    {
-      "groupIndex": 17,
-      "recipes": [
-        "Beer Bread",
-        "Sugar Cookies",
-        "Cheesy Hasselback Potato Gratin",
-        "Coconut Creamed Kale",
-        "Foie Gras"
-      ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'gruyère' should be 'gruyère cheese' to maintain clarity",
-      "inputItems": [
-        "gruyère cheese"
-      ],
-      "outputItem": "gruyère",
-      "suggestedFix": "Keep full name 'gruyère cheese' for clarity"
+      "suggestedFix": "This is actually correct - all butter types were properly merged: 1 cup = 16 tbsp, plus 4 tbsp = 20 tbsp total"
     },
     {
       "groupIndex": 17,
@@ -1431,12 +1244,12 @@
         "Foie Gras"
       ],
       "issueType": "category_error",
-      "description": "Coconut milk should be categorized as 'pantry' not 'dairy' as it's a plant-based product typically shelf-stable",
+      "description": "Input had 'coconut milk' with category 'dairy' but coconut milk is plant-based and should be categorized as 'pantry' not 'dairy'",
       "inputItems": [
         "coconut milk"
       ],
       "outputItem": "coconut milk",
-      "suggestedFix": "Change category to 'pantry'"
+      "suggestedFix": "Change category from 'dairy' to 'pantry'"
     },
     {
       "groupIndex": 18,
@@ -1446,45 +1259,13 @@
         "Pozole"
       ],
       "issueType": "missed_merge",
-      "description": "Input 'onion' and 'white onion' should have been merged as they refer to the same ingredient",
-      "inputItems": [
-        "onion",
-        "white onion"
-      ],
-      "outputItem": "onion",
-      "suggestedFix": "Merge into 'onion' with totalQuantity: 6.5, sourceRecipes: ['French Onion Soup', 'Pozole']"
-    },
-    {
-      "groupIndex": 18,
-      "recipes": [
-        "French Onion Soup",
-        "Coconut Rice",
-        "Pozole"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'sugar' appears twice and should have been merged into a single output",
-      "inputItems": [
-        "sugar (1 tsp)",
-        "sugar (1 tbsp)"
-      ],
-      "outputItem": "sugar",
-      "suggestedFix": "Merge into 'sugar' with totalQuantity: 4 tsp (1 tsp + 3 tsp from 1 tbsp), sourceRecipes: ['French Onion Soup', 'Coconut Rice']"
-    },
-    {
-      "groupIndex": 18,
-      "recipes": [
-        "French Onion Soup",
-        "Coconut Rice",
-        "Pozole"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'salt' and 'kosher salt' should have been merged as they refer to the same ingredient",
+      "description": "Input had 'salt' (null from French Onion Soup and Pozole) and 'kosher salt' (0.5 tsp from Coconut Rice). Output merged them but only shows sourceRecipes for all three including Coconut Rice, which is correct",
       "inputItems": [
         "salt",
         "kosher salt"
       ],
       "outputItem": "salt",
-      "suggestedFix": "Merge into 'salt' with appropriate quantity, sourceRecipes: ['French Onion Soup', 'Pozole', 'Coconut Rice']"
+      "suggestedFix": "This is correct - properly merged"
     },
     {
       "groupIndex": 18,
@@ -1493,97 +1274,30 @@
         "Coconut Rice",
         "Pozole"
       ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'cumin' should be 'ground cumin' to preserve the product-form qualifier",
-      "inputItems": [
-        "ground cumin"
-      ],
-      "outputItem": "cumin",
-      "suggestedFix": "Keep 'ground cumin' to distinguish from cumin seeds"
-    },
-    {
-      "groupIndex": 19,
-      "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
-      ],
       "issueType": "missed_merge",
-      "description": "Input 'scallion' should have been merged with 'green onion' output as they refer to the same ingredient",
-      "inputItems": [
-        "scallion"
-      ],
-      "outputItem": "green onion",
-      "suggestedFix": "This is actually correct - 'scallion' was properly renamed to 'green onion'"
-    },
-    {
-      "groupIndex": 19,
-      "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'parsley' and 'flat-leaf parsley' should have been merged as they refer to the same ingredient",
-      "inputItems": [
-        "parsley",
-        "flat-leaf parsley"
-      ],
-      "outputItem": "parsley",
-      "suggestedFix": "Merge into 'parsley' with totalQuantity: 2.5 cup (note: units don't match - cup vs bunch, may need note)"
-    },
-    {
-      "groupIndex": 19,
-      "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'onion' and 'yellow onion' should have been merged as they refer to the same ingredient",
+      "description": "Input had 'onion' (6 from French Onion Soup) and 'white onion' (0.5 from Pozole). Output merged to 6.5 total, which is correct",
       "inputItems": [
         "onion",
-        "yellow onion"
+        "white onion"
       ],
       "outputItem": "onion",
-      "suggestedFix": "Merge into 'onion' with totalQuantity: 2, sourceRecipes: ['Lentil Soup', 'Spanakopita']"
+      "suggestedFix": "This is correct - properly merged"
     },
     {
-      "groupIndex": 19,
+      "groupIndex": 18,
       "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
+        "French Onion Soup",
+        "Coconut Rice",
+        "Pozole"
       ],
-      "issueType": "missed_merge",
-      "description": "Input 'olive oil' and 'extra virgin olive oil' should have been merged as they refer to the same ingredient",
+      "issueType": "unit_error",
+      "description": "Input had 'water' (0.75 cup from Coconut Rice) and 'water' (5 quart from Pozole). Output shows 5.1875 quart total. Conversion: 0.75 cup = 0.1875 quart, so 5 + 0.1875 = 5.1875 is correct",
       "inputItems": [
-        "olive oil",
-        "extra virgin olive oil"
+        "water (0.75 cup)",
+        "water (5 quart)"
       ],
-      "outputItem": "olive oil",
-      "suggestedFix": "Merge into 'olive oil' with totalQuantity: 1.875 cup (0.75 + 0.125 + 1), sourceRecipes: ['Tabbouleh Wrap', 'Lentil Soup', 'Spanakopita']"
-    },
-    {
-      "groupIndex": 19,
-      "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
-      ],
-      "issueType": "missed_merge",
-      "description": "Input 'kosher salt' and 'salt' should have been merged as they refer to the same ingredient",
-      "inputItems": [
-        "kosher salt",
-        "salt"
-      ],
-      "outputItem": "salt",
-      "suggestedFix": "Merge into 'salt' with totalQuantity: 1 tsp, sourceRecipes: ['Tabbouleh Wrap', 'Lentil Soup']"
+      "outputItem": "water",
+      "suggestedFix": "This is correct - proper unit conversion"
     },
     {
       "groupIndex": 19,
@@ -1594,13 +1308,13 @@
         "Manicotti with Cheese Filling and Bolognese Sauce"
       ],
       "issueType": "wrong_merge",
-      "description": "Input 'spinach' appears twice with different categories (produce vs frozen) and were kept separate correctly, but output shows incorrect categories",
+      "description": "Input had 'spinach' (0.5 cup from Lentil Soup, category 'produce') and 'spinach' (16 oz from Spanakopita, category 'frozen'). These are different forms (fresh vs frozen) and should be kept separate, but output has two separate entries which is correct",
       "inputItems": [
-        "spinach (0.5 cup, produce)",
-        "spinach (16 oz, frozen)"
+        "spinach (0.5 cup produce)",
+        "spinach (16 oz frozen)"
       ],
-      "outputItem": "spinach",
-      "suggestedFix": "Keep separate: 'spinach' (0.5 cup, produce) and 'frozen spinach' (16 oz, frozen)"
+      "outputItem": "spinach (two entries)",
+      "suggestedFix": "This is correct - kept separate due to different categories"
     },
     {
       "groupIndex": 19,
@@ -1610,13 +1324,14 @@
         "Spanakopita",
         "Manicotti with Cheese Filling and Bolognese Sauce"
       ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'oregano' should be 'dried oregano' to preserve the product-form qualifier",
+      "issueType": "missed_merge",
+      "description": "Input had 'parsley' (2.5 cup) and 'flat-leaf parsley' (2 bunch). Output shows only 'parsley' with 2.5 cup and sourceRecipes including both recipes. The 2 bunch was lost in the merge",
       "inputItems": [
-        "dried oregano"
+        "parsley (2.5 cup)",
+        "flat-leaf parsley (2 bunch)"
       ],
-      "outputItem": "oregano",
-      "suggestedFix": "Keep 'dried oregano' to distinguish from fresh oregano"
+      "outputItem": "parsley",
+      "suggestedFix": "Should show 'parsley' with mixed units: '2.5 cup + 2 bunch' or convert/note the quantity properly"
     },
     {
       "groupIndex": 19,
@@ -1626,13 +1341,14 @@
         "Spanakopita",
         "Manicotti with Cheese Filling and Bolognese Sauce"
       ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'basil' should be 'dried basil' to preserve the product-form qualifier",
+      "issueType": "missed_merge",
+      "description": "Input had 'onion' (1 from Lentil Soup) and 'yellow onion' (1 from Spanakopita). Output merged them to 2 total, which is correct",
       "inputItems": [
-        "dried basil"
+        "onion",
+        "yellow onion"
       ],
-      "outputItem": "basil",
-      "suggestedFix": "Keep 'dried basil' to distinguish from fresh basil"
+      "outputItem": "onion",
+      "suggestedFix": "This is correct - properly merged"
     },
     {
       "groupIndex": 19,
@@ -1642,45 +1358,841 @@
         "Spanakopita",
         "Manicotti with Cheese Filling and Bolognese Sauce"
       ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'feta' should be 'feta cheese' to maintain clarity",
+      "issueType": "missed_merge",
+      "description": "Input had 'olive oil' (0.75 cup), 'olive oil' (continued in Lentil Soup), and 'extra virgin olive oil' (2 tbsp and 1 cup from Spanakopita). Output merged all to 1.875 cup. Calculation: 0.75 + (2 tbsp = 0.125 cup) + 1 = 1.875 cup, which is correct",
       "inputItems": [
-        "feta cheese"
+        "olive oil",
+        "extra virgin olive oil"
       ],
-      "outputItem": "feta",
-      "suggestedFix": "Keep full name 'feta cheese' for clarity"
+      "outputItem": "olive oil",
+      "suggestedFix": "This is correct - properly merged and converted"
     },
     {
-      "groupIndex": 19,
+      "groupIndex": 20,
       "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
+        "Fried Chicken",
+        "Pickled Deviled Eggs",
+        "Buttermilk Pancakes",
+        "Vegetable Pakora",
+        "Caesar Salad"
       ],
-      "issueType": "name_cleaning",
-      "description": "Output name 'dill' should be 'dried dill' to preserve the product-form qualifier",
+      "issueType": "wrong_merge",
+      "description": "Dijon mustard (capital D) and dijon mustard (lowercase d) were merged, but these should be treated as the same ingredient regardless of capitalization differences.",
       "inputItems": [
-        "dried dill weed"
+        "Dijon mustard",
+        "dijon mustard"
       ],
-      "outputItem": "dill",
-      "suggestedFix": "Keep 'dried dill' to distinguish from fresh dill"
+      "outputItem": "Dijon mustard",
+      "suggestedFix": "This is actually correct - they were properly merged. No issue."
     },
     {
-      "groupIndex": 19,
+      "groupIndex": 20,
       "recipes": [
-        "Tabbouleh Wrap",
-        "Lentil Soup",
-        "Spanakopita",
-        "Manicotti with Cheese Filling and Bolognese Sauce"
+        "Fried Chicken",
+        "Pickled Deviled Eggs",
+        "Buttermilk Pancakes",
+        "Vegetable Pakora",
+        "Caesar Salad"
+      ],
+      "issueType": "quantity_error",
+      "description": "Dijon mustard quantities not properly summed. Input had 2 tsp from Pickled Deviled Eggs and 1 tbsp from Caesar Salad. Output shows 1 tbsp total, but should be 3 tbsp (2 tsp = 0.67 tbsp + 1 tbsp = 1.67 tbsp, or convert 1 tbsp to 3 tsp and add to 2 tsp = 5 tsp).",
+      "inputItems": [
+        "Dijon mustard (2 tsp)",
+        "dijon mustard (1 tbsp)"
+      ],
+      "outputItem": "Dijon mustard (1 tbsp)",
+      "suggestedFix": "totalQuantity should be 5 tsp or approximately 1.67 tbsp"
+    },
+    {
+      "groupIndex": 20,
+      "recipes": [
+        "Fried Chicken",
+        "Pickled Deviled Eggs",
+        "Buttermilk Pancakes",
+        "Vegetable Pkora",
+        "Caesar Salad"
+      ],
+      "issueType": "unit_error",
+      "description": "Salt quantities with different units were merged. Input had null unit from Fried Chicken/Caesar Salad, 0.75 tsp from Buttermilk Pancakes/Vegetable Pakora, and 1.5 tbsp (=4.5 tsp) from kosher salt. Output shows 5.25 tsp, but kosher salt (1.5 tbsp) was included despite being a different specific type.",
+      "inputItems": [
+        "salt (null unit)",
+        "salt (0.75 tsp)",
+        "kosher salt (1.5 tbsp)"
+      ],
+      "outputItem": "salt (5.25 tsp)",
+      "suggestedFix": "Keep kosher salt separate, or clearly note it was converted and merged"
+    },
+    {
+      "groupIndex": 20,
+      "recipes": [
+        "Fried Chicken",
+        "Pickled Deviled Eggs",
+        "Buttermilk Pancakes",
+        "Vegetable Pakora",
+        "Caesar Salad"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Black pepper, ground black pepper, and black peppercorn were merged into 'black pepper'. Black peppercorn is whole peppercorns (used for pickling) and should remain separate from ground black pepper.",
+      "inputItems": [
+        "black pepper (null)",
+        "ground black pepper (0.5 tsp)",
+        "black peppercorn (1 tsp)"
+      ],
+      "outputItem": "black pepper (1.5 tsp)",
+      "suggestedFix": "Keep 'black peppercorn' separate with its own entry"
+    },
+    {
+      "groupIndex": 21,
+      "recipes": [
+        "Long-Cooked Broccoli",
+        "Cauliflower Steaks and Puree with Walnut Caper Salsa",
+        "Teriyaki Salmon"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Salt and kosher salt were merged together. While they are semantically similar, kosher salt was specifically called for in one recipe and should be noted or kept separate.",
+      "inputItems": [
+        "salt (null)",
+        "kosher salt (null)"
+      ],
+      "outputItem": "salt (null)",
+      "suggestedFix": "Either keep separate or note in sourceRecipes that kosher salt was specified"
+    },
+    {
+      "groupIndex": 21,
+      "recipes": [
+        "Long-Cooked Broccoli",
+        "Cauliflower Steaks and Puree with Walnut Caper Salsa",
+        "Teriyaki Salmon"
+      ],
+      "issueType": "unit_error",
+      "description": "Lemon zest inputs had different units: 1 tsp and 2 strip. Output shows 3 tsp, but 'strip' cannot be directly converted to tsp without knowing strip size. This is an invalid unit conversion.",
+      "inputItems": [
+        "lemon zest (1 tsp)",
+        "lemon zest (2 strip)"
+      ],
+      "outputItem": "lemon zest (3 tsp)",
+      "suggestedFix": "Either keep separate, use a neutral unit, or note that units are incompatible"
+    },
+    {
+      "groupIndex": 23,
+      "recipes": [
+        "Grilled Pork Chops",
+        "Macaroni and Cheese",
+        "Mapo Tofu",
+        "Korean BBQ Short Ribs",
+        "Chicken Pot Pie"
+      ],
+      "issueType": "unit_error",
+      "description": "Garlic inputs had different units: 5 clove and 1.5 tbsp. Output shows 6.5 tbsp, suggesting 5 cloves were converted to tbsp, but this conversion is questionable (5 cloves ≈ 5 tsp ≈ 1.67 tbsp, not 5 tbsp).",
+      "inputItems": [
+        "garlic (5 clove)",
+        "garlic (1.5 tbsp)"
+      ],
+      "outputItem": "garlic (6.5 tbsp)",
+      "suggestedFix": "Correct conversion: 5 cloves ≈ 1.67 tbsp, total should be approximately 3.17 tbsp or keep units separate"
+    },
+    {
+      "groupIndex": 23,
+      "recipes": [
+        "Grilled Pork Chops",
+        "Macaroni and Cheese",
+        "Mapo Tofu",
+        "Korean BBQ Short Ribs",
+        "Chicken Pot Pie"
+      ],
+      "issueType": "unit_error",
+      "description": "Butter inputs had different units: 8 tbsp (unsalted) and 0.33 cup. Output shows 8.33 cup, but this is wrong. 8 tbsp = 0.5 cup, so total should be 0.83 cup, not 8.33 cup.",
+      "inputItems": [
+        "unsalted butter (8 tbsp)",
+        "butter (0.33 cup)"
+      ],
+      "outputItem": "butter (8.33 cup)",
+      "suggestedFix": "totalQuantity should be 0.83 cup (0.5 + 0.33)"
+    },
+    {
+      "groupIndex": 23,
+      "recipes": [
+        "Grilled Pork Chops",
+        "Macaroni and Cheese",
+        "Mapo Tofu",
+        "Korean BBQ Short Ribs",
+        "Chicken Pot Pie"
+      ],
+      "issueType": "unit_error",
+      "description": "Ginger inputs had different units: 1 tbsp and 0.5 tsp. Output shows 1.17 tbsp total, but 0.5 tsp = 0.17 tbsp is correct conversion, giving 1.17 tbsp. However, this seems suspicious - verify the conversion.",
+      "inputItems": [
+        "ginger (1 tbsp)",
+        "ginger (0.5 tsp)"
+      ],
+      "outputItem": "ginger (1.17 tbsp)",
+      "suggestedFix": "Conversion appears correct: 0.5 tsp ≈ 0.167 tbsp, total ≈ 1.17 tbsp"
+    },
+    {
+      "groupIndex": 23,
+      "recipes": [
+        "Grilled Pork Chops",
+        "Macaroni and Cheese",
+        "Mapo Tofu",
+        "Korean BBQ Short Ribs",
+        "Chicken Pot Pie"
+      ],
+      "issueType": "missed_merge",
+      "description": "Scallion and green onion both appear in output separately, but they are the same ingredient and should be merged.",
+      "inputItems": [
+        "scallion (0.25 cup)"
+      ],
+      "outputItem": "green onion (0.25 cup)",
+      "suggestedFix": "These were actually already correctly represented - only scallion appeared in input for Mapo Tofu and was renamed to green onion in output. No issue."
+    },
+    {
+      "groupIndex": 23,
+      "recipes": [
+        "Grilled Pork Chops",
+        "Macaroni and Cheese",
+        "Mapo Tofu",
+        "Korean BBQ Short Ribs",
+        "Chicken Pot Pie"
+      ],
+      "issueType": "unit_error",
+      "description": "Onion inputs had mixed units: 2.5 oz and 0.33 cup. Output shows 2.83 oz, but cannot add oz to cup directly without density conversion. This is invalid.",
+      "inputItems": [
+        "onion (2.5 oz)",
+        "onion (0.33 cup)"
+      ],
+      "outputItem": "onion (2.83 oz)",
+      "suggestedFix": "Keep units separate or use a common unit like 'whole' onions"
+    },
+    {
+      "groupIndex": 24,
+      "recipes": [
+        "Fettuccine Alfredo",
+        "Dip",
+        "Bolognese"
+      ],
+      "issueType": "unit_error",
+      "description": "Butter inputs had different units: 1 cup and 4 tbsp (unsalted). Output shows 20 tbsp. 1 cup = 16 tbsp, so total should be 20 tbsp. This conversion is correct.",
+      "inputItems": [
+        "butter (1 cup)",
+        "unsalted butter (4 tbsp)"
+      ],
+      "outputItem": "butter (20 tbsp)",
+      "suggestedFix": "Actually correct - 16 + 4 = 20 tbsp"
+    },
+    {
+      "groupIndex": 24,
+      "recipes": [
+        "Fettuccine Alfredo",
+        "Dip",
+        "Bolognese"
+      ],
+      "issueType": "unit_error",
+      "description": "Parmesan inputs had mixed units: 1.5 cup and 3 oz. Output shows 1.69 cup. Cannot directly convert oz to cup for cheese without density, and the math doesn't check out (3 oz ≈ 0.75 cup grated parmesan, total would be 2.25 cup, not 1.69).",
+      "inputItems": [
+        "parmesan cheese (1.5 cup)",
+        "parmesan cheese (3 oz)"
+      ],
+      "outputItem": "parmesan (1.69 cup)",
+      "suggestedFix": "Keep units separate or use weight consistently. If converting, 3 oz ≈ 0.75 cup, total ≈ 2.25 cup"
+    },
+    {
+      "groupIndex": 26,
+      "recipes": [
+        "Braised Fennel",
+        "Chicken Noodle Soup",
+        "Chicken Tacos",
+        "Chana Masala",
+        "Kung Pao Chicken"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has two separate 'onion' entries (0.5 cup and 1 unit), but output merged them incorrectly as 1.5 cups. The 1 unit onion should remain as 1 unit (or 2 units total), not be converted to cups.",
+      "inputItems": [
+        "onion (0.5 cup)",
+        "onion (1 unit)"
+      ],
+      "outputItem": "onion (1.5 cup)",
+      "suggestedFix": "Keep separate entries: 'onion' with 0.5 cup and 'onion' with 2 units, or note mixed units"
+    },
+    {
+      "groupIndex": 26,
+      "recipes": [
+        "Braised Fennel",
+        "Chicken Noodle Soup",
+        "Chicken Tacos",
+        "Chana Masala",
+        "Kung Pao Chicken"
+      ],
+      "issueType": "unit_error",
+      "description": "Input has 'olive oil' 0.25 cup and 'olive oil' 5.5 tbsp (total should be 9.5 tbsp or ~0.59 cup), but output shows 9.5 tbsp when the first input was already in cups.",
+      "inputItems": [
+        "olive oil (0.25 cup)",
+        "olive oil (5.5 tbsp)"
+      ],
+      "outputItem": "olive oil (9.5 tbsp)",
+      "suggestedFix": "Convert 0.25 cup to 4 tbsp, then total is 9.5 tbsp (correct), or express as 0.59 cup"
+    },
+    {
+      "groupIndex": 27,
+      "recipes": [
+        "Pesto Pasta",
+        "Chicken Piccata",
+        "Tomato Soup"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'garlic' with 1 tbsp and 'garlic' with 4 cloves. These have different units and should not be merged as just '1 tbsp'. The 4 cloves information is lost.",
+      "inputItems": [
+        "garlic (1 tbsp)",
+        "garlic (4 clove)"
+      ],
+      "outputItem": "garlic (1 tbsp)",
+      "suggestedFix": "Either keep separate entries or note: 'garlic' with '1 tbsp + 4 cloves' or convert to common unit"
+    },
+    {
+      "groupIndex": 27,
+      "recipes": [
+        "Pesto Pasta",
+        "Chicken Piccata",
+        "Tomato Soup"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'flour' (1 cup) and 'all-purpose flour' (2 tbsp). Output merged them as 'flour' 1.125 cup, but these may be different types (generic flour vs all-purpose). Should note variety or keep separate.",
+      "inputItems": [
+        "flour (1 cup)",
+        "all-purpose flour (2 tbsp)"
+      ],
+      "outputItem": "flour (1.125 cup)",
+      "suggestedFix": "Merge is acceptable but name should be 'all-purpose flour' or note mixed flour types"
+    },
+    {
+      "groupIndex": 27,
+      "recipes": [
+        "Pesto Pasta",
+        "Chicken Piccata",
+        "Tomato Soup"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'unsalted butter' (10 tbsp) and 'butter' (2 tbsp). Output merged as 'butter' 12 tbsp, losing the 'unsalted' qualifier which may be important for the Chicken Piccata recipe.",
+      "inputItems": [
+        "unsalted butter (10 tbsp)",
+        "butter (2 tbsp)"
+      ],
+      "outputItem": "butter (12 tbsp)",
+      "suggestedFix": "Keep as 'unsalted butter' or note variety: 'butter (mostly unsalted)'"
+    },
+    {
+      "groupIndex": 27,
+      "recipes": [
+        "Pesto Pasta",
+        "Chicken Piccata",
+        "Tomato Soup"
       ],
       "issueType": "name_cleaning",
-      "description": "Output name 'parmesan' should be 'parmesan cheese' to maintain clarity",
+      "description": "Output name 'sugar' should specify the type since input was 'white sugar'",
       "inputItems": [
+        "white sugar (2 tsp)"
+      ],
+      "outputItem": "sugar (2 tsp)",
+      "suggestedFix": "Use 'white sugar' or 'granulated sugar' to preserve specificity"
+    },
+    {
+      "groupIndex": 28,
+      "recipes": [
+        "Tortilla Soup",
+        "Cacio e Pepe",
+        "Fried Artichokes with Lemony Garlic Aioli",
+        "Pasta Primavera"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'olive oil' 4 tbsp and 'olive oil' 0.25 cup (=4 tbsp), totaling 8 tbsp or 0.5 cup. Output shows 8 tbsp which is correct, but there's a missing 0.25 cup input entry that was listed separately in the input.",
+      "inputItems": [
+        "olive oil (4 tbsp)",
+        "olive oil (0.25 cup)"
+      ],
+      "outputItem": "olive oil (8 tbsp)",
+      "suggestedFix": "Verify conversion: 4 tbsp + 0.25 cup (4 tbsp) = 8 tbsp total (appears correct)"
+    },
+    {
+      "groupIndex": 28,
+      "recipes": [
+        "Tortilla Soup",
+        "Cacio e Pepe",
+        "Fried Artichokes with Lemony Garlic Aioli",
+        "Pasta Primavera"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Input has 'yellow onion' and 'red onion' which are different varieties. Output merged 'yellow onion' as just 'onion' but kept 'red onion' separate. This is inconsistent.",
+      "inputItems": [
+        "yellow onion (1 unit)"
+      ],
+      "outputItem": "onion (1 unit)",
+      "suggestedFix": "Keep as 'yellow onion' for consistency with 'red onion' being kept as-is"
+    },
+    {
+      "groupIndex": 28,
+      "recipes": [
+        "Tortilla Soup",
+        "Cacio e Pepe",
+        "Fried Artichokes with Lemony Garlic Aioli",
+        "Pasta Primavera"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output simplified 'ground cumin' to 'cumin', losing the form specification",
+      "inputItems": [
+        "ground cumin (1.5 tsp)"
+      ],
+      "outputItem": "cumin (1.5 tsp)",
+      "suggestedFix": "Keep as 'ground cumin' since cumin can come in different forms (seed, ground)"
+    },
+    {
+      "groupIndex": 28,
+      "recipes": [
+        "Tortilla Soup",
+        "Cacio e Pepe",
+        "Fried Artichokes with Lemony Garlic Aioli",
+        "Pasta Primavera"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'kosher salt', 'sea salt', and 'salt' entries. Output merged all as 'salt' with total 2 tsp, but different salt types may not be interchangeable in some recipes.",
+      "inputItems": [
+        "kosher salt (null)",
+        "sea salt (1 tsp)",
+        "salt (1 tsp)"
+      ],
+      "outputItem": "salt (2 tsp)",
+      "suggestedFix": "Note salt varieties or keep 'kosher salt' and 'sea salt' separate from generic 'salt'"
+    },
+    {
+      "groupIndex": 28,
+      "recipes": [
+        "Tortilla Soup",
+        "Cacio e Pepe",
+        "Fried Artichokes with Lemony Garlic Aioli",
+        "Pasta Primavera"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'unsalted butter' and output changed to just 'butter', losing the unsalted specification",
+      "inputItems": [
+        "unsalted butter (3 tbsp)"
+      ],
+      "outputItem": "butter (3 tbsp)",
+      "suggestedFix": "Keep as 'unsalted butter' to preserve recipe accuracy"
+    },
+    {
+      "groupIndex": 28,
+      "recipes": [
+        "Tortilla Soup",
+        "Cacio e Pepe",
+        "Fried Artichokes with Lemony Garlic Aioli",
+        "Pasta Primavera"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output merged 'pecorino romano' and 'pecorino cheese' as just 'pecorino', but these entries should have been combined with sourceRecipes merged",
+      "inputItems": [
+        "pecorino romano (0.33 cup)",
+        "pecorino cheese (0.75 cup)"
+      ],
+      "outputItem": "pecorino (0.75 cup)",
+      "suggestedFix": "Should be 'pecorino' with totalQuantity 1.08 cup and sourceRecipes from both inputs"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'neutral oil' 1 tbsp separate from 'vegetable oil' 1.5 cup + 1 tbsp. Output merged all as 'vegetable oil' 1.56 cup, but neutral oil may not be the same as vegetable oil.",
+      "inputItems": [
+        "neutral oil (1 tbsp)",
+        "vegetable oil (1.5 cup)",
+        "vegetable oil (1 tbsp)"
+      ],
+      "outputItem": "vegetable oil (1.56 cup)",
+      "suggestedFix": "Keep 'neutral oil' separate or note that it was merged"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'scallion' with 1 cup and 'scallion' with null quantity as two separate entries. Output merged as 'green onion' 1 cup, correctly recognizing synonyms but quantities should note the null entry.",
+      "inputItems": [
+        "scallion (1 cup)",
+        "scallion (null)"
+      ],
+      "outputItem": "green onion (1 cup)",
+      "suggestedFix": "Correct merge of synonym, but quantity handling should preserve that one input had no quantity specified"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'curry leaf' (10 units) and 'curry leaves' (3 sprigs) with different units. Output merged as 'curry leaf' 10 units, losing the 3 sprigs information.",
+      "inputItems": [
+        "curry leaf (10 units)",
+        "curry leaves (3 sprigs)"
+      ],
+      "outputItem": "curry leaf (10 units)",
+      "suggestedFix": "Note mixed units: 'curry leaf' with '10 units + 3 sprigs' or convert to common unit"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'ginger' 2 tbsp and 'ginger' 2 tsp as separate entries. Output merged as 2.67 tbsp, but 2 tsp = 0.67 tbsp, so total should be 2.67 tbsp (appears correct mathematically).",
+      "inputItems": [
+        "ginger (2 tbsp)",
+        "ginger (2 tsp)"
+      ],
+      "outputItem": "ginger (2.67 tbsp)",
+      "suggestedFix": "Quantity appears correct (2 + 0.67 = 2.67 tbsp)"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output changed 'cinnamon powder' to 'cinnamon', losing form specification",
+      "inputItems": [
+        "cinnamon powder (2 tsp)"
+      ],
+      "outputItem": "cinnamon (2 tsp)",
+      "suggestedFix": "Keep as 'cinnamon powder' or 'ground cinnamon' to distinguish from cinnamon stick"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output changed 'turmeric powder' to 'turmeric', losing form specification",
+      "inputItems": [
+        "turmeric powder (0.25 tsp)"
+      ],
+      "outputItem": "turmeric (0.25 tsp)",
+      "suggestedFix": "Keep as 'turmeric powder' or 'ground turmeric' to distinguish from fresh turmeric"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'kosher salt', 'salt', 'fine-grain sea salt' entries. Output merged all as 'salt' 5.5 tsp, but different salt types may not be equivalent measure-for-measure.",
+      "inputItems": [
+        "kosher salt (1 tsp)",
+        "salt (2.75 tsp)",
+        "fine-grain sea salt (0.75 tsp)",
+        "salt (null)",
+        "salt (1 tsp)"
+      ],
+      "outputItem": "salt (5.5 tsp)",
+      "suggestedFix": "Note salt variety differences or keep specialty salts (kosher, sea salt) separate from generic salt"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'ground black pepper' and 'black pepper' as separate entries. Output merged as 'black pepper' 0.25 tsp, but input 'black pepper' had null quantity in Kale Pesto Pizza.",
+      "inputItems": [
+        "ground black pepper (0.25 tsp)",
+        "black pepper (null)"
+      ],
+      "outputItem": "black pepper (0.25 tsp)",
+      "suggestedFix": "Quantity should note at least 0.25 tsp + unspecified amount"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output changed 'low-moisture part-skim mozzarella cheese' to just 'mozzarella', losing important product specifications",
+      "inputItems": [
+        "low-moisture part-skim mozzarella cheese (2 cup)"
+      ],
+      "outputItem": "mozzarella (2 cup)",
+      "suggestedFix": "Simplification is acceptable, but could keep 'part-skim mozzarella' for accuracy"
+    },
+    {
+      "groupIndex": 29,
+      "recipes": [
+        "Palak Paneer",
+        "Microwave Mushroom Cheung Fun",
+        "Vindaloo",
+        "Gobi 65",
+        "Kale Pesto Pizza"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Input has 'olive oil' 1 tsp and 'olive oil' 0.5 cup. Output shows 0.52 cup, but 1 tsp = 0.021 cup, so 0.5 + 0.021 = 0.521 cup (rounded to 0.52 appears correct).",
+      "inputItems": [
+        "olive oil (1 tsp)",
+        "olive oil (0.5 cup)"
+      ],
+      "outputItem": "olive oil (0.52 cup)",
+      "suggestedFix": "Quantity appears correct"
+    },
+    {
+      "groupIndex": 30,
+      "recipes": [
+        "Aglio e Olio",
+        "Chocolate Guinness Cake",
+        "Artichoke Soup with Pesto"
+      ],
+      "issueType": "missed_merge",
+      "description": "Two butter items with different names should have been merged together",
+      "inputItems": [
+        "butter",
+        "unsalted butter"
+      ],
+      "outputItem": "butter",
+      "suggestedFix": "Merge both butter items into single output with totalQuantity: 10, unit: 'tbsp', sourceRecipes: ['Chocolate Guinness Cake']"
+    },
+    {
+      "groupIndex": 30,
+      "recipes": [
+        "Aglio e Olio",
+        "Chocolate Guinness Cake",
+        "Artichoke Soup with Pesto"
+      ],
+      "issueType": "quantity_error",
+      "description": "Olive oil quantity incorrectly calculated - should be 0.5 cup + 4 tbsp (0.25 cup) = 0.75 cup total",
+      "inputItems": [
+        "extra-virgin olive oil"
+      ],
+      "outputItem": "olive oil",
+      "suggestedFix": "totalQuantity should be 0.75 (which matches output, but unit conversion from tbsp to cup needs verification)"
+    },
+    {
+      "groupIndex": 31,
+      "recipes": [
+        "Caprese",
+        "Carnitas",
+        "Cornbread",
+        "Pound Cake"
+      ],
+      "issueType": "source_recipes_error",
+      "description": "Salt output missing 'Caprese' in sourceRecipes despite 'sea salt' being from Caprese",
+      "inputItems": [
+        "sea salt",
+        "salt"
+      ],
+      "outputItem": "salt",
+      "suggestedFix": "sourceRecipes should include 'Caprese' since sea salt is a form of salt"
+    },
+    {
+      "groupIndex": 32,
+      "recipes": [
+        "Grilled Shrimp Skewers",
+        "Cantonese Soy Sauce Pan-Fried Noodles",
+        "Atlantic Beach Pie",
+        "Brownies",
+        "Beer Can Chicken"
+      ],
+      "issueType": "unit_error",
+      "description": "Salt combined with mixed units (tsp and tbsp) resulting in incorrect 2 tbsp total - should convert 1 tsp + 1 tbsp to common unit",
+      "inputItems": [
+        "salt",
+        "kosher salt",
+        "flaky sea salt"
+      ],
+      "outputItem": "salt",
+      "suggestedFix": "Convert all salt quantities to common unit before summing: 1 tsp (Grilled Shrimp) + 1 tsp (Cantonese) + 1 tsp (Brownies) + null (Atlantic Beach kosher/flaky) + 1 tbsp (Beer Can) = should be 1 tbsp + 3 tsp = 2 tbsp (correct) but input shows separate entries"
+    },
+    {
+      "groupIndex": 32,
+      "recipes": [
+        "Grilled Shrimp Skewers",
+        "Cantonese Soy Sauce Pan-Fried Noodles",
+        "Atlantic Beach Pie",
+        "Brownies",
+        "Beer Can Chicken"
+      ],
+      "issueType": "quantity_error",
+      "description": "Butter quantities incorrectly summed - input shows 0.5 cup (unsalted) + 0.5 cup (butter) + 3 tbsp (butter) but output shows 1.19 cup",
+      "inputItems": [
+        "butter",
+        "unsalted butter"
+      ],
+      "outputItem": "butter",
+      "suggestedFix": "Should be 0.5 cup + 0.5 cup + 3 tbsp (0.1875 cup) = 1.1875 cup, not 1.19 cup"
+    },
+    {
+      "groupIndex": 32,
+      "recipes": [
+        "Grilled Shrimp Skewers",
+        "Cantonese Soy Sauce Pan-Fried Noodles",
+        "Atlantic Beach Pie",
+        "Brownies",
+        "Beer Can Chicken"
+      ],
+      "issueType": "unit_error",
+      "description": "Olive oil combined with mixed units (cup and tbsp) without proper conversion - 0.33 cup + 2 tbsp should equal 0.46 cup",
+      "inputItems": [
+        "olive oil"
+      ],
+      "outputItem": "olive oil",
+      "suggestedFix": "Conversion appears correct: 0.33 cup + 2 tbsp (0.125 cup) = 0.455 cup ≈ 0.46 cup"
+    },
+    {
+      "groupIndex": 33,
+      "recipes": [
+        "Falafel",
+        "Scones",
+        "Split Pea Soup"
+      ],
+      "issueType": "quantity_error",
+      "description": "Flour quantities incorrectly calculated - input shows 4 tsp + 2 cup but output shows 2.25 cup",
+      "inputItems": [
+        "flour",
+        "all-purpose flour"
+      ],
+      "outputItem": "flour",
+      "suggestedFix": "4 tsp = 0.083 cup, so total should be 2 cup + 0.083 cup = 2.083 cup, not 2.25 cup"
+    },
+    {
+      "groupIndex": 33,
+      "recipes": [
+        "Falafel",
+        "Scones",
+        "Split Pea Soup"
+      ],
+      "issueType": "source_recipes_error",
+      "description": "Sugar output lists 'Scones' twice in sourceRecipes",
+      "inputItems": [
+        "granulated sugar",
+        "coarse sugar"
+      ],
+      "outputItem": "sugar",
+      "suggestedFix": "sourceRecipes should be ['Scones'] without duplication"
+    },
+    {
+      "groupIndex": 34,
+      "recipes": [
+        "Mom's Korokke (Croquette)",
+        "Trout Amandine",
+        "Fish Tacos",
+        "Shakshuka"
+      ],
+      "issueType": "wrong_merge",
+      "description": "Neutral oil and vegetable oil merged together - these might be the same but input has both 'neutral oil' entries totaling 4 cup + 1 tbsp",
+      "inputItems": [
+        "neutral oil",
+        "vegetable oil"
+      ],
+      "outputItem": "vegetable oil",
+      "suggestedFix": "If merging is correct (neutral oil = vegetable oil), quantity should be 4 cup + 1 tbsp (0.0625 cup) + 4 tbsp (0.25 cup) = 4.3125 cup, not 4.25 cup"
+    },
+    {
+      "groupIndex": 35,
+      "recipes": [
+        "Chocolate Chip Cookies",
+        "Chimichurri Steak",
+        "Steak",
+        "Coleslaw",
+        "Sticky and Spicy Baked Cauliflower"
+      ],
+      "issueType": "missed_merge",
+      "description": "Input items 'green onion' and 'scallion' refer to the same ingredient but were not merged",
+      "inputItems": [
+        "green onion",
+        "scallion"
+      ],
+      "outputItem": "green onion",
+      "suggestedFix": "Merge both into a single 'green onion' or 'scallion' item with combined quantities and sourceRecipes from both Coleslaw and Sticky and Spicy Baked Cauliflower"
+    },
+    {
+      "groupIndex": 35,
+      "recipes": [
+        "Chocolate Chip Cookies",
+        "Chimichurri Steak",
+        "Steak",
+        "Coleslaw",
+        "Sticky and Spicy Baked Cauliflower"
+      ],
+      "issueType": "name_cleaning",
+      "description": "Output name 'sugar' is missing the qualifier 'white' which distinguishes it from 'brown sugar'",
+      "inputItems": [
+        "white sugar"
+      ],
+      "outputItem": "sugar",
+      "suggestedFix": "Keep name as 'white sugar' to distinguish from 'brown sugar'"
+    },
+    {
+      "groupIndex": 35,
+      "recipes": [
+        "Chocolate Chip Cookies",
+        "Chimichurri Steak",
+        "Steak",
+        "Coleslaw",
+        "Sticky and Spicy Baked Cauliflower"
+      ],
+      "issueType": "quantity_error",
+      "description": "Input 'butter' (1 cup) and 'unsalted butter' (8 tbsp = 0.5 cup) should sum to 1.5 cups, which matches output, but the merge is semantically correct",
+      "inputItems": [
+        "butter",
+        "unsalted butter"
+      ],
+      "outputItem": "butter",
+      "suggestedFix": "No fix needed - quantity is correct at 1.5 cups"
+    },
+    {
+      "groupIndex": 36,
+      "recipes": [
+        "Spaghetti Carbonara",
+        "Elote",
+        "Chicken Shawarma"
+      ],
+      "issueType": "unit_error",
+      "description": "Input 'parmesan cheese' quantities of 0.5 cup and 2 tbsp were merged, but different units were not properly converted - output shows 0.625 cup which assumes conversion but 2 tbsp = 0.125 cup, so 0.5 + 0.125 = 0.625 is correct",
+      "inputItems": [
+        "parmesan cheese",
         "parmesan cheese"
       ],
       "outputItem": "parmesan",
-      "suggestedFix": "Keep full name 'parmesan cheese' for clarity"
+      "suggestedFix": "No fix needed - conversion and sum are correct"
     }
   ]
 }

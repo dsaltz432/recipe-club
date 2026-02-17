@@ -60,6 +60,8 @@ Your tasks:
    - "fresh ginger" ≠ "ground ginger" (different forms — keep separate)
    - "dried oregano" ≠ "fresh oregano" (different products — keep "dried" prefix)
    - "canola oil" ≠ "vegetable oil" (different products)
+   - "black peppercorn" ≠ "black pepper" (whole peppercorns ≠ ground pepper - keep separate)
+   - "cinnamon stick" ≠ "cinnamon" / "ground cinnamon" (different forms - keep separate)
 3. If no merges are needed, return items unchanged.
 
 ## MUST-MERGE ingredient variants (same grocery item):
@@ -84,7 +86,7 @@ Your tasks:
 - 1 cup = 16 tbsp = 48 tsp
 - 1 lb = 16 oz
 - When BOTH items have convertible units (tsp/tbsp, cup/tbsp, oz/lb), convert to the smaller unit, sum, then express in the larger unit if the result is clean (e.g. 6 tsp → 2 tbsp)
-- When units are INCOMPATIBLE and cannot be converted (e.g. "clove" vs "tsp", "bunch" vs "tsp", "piece" vs "tbsp"), use the unit from the item with the larger quantity. Do NOT simply add the numbers together — the smaller quantity's number should be dropped or estimated.
+- When units are INCOMPATIBLE and cannot be converted (e.g. "clove" vs "tsp", "bunch" vs "tsp", "piece" vs "tbsp", "strip" vs "tsp"), use the unit from the item with the larger quantity. Do NOT simply add the numbers together — the smaller quantity's number should be dropped or estimated.
 - When one item has a unit and another has null unit, keep the unit and add the quantities.
 
 ## Rules:

@@ -17885,20 +17885,20 @@
       },
       {
         "name": "salt",
-        "totalQuantity": 2.25,
-        "unit": "tbsp",
+        "totalQuantity": 5.25,
+        "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
           "Fried Chicken",
           "Caesar Salad",
+          "Pickled Deviled Eggs",
           "Buttermilk Pancakes",
-          "Vegetable Pakora",
-          "Pickled Deviled Eggs"
+          "Vegetable Pakora"
         ]
       },
       {
         "name": "black pepper",
-        "totalQuantity": 0.5,
+        "totalQuantity": 1.5,
         "unit": "tsp",
         "category": "spices",
         "sourceRecipes": [
@@ -18677,7 +18677,7 @@
       },
       {
         "name": "lemon zest",
-        "totalQuantity": 1,
+        "totalQuantity": 3,
         "unit": "tsp",
         "category": "produce",
         "sourceRecipes": [
@@ -19274,8 +19274,8 @@
       },
       {
         "name": "sugar",
-        "totalQuantity": 1.5,
-        "unit": "cup",
+        "totalQuantity": 2,
+        "unit": "tbsp",
         "category": "pantry",
         "sourceRecipes": [
           "Cinnamon Rolls",
@@ -19311,7 +19311,7 @@
       },
       {
         "name": "butter",
-        "totalQuantity": 0.58,
+        "totalQuantity": 0.5800000000000001,
         "unit": "cup",
         "category": "dairy",
         "sourceRecipes": [
@@ -20378,7 +20378,7 @@
       },
       {
         "name": "onion",
-        "totalQuantity": 3.16,
+        "totalQuantity": 2.83,
         "unit": "oz",
         "category": "produce",
         "sourceRecipes": [
@@ -20825,7 +20825,7 @@
       },
       {
         "name": "butter",
-        "totalQuantity": 17,
+        "totalQuantity": 20,
         "unit": "tbsp",
         "category": "dairy",
         "sourceRecipes": [
@@ -22440,7 +22440,7 @@
         ]
       },
       {
-        "name": "cumin",
+        "name": "cumin powder",
         "totalQuantity": 3,
         "unit": "tsp",
         "category": "spices",
@@ -22568,7 +22568,7 @@
         ]
       },
       {
-        "name": "coriander",
+        "name": "coriander powder",
         "totalQuantity": 1,
         "unit": "tsp",
         "category": "spices",
@@ -22586,7 +22586,7 @@
         ]
       },
       {
-        "name": "turmeric",
+        "name": "turmeric powder",
         "totalQuantity": 0.5,
         "unit": "tsp",
         "category": "spices",
@@ -23921,7 +23921,7 @@
       }
     ],
     "preCombinedCount": 65,
-    "combinedCount": 54,
+    "combinedCount": 53,
     "preCombined": [
       {
         "name": "spinach",
@@ -24774,7 +24774,7 @@
         ]
       },
       {
-        "name": "cinnamon powder",
+        "name": "cinnamon",
         "totalQuantity": 2,
         "unit": "tsp",
         "category": "spices",
@@ -24819,7 +24819,7 @@
         ]
       },
       {
-        "name": "turmeric powder",
+        "name": "turmeric",
         "totalQuantity": 0.25,
         "unit": "tsp",
         "category": "spices",
@@ -24860,7 +24860,8 @@
         "unit": null,
         "category": "produce",
         "sourceRecipes": [
-          "Vindaloo"
+          "Vindaloo",
+          "Gobi 65"
         ]
       },
       {
@@ -24937,15 +24938,6 @@
         ]
       },
       {
-        "name": "curry leaves",
-        "totalQuantity": 3,
-        "unit": "sprig",
-        "category": "produce",
-        "sourceRecipes": [
-          "Gobi 65"
-        ]
-      },
-      {
         "name": "green chili",
         "totalQuantity": 2,
         "unit": null,
@@ -24992,7 +24984,7 @@
       },
       {
         "name": "olive oil",
-        "totalQuantity": 0.53,
+        "totalQuantity": 0.52,
         "unit": "cup",
         "category": "pantry",
         "sourceRecipes": [
@@ -26098,7 +26090,7 @@
       }
     ],
     "preCombinedCount": 46,
-    "combinedCount": 0,
+    "combinedCount": 37,
     "preCombined": [
       {
         "name": "olive oil",
@@ -26517,8 +26509,349 @@
         ]
       }
     ],
-    "combined": [],
-    "error": "Edge function error 500: {\"success\":false,\"error\":\"AI API error: 400 - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\\\"},\\\"request_id\\\":\\\"req_011CYCsbmYJ6cQURtYcFLRTv\\\"}\"}"
+    "combined": [
+      {
+        "name": "olive oil",
+        "totalQuantity": 0.46,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers",
+          "Beer Can Chicken"
+        ]
+      },
+      {
+        "name": "tomato sauce",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 3,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "red wine vinegar",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "basil",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers",
+          "Cantonese Soy Sauce Pan-Fried Noodles",
+          "Brownies",
+          "Atlantic Beach Pie",
+          "Beer Can Chicken"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "shrimp",
+        "totalQuantity": 2,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "skewer",
+        "totalQuantity": 6,
+        "unit": null,
+        "category": "other",
+        "sourceRecipes": [
+          "Grilled Shrimp Skewers"
+        ]
+      },
+      {
+        "name": "bean sprout",
+        "totalQuantity": 1.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "soy sauce",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "dark soy sauce",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "sesame oil",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "sugar",
+        "totalQuantity": 1.19,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles",
+          "Atlantic Beach Pie",
+          "Brownies"
+        ]
+      },
+      {
+        "name": "shaoxing rice wine",
+        "totalQuantity": 0.5,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "white pepper",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "Hong Kong style egg noodles",
+        "totalQuantity": 8,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 3,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cantonese Soy Sauce Pan-Fried Noodles"
+        ]
+      },
+      {
+        "name": "saltine cracker",
+        "totalQuantity": 7,
+        "unit": "oz",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Atlantic Beach Pie"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 1.19,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Atlantic Beach Pie",
+          "Brownies"
+        ]
+      },
+      {
+        "name": "egg yolk",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Atlantic Beach Pie"
+        ]
+      },
+      {
+        "name": "sweetened condensed milk",
+        "totalQuantity": 14,
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Atlantic Beach Pie"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Atlantic Beach Pie"
+        ]
+      },
+      {
+        "name": "whipped cream",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "dairy",
+        "sourceRecipes": [
+          "Atlantic Beach Pie"
+        ]
+      },
+      {
+        "name": "lemon zest",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Atlantic Beach Pie"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "vanilla extract",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "unsweetened cocoa powder",
+        "totalQuantity": 0.52,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "baking powder",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "honey",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "confectioners' sugar",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Brownies"
+        ]
+      },
+      {
+        "name": "whole chicken",
+        "totalQuantity": 4,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Beer Can Chicken"
+        ]
+      },
+      {
+        "name": "beer",
+        "totalQuantity": 0.5,
+        "unit": "can",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Beer Can Chicken"
+        ]
+      },
+      {
+        "name": "thyme",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Beer Can Chicken"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Beer Can Chicken"
+        ]
+      }
+    ]
   },
   {
     "groupIndex": 33,
@@ -26534,7 +26867,7 @@
       }
     ],
     "preCombinedCount": 40,
-    "combinedCount": 0,
+    "combinedCount": 37,
     "preCombined": [
       {
         "name": "dried chickpea",
@@ -26901,8 +27234,348 @@
         ]
       }
     ],
-    "combined": [],
-    "error": "Edge function error 500: {\"success\":false,\"error\":\"AI API error: 400 - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\\\"},\\\"request_id\\\":\\\"req_011CYCsbn6XgUKDUCgiSmcfu\\\"}\"}"
+    "combined": [
+      {
+        "name": "dried chickpea",
+        "totalQuantity": 8,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 6,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 6,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel",
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "coriander",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 2.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Falafel",
+          "Scones",
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "baking powder",
+        "totalQuantity": 3,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Falafel",
+          "Scones"
+        ]
+      },
+      {
+        "name": "flour",
+        "totalQuantity": 2.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Falafel",
+          "Scones"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 9,
+        "unit": "tbsp",
+        "category": "other",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "tahini",
+        "totalQuantity": 4,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "pita bread",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "tabbouleh",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "other",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "hummus",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "other",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "lettuce",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "tomato",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Falafel",
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "sugar",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Scones",
+          "Scones"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Scones"
+        ]
+      },
+      {
+        "name": "heavy cream",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Scones"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Scones"
+        ]
+      },
+      {
+        "name": "vanilla extract",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Scones"
+        ]
+      },
+      {
+        "name": "chocolate chip",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Scones"
+        ]
+      },
+      {
+        "name": "bacon",
+        "totalQuantity": 6,
+        "unit": "slice",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "smoked ham hock",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "smoked paprika",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "leek",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "carrot",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "dried split green pea",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "thyme",
+        "totalQuantity": 2,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "chicken stock",
+        "totalQuantity": 8,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": null,
+        "unit": "piece",
+        "category": "produce",
+        "sourceRecipes": [
+          "Split Pea Soup"
+        ]
+      }
+    ]
   },
   {
     "groupIndex": 34,
@@ -26921,7 +27594,7 @@
       }
     ],
     "preCombinedCount": 47,
-    "combinedCount": 0,
+    "combinedCount": 41,
     "preCombined": [
       {
         "name": "russet potato",
@@ -27353,8 +28026,388 @@
         ]
       }
     ],
-    "combined": [],
-    "error": "Edge function error 500: {\"success\":false,\"error\":\"AI API error: 400 - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\\\"},\\\"request_id\\\":\\\"req_011CYCsbnfWeWmt9zsgvsvYv\\\"}\"}"
+    "combined": [
+      {
+        "name": "russet potato",
+        "totalQuantity": 2,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 4.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)",
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "ground beef",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 2.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)",
+          "Fish Tacos",
+          "Shakshuka",
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)",
+          "Shakshuka",
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 0.56,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)",
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)",
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "panko",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)",
+          "Trout Amandine",
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "tonkatsu sauce",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "condiments",
+        "sourceRecipes": [
+          "Mom's Korokke (Croquette)"
+        ]
+      },
+      {
+        "name": "sliced almond",
+        "totalQuantity": 0.75,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "milk",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "trout fillet",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": 0.5,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "thyme",
+        "totalQuantity": 4,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Trout Amandine"
+        ]
+      },
+      {
+        "name": "white fish fillet",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "chili powder",
+        "totalQuantity": 2.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "sour cream",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "mayonnaise",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "lime juice",
+        "totalQuantity": 3.5,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "hot sauce",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "red cabbage",
+        "totalQuantity": 0.5,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "corn or flour tortilla",
+        "totalQuantity": 12,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "avocado",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "radish",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Fish Tacos"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 3,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Fish Tacos",
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "red onion",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 1,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "red bell pepper",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "tomato",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "totalQuantity": 14,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "tomato paste",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "chicken broth",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "paprika",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      },
+      {
+        "name": "pita bread",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Shakshuka"
+        ]
+      }
+    ]
   },
   {
     "groupIndex": 35,
@@ -27376,7 +28429,7 @@
       }
     ],
     "preCombinedCount": 41,
-    "combinedCount": 0,
+    "combinedCount": 36,
     "preCombined": [
       {
         "name": "butter",
@@ -27751,8 +28804,340 @@
         ]
       }
     ],
-    "combined": [],
-    "error": "Edge function error 500: {\"success\":false,\"error\":\"AI API error: 400 - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\\\"},\\\"request_id\\\":\\\"req_011CYCsbo4KqCcuXBpD1SuQG\\\"}\"}"
+    "combined": [
+      {
+        "name": "butter",
+        "totalQuantity": 1.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies",
+          "Chimichurri Steak"
+        ]
+      },
+      {
+        "name": "sugar",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "brown sugar",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "vanilla extract",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "baking soda",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "other",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies",
+          "Chimichurri Steak",
+          "Steak",
+          "Coleslaw",
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 4,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies",
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "semisweet chocolate chip",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "walnut",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chocolate Chip Cookies"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 3,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chimichurri Steak"
+        ]
+      },
+      {
+        "name": "red chili",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chimichurri Steak"
+        ]
+      },
+      {
+        "name": "red wine vinegar",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chimichurri Steak"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chimichurri Steak"
+        ]
+      },
+      {
+        "name": "fresh oregano",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chimichurri Steak"
+        ]
+      },
+      {
+        "name": "ribeye steak",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Steak"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.625,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Steak",
+          "Coleslaw"
+        ]
+      },
+      {
+        "name": "rosemary",
+        "totalQuantity": 3,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Steak"
+        ]
+      },
+      {
+        "name": "chimichurri sauce",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "condiments",
+        "sourceRecipes": [
+          "Steak"
+        ]
+      },
+      {
+        "name": "cabbage",
+        "totalQuantity": 4,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Coleslaw"
+        ]
+      },
+      {
+        "name": "carrot",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Coleslaw"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Coleslaw",
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "mayonnaise",
+        "totalQuantity": 4,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Coleslaw"
+        ]
+      },
+      {
+        "name": "yellow mustard",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Coleslaw"
+        ]
+      },
+      {
+        "name": "cider vinegar",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Coleslaw"
+        ]
+      },
+      {
+        "name": "cornstarch",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "baking powder",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "cauliflower",
+        "totalQuantity": 1,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "gochujang",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "soy sauce",
+        "totalQuantity": 3,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "pure maple syrup",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "mirin",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "rice vinegar",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "rice",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      },
+      {
+        "name": "sesame seed",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Sticky and Spicy Baked Cauliflower"
+        ]
+      }
+    ]
   },
   {
     "groupIndex": 36,
@@ -27768,7 +29153,7 @@
       }
     ],
     "preCombinedCount": 34,
-    "combinedCount": 0,
+    "combinedCount": 32,
     "preCombined": [
       {
         "name": "spaghetti",
@@ -28080,8 +29465,300 @@
         ]
       }
     ],
-    "combined": [],
-    "error": "Edge function error 500: {\"success\":false,\"error\":\"AI API error: 400 - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\\\"},\\\"request_id\\\":\\\"req_011CYCsboXMnG6JzLUGVHrC6\\\"}\"}"
+    "combined": [
+      {
+        "name": "spaghetti",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 7.28,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spaghetti Carbonara",
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "bacon",
+        "totalQuantity": 8,
+        "unit": "slice",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Spaghetti Carbonara",
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 2,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Spaghetti Carbonara",
+          "Elote"
+        ]
+      },
+      {
+        "name": "dry white wine",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "totalQuantity": 0.625,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Spaghetti Carbonara",
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Spaghetti Carbonara"
+        ]
+      },
+      {
+        "name": "cotija cheese",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "mayonnaise",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "sour cream",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "ancho chile powder",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "corn",
+        "totalQuantity": 4,
+        "unit": "ear",
+        "category": "produce",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "lime",
+        "totalQuantity": 4,
+        "unit": "piece",
+        "category": "produce",
+        "sourceRecipes": [
+          "Elote"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 0.75,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "turmeric",
+        "totalQuantity": 0.75,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "coriander",
+        "totalQuantity": 0.75,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "garlic powder",
+        "totalQuantity": 0.75,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "paprika",
+        "totalQuantity": 0.75,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "ground cloves",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "chicken thigh",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "pita pocket",
+        "totalQuantity": 6,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "tahini sauce",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "baby arugula",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "Mediterranean salad",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "other",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      },
+      {
+        "name": "pickle",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Shawarma"
+        ]
+      }
+    ]
   },
   {
     "groupIndex": 37,
@@ -28091,7 +29768,7 @@
       }
     ],
     "preCombinedCount": 8,
-    "combinedCount": 0,
+    "combinedCount": 8,
     "preCombined": [
       {
         "name": "avocado",
@@ -28166,7 +29843,79 @@
         ]
       }
     ],
-    "combined": [],
-    "error": "Edge function error 500: {\"success\":false,\"error\":\"AI API error: 400 - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\\\"},\\\"request_id\\\":\\\"req_011CYCsbozPSdpsUheXYxng7\\\"}\"}"
+    "combined": [
+      {
+        "name": "avocado",
+        "totalQuantity": 3,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "lime",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "roma tomato",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 3,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "totalQuantity": 0.13,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Guacamole"
+        ]
+      }
+    ]
   }
 ]

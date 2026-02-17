@@ -91,7 +91,7 @@
         "Typecheck passes: npm run build"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "This processes all remaining groups. Expected ~20-30 groups depending on how many recipes have ingredients. After this, we should have full coverage of all 148 parseable recipes."
     },
     {
