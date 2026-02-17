@@ -9389,5 +9389,7908 @@
         ]
       }
     ]
+  },
+  {
+    "groupIndex": 10,
+    "recipes": [
+      {
+        "name": "Rice Noodles with Garlicky Cashew Sauce"
+      },
+      {
+        "name": "Mashed Potatoes"
+      },
+      {
+        "name": "Lasagna"
+      },
+      {
+        "name": "Lamb Kebabs"
+      }
+    ],
+    "preCombinedCount": 51,
+    "combinedCount": 45,
+    "preCombined": [
+      {
+        "name": "cashew",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "rice noodles",
+        "quantity": "8",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "sesame oil",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "12",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce",
+          "Mashed Potatoes",
+          "Lasagna",
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "low sodium soy sauce",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "anchovy paste",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": "1.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce",
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "sea salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "scallion",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "sesame seed",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "baking potato",
+        "quantity": "2",
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "milk",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "sweet Italian sausage",
+        "quantity": "1",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "lean ground beef",
+        "quantity": "0.75",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "quantity": "28",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "tomato sauce",
+        "quantity": "13",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "tomato paste",
+        "quantity": "12",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "parsley",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "dried basil",
+        "quantity": "1.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "2.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna",
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "Italian seasoning",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "fennel seed",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "ground black pepper",
+        "quantity": "0.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "lasagna noodles",
+        "quantity": "12",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "ricotta cheese",
+        "quantity": "16",
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "1",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "mozzarella cheese",
+        "quantity": "0.75",
+        "unit": "lb",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "Parmesan cheese",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "lamb mince",
+        "quantity": "1",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "0.5",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "breadcrumbs",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cumin",
+        "quantity": "3",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "coriander",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "paprika",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "quantity": "1.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "quantity": "0.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "yogurt",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "flatbread",
+        "quantity": "8",
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "red cabbage",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "carrot",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "mint",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "cashew",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "rice noodles",
+        "totalQuantity": 8,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "sesame oil",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce",
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 12,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce",
+          "Mashed Potatoes",
+          "Lasagna",
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "low sodium soy sauce",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "anchovy paste",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce",
+          "Lamb Kebabs",
+          "Mashed Potatoes",
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 2.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce",
+          "Mashed Potatoes",
+          "Lasagna",
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "sesame seed",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Rice Noodles with Garlicky Cashew Sauce"
+        ]
+      },
+      {
+        "name": "baking potato",
+        "totalQuantity": 2,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "milk",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mashed Potatoes"
+        ]
+      },
+      {
+        "name": "sweet Italian sausage",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "lean ground beef",
+        "totalQuantity": 0.75,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lasagna",
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "totalQuantity": 28,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "tomato sauce",
+        "totalQuantity": 13,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "tomato paste",
+        "totalQuantity": 12,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 4,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "dried basil",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "Italian seasoning",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "fennel seed",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "lasagna noodles",
+        "totalQuantity": 12,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "ricotta cheese",
+        "totalQuantity": 16,
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "mozzarella",
+        "totalQuantity": 0.75,
+        "unit": "lb",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lasagna"
+        ]
+      },
+      {
+        "name": "lamb mince",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "breadcrumbs",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 3,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "coriander",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "paprika",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "totalQuantity": 0.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "yogurt",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "flatbread",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "red cabbage",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "carrot",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      },
+      {
+        "name": "mint",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lamb Kebabs"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 11,
+    "recipes": [
+      {
+        "name": "Stuffed Onions"
+      },
+      {
+        "name": "Chicken Pad Thai"
+      },
+      {
+        "name": "Enchiladas"
+      },
+      {
+        "name": "Chicken Tikka Masala"
+      },
+      {
+        "name": "Mysore Pak (Chickpea Fudge)"
+      }
+    ],
+    "preCombinedCount": 57,
+    "combinedCount": 49,
+    "preCombined": [
+      {
+        "name": "kosher salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "yellow onion",
+        "quantity": "3",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "sliced almond",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "saffron",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "extra-virgin olive oil",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "basmati rice",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "unsalted butter",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": "0.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "cinnamon stick",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "ground cumin",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "ground green cardamom",
+        "quantity": "0.13",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "salted pistachio",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "golden raisin",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "dried tart cherry",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "parsley",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "rice noodles",
+        "quantity": "12",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "quantity": "1",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "4",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "fish sauce",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "white wine vinegar",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "red pepper flakes",
+        "quantity": "0.125",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "bean sprout",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "green onion",
+        "quantity": "3",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "peanut",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "lemon",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "quantity": "8",
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "cheddar cheese",
+        "quantity": "1.75",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "sour cream",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "dried parsley",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "tomato sauce",
+        "quantity": "29",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "green bell pepper",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "5",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "chili powder",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "1.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "flour tortilla",
+        "quantity": "8",
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "taco sauce",
+        "quantity": "12",
+        "unit": "oz",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "ghee",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Tikka Masala",
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "ground cumin",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "ground ginger",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "ground cinnamon",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "ground turmeric",
+        "quantity": "0.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "heavy whipping cream",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "paprika",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "curry powder",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "chickpea flour",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "sugar",
+        "quantity": "1.5",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "ghee",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "salt",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 5,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "sliced almond",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "saffron",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 5,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "basmati rice",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 6,
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "cinnamon stick",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "ground green cardamom",
+        "totalQuantity": 0.13,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "salted pistachio",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "golden raisin",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "dried tart cherry",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Stuffed Onions"
+        ]
+      },
+      {
+        "name": "rice noodles",
+        "totalQuantity": 12,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "totalQuantity": 9,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Pad Thai",
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "totalQuantity": 4,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "fish sauce",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "white wine vinegar",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "red pepper flakes",
+        "totalQuantity": 0.125,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "bean sprout",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 3,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "peanut",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Pad Thai"
+        ]
+      },
+      {
+        "name": "cheddar",
+        "totalQuantity": 1.75,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "sour cream",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "dried parsley",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "tomato sauce",
+        "totalQuantity": 29,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "green bell pepper",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 5,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "chili powder",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 0.75,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Enchiladas",
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "flour tortilla",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "taco sauce",
+        "totalQuantity": 12,
+        "unit": "oz",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Enchiladas"
+        ]
+      },
+      {
+        "name": "ghee",
+        "totalQuantity": 1.19,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Tikka Masala",
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "ground ginger",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "cayenne pepper",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "turmeric",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "heavy whipping cream",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "paprika",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "curry powder",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Tikka Masala"
+        ]
+      },
+      {
+        "name": "chickpea flour",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      },
+      {
+        "name": "sugar",
+        "totalQuantity": 1.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mysore Pak (Chickpea Fudge)"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 12,
+    "recipes": [
+      {
+        "name": "Chicken Fajitas"
+      },
+      {
+        "name": "Clam Chowder"
+      },
+      {
+        "name": "Moussaka"
+      }
+    ],
+    "preCombinedCount": 55,
+    "combinedCount": 48,
+    "preCombined": [
+      {
+        "name": "chicken breast",
+        "quantity": "1.5",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "1.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Fajitas",
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "canola oil",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "bell pepper",
+        "quantity": "3",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "jalapeño",
+        "quantity": "0.5",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "4",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas",
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "lime juice",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "cumin",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "chili powder",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "flour tortilla",
+        "quantity": "12",
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "salsa",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "avocado",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "sour cream",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "iceberg lettuce",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "bacon",
+        "quantity": "6",
+        "unit": "strip",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "yellow onion",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "celery",
+        "quantity": "2",
+        "unit": "stalk",
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "hot sauce",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "worcestershire sauce",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "flour",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "chicken broth",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "half and half",
+        "quantity": "3",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "clam juice",
+        "quantity": "8",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "chicken bouillon cube",
+        "quantity": "1",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "potato",
+        "quantity": "1.25",
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "chopped clam",
+        "quantity": "19.5",
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "parsley",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "dried parsley",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "dried thyme",
+        "quantity": "0.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "smoked paprika",
+        "quantity": "0.13",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": "0.63",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "eggplant",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": null,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "breadcrumbs",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "ground lamb",
+        "quantity": "1",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "ground cinnamon",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "ground nutmeg",
+        "quantity": "0.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "paprika",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "red wine",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "diced tomato",
+        "quantity": "14",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "sugar",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "beef broth",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "0.53",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "all purpose flour",
+        "quantity": "0.67",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "2% milk",
+        "quantity": "4",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "2",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "chicken breast",
+        "totalQuantity": 1.5,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 1.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Fajitas",
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 3,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas",
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "bell pepper",
+        "totalQuantity": 3,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "jalapeño",
+        "totalQuantity": 0.5,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 4,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas",
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 3.53,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Fajitas",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "lime juice",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "chili powder",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "flour tortilla",
+        "totalQuantity": 12,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "salsa",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "avocado",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "sour cream",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "iceberg lettuce",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Fajitas"
+        ]
+      },
+      {
+        "name": "bacon",
+        "totalQuantity": 6,
+        "unit": "strip",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "celery",
+        "totalQuantity": 2,
+        "unit": "stalk",
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "hot sauce",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "worcestershire sauce",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "flour",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "chicken broth",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "half and half",
+        "totalQuantity": 3,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "clam juice",
+        "totalQuantity": 8,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "chicken bouillon cube",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "potato",
+        "totalQuantity": 1.25,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "chopped clam",
+        "totalQuantity": 19.5,
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.63,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "oregano",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder",
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "dried parsley",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "dried thyme",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "smoked paprika",
+        "totalQuantity": 0.13,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Clam Chowder"
+        ]
+      },
+      {
+        "name": "eggplant",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "breadcrumbs",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "ground lamb",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "ground nutmeg",
+        "totalQuantity": 0.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "paprika",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "red wine",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "diced tomato",
+        "totalQuantity": 14,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "sugar",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "beef broth",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "2% milk",
+        "totalQuantity": 4,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Moussaka"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 13,
+    "recipes": [
+      {
+        "name": "Lemon Bars"
+      },
+      {
+        "name": "Cobb Salad"
+      },
+      {
+        "name": "Pommes Dauphine"
+      },
+      {
+        "name": "Shortcut Banh Mi with Pickled Carrots and Daikon"
+      }
+    ],
+    "preCombinedCount": 48,
+    "combinedCount": 40,
+    "preCombined": [
+      {
+        "name": "all-purpose flour",
+        "quantity": "2.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Bars"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lemon Bars"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Bars"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "10",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Bars",
+          "Cobb Salad",
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "lemon",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lemon Bars"
+        ]
+      },
+      {
+        "name": "bacon",
+        "quantity": "6",
+        "unit": "slice",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "romaine lettuce",
+        "quantity": "0.5",
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "Boston lettuce",
+        "quantity": "0.5",
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "frisée",
+        "quantity": "1",
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "watercress",
+        "quantity": "0.5",
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "avocado",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "quantity": "0.75",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "tomato",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "chive",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "red wine vinegar",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "Dijon mustard",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "sugar",
+        "quantity": "3",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cobb Salad",
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cobb Salad",
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "0.67",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "Roquefort",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "potato",
+        "quantity": "28",
+        "unit": "oz",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "rock salt",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "5.5",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "0.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "flour",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "nutmeg",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "carrot",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "cucumber",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "daikon radish",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "rice vinegar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "sugar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": "0.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "mayonnaise",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "scallion",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "sriracha",
+        "quantity": "2.5",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "peanut oil",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "4",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "ground pork",
+        "quantity": "1",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "fish sauce",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "basil",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "lime",
+        "quantity": "1.5",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "hero roll",
+        "quantity": "6",
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "jalapeño",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "mint",
+        "quantity": null,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": null,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 3.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Bars",
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 1.34,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lemon Bars",
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "totalQuantity": 2.13,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Bars",
+          "Cobb Salad",
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 10,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Bars",
+          "Cobb Salad",
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lemon Bars"
+        ]
+      },
+      {
+        "name": "bacon",
+        "totalQuantity": 6,
+        "unit": "slice",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "romaine lettuce",
+        "totalQuantity": 0.5,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "Boston lettuce",
+        "totalQuantity": 0.5,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "frisée",
+        "totalQuantity": 1,
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "watercress",
+        "totalQuantity": 0.5,
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "avocado",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "totalQuantity": 0.75,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "tomato",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "chive",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "red wine vinegar",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "Dijon mustard",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 3,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Cobb Salad",
+          "Pommes Dauphine",
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Cobb Salad",
+          "Pommes Dauphine",
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 0.67,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "Roquefort",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cobb Salad"
+        ]
+      },
+      {
+        "name": "potato",
+        "totalQuantity": 28,
+        "unit": "oz",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "nutmeg",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Pommes Dauphine"
+        ]
+      },
+      {
+        "name": "carrot",
+        "totalQuantity": 0.75,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "cucumber",
+        "totalQuantity": 0.75,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "daikon radish",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "rice vinegar",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "mayonnaise",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 4,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "sriracha",
+        "totalQuantity": 2.5,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "peanut oil",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 4,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "ground pork",
+        "totalQuantity": 1,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "fish sauce",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "basil",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "lime",
+        "totalQuantity": 1.5,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "hero roll",
+        "totalQuantity": 6,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "jalapeño",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "mint",
+        "totalQuantity": null,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": null,
+        "unit": "sprig",
+        "category": "produce",
+        "sourceRecipes": [
+          "Shortcut Banh Mi with Pickled Carrots and Daikon"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 14,
+    "recipes": [
+      {
+        "name": "Penne Arrabbiata"
+      },
+      {
+        "name": "Grilled Chicken Breast"
+      },
+      {
+        "name": "Churros"
+      },
+      {
+        "name": "Lemon Parmesan Smashed Broccoli"
+      },
+      {
+        "name": "Korma"
+      }
+    ],
+    "preCombinedCount": 53,
+    "combinedCount": 39,
+    "preCombined": [
+      {
+        "name": "penne",
+        "quantity": "14",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "extra virgin olive oil",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "6",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "red cayenne pepper",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "red pepper flakes",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "quantity": "28",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": "2.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": "0.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "quantity": null,
+        "unit": null,
+        "category": "dairy",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "parsley",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "balsamic vinegar",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "brown sugar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "dried rosemary",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "dried thyme",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "quantity": "4",
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "parsley",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "1.5",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Churros",
+          "Korma"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "2.5",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "0.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Churros",
+          "Korma"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "quantity": "2",
+        "unit": "quart",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "ground cinnamon",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "broccoli",
+        "quantity": "1",
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "lemon",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "garlic powder",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "chicken",
+        "quantity": "1.2",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "ground turmeric",
+        "quantity": "0.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "plain yogurt",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "ginger garlic paste",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "garam masala",
+        "quantity": "1.75",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "Kashmiri red chili powder",
+        "quantity": "1.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "sea salt",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "ghee",
+        "quantity": "3.5",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "green cardamom",
+        "quantity": "2",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cashew",
+        "quantity": "10",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "plain yogurt",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "clove",
+        "quantity": "4",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "quantity": "2",
+        "unit": "inch",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cardamom",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "green chili",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "coriander powder",
+        "quantity": "1.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "penne",
+        "totalQuantity": 14,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 5.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Lemon Parmesan Smashed Broccoli",
+          "Grilled Chicken Breast",
+          "Churros",
+          "Korma"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 9.25,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Grilled Chicken Breast",
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 6,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "red cayenne pepper",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "red pepper flakes",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "totalQuantity": 28,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Lemon Parmesan Smashed Broccoli",
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "totalQuantity": 11.5,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Churros"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Penne Arrabbiata",
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "balsamic vinegar",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "brown sugar",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "dried rosemary",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "dried thyme",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "chicken breast",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Grilled Chicken Breast"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 1.5,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Churros",
+          "Korma"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 2,
+        "unit": "quart",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Churros"
+        ]
+      },
+      {
+        "name": "cinnamon",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Churros",
+          "Korma"
+        ]
+      },
+      {
+        "name": "broccoli",
+        "totalQuantity": 1,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "garlic powder",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lemon Parmesan Smashed Broccoli"
+        ]
+      },
+      {
+        "name": "chicken",
+        "totalQuantity": 1.2,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "turmeric",
+        "totalQuantity": 0.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "plain yogurt",
+        "totalQuantity": 7,
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "ginger garlic paste",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "garam masala",
+        "totalQuantity": 1.75,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "Kashmiri red chili powder",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "ghee",
+        "totalQuantity": 3.5,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "green cardamom",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cashew",
+        "totalQuantity": 10,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "clove",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cardamom",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "green chili",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "coriander powder",
+        "totalQuantity": 1.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Korma"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 15,
+    "recipes": [
+      {
+        "name": "Mac and Cheese"
+      },
+      {
+        "name": "Cheeseburger"
+      },
+      {
+        "name": "Greek Salad"
+      }
+    ],
+    "preCombinedCount": 24,
+    "combinedCount": 22,
+    "preCombined": [
+      {
+        "name": "elbow macaroni",
+        "quantity": "8",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "milk",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "cheddar cheese",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "ground beef",
+        "quantity": "18",
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cheeseburger",
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "cheese",
+        "quantity": "4",
+        "unit": "slice",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "burger bun",
+        "quantity": "4",
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "romaine lettuce",
+        "quantity": "1",
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "cucumber",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "tomato",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "black olive",
+        "quantity": "6",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "green bell pepper",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "red bell pepper",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "red onion",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "feta cheese",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "6",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "elbow macaroni",
+        "totalQuantity": 8,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Mac and Cheese",
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": null,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Mac and Cheese",
+          "Cheeseburger",
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "milk",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "cheddar",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Mac and Cheese"
+        ]
+      },
+      {
+        "name": "vegetable oil",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "ground beef",
+        "totalQuantity": 18,
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "cheese",
+        "totalQuantity": 4,
+        "unit": "slice",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "burger bun",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Cheeseburger"
+        ]
+      },
+      {
+        "name": "romaine lettuce",
+        "totalQuantity": 1,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "cucumber",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "tomato",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "black olive",
+        "totalQuantity": 6,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "green bell pepper",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "red bell pepper",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "red onion",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "feta",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 6,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      },
+      {
+        "name": "oregano",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Greek Salad"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 16,
+    "recipes": [
+      {
+        "name": "Banana Bread"
+      },
+      {
+        "name": "Nicoise Salad"
+      },
+      {
+        "name": "Chicken Satay"
+      },
+      {
+        "name": "Dal Makhani"
+      }
+    ],
+    "preCombinedCount": 59,
+    "combinedCount": 53,
+    "preCombined": [
+      {
+        "name": "all-purpose flour",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "baking soda",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": "0.25",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "brown sugar",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "8",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread",
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "banana",
+        "quantity": "2.33",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "extra-virgin olive oil",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "shallot",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "basil",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "thyme",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "dijon mustard",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "tuna steak",
+        "quantity": "16",
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "red potato",
+        "quantity": "1.25",
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "boston lettuce",
+        "quantity": "2",
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "tomato",
+        "quantity": "3",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "red onion",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "green bean",
+        "quantity": "0.5",
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "niçoise olive",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "caper",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "anchovy",
+        "quantity": null,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "lemongrass",
+        "quantity": "1",
+        "unit": "stalk",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "coconut milk",
+        "quantity": "0.33",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "chicken thigh",
+        "quantity": "1.5",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "turmeric",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "fish sauce",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "brown sugar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "lime juice",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "3",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "shallot",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "ginger",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "chili paste",
+        "quantity": "1.5",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "peanut butter",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "marinade",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "low sodium soy sauce",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "lime zest",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "4.25",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Chicken Satay",
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "peanut",
+        "quantity": null,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "urad dal",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "rajma",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "ghee",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "unsalted butter",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "ginger garlic paste",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "tomato puree",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "Kashmiri red chili powder",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "garam masala",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "sea salt",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "hot water",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "kasuri methi",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "heavy cream",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "green cardamom",
+        "quantity": "2",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "black cardamom",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "baking soda",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 1.25,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Banana Bread",
+          "Nicoise Salad",
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "brown sugar",
+        "totalQuantity": 0.88,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread",
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 0.69,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Banana Bread",
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Banana Bread",
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "banana",
+        "totalQuantity": 2.33,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Banana Bread"
+        ]
+      },
+      {
+        "name": "lemon juice",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 0.75,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "shallot",
+        "totalQuantity": 4,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad",
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "basil",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "thyme",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "dijon mustard",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "tuna steak",
+        "totalQuantity": 16,
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "red potato",
+        "totalQuantity": 1.25,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "boston lettuce",
+        "totalQuantity": 2,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "tomato",
+        "totalQuantity": 3,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "red onion",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "green bean",
+        "totalQuantity": 0.5,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "niçoise olive",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "caper",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "anchovy",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Nicoise Salad"
+        ]
+      },
+      {
+        "name": "lemongrass",
+        "totalQuantity": 1,
+        "unit": "stalk",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "coconut milk",
+        "totalQuantity": 0.33,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "chicken thigh",
+        "totalQuantity": 1.5,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "turmeric",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "fish sauce",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "lime juice",
+        "totalQuantity": 3,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 3,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "ginger",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "chili paste",
+        "totalQuantity": 1.5,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "peanut butter",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "marinade",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "low sodium soy sauce",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "lime zest",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 6.25,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Chicken Satay",
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "peanut",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Chicken Satay"
+        ]
+      },
+      {
+        "name": "urad dal",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "rajma",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "ghee",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "ginger garlic paste",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "tomato puree",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "Kashmiri red chili powder",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "garam masala",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "kasuri methi",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "heavy cream",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "green cardamom",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      },
+      {
+        "name": "black cardamom",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Dal Makhani"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 17,
+    "recipes": [
+      {
+        "name": "Beer Bread"
+      },
+      {
+        "name": "Sugar Cookies"
+      },
+      {
+        "name": "Cheesy Hasselback Potato Gratin"
+      },
+      {
+        "name": "Coconut Creamed Kale"
+      },
+      {
+        "name": "Foie Gras"
+      }
+    ],
+    "preCombinedCount": 34,
+    "combinedCount": 31,
+    "preCombined": [
+      {
+        "name": "unsalted butter",
+        "quantity": null,
+        "unit": null,
+        "category": "dairy",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "cornmeal",
+        "quantity": null,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "quantity": "5.75",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "baking powder",
+        "quantity": "3.5",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "granulated sugar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "beer",
+        "quantity": "12",
+        "unit": "oz",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "unsalted butter",
+        "quantity": "4",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "baking soda",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "quantity": "1.5",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "1",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "vanilla extract",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "gruyère cheese",
+        "quantity": "3",
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "parmigiano-reggiano",
+        "quantity": "2",
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "heavy cream",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "2",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "thyme",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin",
+          "Coconut Creamed Kale",
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin",
+          "Coconut Creamed Kale",
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "russet potato",
+        "quantity": "4.25",
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "coconut milk",
+        "quantity": "26",
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "Madras curry powder",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "ginger",
+        "quantity": "2",
+        "unit": "inch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "sambal oelek",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "curly kale",
+        "quantity": "2",
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "unsweetened coconut flakes",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "foie gras",
+        "quantity": "4",
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "bread",
+        "quantity": "4",
+        "unit": "piece",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "dried apricot",
+        "quantity": "3.5",
+        "unit": "oz",
+        "category": "produce",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "white wine",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "ramp pickling liquid",
+        "quantity": "3",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "pickled ramp",
+        "quantity": "8",
+        "unit": null,
+        "category": "condiments",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "butter",
+        "totalQuantity": 20,
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Cheesy Hasselback Potato Gratin",
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "cornmeal",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "all-purpose flour",
+        "totalQuantity": 5.75,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "baking powder",
+        "totalQuantity": 3.5,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Beer Bread",
+          "Cheesy Hasselback Potato Gratin",
+          "Coconut Creamed Kale",
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "granulated sugar",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "beer",
+        "totalQuantity": 12,
+        "unit": "oz",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Beer Bread"
+        ]
+      },
+      {
+        "name": "baking soda",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "white sugar",
+        "totalQuantity": 1.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "vanilla extract",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Sugar Cookies"
+        ]
+      },
+      {
+        "name": "gruyère",
+        "totalQuantity": 3,
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "parmigiano-reggiano",
+        "totalQuantity": 2,
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "heavy cream",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 2,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "thyme",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin",
+          "Coconut Creamed Kale",
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "russet potato",
+        "totalQuantity": 4.25,
+        "unit": "lb",
+        "category": "produce",
+        "sourceRecipes": [
+          "Cheesy Hasselback Potato Gratin"
+        ]
+      },
+      {
+        "name": "coconut milk",
+        "totalQuantity": 26,
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "Madras curry powder",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "ginger",
+        "totalQuantity": 2,
+        "unit": "inch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "sambal oelek",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "curly kale",
+        "totalQuantity": 2,
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "unsweetened coconut flakes",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Creamed Kale"
+        ]
+      },
+      {
+        "name": "foie gras",
+        "totalQuantity": 4,
+        "unit": "oz",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "bread",
+        "totalQuantity": 4,
+        "unit": "piece",
+        "category": "bakery",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "dried apricot",
+        "totalQuantity": 3.5,
+        "unit": "oz",
+        "category": "produce",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "white wine",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "ramp pickling liquid",
+        "totalQuantity": 3,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "pickled ramp",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "condiments",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "produce",
+        "sourceRecipes": [
+          "Foie Gras"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 18,
+    "recipes": [
+      {
+        "name": "French Onion Soup"
+      },
+      {
+        "name": "Coconut Rice"
+      },
+      {
+        "name": "Pozole"
+      }
+    ],
+    "preCombinedCount": 33,
+    "combinedCount": 29,
+    "preCombined": [
+      {
+        "name": "onion",
+        "quantity": "6",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "5",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "butter",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "sugar",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "10",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "beef stock",
+        "quantity": "8",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "dry white wine",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "quantity": "5",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "thyme",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "brandy",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "beverages",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "French bread",
+        "quantity": "8",
+        "unit": "slice",
+        "category": "bakery",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "Gruyere",
+        "quantity": "1.5",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "Parmesan",
+        "quantity": null,
+        "unit": null,
+        "category": "dairy",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "jasmine rice",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "coconut milk",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "sugar",
+        "quantity": "1",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": "0.5",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "guajillo chili pod",
+        "quantity": "4",
+        "unit": "oz",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "white hominy",
+        "quantity": "108",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "pork shoulder",
+        "quantity": "3",
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "ground cumin",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "cabbage",
+        "quantity": "0.5",
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "quantity": "1",
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "white onion",
+        "quantity": "0.5",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "avocado",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "lime",
+        "quantity": "4",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "red radish",
+        "quantity": "1",
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "tostada shell",
+        "quantity": "24",
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "5",
+        "unit": "quart",
+        "category": "other",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "onion",
+        "totalQuantity": 6.5,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 5,
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "butter",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "dairy",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "sugar",
+        "totalQuantity": 4,
+        "unit": "tsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole",
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 10,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "beef stock",
+        "totalQuantity": 8,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "dry white wine",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "beverages",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "totalQuantity": 5,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "thyme",
+        "totalQuantity": 1,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": 0.5,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "brandy",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "beverages",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "French bread",
+        "totalQuantity": 8,
+        "unit": "slice",
+        "category": "bakery",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "Gruyere",
+        "totalQuantity": 1.5,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "Parmesan",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "dairy",
+        "sourceRecipes": [
+          "French Onion Soup"
+        ]
+      },
+      {
+        "name": "jasmine rice",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "coconut milk",
+        "totalQuantity": 0.75,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Coconut Rice"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 5.1875,
+        "unit": "quart",
+        "category": "other",
+        "sourceRecipes": [
+          "Coconut Rice",
+          "Pozole"
+        ]
+      },
+      {
+        "name": "guajillo chili pod",
+        "totalQuantity": 4,
+        "unit": "oz",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "white hominy",
+        "totalQuantity": 108,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "pork shoulder",
+        "totalQuantity": 3,
+        "unit": "lb",
+        "category": "meat_seafood",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "cumin",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "cabbage",
+        "totalQuantity": 0.5,
+        "unit": "head",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "cilantro",
+        "totalQuantity": 1,
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "avocado",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "lime",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "red radish",
+        "totalQuantity": 1,
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      },
+      {
+        "name": "tostada shell",
+        "totalQuantity": 24,
+        "unit": null,
+        "category": "bakery",
+        "sourceRecipes": [
+          "Pozole"
+        ]
+      }
+    ]
+  },
+  {
+    "groupIndex": 19,
+    "recipes": [
+      {
+        "name": "Tabbouleh Wrap"
+      },
+      {
+        "name": "Lentil Soup"
+      },
+      {
+        "name": "Spanakopita"
+      },
+      {
+        "name": "Manicotti with Cheese Filling and Bolognese Sauce"
+      }
+    ],
+    "preCombinedCount": 36,
+    "combinedCount": 31,
+    "preCombined": [
+      {
+        "name": "vegetable stock",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "kosher salt",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "bulgur wheat",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "quantity": "0.75",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Tabbouleh Wrap",
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "lemon",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "roma tomato",
+        "quantity": "5.5",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "scallion",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "parsley",
+        "quantity": "2.5",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "mint",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "onion",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "carrot",
+        "quantity": "2",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "celery",
+        "quantity": "2",
+        "unit": "stalk",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "garlic",
+        "quantity": "4",
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "quantity": "1",
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "dried oregano",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "dried basil",
+        "quantity": "1",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "lentil",
+        "quantity": "2",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "water",
+        "quantity": "8",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "quantity": "14.5",
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "spinach",
+        "quantity": "0.5",
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "vinegar",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "salt",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "quantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "spinach",
+        "quantity": "16",
+        "unit": "oz",
+        "category": "frozen",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "flat-leaf parsley",
+        "quantity": "2",
+        "unit": "bunch",
+        "category": "produce",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "yellow onion",
+        "quantity": "1",
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "extra virgin olive oil",
+        "quantity": "2",
+        "unit": "tbsp",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "egg",
+        "quantity": "4",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "feta cheese",
+        "quantity": "10.5",
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "dried dill weed",
+        "quantity": "2",
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "phyllo dough",
+        "quantity": "16",
+        "unit": "oz",
+        "category": "frozen",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "extra virgin olive oil",
+        "quantity": "1",
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "manicotti shell",
+        "quantity": "8",
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      },
+      {
+        "name": "ricotta cheese stuffing",
+        "quantity": "3",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      },
+      {
+        "name": "bolognese sauce",
+        "quantity": "2.5",
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      },
+      {
+        "name": "parmesan cheese",
+        "quantity": "0.25",
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      }
+    ],
+    "combined": [
+      {
+        "name": "vegetable stock",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "salt",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Tabbouleh Wrap",
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "bulgur wheat",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "olive oil",
+        "totalQuantity": 1.875,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Tabbouleh Wrap",
+          "Lentil Soup",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "lemon",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "roma tomato",
+        "totalQuantity": 5.5,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "green onion",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "parsley",
+        "totalQuantity": 2.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "mint",
+        "totalQuantity": 1,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Tabbouleh Wrap"
+        ]
+      },
+      {
+        "name": "onion",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "carrot",
+        "totalQuantity": 2,
+        "unit": null,
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "celery",
+        "totalQuantity": 2,
+        "unit": "stalk",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "garlic",
+        "totalQuantity": 4,
+        "unit": "clove",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "bay leaf",
+        "totalQuantity": 1,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "oregano",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "basil",
+        "totalQuantity": 1,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "lentil",
+        "totalQuantity": 2,
+        "unit": "cup",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "water",
+        "totalQuantity": 8,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "crushed tomato",
+        "totalQuantity": 14.5,
+        "unit": "oz",
+        "category": "pantry",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "spinach",
+        "totalQuantity": 0.5,
+        "unit": "cup",
+        "category": "produce",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "vinegar",
+        "totalQuantity": 2,
+        "unit": "tbsp",
+        "category": "condiments",
+        "sourceRecipes": [
+          "Lentil Soup"
+        ]
+      },
+      {
+        "name": "black pepper",
+        "totalQuantity": null,
+        "unit": null,
+        "category": "spices",
+        "sourceRecipes": [
+          "Lentil Soup",
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "spinach",
+        "totalQuantity": 16,
+        "unit": "oz",
+        "category": "frozen",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "egg",
+        "totalQuantity": 4,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "feta",
+        "totalQuantity": 10.5,
+        "unit": "oz",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "dill",
+        "totalQuantity": 2,
+        "unit": "tsp",
+        "category": "spices",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "phyllo dough",
+        "totalQuantity": 16,
+        "unit": "oz",
+        "category": "frozen",
+        "sourceRecipes": [
+          "Spanakopita"
+        ]
+      },
+      {
+        "name": "manicotti shell",
+        "totalQuantity": 8,
+        "unit": null,
+        "category": "pantry",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      },
+      {
+        "name": "ricotta cheese stuffing",
+        "totalQuantity": 3,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      },
+      {
+        "name": "bolognese sauce",
+        "totalQuantity": 2.5,
+        "unit": "cup",
+        "category": "other",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      },
+      {
+        "name": "parmesan",
+        "totalQuantity": 0.25,
+        "unit": "cup",
+        "category": "dairy",
+        "sourceRecipes": [
+          "Manicotti with Cheese Filling and Bolognese Sauce"
+        ]
+      }
+    ]
   }
 ]

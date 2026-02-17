@@ -58,22 +58,29 @@ Your tasks:
    - "crushed tomatoes" ≠ "tomato" ≠ "tomato sauce" (different forms/products)
    - "chicken breast" ≠ "chicken broth" (different products)
    - "fresh ginger" ≠ "ground ginger" (different forms — keep separate)
+   - "dried oregano" ≠ "fresh oregano" (different products — keep "dried" prefix)
+   - "canola oil" ≠ "vegetable oil" (different products)
 3. If no merges are needed, return items unchanged.
 
 ## MUST-MERGE ingredient variants (same grocery item):
 - ALL salt types → "salt": "kosher salt", "sea salt", "table salt", "flaky salt", "coarse salt"
 - ALL onion colors → "onion": "yellow onion", "white onion", "sweet onion" (but NOT "red onion", "green onion", "shallot")
-- ALL plain oil → "vegetable oil": "oil", "vegetable oil", "canola oil", "neutral oil"
+- ALL plain oil → "vegetable oil": "oil", "vegetable oil", "neutral oil" (but NOT "canola oil" — different product)
 - ALL olive oil → "olive oil": "olive oil", "extra virgin olive oil", "extra-virgin olive oil", "EVOO"
 - ALL butter → "butter": "butter", "unsalted butter", "salted butter"
 - Cheese + "cheese" suffix → base name: "parmesan cheese" → "parmesan", "mozzarella cheese" → "mozzarella"
 - Ground spice + spice → spice name: "ground turmeric" → "turmeric", "ground cumin" → "cumin", "ground cinnamon" → "cinnamon"
+- ALL sugar types → "sugar": "sugar", "white sugar", "granulated sugar", "caster sugar" (but NOT "brown sugar", "powdered sugar", "confectioner's sugar")
+- "green cardamom" + "cardamom" → "cardamom"
+- "flat-leaf parsley" + "parsley" → "parsley"
+- "cilantro" + "fresh cilantro" → "cilantro"
 - "black pepper" + "ground black pepper" → "black pepper"
 - "bay leaf" + "dried bay leaf" → "bay leaf"
+- KEEP "dried" prefix for herbs: "dried oregano" stays "dried oregano", "dried basil" stays "dried basil", "dried dill" stays "dried dill" — dried herbs are DIFFERENT products from fresh herbs
 - "green onion" + "scallion" + "spring onion" → "green onion"
 
 ## Unit conversion rules (MUST convert before summing):
-- 1 tbsp = 3 tsp (ALWAYS convert tsp↔tbsp to the smaller unit before summing, then simplify)
+- 1 tbsp = 3 tsp — CRITICAL: convert to same unit FIRST, then sum. Example: 0.5 tsp + 1 tbsp → convert 1 tbsp to 3 tsp → 0.5 + 3 = 3.5 tsp. Do NOT add 0.5 + 1 = 1.5!
 - 1 cup = 16 tbsp = 48 tsp
 - 1 lb = 16 oz
 - When BOTH items have convertible units (tsp/tbsp, cup/tbsp, oz/lb), convert to the smaller unit, sum, then express in the larger unit if the result is clean (e.g. 6 tsp → 2 tbsp)

@@ -16,8 +16,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-16
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ---
 
@@ -101,4 +101,58 @@
   - missed_merge is by far the dominant issue — the prompt needed explicit merge tables rather than relying on the AI to infer which variants are the same
   - Unit conversion is the second biggest issue — the old prompt said "keep the larger quantity's unit" which led to naive number summing across incompatible units
   - 11.3% merge reduction is low — expect higher after prompt improvements
+---
+
+## 2026-02-16 - US-004: Run batch 2 (groups 11-20), evaluate, and fix if needed
+
+### What was implemented
+- Ran `batch-combine.mjs --offset 10 --limit 10` — 10 groups processed, 450 pre-combined → 387 combined (14.0% reduction)
+- Ran `evaluate-combined.mjs` on all 20 groups (batches 1+2)
+- Note: Batch 1 groups (0-9) still have OLD combine output from before US-003 prompt fix. Only batch 2 groups (10-19) use the improved prompt.
+
+### Batch 2 evaluation results (groups 10-19 only, using improved prompt):
+| Issue Type | Batch 1 (original, old prompt) | Batch 2 (new prompt) | Delta |
+|------------|-------------------------------|---------------------|-------|
+| missed_merge | 28 | 26 | -2 |
+| wrong_merge | 1 | 3 | +2 |
+| quantity_error | 3 | 9 | +6 |
+| unit_error | 8 | 7 | -1 |
+| name_cleaning | 3 | 10 | +7 |
+| source_recipes_error | 1 | 0 | -1 |
+| category_error | 0 | 1 | +1 |
+| **TOTAL** | **44** | **56** | **+12** |
+
+### Analysis of batch 2 issues:
+- **missed_merge (26)**: Salt variants STILL not consistently merging (13 of 26 are salt-related). Also: sugar variants ("granulated sugar" + "white sugar"), "green cardamom" + "cardamom", "flat-leaf parsley" + "parsley"
+- **name_cleaning (10)**: ~8 are FALSE POSITIVES — evaluator flags cheese suffix removal ("feta cheese" → "feta") which is intentional. 2 are real: "dried oregano" → "oregano" is wrong (dried ≠ fresh)
+- **quantity_error (9)**: AI doing wrong unit conversion math (e.g. 0.5 tsp + 1 tbsp → 1.5 tsp instead of 3.5 tsp). This is the AI not following the conversion rules, not a prompt issue per se
+- **unit_error (7)**: Incompatible units still problematic (lb + count, cup + null)
+- **wrong_merge (3)**: canola oil → vegetable oil (1, real issue), spinach category (1), butter variants (1, debatable)
+- **category_error (1)**: coconut milk as "dairy" instead of "pantry" — minor
+- **source_recipes_error (0)**: Fixed from batch 1!
+
+### Prompt changes made to `supabase/functions/combine-ingredients/index.ts`:
+1. **Removed canola oil** from vegetable oil merge list — canola oil is a different product
+2. **Added sugar merge rules**: "sugar", "white sugar", "granulated sugar", "caster sugar" → "sugar" (but NOT brown/powdered sugar)
+3. **Added new merge rules**: "green cardamom" → "cardamom", "flat-leaf parsley" → "parsley", "cilantro" + "fresh cilantro" → "cilantro"
+4. **Added dried herb preservation**: "dried oregano" stays "dried oregano", "dried basil" stays "dried basil", "dried dill" stays "dried dill" — dried herbs ≠ fresh herbs
+5. **Added to KEEP SEPARATE**: "dried oregano" ≠ "fresh oregano", "canola oil" ≠ "vegetable oil"
+6. **Strengthened unit conversion math**: Added explicit example showing 0.5 tsp + 1 tbsp → convert 1 tbsp to 3 tsp → 3.5 tsp (not 1.5!)
+
+### Files changed
+- `supabase/functions/combine-ingredients/index.ts` (prompt updated)
+- `scripts/ralph/combine-results.json` (appended groups 10-19)
+- `scripts/ralph/combine-evaluation-report.json` (re-evaluated all 20 groups)
+- `scripts/ralph/activity.md` (updated)
+
+### Quality checks
+- Build: ✅
+- Tests: ✅ (10/10 edge function tests pass)
+
+### Learnings for future iterations
+- The evaluator has significant false positive rate for `name_cleaning` — it doesn't understand that cheese suffix removal is intentional. Consider adjusting the evaluator prompt for future runs.
+- `missed_merge` for salt variants persists despite explicit merge rules — the AI doesn't always follow the MUST-MERGE table. This may need even stronger emphasis or examples.
+- `quantity_error` increased because the evaluator catches more unit conversion math errors now. The AI is not reliably doing tsp↔tbsp math. Adding explicit examples may help.
+- Batch 2 merge ratio (14.0%) is better than batch 1 (11.3%), suggesting the prompt improvements are helping with actual merging even if the evaluator finds more issues.
+- Some issues are inherent to the LLM (arithmetic errors) and may not be fully fixable via prompt changes alone.
 ---
