@@ -492,6 +492,61 @@ describe("GroceryListSection", () => {
     expect(screen.getByText("Combining ingredients...")).toBeInTheDocument();
   });
 
+  it("filters pantry items from per-recipe tabs", async () => {
+    const ingredientsWithPantry: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "olive oil", quantity: 2, unit: "tbsp", category: "pantry" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithPantry}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        pantryItems={["salt", "olive oil"]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    await waitFor(() => {
+      // Tomato should still be visible
+      expect(screen.getByText("Produce")).toBeInTheDocument();
+    });
+
+    // Salt and olive oil (pantry items) should not appear in per-recipe tab
+    expect(screen.queryByText("Spices")).not.toBeInTheDocument();
+    // The Pantry category for olive oil should also be filtered
+    expect(screen.queryByText("Pantry")).not.toBeInTheDocument();
+  });
+
+  it("shows all per-recipe items when no pantry items provided", async () => {
+    const ingredientsWithSpices: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithSpices}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Produce")).toBeInTheDocument();
+      expect(screen.getByText("Spices")).toBeInTheDocument();
+    });
+  });
+
   it("falls back to naive combine when smartGroceryItems is null", () => {
     render(
       <GroceryListSection

@@ -49,8 +49,8 @@ When removing a feature (sharing/saving), changes cascade across:
 
 ## Current Status
 **Last Updated:** 2026-02-19
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ---
 
@@ -164,5 +164,28 @@ When removing a feature (sharing/saving), changes cascade across:
 
 ### Learnings for future iterations
 - When user stories overlap in scope, the earlier story may fully satisfy later ones — always verify before writing new code
+
+---
+
+## 2026-02-19 11:00 — US-004: Apply pantry filtering to per-recipe ingredient views
+
+### What was implemented
+- Applied `filterPantryItems()` to per-recipe tab ingredient lists in GroceryListSection.tsx
+- Before this fix, per-recipe tabs displayed raw ingredients without pantry filtering, while the combined view already filtered them
+- Added 3 lines: create `filteredRecipeItems` by applying `filterPantryItems()` when `pantryItems.length > 0`, then pass to `groupByCategory()`
+- Added 2 test cases: one verifying pantry items are excluded from per-recipe tabs, one verifying all items show when no pantry items provided
+
+### Files changed
+- src/components/recipes/GroceryListSection.tsx (modified — added pantry filtering to per-recipe tab rendering)
+- tests/unit/components/recipes/GroceryListSection.test.tsx (modified — added 2 pantry filtering tests for per-recipe tabs)
+
+### Quality checks
+- Build: pass
+- Tests: pass (943 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- GroceryListSection is reused in both EventDetailPage (club events) and will be reused in MealPlanPage (US-005) — fixes here apply to both contexts automatically
+- The `filterPantryItems()` function works on `CombinedGroceryItem[]` — the per-recipe tab builds this same type, so the function applies directly with no adaptation needed
 
 ---

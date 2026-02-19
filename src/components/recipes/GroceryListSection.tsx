@@ -227,7 +227,10 @@ const GroceryListSection = ({
                 category: ing.category,
                 sourceRecipes: [recipe.name],
               }));
-              const recipeGrouped = groupByCategory(recipeItems);
+              const filteredRecipeItems = pantryItems.length > 0
+                ? filterPantryItems(recipeItems, pantryItems)
+                : recipeItems;
+              const recipeGrouped = groupByCategory(filteredRecipeItems);
 
               return (
                 <TabsContent key={recipe.id} value={recipe.id}>

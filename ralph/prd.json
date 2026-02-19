@@ -77,7 +77,7 @@
         "Tests pass with 100% coverage (npm run test:coverage)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "In GroceryListSection.tsx (258 lines), the per-recipe tabs (around lines 200-240) display raw recipe ingredients without pantry filtering. The combined view (lines 55-60) already applies filterPantryItems(). Fix: in the per-recipe tab rendering, filter each recipe's ingredients through filterPantryItems() before display. The filterPantryItems() function is imported from src/lib/groceryList.ts. The pantryItems prop is already passed to GroceryListSection. EventDetailPage.tsx already passes pantryItems correctly."
     },
     {
