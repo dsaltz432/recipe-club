@@ -37,6 +37,15 @@ When deleting components, also delete:
 ### Grocery Data Loading Pattern
 When adding grocery list to a page, load data via: query items → extract recipe_ids → Promise.all(recipe_ingredients, recipe_content, recipes). Map DB rows to TypeScript types (snake_case → camelCase, null → undefined). Pass to GroceryListSection which handles combining, filtering, and display.
 
+### Reusing EventRatingDialog for Meals
+EventRatingDialog requires a valid `event_id` for recipe_ratings FK. When using from MealPlanPage: check if items have an `eventId`; if not, create a personal event first (same as handleViewMealEvent). Use `mode="rating"` (at least one rating required, not all). Build `EventRecipeWithNotes[]` from slot items: `{ recipe: { id, name, url }, notes: [] }`.
+
+### Mocking Complex Dialogs in Parent Tests
+When testing a parent component that renders a complex dialog (like EventRatingDialog), mock the dialog itself rather than its internal Supabase calls. Use `vi.mock()` with a simple component that exposes `onComplete`/`onCancel` buttons. This keeps parent tests focused on state management, not dialog internals.
+
+### Unreachable Guards Kill Coverage
+Defensive `if (!x) return` guards in callbacks that can only fire when `x` is truthy (e.g., dialog onComplete when dialog only renders if state is set) are unreachable and cause branch coverage gaps. Remove them or use non-null assertion (`x!`) since the guard can never be hit.
+
 ### Supabase Mock — No AI
 When AI features are removed, the supabase mock no longer needs `functions: { invoke: vi.fn() }`. Only mock what the component actually uses.
 
@@ -52,8 +61,8 @@ When removing a feature (sharing/saving), changes cascade across:
 
 ## Current Status
 **Last Updated:** 2026-02-19
-**Tasks Completed:** 5
-**Current Task:** US-005 complete
+**Tasks Completed:** 6
+**Current Task:** US-006 complete
 
 ---
 
@@ -224,5 +233,47 @@ When removing a feature (sharing/saving), changes cascade across:
 - When adding tab/view state, watch for duplicate text between header and tab buttons — rename the heading to avoid test selector conflicts
 - `SHOW_PARSE_BUTTONS` constant is currently `false` in production; mock it to `true` in tests to cover parse button interactions
 - Removing defensive early returns (`if (!recipe?.url) return`) in favor of try/catch eliminates unreachable branches that are difficult to test
+
+---
+
+## 2026-02-19 14:00 — US-006: Add meal completion with optional rating
+
+### What was implemented
+- Added `cooked_at TIMESTAMPTZ` column to `meal_plan_items` via migration
+- Added `cookedAt?: string` field to `MealPlanItem` type
+- Updated MealPlanSlot with cooked visual indicator (green background, checkmark icons), "Mark as Cooked" button, and "Undo Cook" button
+- Updated MealPlanGrid to pass through `onMarkCooked` and `onUncook` callbacks
+- Updated MealPlanPage with full cooked/rating flow:
+  - Maps `cooked_at` from DB to items
+  - `markSlotAsCooked()` updates `cooked_at` via Supabase and local state
+  - `handleMarkCooked()` — if slot has no recipes, marks cooked directly; if has recipes, creates a personal event (if needed) then opens EventRatingDialog in 'rating' mode
+  - `handleRatingComplete()` — marks slot as cooked after rating submission
+  - `handleRatingCancel()` — closes dialog without marking cooked
+  - `handleUncook()` — resets `cooked_at` to null
+- Added 10 new tests for MealPlanSlot (cooked styling, checkmarks, mark/uncook buttons, conditional rendering)
+- Added 2 new tests for MealPlanGrid (onMarkCooked/onUncook passthrough)
+- Added 12 new tests for MealPlanPage (cooked_at mapping, direct mark, rating dialog with/without event, rating completion, cancel, uncook, error handling, name fallbacks, multi-slot scenarios)
+- Mocked EventRatingDialog in MealPlanPage tests for isolated testing
+
+### Files changed
+- supabase/migrations/20260219000000_add_meal_cooked_at.sql (created)
+- src/types/index.ts (modified — added cookedAt to MealPlanItem)
+- src/components/mealplan/MealPlanSlot.tsx (modified — cooked visual state + Mark as Cooked/Undo Cook buttons)
+- src/components/mealplan/MealPlanGrid.tsx (modified — pass through onMarkCooked/onUncook)
+- src/components/mealplan/MealPlanPage.tsx (modified — rating dialog integration, cooked state management)
+- tests/unit/components/mealplan/MealPlanSlot.test.tsx (modified — 10 new tests)
+- tests/unit/components/mealplan/MealPlanGrid.test.tsx (modified — 2 new tests)
+- tests/unit/components/mealplan/MealPlanPage.test.tsx (modified — 12 new tests, EventRatingDialog mock)
+
+### Quality checks
+- Build: pass
+- Tests: pass (983 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- EventRatingDialog requires a valid event_id (FK to scheduled_events), so events must be created before opening the dialog for meals
+- Mocking complex child dialogs in parent component tests is much simpler than mocking all their internal Supabase calls
+- Unreachable `if (!state) return` guards in callbacks gated by conditional rendering cause branch coverage gaps — use non-null assertion instead
+- Multi-slot tests (items in different slots) are needed to cover `else` branches in `setItems` map callbacks where some items match and others don't
 
 ---

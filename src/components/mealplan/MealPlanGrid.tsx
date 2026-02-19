@@ -8,12 +8,14 @@ interface MealPlanGridProps {
   onRemoveMeal: (itemId: string) => void;
   onEditMeal: (item: MealPlanItem) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  onMarkCooked?: (dayOfWeek: number, mealType: string) => void;
+  onUncook?: (dayOfWeek: number, mealType: string) => void;
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const;
 
-const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal, onEditMeal, onViewMealEvent }: MealPlanGridProps) => {
+const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal, onEditMeal, onViewMealEvent, onMarkCooked, onUncook }: MealPlanGridProps) => {
   const getItemsForSlot = (dayOfWeek: number, mealType: string): MealPlanItem[] => {
     return items.filter((item) => item.dayOfWeek === dayOfWeek && item.mealType === mealType);
   };
@@ -54,6 +56,8 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal, onEditMeal, o
                   onRemoveMeal={onRemoveMeal}
                   onEditMeal={onEditMeal}
                   onViewMealEvent={onViewMealEvent}
+                  onMarkCooked={onMarkCooked}
+                  onUncook={onUncook}
                 />
               </div>
             ))}

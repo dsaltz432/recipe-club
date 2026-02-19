@@ -13,6 +13,16 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
+// Mock EventRatingDialog
+vi.mock("@/components/events/EventRatingDialog", () => ({
+  default: ({ onComplete, onCancel }: { onComplete: () => void; onCancel: () => void }) => (
+    <div data-testid="rating-dialog">
+      <button onClick={onComplete}>Complete Rating</button>
+      <button onClick={onCancel}>Cancel Rating</button>
+    </div>
+  ),
+}));
+
 // Mock Supabase
 const mockSupabaseFrom = vi.fn();
 const mockInvoke = vi.fn();
@@ -2294,6 +2304,741 @@ describe("MealPlanPage", () => {
         expect(
           screen.getByText("Add meals to your plan to generate a grocery list.")
         ).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("cooked state and rating", () => {
+    it("maps cooked_at from DB to items", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                  cooked_at: "2026-02-19T12:00:00Z",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      });
+
+      // Cooked item should show green styling (via cooked checkmark)
+      expect(screen.getByTestId("cooked-check")).toBeInTheDocument();
+    });
+
+    it("marks slot as cooked directly when no recipes (custom meals only)", async () => {
+      // Two items in different slots — marking one should preserve the other
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+                {
+                  id: "item-2",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: "Soup",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Toast")).toBeInTheDocument();
+        expect(screen.getByText("Soup")).toBeInTheDocument();
+      });
+
+      // Set up the update mock for marking as cooked
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      // Mark breakfast as cooked — Toast slot
+      const markButtons = screen.getAllByTitle("Mark as cooked");
+      fireEvent.click(markButtons[0]);
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Marked as cooked!");
+      });
+
+      // Should NOT open rating dialog since no recipes
+      expect(screen.queryByTestId("rating-dialog")).not.toBeInTheDocument();
+    });
+
+    it("opens rating dialog when marking cooked with recipes and existing event", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                  event_id: "event-123",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      // Rating dialog should appear
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("creates event then opens rating dialog when no existing event", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "scheduled_events") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "event-new-100" },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      // Rating dialog should appear after event creation
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("marks items as cooked after completing rating", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                  event_id: "event-123",
+                },
+              ],
+              error: null,
+            }),
+            in: vi.fn().mockResolvedValue({ error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      });
+
+      // Open rating dialog
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+
+      // Complete rating
+      fireEvent.click(screen.getByText("Complete Rating"));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Marked as cooked!");
+      });
+
+      // Dialog should be closed
+      expect(screen.queryByTestId("rating-dialog")).not.toBeInTheDocument();
+    });
+
+    it("closes rating dialog on cancel without marking as cooked", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                  event_id: "event-123",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      });
+
+      // Open rating dialog
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+
+      // Cancel rating
+      fireEvent.click(screen.getByText("Cancel Rating"));
+
+      // Dialog should be closed
+      expect(screen.queryByTestId("rating-dialog")).not.toBeInTheDocument();
+
+      // Should NOT have been marked as cooked
+      expect(toast.success).not.toHaveBeenCalledWith("Marked as cooked!");
+    });
+
+    it("uncooks a meal", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                  cooked_at: "2026-02-19T12:00:00Z",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Toast")).toBeInTheDocument();
+      });
+
+      // Set up update mock for uncooking
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      fireEvent.click(screen.getByTitle("Undo cook"));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Meal unmarked as cooked");
+      });
+    });
+
+    it("handles mark as cooked error", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Toast")).toBeInTheDocument();
+      });
+
+      // Set up update mock to fail
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to mark as cooked");
+      });
+    });
+
+    it("handles uncook error", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                  cooked_at: "2026-02-19T12:00:00Z",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Toast")).toBeInTheDocument();
+      });
+
+      // Set up update mock to fail
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      fireEvent.click(screen.getByTitle("Undo cook"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to uncook meal");
+      });
+    });
+
+    it("handles event creation error during mark as cooked", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "scheduled_events") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: "Event creation failed" },
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to mark as cooked");
+      });
+
+      // Rating dialog should NOT appear
+      expect(screen.queryByTestId("rating-dialog")).not.toBeInTheDocument();
+    });
+
+    it("preserves other slot items when creating event during mark cooked", async () => {
+      // Two items in different slots — event creation for one should not affect the other
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pancakes", url: null },
+                },
+                {
+                  id: "item-2",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: "Pasta",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "scheduled_events") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "event-new-200" },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+        expect(screen.getByText("Pasta")).toBeInTheDocument();
+      });
+
+      // Mark cooked on the breakfast slot (which has a recipe)
+      const markButtons = screen.getAllByTitle("Mark as cooked");
+      fireEvent.click(markButtons[0]); // First mark-as-cooked button (breakfast)
+
+      // Should open rating dialog — the Pasta item should be unchanged
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("preserves other slot items when uncooking a meal", async () => {
+      // Two items in different slots — uncooking one should not affect the other
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                  cooked_at: "2026-02-19T12:00:00Z",
+                },
+                {
+                  id: "item-2",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: "Pasta",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                  cooked_at: "2026-02-19T12:00:00Z",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Toast")).toBeInTheDocument();
+        expect(screen.getByText("Pasta")).toBeInTheDocument();
+      });
+
+      // Set up update mock for uncooking
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      // Uncook the first slot (breakfast)
+      const undoButtons = screen.getAllByTitle("Undo cook");
+      fireEvent.click(undoButtons[0]);
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Meal unmarked as cooked");
+      });
+    });
+
+    it("uses customName fallback for recipe name in rating dialog", async () => {
+      // Recipe item with no recipeName but has customName
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "My Custom Meal",
+                  custom_url: "https://example.com/custom",
+                  sort_order: 0,
+                  recipes: null, // No joined recipe data
+                  event_id: "event-123",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("My Custom Meal")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("uses 'Unnamed' fallback when recipe has no name at all", async () => {
+      // Recipe item with neither recipeName nor customName
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null, // No joined recipe data
+                  event_id: "event-123",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Unnamed meal")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
       });
     });
   });

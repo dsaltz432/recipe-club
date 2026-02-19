@@ -316,4 +316,200 @@ describe("MealPlanSlot", () => {
 
     expect(screen.queryByTitle("View meal details")).not.toBeInTheDocument();
   });
+
+  describe("cooked state", () => {
+    it("shows green styling when all items are cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      const slot = container.querySelector(".bg-green-50");
+      expect(slot).toBeInTheDocument();
+    });
+
+    it("shows checkmark icons when cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      expect(screen.getByTestId("cooked-check")).toBeInTheDocument();
+    });
+
+    it("does not show checkmark when not cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      expect(screen.queryByTestId("cooked-check")).not.toBeInTheDocument();
+    });
+
+    it("is not cooked when only some items have cookedAt", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+        {
+          id: "item-2",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 1,
+          recipeName: "Salad",
+        },
+      ];
+
+      const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      expect(container.querySelector(".bg-green-50")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("cooked-check")).not.toBeInTheDocument();
+    });
+
+    it("shows Mark as Cooked button when onMarkCooked is provided and not cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const onMarkCooked = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onMarkCooked={onMarkCooked} />);
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      expect(onMarkCooked).toHaveBeenCalledWith(1, "dinner");
+    });
+
+    it("does not show Mark as Cooked when onMarkCooked is not provided", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      expect(screen.queryByTitle("Mark as cooked")).not.toBeInTheDocument();
+    });
+
+    it("does not show Mark as Cooked when already cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      const onMarkCooked = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onMarkCooked={onMarkCooked} />);
+
+      expect(screen.queryByTitle("Mark as cooked")).not.toBeInTheDocument();
+    });
+
+    it("shows Undo cook button when cooked and onUncook is provided", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      const onUncook = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onUncook={onUncook} />);
+
+      fireEvent.click(screen.getByTitle("Undo cook"));
+
+      expect(onUncook).toHaveBeenCalledWith(1, "dinner");
+    });
+
+    it("does not show Undo cook when onUncook is not provided", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      expect(screen.queryByTitle("Undo cook")).not.toBeInTheDocument();
+    });
+
+    it("does not show Undo cook when not cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const onUncook = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onUncook={onUncook} />);
+
+      expect(screen.queryByTitle("Undo cook")).not.toBeInTheDocument();
+    });
+  });
 });

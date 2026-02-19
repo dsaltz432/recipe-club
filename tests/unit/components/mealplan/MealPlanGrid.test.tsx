@@ -164,4 +164,45 @@ describe("MealPlanGrid", () => {
 
     expect(onViewMealEvent).toHaveBeenCalledWith(0, "breakfast");
   });
+
+  it("passes onMarkCooked to MealPlanSlot", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 0,
+        mealType: "breakfast",
+        sortOrder: 0,
+        recipeName: "Pancakes",
+      },
+    ];
+
+    const onMarkCooked = vi.fn();
+    render(<MealPlanGrid {...defaultProps} items={items} onMarkCooked={onMarkCooked} />);
+
+    fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+    expect(onMarkCooked).toHaveBeenCalledWith(0, "breakfast");
+  });
+
+  it("passes onUncook to MealPlanSlot", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 0,
+        mealType: "breakfast",
+        sortOrder: 0,
+        recipeName: "Pancakes",
+        cookedAt: "2026-02-19T12:00:00Z",
+      },
+    ];
+
+    const onUncook = vi.fn();
+    render(<MealPlanGrid {...defaultProps} items={items} onUncook={onUncook} />);
+
+    fireEvent.click(screen.getByTitle("Undo cook"));
+
+    expect(onUncook).toHaveBeenCalledWith(0, "breakfast");
+  });
 });

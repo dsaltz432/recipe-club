@@ -117,7 +117,7 @@
         "Tests pass with 100% coverage (npm run test:coverage)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Reuse EventRatingDialog from src/components/events/EventRatingDialog.tsx (275 lines). It has two modes: 'completing' (all recipes required) and 'rating' (at least one). Use 'rating' mode for meals. The dialog needs recipes as props - build from meal_plan_items that have recipe_ids. Migration should be in supabase/migrations/ with timestamp naming. MealPlanSlot.tsx (103 lines) renders individual cells - add cooked visual state. MealPlanPage.tsx handles all state - add ratingDialogOpen, selectedSlotForRating states. When rating is submitted, update meal_plan_items SET cooked_at = now() for items in that slot."
     },
     {

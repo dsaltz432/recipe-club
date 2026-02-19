@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, X, ExternalLink, ChefHat } from "lucide-react";
+import { Plus, X, ExternalLink, ChefHat, Check, RotateCcw } from "lucide-react";
 import type { MealPlanItem } from "@/types";
 
 interface MealPlanSlotProps {
@@ -10,6 +10,8 @@ interface MealPlanSlotProps {
   onRemoveMeal: (itemId: string) => void;
   onEditMeal: (item: MealPlanItem) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  onMarkCooked?: (dayOfWeek: number, mealType: string) => void;
+  onUncook?: (dayOfWeek: number, mealType: string) => void;
 }
 
 const mealTypeLabels: Record<string, string> = {
@@ -27,7 +29,11 @@ const MealPlanSlot = ({
   onRemoveMeal,
   onEditMeal,
   onViewMealEvent,
+  onMarkCooked,
+  onUncook,
 }: MealPlanSlotProps) => {
+  const isCooked = items.length > 0 && items.every((i) => i.cookedAt);
+
   if (items.length === 0) {
     return (
       <Button
@@ -42,7 +48,11 @@ const MealPlanSlot = ({
   }
 
   return (
-    <div className="relative w-full min-h-[60px] p-2 bg-purple/5 rounded-lg border border-purple/20">
+    <div className={`relative w-full min-h-[60px] p-2 rounded-lg border ${
+      isCooked
+        ? "bg-green-50 border-green-200"
+        : "bg-purple/5 border-purple/20"
+    }`}>
       <div className="space-y-1">
         {items.map((item) => {
           const name = item.recipeName || item.customName || "Unnamed meal";
@@ -55,7 +65,10 @@ const MealPlanSlot = ({
                 onClick={() => onEditMeal(item)}
                 title="Edit meal"
               >
-                <p className="text-xs font-medium truncate">{name}</p>
+                <p className="text-xs font-medium truncate flex items-center gap-1">
+                  {isCooked && <Check className="h-3 w-3 text-green-600 flex-shrink-0" data-testid="cooked-check" />}
+                  {name}
+                </p>
               </button>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 {url && (
@@ -85,6 +98,24 @@ const MealPlanSlot = ({
               title="View meal details"
             >
               <ChefHat className="h-3 w-3" />
+            </button>
+          )}
+          {isCooked && onUncook && (
+            <button
+              onClick={() => onUncook(dayOfWeek, mealType)}
+              className="text-green-600 hover:text-orange-500 transition-colors"
+              title="Undo cook"
+            >
+              <RotateCcw className="h-3 w-3" />
+            </button>
+          )}
+          {!isCooked && onMarkCooked && (
+            <button
+              onClick={() => onMarkCooked(dayOfWeek, mealType)}
+              className="text-muted-foreground hover:text-green-600 transition-colors"
+              title="Mark as cooked"
+            >
+              <Check className="h-3 w-3" />
             </button>
           )}
           <button

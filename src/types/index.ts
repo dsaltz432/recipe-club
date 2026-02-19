@@ -191,6 +191,7 @@ export interface MealPlanItem {
   customUrl?: string;
   sortOrder: number;
   eventId?: string;
+  cookedAt?: string;
   // Joined data
   recipeName?: string;
   recipeUrl?: string;
