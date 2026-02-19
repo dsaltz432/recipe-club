@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, signOut, getAllowedUser, isAdmin, type AllowedUser } from "@/lib/auth";
+import { getCurrentUser, signOut, getAllowedUser, isAdmin } from "@/lib/auth";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,7 +33,6 @@ const Dashboard = () => {
   };
 
   const [user, setUser] = useState<User | null>(null);
-  const [allowedUserData, setAllowedUser] = useState<AllowedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -43,10 +42,7 @@ const Dashboard = () => {
   const [userRecipesCount, setUserRecipesCount] = useState(0);
   const [showPantryDialog, setShowPantryDialog] = useState(false);
 
-  const isShareOnly = allowedUserData?.access_type === "share_only";
-  const activeTab: TabValue = isShareOnly
-    ? "recipes"
-    : VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
+  const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
 
   const loadActiveEvent = async () => {
     try {
@@ -89,7 +85,6 @@ const Dashboard = () => {
       if (currentUser?.email) {
         // Check if user is in allowed_users table
         const allowed = await getAllowedUser(currentUser.email);
-        setAllowedUser(allowed);
         setIsAllowed(allowed !== null);
         setUserIsAdmin(isAdmin(allowed));
 
@@ -281,15 +276,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          {isShareOnly ? (
-            <TabsList className="grid w-full max-w-md mx-auto mb-4 grid-cols-1 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
-              <TabsTrigger value="recipes" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
-                <BookOpen className="h-4 w-4" />
-                <span className="text-sm">Recipes</span>
-              </TabsTrigger>
-            </TabsList>
-          ) : (
-            <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
+          <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
               <TabsTrigger value="home" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
                 <Home className="h-4 w-4" />
                 <span className="text-sm hidden sm:inline">Home</span>
@@ -307,42 +294,36 @@ const Dashboard = () => {
                 <span className="text-sm hidden sm:inline">Meals</span>
               </TabsTrigger>
             </TabsList>
-          )}
 
-          {!isShareOnly && (
-            <>
-              <TabsContent value="home">
-                <HomeSection
-                  user={user}
-                  activeEvent={activeEvent}
-                  ingredients={ingredients}
-                  setIngredients={setIngredients}
-                  isAdmin={userIsAdmin}
-                  onEventCreated={handleEventCreated}
-                  onRecipeAdded={handleRecipeAdded}
-                  onEventUpdated={loadActiveEvent}
-                />
-              </TabsContent>
+          <TabsContent value="home">
+            <HomeSection
+              user={user}
+              activeEvent={activeEvent}
+              ingredients={ingredients}
+              setIngredients={setIngredients}
+              isAdmin={userIsAdmin}
+              onEventCreated={handleEventCreated}
+              onRecipeAdded={handleRecipeAdded}
+              onEventUpdated={loadActiveEvent}
+            />
+          </TabsContent>
 
-              <TabsContent value="events">
-                <RecipeClubEvents
-                  userId={user?.id || ""}
-                  isAdmin={userIsAdmin}
-                  onEventChange={loadActiveEvent}
-                />
-              </TabsContent>
-            </>
-          )}
+          <TabsContent value="events">
+            <RecipeClubEvents
+              userId={user?.id || ""}
+              isAdmin={userIsAdmin}
+              onEventChange={loadActiveEvent}
+            />
+          </TabsContent>
 
           <TabsContent value="recipes">
             <RecipeHub
               userId={user?.id}
               userEmail={user?.email}
-              accessType={allowedUserData?.access_type || "club"}
             />
           </TabsContent>
 
-          {!isShareOnly && user?.id && (
+          {user?.id && (
             <TabsContent value="meals">
               <MealPlanPage userId={user.id} />
             </TabsContent>

@@ -3,43 +3,12 @@ import { render, screen, fireEvent } from "@tests/utils";
 import RecipeCard from "@/components/recipes/RecipeCard";
 import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
 
-// Mock Supabase (needed for ShareRecipeDialog)
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockResolvedValue({ error: null }),
-      update: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: [], error: null }),
-    }),
-    functions: {
-      invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
-    },
-  },
-}));
-
 // Mock sonner toast
 vi.mock("sonner", () => ({
   toast: {
     error: vi.fn(),
     success: vi.fn(),
   },
-}));
-
-// Mock devMode
-vi.mock("@/lib/devMode", () => ({
-  isDevMode: vi.fn(() => false),
-}));
-
-// Mock date-fns
-vi.mock("date-fns", () => ({
-  format: (date: Date) => {
-    const d = new Date(date);
-    return `${d.toLocaleString("en-US", { month: "short" })} ${d.getDate()}, ${d.getFullYear()}`;
-  },
-  parseISO: (str: string) => new Date(str),
 }));
 
 interface RecipeWithNotes extends Recipe {
@@ -489,38 +458,5 @@ describe("RecipeCard - Ratings Display", () => {
     expect(screen.getByText("4/5")).toBeInTheDocument();
     // No "Make again:" section when memberRatings is empty
     expect(screen.queryByText("Make again:")).not.toBeInTheDocument();
-  });
-});
-
-describe("RecipeCard - Share button", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("shows share button when userId is provided", () => {
-    const recipe = createMockRecipe();
-
-    render(<RecipeCard recipe={recipe} userId="user-123" />);
-
-    expect(screen.getByTitle("Share recipe")).toBeInTheDocument();
-  });
-
-  it("does not show share button without userId", () => {
-    const recipe = createMockRecipe();
-
-    render(<RecipeCard recipe={recipe} />);
-
-    expect(screen.queryByTitle("Share recipe")).not.toBeInTheDocument();
-  });
-
-  it("opens share dialog when share button is clicked", async () => {
-    const recipe = createMockRecipe();
-
-    render(<RecipeCard recipe={recipe} userId="user-123" />);
-
-    fireEvent.click(screen.getByTitle("Share recipe"));
-
-    expect(screen.getByText("Share Recipe")).toBeInTheDocument();
-    expect(screen.getByText(/with someone via email/i)).toBeInTheDocument();
   });
 });

@@ -65,7 +65,7 @@ describe("AllowedUser type", () => {
     expect(user.email).toBeDefined();
     expect(user.role).toMatch(/^(admin|viewer)$/);
     expect(typeof user.is_club_member).toBe("boolean");
-    expect(["club", "share_only"]).toContain(user.access_type);
+    expect(user.access_type).toBe("club");
   });
 
   it("should enforce valid role values", () => {
@@ -82,7 +82,7 @@ describe("AllowedUser type", () => {
       email: "viewer@test.com",
       role: "viewer",
       is_club_member: false,
-      access_type: "share_only",
+      access_type: "club",
     };
 
     expect(["admin", "viewer"]).toContain(adminUser.role);
