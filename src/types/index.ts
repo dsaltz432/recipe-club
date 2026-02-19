@@ -172,18 +172,6 @@ export interface RecipeShare {
   sharedByName?: string;
 }
 
-export interface UserPreferences {
-  id: string;
-  userId: string;
-  dietaryRestrictions: string[];
-  cuisinePreferences: string[];
-  dislikedIngredients: string[];
-  householdSize: number;
-  cookingSkill: "beginner" | "intermediate" | "advanced";
-  maxCookTimeMinutes: number;
-  updatedAt?: string;
-}
-
 export interface MealPlan {
   id: string;
   userId: string;
@@ -206,16 +194,6 @@ export interface MealPlanItem {
   // Joined data
   recipeName?: string;
   recipeUrl?: string;
-}
-
-export interface MealSuggestion {
-  id: string;
-  name: string;
-  cuisine: string;
-  timeEstimate: string;
-  reason: string;
-  recipeId?: string; // if referencing an existing recipe
-  url?: string; // suggested URL for new recipes
 }
 
 export interface ScheduledEvent {
