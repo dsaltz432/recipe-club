@@ -202,6 +202,7 @@ export interface MealPlanItem {
   customName?: string;
   customUrl?: string;
   sortOrder: number;
+  eventId?: string;
   // Joined data
   recipeName?: string;
   recipeUrl?: string;
@@ -219,11 +220,12 @@ export interface MealSuggestion {
 
 export interface ScheduledEvent {
   id: string;
-  ingredientId: string;
+  ingredientId?: string;
   eventDate: string;
   eventTime?: string;
   createdBy: string;
   status: "scheduled" | "completed" | "canceled";
+  type?: "club" | "personal";
   ingredientName?: string;
   ingredientColor?: string;
 }

@@ -5,10 +5,12 @@ import type { MealPlanItem } from "@/types";
 
 describe("MealPlanSlot", () => {
   const defaultProps = {
+    items: [] as MealPlanItem[],
     dayOfWeek: 1,
     mealType: "dinner" as const,
     onAddMeal: vi.fn(),
     onRemoveMeal: vi.fn(),
+    onEditMeal: vi.fn(),
   };
 
   beforeEach(() => {
@@ -30,60 +32,68 @@ describe("MealPlanSlot", () => {
   });
 
   it("renders meal item with recipe name", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-      recipeName: "Grilled Salmon",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
   });
 
   it("renders meal item with custom name when no recipe", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-      customName: "Homemade Pizza",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        customName: "Homemade Pizza",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     expect(screen.getByText("Homemade Pizza")).toBeInTheDocument();
   });
 
   it("renders Unnamed meal when no name provided", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     expect(screen.getByText("Unnamed meal")).toBeInTheDocument();
   });
 
   it("calls onRemoveMeal when remove button is clicked", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-      recipeName: "Grilled Salmon",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     fireEvent.click(screen.getByTitle("Remove meal"));
 
@@ -91,50 +101,56 @@ describe("MealPlanSlot", () => {
   });
 
   it("shows external link when item has recipe URL", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-      recipeName: "Grilled Salmon",
-      recipeUrl: "https://example.com/salmon",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+        recipeUrl: "https://example.com/salmon",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     const link = document.querySelector('a[href="https://example.com/salmon"]');
     expect(link).toBeInTheDocument();
   });
 
   it("shows external link when item has custom URL", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-      customName: "External Recipe",
-      customUrl: "https://example.com/recipe",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        customName: "External Recipe",
+        customUrl: "https://example.com/recipe",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     const link = document.querySelector('a[href="https://example.com/recipe"]');
     expect(link).toBeInTheDocument();
   });
 
   it("does not show external link when no URL", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "dinner",
-      sortOrder: 0,
-      recipeName: "No URL Recipe",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "No URL Recipe",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} />);
+    render(<MealPlanSlot {...defaultProps} items={items} />);
 
     const links = document.querySelectorAll("a[target='_blank']");
     expect(links.length).toBe(0);
@@ -156,17 +172,148 @@ describe("MealPlanSlot", () => {
   });
 
   it("shows meal type label for filled slot", () => {
-    const item: MealPlanItem = {
-      id: "item-1",
-      planId: "plan-1",
-      dayOfWeek: 1,
-      mealType: "lunch",
-      sortOrder: 0,
-      recipeName: "Salad",
-    };
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "lunch",
+        sortOrder: 0,
+        recipeName: "Salad",
+      },
+    ];
 
-    render(<MealPlanSlot {...defaultProps} item={item} mealType="lunch" />);
+    render(<MealPlanSlot {...defaultProps} items={items} mealType="lunch" />);
 
     expect(screen.getByText("Lunch")).toBeInTheDocument();
+  });
+
+  it("renders multiple items in the same slot", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+      {
+        id: "item-2",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 1,
+        customName: "Side Salad",
+      },
+    ];
+
+    render(<MealPlanSlot {...defaultProps} items={items} />);
+
+    expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    expect(screen.getByText("Side Salad")).toBeInTheDocument();
+  });
+
+  it("calls onEditMeal when meal name is clicked", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    render(<MealPlanSlot {...defaultProps} items={items} />);
+
+    fireEvent.click(screen.getByText("Grilled Salmon"));
+
+    expect(defaultProps.onEditMeal).toHaveBeenCalledWith(items[0]);
+  });
+
+  it("shows add-more button on filled slot", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    render(<MealPlanSlot {...defaultProps} items={items} />);
+
+    fireEvent.click(screen.getByTitle("Add another meal"));
+
+    expect(defaultProps.onAddMeal).toHaveBeenCalledWith(1, "dinner");
+  });
+
+  it("calls onRemoveMeal for correct item when multiple items exist", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+      {
+        id: "item-2",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 1,
+        customName: "Side Salad",
+      },
+    ];
+
+    render(<MealPlanSlot {...defaultProps} items={items} />);
+
+    const removeButtons = screen.getAllByTitle("Remove meal");
+    fireEvent.click(removeButtons[1]);
+
+    expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-2");
+  });
+
+  it("shows View meal details button when onViewMealEvent is provided", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+
+    fireEvent.click(screen.getByTitle("View meal details"));
+
+    expect(onViewMealEvent).toHaveBeenCalledWith(1, "dinner");
+  });
+
+  it("does not show View meal details button when onViewMealEvent is not provided", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    render(<MealPlanSlot {...defaultProps} items={items} />);
+
+    expect(screen.queryByTitle("View meal details")).not.toBeInTheDocument();
   });
 });

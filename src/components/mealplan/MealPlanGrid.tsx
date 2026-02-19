@@ -6,14 +6,16 @@ interface MealPlanGridProps {
   weekStart: Date;
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onRemoveMeal: (itemId: string) => void;
+  onEditMeal: (item: MealPlanItem) => void;
+  onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const;
 
-const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal }: MealPlanGridProps) => {
-  const getItemForSlot = (dayOfWeek: number, mealType: string): MealPlanItem | undefined => {
-    return items.find((item) => item.dayOfWeek === dayOfWeek && item.mealType === mealType);
+const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal, onEditMeal, onViewMealEvent }: MealPlanGridProps) => {
+  const getItemsForSlot = (dayOfWeek: number, mealType: string): MealPlanItem[] => {
+    return items.filter((item) => item.dayOfWeek === dayOfWeek && item.mealType === mealType);
   };
 
   const getDateLabel = (dayIndex: number): string => {
@@ -45,11 +47,13 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal }: MealPlanGri
             {DAY_LABELS.map((_, dayIndex) => (
               <div key={dayIndex} className="p-0.5">
                 <MealPlanSlot
-                  item={getItemForSlot(dayIndex, mealType)}
+                  items={getItemsForSlot(dayIndex, mealType)}
                   dayOfWeek={dayIndex}
                   mealType={mealType}
                   onAddMeal={onAddMeal}
                   onRemoveMeal={onRemoveMeal}
+                  onEditMeal={onEditMeal}
+                  onViewMealEvent={onViewMealEvent}
                 />
               </div>
             ))}

@@ -174,16 +174,17 @@ const RecipeHub = ({ userId, userEmail, accessType = "club" }: RecipeHubProps) =
       return;
     }
 
-    // Load personal recipes (created by user without event) + saved club recipes
+    // Load personal recipes (no event_id) created by user + saved club recipes
     const [personalResult, savedResult] = await Promise.all([
       supabase
         .from("recipes")
         .select(`
           *,
+          ingredients (name, color),
           profiles:created_by (name, avatar_url)
         `)
-        .is("event_id", null)
         .eq("created_by", userId)
+        .is("event_id", null)
         .order("created_at", { ascending: false }),
       supabase
         .from("saved_recipes")
@@ -203,22 +204,27 @@ const RecipeHub = ({ userId, userEmail, accessType = "club" }: RecipeHubProps) =
 
     const allRecipeIds: string[] = [];
 
-    // Build personal recipes
+    // Build personal recipes (standalone, no event_id)
     const personalRecipes: RecipeWithNotes[] = (personalResult.data || []).map((r) => {
       const creatorProfile = r.profiles as { name: string | null; avatar_url: string | null } | null;
+      const ingredientData = r.ingredients as { name: string; color: string | null } | null;
+      const ingredientName = ingredientData?.name;
+      const ingredientColor = ingredientData?.color || (ingredientName ? getIngredientColor(ingredientName) : undefined);
       allRecipeIds.push(r.id);
       return {
         id: r.id,
         name: r.name,
         url: r.url || undefined,
-        eventId: undefined,
-        ingredientId: undefined,
+        eventId: r.event_id || undefined,
+        ingredientId: r.ingredient_id || undefined,
         createdBy: r.created_by || undefined,
         createdAt: r.created_at,
         createdByName: creatorProfile?.name || undefined,
         createdByAvatar: creatorProfile?.avatar_url || undefined,
         notes: [],
-        isPersonal: true,
+        ingredientName,
+        ingredientColor,
+        isPersonal: !r.event_id,
         isSaved: false,
       };
     });

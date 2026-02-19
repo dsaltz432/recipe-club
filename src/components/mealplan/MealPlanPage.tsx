@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Settings, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import MealPlanGrid from "./MealPlanGrid";
 import AISuggestionPanel from "./AISuggestionPanel";
 import AIChatPanel from "./AIChatPanel";
 import PreferencesDialog from "./PreferencesDialog";
+import AddMealDialog from "./AddMealDialog";
 import type { MealPlanItem, MealSuggestion, UserPreferences } from "@/types";
 
 interface MealPlanPageProps {
@@ -39,6 +41,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [showPreferences, setShowPreferences] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingSlot, setPendingSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
+  const [showAddMealDialog, setShowAddMealDialog] = useState(false);
+  const [editingItem, setEditingItem] = useState<MealPlanItem | null>(null);
 
   const loadPreferences = useCallback(async () => {
     const { data } = await supabase
@@ -62,18 +66,24 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   }, [userId]);
 
+  const navigate = useNavigate();
+
   const loadPlan = useCallback(async () => {
     setIsLoading(true);
     try {
       const weekStartStr = weekStart.toISOString().split("T")[0];
 
-      // Find or create plan for this week
-      const { data: existingPlan } = await supabase
+      // Find existing plan — use order+limit instead of maybeSingle to be
+      // resilient to any duplicate rows (avoids PGRST116 error)
+      const { data: plans } = await supabase
         .from("meal_plans")
         .select("id")
         .eq("user_id", userId)
         .eq("week_start", weekStartStr)
-        .maybeSingle();
+        .order("created_at")
+        .limit(1);
+
+      const existingPlan = plans && plans.length > 0 ? plans[0] : null;
 
       if (existingPlan) {
         setPlanId(existingPlan.id);
@@ -98,18 +108,22 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             sortOrder: item.sort_order,
             recipeName: recipe?.name,
             recipeUrl: recipe?.url || undefined,
+            eventId: (item as Record<string, unknown>).event_id as string | undefined,
           };
         });
         setItems(mapped);
       } else {
-        // Create new plan
+        // Create plan — use upsert to be idempotent under StrictMode double-execution
         const { data: newPlan, error } = await supabase
           .from("meal_plans")
-          .insert({
-            user_id: userId,
-            week_start: weekStartStr,
-            name: "Weekly Plan",
-          })
+          .upsert(
+            {
+              user_id: userId,
+              week_start: weekStartStr,
+              name: "Weekly Plan",
+            },
+            { onConflict: "user_id,week_start" }
+          )
           .select("id")
           .single();
 
@@ -155,6 +169,41 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   const handleAddMeal = (dayOfWeek: number, mealType: string) => {
     setPendingSlot({ dayOfWeek, mealType });
+    setShowAddMealDialog(true);
+  };
+
+  const handleEditMeal = (item: MealPlanItem) => {
+    setEditingItem(item);
+    setPendingSlot({ dayOfWeek: item.dayOfWeek, mealType: item.mealType });
+    setShowAddMealDialog(true);
+  };
+
+  const handleAddCustomMeal = async (name: string, url?: string) => {
+    if (editingItem) {
+      await handleRemoveMeal(editingItem.id);
+      setEditingItem(null);
+    }
+    // pendingSlot is always set when the dialog is mounted
+    addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, url);
+    setPendingSlot(null);
+  };
+
+  const handleAddRecipeMeal = async (recipes: Array<{ id: string; name: string; url?: string }>) => {
+    if (editingItem) {
+      await handleRemoveMeal(editingItem.id);
+      setEditingItem(null);
+    }
+    // pendingSlot is always set when the dialog is mounted
+    for (const recipe of recipes) {
+      addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
+    }
+    setPendingSlot(null);
+  };
+
+  const closeAddMealDialog = () => {
+    setShowAddMealDialog(false);
+    setPendingSlot(null);
+    setEditingItem(null);
   };
 
   const handleRemoveMeal = async (itemId: string) => {
@@ -178,29 +227,34 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     if (!planId) return;
 
     try {
-      const insertData: {
-        plan_id: string;
-        day_of_week: number;
-        meal_type: string;
-        custom_name?: string;
-        custom_url?: string;
-        recipe_id?: string;
-      } = {
-        plan_id: planId,
-        day_of_week: dayOfWeek,
-        meal_type: mealType,
-      };
+      let linkedRecipeId = recipeId;
 
-      if (recipeId) {
-        insertData.recipe_id = recipeId;
-      } else {
-        insertData.custom_name = name;
-        if (url) insertData.custom_url = url;
+      // For custom meals, create a recipe record so it appears in "My Recipes"
+      if (!linkedRecipeId) {
+        const { data: newRecipe, error: recipeError } = await supabase
+          .from("recipes")
+          .insert({
+            name,
+            url: url || null,
+            created_by: userId,
+            event_id: null,
+            ingredient_id: null,
+          })
+          .select("id")
+          .single();
+
+        if (recipeError) throw recipeError;
+        linkedRecipeId = newRecipe.id;
       }
 
       const { data, error } = await supabase
         .from("meal_plan_items")
-        .insert(insertData)
+        .insert({
+          plan_id: planId,
+          day_of_week: dayOfWeek,
+          meal_type: mealType,
+          recipe_id: linkedRecipeId,
+        })
         .select("*, recipes (name, url)")
         .single();
 
@@ -228,31 +282,76 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   };
 
+  const handleViewMealEvent = async (dayOfWeek: number, mealType: string) => {
+    const slotItems = items.filter(
+      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
+    );
+
+    // Check if any item already has an event linked
+    const existingEventId = slotItems.find((i) => i.eventId)?.eventId;
+    if (existingEventId) {
+      navigate(`/meals/${existingEventId}`);
+      return;
+    }
+
+    // Create a personal event for this meal slot
+    try {
+      const slotDate = new Date(weekStart);
+      slotDate.setDate(slotDate.getDate() + dayOfWeek);
+      const dateStr = slotDate.toISOString().split("T")[0];
+
+      const insertPayload = {
+        event_date: dateStr,
+        status: "scheduled",
+        type: "personal",
+        created_by: userId,
+      };
+      const { data: newEvent, error } = await supabase
+        .from("scheduled_events")
+        // type column added by migration; cast to satisfy generated types
+        .insert(insertPayload as typeof insertPayload & { event_date: string })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      // Link meal_plan_items to this event
+      const itemIds = slotItems.map((i) => i.id);
+      const updatePayload = { event_id: newEvent.id };
+      await supabase
+        .from("meal_plan_items")
+        // event_id column added by migration; cast to satisfy generated types
+        .update(updatePayload as typeof updatePayload & { plan_id?: string })
+        .in("id", itemIds);
+
+      // Update local state
+      setItems((prev) =>
+        prev.map((item) =>
+          itemIds.includes(item.id) ? { ...item, eventId: newEvent.id } : item
+        )
+      );
+
+      navigate(`/meals/${newEvent.id}`);
+    } catch (error) {
+      console.error("Error creating meal event:", error);
+      toast.error("Failed to open meal details");
+    }
+  };
+
   const handleAddSuggestionToPlan = (suggestion: MealSuggestion) => {
-    if (pendingSlot) {
-      addItemToPlan(
-        suggestion.name,
-        pendingSlot.dayOfWeek,
-        pendingSlot.mealType,
-        suggestion.url,
-        suggestion.recipeId
-      );
-      setPendingSlot(null);
+    // Add to next available dinner slot
+    const usedSlots = new Set(
+      items
+        .filter((i) => i.mealType === "dinner")
+        .map((i) => i.dayOfWeek)
+    );
+    const nextDay = Array.from({ length: 7 }, (_, i) => i).find(
+      (d) => !usedSlots.has(d)
+    );
+    if (nextDay !== undefined) {
+      addItemToPlan(suggestion.name, nextDay, "dinner", suggestion.url, suggestion.recipeId);
     } else {
-      // Add to next available dinner slot
-      const usedSlots = new Set(
-        items
-          .filter((i) => i.mealType === "dinner")
-          .map((i) => i.dayOfWeek)
-      );
-      const nextDay = Array.from({ length: 7 }, (_, i) => i).find(
-        (d) => !usedSlots.has(d)
-      );
-      if (nextDay !== undefined) {
-        addItemToPlan(suggestion.name, nextDay, "dinner", suggestion.url, suggestion.recipeId);
-      } else {
-        toast.error("All dinner slots are filled. Click an empty slot first.");
-      }
+      toast.error("All dinner slots are filled. Click an empty slot first.");
     }
   };
 
@@ -375,23 +474,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         </div>
       </div>
 
-      {pendingSlot && (
-        <div className="bg-purple/10 border border-purple/30 rounded-lg p-3 text-sm">
-          Adding meal for{" "}
-          <strong>
-            {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][pendingSlot.dayOfWeek]}
-          </strong>
-          {" "}{pendingSlot.mealType}.
-          Click a suggestion below or{" "}
-          <button
-            className="text-purple underline"
-            onClick={() => setPendingSlot(null)}
-          >
-            cancel
-          </button>.
-        </div>
-      )}
-
       <WeekNavigation
         weekStart={weekStart}
         onPreviousWeek={handlePreviousWeek}
@@ -404,6 +486,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         weekStart={weekStart}
         onAddMeal={handleAddMeal}
         onRemoveMeal={handleRemoveMeal}
+        onEditMeal={handleEditMeal}
+        onViewMealEvent={handleViewMealEvent}
       />
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -426,6 +510,18 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         preferences={preferences}
         onSaved={setPreferences}
       />
+
+      {pendingSlot && (
+        <AddMealDialog
+          open={showAddMealDialog}
+          onOpenChange={() => closeAddMealDialog()}
+          dayOfWeek={pendingSlot.dayOfWeek}
+          mealType={pendingSlot.mealType}
+          onAddCustomMeal={handleAddCustomMeal}
+          onAddRecipeMeal={handleAddRecipeMeal}
+          editingItemName={editingItem ? (editingItem.recipeName || editingItem.customName || "Unnamed meal") : undefined}
+        />
+      )}
     </div>
   );
 };

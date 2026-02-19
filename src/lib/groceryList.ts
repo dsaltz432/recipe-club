@@ -188,6 +188,7 @@ const CATEGORY_OVERRIDES: Record<string, GroceryCategory> = {
 const UNIT_REMAP: Record<string, string> = {
   "rib": "stalk",
   "slice": "strip",
+  "piece": "",
 };
 
 // Preferred count unit for volume-to-count merging
@@ -197,6 +198,7 @@ const PREFERRED_COUNT_UNIT: Record<string, string> = {
   "garlic": "clove",
   "corn": "ear",
   "broccoli": "head",
+  "cauliflower": "head",
 };
 
 // Bulk unit conversion: when a count unit exceeds a threshold, convert to a larger unit
@@ -213,6 +215,8 @@ const COUNT_TO_CUP: Record<string, number> = {
   "celery": 0.5,      // 1 stalk celery ≈ 1/2 cup chopped
   "zucchini": 1.25,   // 1 medium zucchini ≈ 1 1/4 cup chopped
   "garlic": 1/48,     // 1 clove garlic ≈ 1 tsp ≈ 1/48 cup
+  "scallion": 0.125,  // 1 scallion ≈ 2 tbsp ≈ 1/8 cup sliced
+  "cauliflower": 4,   // 1 medium head ≈ 4 cups florets
 };
 
 // How many lb equal 1 whole unit of a count-based ingredient
@@ -220,6 +224,27 @@ const COUNT_TO_CUP: Record<string, number> = {
 const COUNT_TO_LB: Record<string, number> = {
   "potato": 0.5,      // 1 medium potato ≈ 0.5 lb (8 oz)
   "broccoli": 1.25,   // 1 medium head broccoli ≈ 1.25 lb (20 oz)
+};
+
+// Ingredients where "oz" means fluid ounces (volume), not weight
+// For these, "oz" is converted to tbsp (1 fl oz = 2 tbsp) before family lookup
+const FLUID_OZ_INGREDIENTS = new Set([
+  "chicken stock", "beef stock", "vegetable stock",
+  "low sodium chicken stock",
+  "cream", "heavy cream", "sour cream",
+  "milk", "buttermilk", "coconut milk",
+  "juice", "lemon juice", "lime juice", "orange juice",
+  "water",
+  "wine", "red wine", "white wine",
+  "coconut cream", "half and half",
+]);
+
+// How many slices make 1 whole unit — used to merge "1 slice onion" into count
+const SLICE_TO_COUNT: Record<string, number> = {
+  "onion": 8,       // 1 medium onion ≈ 8 slices/rings
+  "tomato": 6,      // 1 medium tomato ≈ 6 slices
+  "lemon": 8,       // 1 lemon ≈ 8 slices
+  "bread": 1,       // 1 slice bread = 1 count
 };
 
 // How many cups equal 1 can of a specific ingredient
@@ -247,6 +272,77 @@ const WEIGHT_IN_OZ: Record<string, number> = {
   oz: 1,
   lb: 16,
   kg: 1000 / 28.35,
+};
+
+// Approximate weight of 1 cup in oz — used to merge volume + weight for the same ingredient
+// e.g. "6 cups spinach" + "5 oz spinach" → convert oz→cups via density, then combine
+const DENSITY_OZ_PER_CUP: Record<string, number> = {
+  // Fresh greens / herbs (very light per cup)
+  "spinach": 1,
+  "arugula": 0.7,
+  "kale": 2.4,
+  "lettuce": 2,
+  "butter lettuce": 2,
+  "basil": 0.85,
+  "cilantro": 0.85,
+  "parsley": 1,
+  "mint": 0.85,
+  "dill": 0.5,
+  // Chopped / diced vegetables
+  "onion": 5.3,
+  "bell pepper": 5.3,
+  "carrot": 5,
+  "celery": 4,
+  "tomato": 6.3,
+  "mushroom": 2.5,
+  "broccoli": 3,
+  "cauliflower": 3.5,
+  "zucchini": 4.4,
+  "potato": 5.3,
+  "sweet potato": 5,
+  "corn": 5.8,
+  "cabbage": 3,
+  "cucumber": 4.5,
+  "pea": 5.3,
+  "green bean": 4,
+  // Dairy / fats
+  "cheddar": 4,
+  "mozzarella": 4,
+  "parmesan": 3,
+  "cream cheese": 8,
+  "butter": 8,
+  "heavy cream": 8.4,
+  "yogurt": 8.6,
+  "sour cream": 8,
+  // Dry goods
+  "flour": 4.4,
+  "sugar": 7,
+  "brown sugar": 7.7,
+  "powdered sugar": 4.4,
+  "rice": 6.5,
+  "oats": 3.2,
+  "breadcrumbs": 4,
+  "cornstarch": 4.5,
+  "cocoa": 3,
+  "coconut": 3,
+  // Nuts / seeds
+  "almond": 5,
+  "walnut": 4,
+  "pecan": 3.5,
+  "peanut": 5,
+  "cashew": 5,
+  "pistachio": 4.3,
+  "sesame seed": 5,
+  // Proteins
+  "chicken": 5,
+  "ground beef": 8,
+  "ground turkey": 8,
+  "ground pork": 8,
+  "ground lamb": 8,
+  "ground chicken": 8,
+  "bacon": 5.3,
+  "shrimp": 4,
+  "tofu": 9,
 };
 
 export function decimalToFraction(value: number): string {
@@ -404,25 +500,40 @@ export function combineIngredients(
 
     // Separate items by convertibility
     // Track: base amounts for each conversion family, and non-convertible items by unit
-    const familyTotals = new Map<string, { totalBase: number; family: Record<string, number>; originalUnits: Set<string> }>();
+    const familyTotals = new Map<string, { totalBase: number; family: Record<string, number>; originalUnits: Set<string>; itemCount: number }>();
     const plainTotals = new Map<string, { total: number | undefined; hasQuantity: boolean }>();
 
     for (const item of group.items) {
-      const conv = item.unit ? getConversionFamily(item.unit) : null;
+      // For liquid ingredients, treat "oz" as fluid ounces (volume) not weight
+      let effectiveUnit = item.unit;
+      let effectiveQuantity = item.quantity;
+      if (effectiveUnit === "oz" && FLUID_OZ_INGREDIENTS.has(name) && effectiveQuantity != null) {
+        effectiveUnit = "tbsp";
+        effectiveQuantity = effectiveQuantity * 2; // 1 fl oz = 2 tbsp
+      }
 
-      if (conv && item.quantity != null) {
+      const conv = effectiveUnit ? getConversionFamily(effectiveUnit) : null;
+
+      if (conv && effectiveQuantity != null) {
         const familyKey = conv.baseUnit;
-        const baseAmount = item.quantity * conv.family[item.unit];
+        const baseAmount = effectiveQuantity * conv.family[effectiveUnit];
         const existing = familyTotals.get(familyKey);
         if (existing) {
           existing.totalBase += baseAmount;
-          existing.originalUnits.add(item.unit);
+          existing.originalUnits.add(effectiveUnit);
+          existing.itemCount += 1;
         } else {
-          familyTotals.set(familyKey, { totalBase: baseAmount, family: conv.family, originalUnits: new Set([item.unit]) });
+          familyTotals.set(familyKey, { totalBase: baseAmount, family: conv.family, originalUnits: new Set([effectiveUnit]), itemCount: 1 });
         }
       } else {
         // Non-convertible: group by unit (apply remaps)
-        const remappedUnit = item.unit ? (UNIT_REMAP[item.unit] ?? item.unit) : item.unit;
+        // Only remap "slice" → "strip" for ingredients that prefer "strip" unit (e.g. bacon)
+        const unit = item.unit;
+        const remappedUnit = unit ? (
+          unit === "slice"
+            ? (PREFERRED_COUNT_UNIT[name] === "strip" ? "strip" : unit)
+            : (UNIT_REMAP[unit] ?? unit)
+        ) : unit;
         let unitKey = remappedUnit || "";
         // Apply preferred count unit for bare counts (e.g. "3 celery" → "3 stalks celery")
         if (!unitKey && PREFERRED_COUNT_UNIT[name]) {
@@ -442,6 +553,38 @@ export function combineIngredients(
       }
     }
 
+    // Merge volume + weight families when both exist for the same ingredient
+    if (familyTotals.has("tsp") && familyTotals.has("oz")) {
+      const volEntry = familyTotals.get("tsp")!;
+      const wtEntry = familyTotals.get("oz")!;
+      const density = DENSITY_OZ_PER_CUP[name];
+      // For light ingredients (density ≤ 2 oz/cup — greens, herbs), prefer weight
+      // because cups give unreasonably large numbers (e.g. "11 cups spinach")
+      const preferVolume = density != null && density <= 2
+        ? false
+        : volEntry.itemCount >= wtEntry.itemCount;
+
+      if (density != null) {
+        // Convert one family into the other using density, then combine
+        if (preferVolume) {
+          // weight → volume: oz → cups → tsp
+          const cupsFromWeight = wtEntry.totalBase / density;
+          volEntry.totalBase += cupsFromWeight * VOLUME_IN_TSP.cup;
+          volEntry.originalUnits.add("cup");
+          familyTotals.delete("oz");
+        } else {
+          // volume → weight: tsp → cups → oz
+          const cupsFromVolume = volEntry.totalBase / VOLUME_IN_TSP.cup;
+          wtEntry.totalBase += cupsFromVolume * density;
+          wtEntry.originalUnits.add("oz");
+          familyTotals.delete("tsp");
+        }
+      } else {
+        // No density data — keep both families as separate line items
+        // rather than silently dropping one (never lose ingredient data)
+      }
+    }
+
     // Convert "can" entries to volume for ingredients with known can-to-cup ratio
     const canCupRatio = CAN_TO_CUP[name];
     if (canCupRatio != null && plainTotals.has("can")) {
@@ -453,7 +596,7 @@ export function combineIngredients(
           existing.totalBase += tspFromCans;
           existing.originalUnits.add("cup");
         } else {
-          familyTotals.set("tsp", { totalBase: tspFromCans, family: VOLUME_IN_TSP, originalUnits: new Set(["cup"]) });
+          familyTotals.set("tsp", { totalBase: tspFromCans, family: VOLUME_IN_TSP, originalUnits: new Set(["cup"]), itemCount: 1 });
         }
         plainTotals.delete("can");
       }
@@ -511,9 +654,12 @@ export function combineIngredients(
         const originalFactor = usableFamily[originalUnit];
         const quantity = totalBase / originalFactor;
         // Check if a larger unit in the family would be cleaner (e.g. 14 tbsp → ~1 cup)
+        // For weight (oz→lb), only upscale when ≥ 1 lb — "11 oz" is clearer than "0.69 lb"
         const largestFactor = Math.max(...Object.values(usableFamily));
-        if (originalFactor < largestFactor && totalBase / largestFactor >= 0.5) {
-          const preferred = convertToPreferredUnit(totalBase, usableFamily, 0.5);
+        const isWeightFamily = "lb" in usableFamily;
+        const upscaleThreshold = isWeightFamily ? 1 : 0.5;
+        if (originalFactor < largestFactor && totalBase / largestFactor >= upscaleThreshold) {
+          const preferred = convertToPreferredUnit(totalBase, usableFamily, upscaleThreshold);
           results.push({
             name,
             totalQuantity: preferred.quantity,
@@ -547,9 +693,36 @@ export function combineIngredients(
     if (bulk) {
       const entry = plainTotals.get(bulk.fromUnit);
       if (entry && entry.hasQuantity && entry.total != null && entry.total > bulk.threshold) {
-        entry.total = Math.round(entry.total / bulk.ratio);
+        entry.total = Math.ceil(entry.total / bulk.ratio);
         plainTotals.delete(bulk.fromUnit);
         plainTotals.set(bulk.toUnit, entry);
+      }
+    }
+
+    // Merge slices into count for ingredients with known slice-to-count ratio
+    const sliceRatio = SLICE_TO_COUNT[name];
+    if (sliceRatio != null && plainTotals.has("slice")) {
+      const sliceEntry = plainTotals.get("slice")!;
+      if (sliceEntry.hasQuantity && sliceEntry.total != null) {
+        const countFromSlices = sliceEntry.total / sliceRatio;
+        const sliceCountKey = PREFERRED_COUNT_UNIT[name] ?? "";
+        const countEntry = plainTotals.get(sliceCountKey);
+        if (countEntry && countEntry.hasQuantity && countEntry.total != null) {
+          countEntry.total += countFromSlices;
+          plainTotals.delete("slice");
+        }
+      }
+    }
+
+    // Absorb no-quantity ("to taste") entries when a quantified entry exists
+    const hasQuantifiedEntry =
+      familyTotals.size > 0 ||
+      [...plainTotals.values()].some(v => v.hasQuantity);
+    if (hasQuantifiedEntry) {
+      for (const [unit, entry] of plainTotals) {
+        if (!entry.hasQuantity) {
+          plainTotals.delete(unit);
+        }
       }
     }
 

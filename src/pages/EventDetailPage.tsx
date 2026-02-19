@@ -365,8 +365,8 @@ const EventDetailPage = () => {
     }
   };
 
-  const loadGroceryData = async (recipeIds: string[]) => {
-    if (recipeIds.length === 0) return;
+  const loadGroceryData = async (recipeIds: string[]): Promise<{ ingredients: RecipeIngredient[]; contentMap: Record<string, RecipeContent> } | null> => {
+    if (recipeIds.length === 0) return null;
     setIsLoadingIngredients(true);
     try {
       const [ingredientsResult, contentResult] = await Promise.all([
@@ -374,8 +374,11 @@ const EventDetailPage = () => {
         supabase.from("recipe_content").select("*").in("recipe_id", recipeIds),
       ]);
 
+      let ingredients: RecipeIngredient[] = [];
+      const contentMap: Record<string, RecipeContent> = {};
+
       if (ingredientsResult.data) {
-        setRecipeIngredients(ingredientsResult.data.map((row) => ({
+        ingredients = ingredientsResult.data.map((row) => ({
           id: row.id,
           recipeId: row.recipe_id,
           name: row.name,
@@ -385,13 +388,13 @@ const EventDetailPage = () => {
           rawText: row.raw_text ?? undefined,
           sortOrder: row.sort_order ?? undefined,
           createdAt: row.created_at,
-        })));
+        }));
+        setRecipeIngredients(ingredients);
       }
 
       if (contentResult.data) {
-        const map: Record<string, RecipeContent> = {};
         for (const row of contentResult.data) {
-          map[row.recipe_id] = {
+          contentMap[row.recipe_id] = {
             id: row.id,
             recipeId: row.recipe_id,
             description: row.description ?? undefined,
@@ -407,10 +410,13 @@ const EventDetailPage = () => {
             createdAt: row.created_at,
           };
         }
-        setRecipeContentMap(map);
+        setRecipeContentMap(contentMap);
       }
+
+      return { ingredients, contentMap };
     } catch (error) {
       console.error("Error loading grocery data:", error);
+      return null;
     } finally {
       setIsLoadingIngredients(false);
     }
@@ -463,13 +469,14 @@ const EventDetailPage = () => {
         toast.success("Recipe parsed successfully!");
       }
 
-      // Reload grocery data
+      // Reload grocery data and run smart combine with fresh data
       const recipeIds = event?.recipesWithNotes.map((r) => r.recipe.id) || [];
-      await loadGroceryData(recipeIds);
+      const groceryData = await loadGroceryData(recipeIds);
 
-      // Run smart combine after re-parse
-      const allRecipes = event?.recipesWithNotes.map((r) => r.recipe) || [];
-      await runSmartCombine(recipeIngredients, recipeContentMap, allRecipes);
+      if (groceryData) {
+        const allRecipes = event?.recipesWithNotes.map((r) => r.recipe) || [];
+        await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
+      }
     } catch (error) {
       console.error("Error parsing recipe:", error);
       toast.error("Failed to parse recipe. Please try again.");
@@ -513,13 +520,14 @@ const EventDetailPage = () => {
   useEffect(() => {
     if (event?.recipesWithNotes && event.recipesWithNotes.length > 0) {
       const recipeIds = event.recipesWithNotes.map((r) => r.recipe.id);
-      loadGroceryData(recipeIds).then(async () => {
+      loadGroceryData(recipeIds).then(async (groceryData) => {
+        if (!groceryData) return;
         // Check cache before running AI combine
         if (eventId) {
           const cached = await loadGroceryCache(eventId);
           if (cached) {
             const currentParsedIds = event.recipesWithNotes
-              .filter((r) => recipeContentMap[r.recipe.id]?.status === "completed")
+              .filter((r) => groceryData.contentMap[r.recipe.id]?.status === "completed")
               .map((r) => r.recipe.id)
               .sort();
             const cachedIds = [...cached.recipeIds].sort();
@@ -532,9 +540,9 @@ const EventDetailPage = () => {
             }
           }
         }
-        // Cache miss or stale — run smart combine
+        // Cache miss or stale — run smart combine with fresh data
         const allRecipes = event.recipesWithNotes.map((r) => r.recipe);
-        runSmartCombine(recipeIngredients, recipeContentMap, allRecipes);
+        runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -683,13 +691,13 @@ const EventDetailPage = () => {
         await loadEventData();
 
         const recipeIds = [...(event.recipesWithNotes.map((r) => r.recipe.id) || []), newRecipeId];
-        await loadGroceryData(recipeIds);
+        const groceryData = await loadGroceryData(recipeIds);
 
         // Combining step (only if 2+ parsed recipes)
-        if (willCombine) {
+        if (willCombine && groceryData) {
           setParseStep("combining");
           const allRecipes = [...(event.recipesWithNotes.map((r) => r.recipe) || []), insertedRecipe as unknown as Recipe];
-          await runSmartCombine(recipeIngredients, recipeContentMap, allRecipes);
+          await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
           await new Promise(resolve => setTimeout(resolve, 200));
         }
 

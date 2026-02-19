@@ -68,6 +68,7 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
           *,
           ingredients (*)
         `)
+        .eq("type", "club")
         .in("status", ["scheduled", "completed"])
         .order("event_date", { ascending: true });
 

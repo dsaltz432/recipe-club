@@ -206,6 +206,51 @@ describe("combine-ingredients edge function", () => {
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
 
+  it("falls back to skipped when AI drops an ingredient", async () => {
+    // AI returns only "garlic" but input had "garlic" + "onion"
+    const aiItems = [
+      { name: "garlic", totalQuantity: 5, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
+    ];
+
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      createAnthropicResponse(JSON.stringify(aiItems)),
+    );
+
+    const req = createEdgeRequest({
+      preCombined: [
+        { name: "garlic", quantity: "5", unit: "clove", category: "produce", sourceRecipes: ["R1"] },
+        { name: "onion", quantity: "2", unit: null, category: "produce", sourceRecipes: ["R2"] },
+      ],
+    });
+
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, skipped: true });
+    expect((data as { message: string }).message).toContain("onion");
+  });
+
+  it("allows semantic merges where one name contains the other", async () => {
+    // "broccoli floret" merged into "broccoli" is OK (substring match)
+    const aiItems = [
+      { name: "broccoli", totalQuantity: 3, unit: "head", category: "produce", sourceRecipes: ["R1", "R2"] },
+    ];
+
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      createAnthropicResponse(JSON.stringify(aiItems)),
+    );
+
+    const req = createEdgeRequest({
+      preCombined: [
+        { name: "broccoli floret", quantity: "2", unit: "head", category: "produce", sourceRecipes: ["R1"] },
+        { name: "broccoli", quantity: "1", unit: "head", category: "produce", sourceRecipes: ["R2"] },
+      ],
+    });
+
+    const { data } = await parseResponse(await handler(req));
+    expect(data).toEqual({ success: true, items: aiItems });
+  });
+
   it("returns 'Unknown error' when a non-Error value is thrown", async () => {
     globalThis.fetch = vi.fn().mockRejectedValue("string error");
 

@@ -86,10 +86,11 @@ Your tasks:
 - 1 cup = 16 tbsp = 48 tsp
 - 1 lb = 16 oz
 - When BOTH items have convertible units (tsp/tbsp, cup/tbsp, oz/lb), convert to the smaller unit, sum, then express in the larger unit if the result is clean (e.g. 6 tsp → 2 tbsp)
-- When units are INCOMPATIBLE and cannot be converted (e.g. "clove" vs "tsp", "bunch" vs "tsp", "piece" vs "tbsp", "strip" vs "tsp"), use the unit from the item with the larger quantity. Do NOT simply add the numbers together — the smaller quantity's number should be dropped or estimated.
+- When units are INCOMPATIBLE and cannot be converted (e.g. "clove" vs "tsp", "bunch" vs "cup", "piece" vs "tbsp"), keep BOTH entries as separate line items. NEVER drop an ingredient — it is better to have two entries for the same ingredient than to lose data.
 - When one item has a unit and another has null unit, keep the unit and add the quantities.
 
 ## Rules:
+- NEVER drop ingredients. Every input item MUST appear in your output, either merged with a duplicate or returned unchanged. It is better to have duplicate entries than to lose an ingredient.
 - Preserve the most specific category assignment
 - Combine sourceRecipes arrays (deduplicated)
 - Return raw numeric quantities — do NOT format as fractions or strings
@@ -144,6 +145,25 @@ totalQuantity must be a number or null. unit must be a string or null.`;
       items = JSON.parse(jsonMatch[1].trim());
     } catch {
       throw new Error(`Failed to parse AI response as JSON: ${aiText.slice(0, 200)}`);
+    }
+
+    // Validate: AI must not drop ingredients. Compare unique names in vs out.
+    // Allow semantic merges where one name contains the other (e.g. "broccoli floret" → "broccoli").
+    const inputNames = new Set(preCombined.map((i) => i.name.toLowerCase()));
+    const outputNames = new Set(items.map((i) => i.name.toLowerCase()));
+    const droppedNames = [...inputNames].filter((inputName) => {
+      if (outputNames.has(inputName)) return false;
+      for (const outputName of outputNames) {
+        if (outputName.includes(inputName) || inputName.includes(outputName)) return false;
+      }
+      return true;
+    });
+    if (droppedNames.length > 0) {
+      console.warn(`AI dropped ingredients: ${droppedNames.join(", ")}. Falling back to naive combine.`);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, message: `AI dropped ingredients: ${droppedNames.join(", ")}` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(

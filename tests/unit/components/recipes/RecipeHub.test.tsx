@@ -1405,10 +1405,11 @@ describe("RecipeHub - Sub-tabs", () => {
         name: "My Home Recipe",
         url: "https://example.com/home",
         event_id: null,
-        ingredient_id: null,
+        ingredient_id: "ing-1",
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        ingredients: { name: "Chicken", color: null },
       },
     ];
 

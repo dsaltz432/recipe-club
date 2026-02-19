@@ -21,7 +21,7 @@ import RecipeHub from "@/components/recipes/RecipeHub";
 import PantryDialog from "@/components/pantry/PantryDialog";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
 
-const VALID_TABS = ["home", "events", "recipes", "mealplan"] as const;
+const VALID_TABS = ["home", "events", "recipes", "meals"] as const;
 type TabValue = typeof VALID_TABS[number];
 
 const Dashboard = () => {
@@ -53,6 +53,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("scheduled_events")
         .select("*, ingredients (name)")
+        .eq("type", "club")
         .eq("status", "scheduled")
         .order("event_date", { ascending: true })
         .limit(1)
@@ -144,6 +145,7 @@ const Dashboard = () => {
         supabase
           .from("scheduled_events")
           .select("*", { count: "exact", head: true })
+          .eq("type", "club")
           .in("status", ["scheduled", "completed"]),
         supabase
           .from("recipes")
@@ -300,7 +302,7 @@ const Dashboard = () => {
                 <BookOpen className="h-4 w-4" />
                 <span className="text-sm hidden sm:inline">Recipes</span>
               </TabsTrigger>
-              <TabsTrigger value="mealplan" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+              <TabsTrigger value="meals" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
                 <CalendarDays className="h-4 w-4" />
                 <span className="text-sm hidden sm:inline">Meals</span>
               </TabsTrigger>
@@ -341,7 +343,7 @@ const Dashboard = () => {
           </TabsContent>
 
           {!isShareOnly && user?.id && (
-            <TabsContent value="mealplan">
+            <TabsContent value="meals">
               <MealPlanPage userId={user.id} />
             </TabsContent>
           )}
