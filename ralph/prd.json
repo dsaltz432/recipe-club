@@ -97,7 +97,7 @@
         "Tests pass with 100% coverage on mealplan directory (npm run test:coverage)"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "MealPlanPage.tsx needs a new view state ('grid' | 'groceries'). Reuse existing components: GroceryListSection from src/components/recipes/GroceryListSection.tsx, combineIngredients/groupByCategory/filterPantryItems from src/lib/groceryList.ts, getPantryItems from src/lib/pantry.ts. To load ingredients: query meal_plan_items for current week's plan to get recipe_ids, then query recipe_ingredients for those recipe_ids. Also need to build a recipeNameMap (recipe_id -> recipe name) and recipeContentMap for GroceryListSection. The tab switcher should sit alongside WeekNavigation. WeekNavigation should remain visible in both tabs."
     },
     {

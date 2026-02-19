@@ -15,11 +15,30 @@ vi.mock("react-router-dom", async () => {
 
 // Mock Supabase
 const mockSupabaseFrom = vi.fn();
+const mockInvoke = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
+    functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
   },
 }));
+
+// Mock pantry module
+const mockGetPantryItems = vi.fn();
+const mockEnsureDefaultPantryItems = vi.fn();
+vi.mock("@/lib/pantry", () => ({
+  getPantryItems: (...args: unknown[]) => mockGetPantryItems(...args),
+  ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+}));
+
+// Mock constants to show parse buttons in tests
+vi.mock("@/lib/constants", async () => {
+  const actual = await vi.importActual("@/lib/constants");
+  return {
+    ...actual,
+    SHOW_PARSE_BUTTONS: true,
+  };
+});
 
 // Mock sonner toast
 vi.mock("sonner", () => ({
@@ -70,6 +89,9 @@ describe("MealPlanPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetPantryItems.mockResolvedValue([]);
+    mockEnsureDefaultPantryItems.mockResolvedValue(undefined);
+    mockInvoke.mockResolvedValue({ data: {}, error: null });
 
     // Default mock: create a new plan for the current week
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -123,11 +145,11 @@ describe("MealPlanPage", () => {
     expect(document.querySelector(".animate-spin")).toBeInTheDocument();
   });
 
-  it("renders Meal Plan header after loading", async () => {
+  it("renders Meals header after loading", async () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
   });
 
@@ -135,7 +157,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click previous week button (first chevron button)
@@ -150,7 +172,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // ChevronLeft and ChevronRight are icon-only buttons (no text content)
@@ -165,7 +187,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click an empty meal slot
@@ -218,7 +240,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click an empty dinner slot
@@ -279,7 +301,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     const slotButtons = screen.getAllByRole("button").filter(
@@ -339,7 +361,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click an empty dinner slot
@@ -378,7 +400,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click an empty meal slot to open dialog
@@ -562,7 +584,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Should have day headers
@@ -595,7 +617,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click slot to open dialog
@@ -646,7 +668,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Click slot to open dialog
@@ -672,7 +694,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Navigate away from current week (click ChevronLeft)
@@ -790,7 +812,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByText("Meals")).toBeInTheDocument();
     });
 
     // Should render with no items (empty grid)
@@ -1383,6 +1405,896 @@ describe("MealPlanPage", () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to open meal details");
+    });
+  });
+
+  describe("Groceries tab", () => {
+    it("shows Groceries tab button", async () => {
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("Groceries")).toBeInTheDocument();
+    });
+
+    it("shows empty state when no meals have recipes", async () => {
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      expect(
+        screen.getByText("Add meals to your plan to generate a grocery list.")
+      ).toBeInTheDocument();
+    });
+
+    it("loads grocery data when switching to Groceries tab with meals", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Grilled Chicken", url: "https://example.com/chicken" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "ing-1",
+                  recipe_id: "recipe-1",
+                  name: "chicken breast",
+                  quantity: 2,
+                  unit: "lbs",
+                  category: "meat_seafood",
+                  raw_text: "2 lbs chicken breast",
+                  sort_order: 0,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "content-1",
+                  recipe_id: "recipe-1",
+                  description: null,
+                  servings: null,
+                  prep_time: null,
+                  cook_time: null,
+                  total_time: null,
+                  instructions: null,
+                  source_title: null,
+                  parsed_at: "2026-01-01",
+                  status: "completed",
+                  error_message: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Grilled Chicken", url: "https://example.com/chicken" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      mockGetPantryItems.mockResolvedValue([{ id: "p1", name: "salt" }]);
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Grilled Chicken")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      // Should show grocery list
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+    });
+
+    it("shows empty state when meals have no recipeId", async () => {
+      // Load plan with a custom meal that has no recipeId
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Just Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Just Toast")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      expect(
+        screen.getByText("Add meals to your plan to generate a grocery list.")
+      ).toBeInTheDocument();
+    });
+
+    it("handles grocery data load error", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Chicken", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockRejectedValue(new Error("DB error")),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockRejectedValue(new Error("DB error")),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockRejectedValue(new Error("DB error")),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to load grocery list");
+      });
+    });
+
+    it("handles pantry load error gracefully", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Chicken", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Chicken", url: null }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      mockEnsureDefaultPantryItems.mockRejectedValue(new Error("Pantry error"));
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab — should not crash even if pantry load fails
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+    });
+
+    it("parses a recipe from the grocery tab", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pasta", url: "https://example.com/pasta" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "content-1",
+                  recipe_id: "recipe-1",
+                  description: null,
+                  servings: null,
+                  prep_time: null,
+                  cook_time: null,
+                  total_time: null,
+                  instructions: null,
+                  source_title: null,
+                  parsed_at: null,
+                  status: "pending",
+                  error_message: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Pasta", url: "https://example.com/pasta" }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pasta")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Click parse button
+      const parseButton = screen.getByText('Parse "Pasta"');
+      fireEvent.click(parseButton);
+
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
+          body: { recipeId: "recipe-1", recipeUrl: "https://example.com/pasta", recipeName: "Pasta" },
+        });
+      });
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+      });
+    });
+
+    it("handles parse recipe error", async () => {
+      mockInvoke.mockResolvedValue({ data: null, error: { message: "Parse failed" } });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pasta", url: "https://example.com/pasta" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "content-1",
+                  recipe_id: "recipe-1",
+                  description: null,
+                  servings: null,
+                  prep_time: null,
+                  cook_time: null,
+                  total_time: null,
+                  instructions: null,
+                  source_title: null,
+                  parsed_at: null,
+                  status: "pending",
+                  error_message: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Pasta", url: "https://example.com/pasta" }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pasta")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Click parse button
+      fireEvent.click(screen.getByText('Parse "Pasta"'));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
+      });
+    });
+
+    it("does not parse recipe without URL", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "No URL Recipe", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "No URL Recipe", url: null }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("No URL Recipe")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // No parse button should be shown since the recipe has no URL
+      // The GroceryListSection only shows parse buttons for recipes with URLs
+      expect(screen.queryByText('Parse "No URL Recipe"')).not.toBeInTheDocument();
+      // And invoke should never have been called
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+
+    it("switches between Meal Plan and Groceries tabs", async () => {
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      // Should show meal grid by default (check for day headers)
+      expect(screen.getByText("Sun")).toBeInTheDocument();
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      // Day headers should be hidden (grid is not shown)
+      expect(screen.queryByText("Sun")).not.toBeInTheDocument();
+
+      // Switch back to Meal Plan tab
+      fireEvent.click(screen.getByText("Meal Plan"));
+
+      // Day headers should be back
+      expect(screen.getByText("Sun")).toBeInTheDocument();
+    });
+
+    it("reloads grocery data when switching weeks on Groceries tab", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Chicken", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Chicken", url: null }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Clear mocks to track new calls
+      mockGetPantryItems.mockClear();
+      mockEnsureDefaultPantryItems.mockClear();
+
+      // Navigate to previous week — loadPlan will run, and since viewTab is 'groceries',
+      // loadGroceryData should be called when items change
+      const iconOnlyButtons = screen.getAllByRole("button").filter(
+        (b) => !b.textContent?.trim()
+      );
+      fireEvent.click(iconOnlyButtons[0]); // ChevronLeft
+
+      // After week change, new plan loads and grocery data should reload
+      await waitFor(() => {
+        expect(mockGetPantryItems).toHaveBeenCalled();
+      });
+    });
+
+    it("handles null data from grocery queries gracefully", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Chicken", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        // Return null data from all grocery queries
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab — should not crash with null data
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+    });
+
+    it("handles ingredient fields with null values", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Soup", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "ing-1",
+                  recipe_id: "recipe-1",
+                  name: "onion",
+                  quantity: null,
+                  unit: null,
+                  category: "produce",
+                  raw_text: null,
+                  sort_order: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "content-1",
+                  recipe_id: "recipe-1",
+                  description: null,
+                  servings: null,
+                  prep_time: null,
+                  cook_time: null,
+                  total_time: null,
+                  instructions: ["Step 1", "Step 2"],
+                  source_title: null,
+                  parsed_at: null,
+                  status: "completed",
+                  error_message: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Soup", url: null }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Soup")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Ingredients with null fields should still display
+      expect(screen.getByText("onion")).toBeInTheDocument();
+    });
+
+    it("clears grocery data when week has no meals with recipes", async () => {
+      // First load with a meal that has a recipe
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Chicken", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "ing-1",
+                  recipe_id: "recipe-1",
+                  name: "chicken",
+                  quantity: 1,
+                  unit: "lb",
+                  category: "meat_seafood",
+                  raw_text: "1 lb chicken",
+                  sort_order: 0,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Chicken", url: null }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Now switch week to one with no meals
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      const iconOnlyButtons = screen.getAllByRole("button").filter(
+        (b) => !b.textContent?.trim()
+      );
+      fireEvent.click(iconOnlyButtons[0]); // Previous week
+
+      // Should show empty state since no meals
+      await waitFor(() => {
+        expect(
+          screen.getByText("Add meals to your plan to generate a grocery list.")
+        ).toBeInTheDocument();
+      });
     });
   });
 });

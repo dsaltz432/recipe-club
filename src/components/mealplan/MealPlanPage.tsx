@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ShoppingCart } from "lucide-react";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
-import type { MealPlanItem } from "@/types";
+import GroceryListSection from "@/components/recipes/GroceryListSection";
+import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
+import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent } from "@/types";
 
 interface MealPlanPageProps {
   userId: string;
@@ -27,6 +30,12 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [pendingSlot, setPendingSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<MealPlanItem | null>(null);
+  const [viewTab, setViewTab] = useState<"plan" | "groceries">("plan");
+  const [groceryRecipes, setGroceryRecipes] = useState<Recipe[]>([]);
+  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
+  const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
+  const [pantryItems, setPantryItems] = useState<string[]>([]);
+  const [isLoadingGroceries, setIsLoadingGroceries] = useState(false);
 
   const navigate = useNavigate();
 
@@ -123,6 +132,114 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   const handleCurrentWeek = () => {
     setWeekStart(getWeekStart(new Date()));
+  };
+
+  const loadGroceryData = useCallback(async () => {
+    const recipeIds = items
+      .map((i) => i.recipeId)
+      .filter((id): id is string => !!id);
+
+    if (recipeIds.length === 0) {
+      setGroceryRecipes([]);
+      setRecipeIngredients([]);
+      setRecipeContentMap({});
+      return;
+    }
+
+    setIsLoadingGroceries(true);
+    try {
+      const [ingredientsResult, contentResult, recipesResult] = await Promise.all([
+        supabase.from("recipe_ingredients").select("*").in("recipe_id", recipeIds),
+        supabase.from("recipe_content").select("*").in("recipe_id", recipeIds),
+        supabase.from("recipes").select("id, name, url").in("id", recipeIds),
+      ]);
+
+      if (ingredientsResult.data) {
+        setRecipeIngredients(
+          ingredientsResult.data.map((row) => ({
+            id: row.id,
+            recipeId: row.recipe_id,
+            name: row.name,
+            quantity: row.quantity ?? undefined,
+            unit: row.unit ?? undefined,
+            category: row.category as RecipeIngredient["category"],
+            rawText: row.raw_text ?? undefined,
+            sortOrder: row.sort_order ?? undefined,
+            createdAt: row.created_at,
+          }))
+        );
+      }
+
+      if (contentResult.data) {
+        const contentMap: Record<string, RecipeContent> = {};
+        for (const row of contentResult.data) {
+          contentMap[row.recipe_id] = {
+            id: row.id,
+            recipeId: row.recipe_id,
+            description: row.description ?? undefined,
+            servings: row.servings ?? undefined,
+            prepTime: row.prep_time ?? undefined,
+            cookTime: row.cook_time ?? undefined,
+            totalTime: row.total_time ?? undefined,
+            instructions: Array.isArray(row.instructions) ? row.instructions as string[] : undefined,
+            sourceTitle: row.source_title ?? undefined,
+            parsedAt: row.parsed_at ?? undefined,
+            status: row.status as RecipeContent["status"],
+            errorMessage: row.error_message ?? undefined,
+            createdAt: row.created_at,
+          };
+        }
+        setRecipeContentMap(contentMap);
+      }
+
+      if (recipesResult.data) {
+        setGroceryRecipes(
+          recipesResult.data.map((r) => ({
+            id: r.id,
+            name: r.name,
+            url: r.url ?? undefined,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Error loading grocery data:", error);
+      toast.error("Failed to load grocery list");
+    } finally {
+      setIsLoadingGroceries(false);
+    }
+  }, [items]);
+
+  const loadPantryItems = useCallback(async () => {
+    try {
+      await ensureDefaultPantryItems(userId);
+      const pantry = await getPantryItems(userId);
+      setPantryItems(pantry.map((i) => i.name));
+    } catch (error) {
+      console.error("Error loading pantry items:", error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (viewTab === "groceries") {
+      loadGroceryData();
+      loadPantryItems();
+    }
+  }, [viewTab, loadGroceryData, loadPantryItems]);
+
+  const handleParseRecipe = async (recipeId: string) => {
+    const recipe = groceryRecipes.find((r) => r.id === recipeId);
+    try {
+      const { error } = await supabase.functions.invoke("parse-recipe", {
+        body: { recipeId, recipeUrl: recipe?.url, recipeName: recipe?.name },
+      });
+
+      if (error) throw error;
+      toast.success("Recipe parsed successfully!");
+      await loadGroceryData();
+    } catch (error) {
+      console.error("Error parsing recipe:", error);
+      toast.error("Failed to parse recipe");
+    }
   };
 
   const handleAddMeal = (dayOfWeek: number, mealType: string) => {
@@ -307,7 +424,30 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold">Meal Plan</h2>
+        <h2 className="font-display text-xl font-bold">Meals</h2>
+        <div className="flex gap-1 bg-muted rounded-lg p-1">
+          <button
+            onClick={() => setViewTab("plan")}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              viewTab === "plan"
+                ? "bg-white shadow-sm font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Meal Plan
+          </button>
+          <button
+            onClick={() => setViewTab("groceries")}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+              viewTab === "groceries"
+                ? "bg-white shadow-sm font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+            Groceries
+          </button>
+        </div>
       </div>
 
       <WeekNavigation
@@ -317,25 +457,50 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         onCurrentWeek={handleCurrentWeek}
       />
 
-      <MealPlanGrid
-        items={items}
-        weekStart={weekStart}
-        onAddMeal={handleAddMeal}
-        onRemoveMeal={handleRemoveMeal}
-        onEditMeal={handleEditMeal}
-        onViewMealEvent={handleViewMealEvent}
-      />
+      {viewTab === "plan" && (
+        <>
+          <MealPlanGrid
+            items={items}
+            weekStart={weekStart}
+            onAddMeal={handleAddMeal}
+            onRemoveMeal={handleRemoveMeal}
+            onEditMeal={handleEditMeal}
+            onViewMealEvent={handleViewMealEvent}
+          />
 
-      {pendingSlot && (
-        <AddMealDialog
-          open={showAddMealDialog}
-          onOpenChange={() => closeAddMealDialog()}
-          dayOfWeek={pendingSlot.dayOfWeek}
-          mealType={pendingSlot.mealType}
-          onAddCustomMeal={handleAddCustomMeal}
-          onAddRecipeMeal={handleAddRecipeMeal}
-          editingItemName={editingItem ? (editingItem.recipeName || editingItem.customName || "Unnamed meal") : undefined}
-        />
+          {pendingSlot && (
+            <AddMealDialog
+              open={showAddMealDialog}
+              onOpenChange={() => closeAddMealDialog()}
+              dayOfWeek={pendingSlot.dayOfWeek}
+              mealType={pendingSlot.mealType}
+              onAddCustomMeal={handleAddCustomMeal}
+              onAddRecipeMeal={handleAddRecipeMeal}
+              editingItemName={editingItem ? (editingItem.recipeName || editingItem.customName || "Unnamed meal") : undefined}
+            />
+          )}
+        </>
+      )}
+
+      {viewTab === "groceries" && (
+        items.some((i) => i.recipeId) ? (
+          <GroceryListSection
+            recipes={groceryRecipes}
+            recipeIngredients={recipeIngredients}
+            recipeContentMap={recipeContentMap}
+            onParseRecipe={handleParseRecipe}
+            eventName="Weekly Meal Plan"
+            isLoading={isLoadingGroceries}
+            pantryItems={pantryItems}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-sm">
+              Add meals to your plan to generate a grocery list.
+            </p>
+          </div>
+        )
       )}
     </div>
   );

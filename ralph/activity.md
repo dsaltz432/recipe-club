@@ -34,6 +34,9 @@ When deleting components, also delete:
 3. All imports/references in parent components
 4. All related test assertions in parent test files
 
+### Grocery Data Loading Pattern
+When adding grocery list to a page, load data via: query items → extract recipe_ids → Promise.all(recipe_ingredients, recipe_content, recipes). Map DB rows to TypeScript types (snake_case → camelCase, null → undefined). Pass to GroceryListSection which handles combining, filtering, and display.
+
 ### Supabase Mock — No AI
 When AI features are removed, the supabase mock no longer needs `functions: { invoke: vi.fn() }`. Only mock what the component actually uses.
 
@@ -49,8 +52,8 @@ When removing a feature (sharing/saving), changes cascade across:
 
 ## Current Status
 **Last Updated:** 2026-02-19
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ---
 
@@ -187,5 +190,39 @@ When removing a feature (sharing/saving), changes cascade across:
 ### Learnings for future iterations
 - GroceryListSection is reused in both EventDetailPage (club events) and will be reused in MealPlanPage (US-005) — fixes here apply to both contexts automatically
 - The `filterPantryItems()` function works on `CombinedGroceryItem[]` — the per-recipe tab builds this same type, so the function applies directly with no adaptation needed
+
+---
+
+## 2026-02-19 12:00 — US-005: Add Groceries tab to Meals page
+
+### What was implemented
+- Added a tab switcher ('Meal Plan' / 'Groceries') to MealPlanPage header
+- Added `viewTab` state to toggle between meal grid and grocery views
+- Added `loadGroceryData()` that queries recipe_ingredients, recipe_content, and recipes for the current week's meal plan items
+- Added `loadPantryItems()` that loads user pantry items via `ensureDefaultPantryItems()` + `getPantryItems()`
+- Grocery data loads when switching to Groceries tab and reloads when items change (e.g., week change)
+- Reused existing `GroceryListSection` component for combined + per-recipe grocery views
+- Added `handleParseRecipe()` for recipe parsing from the Groceries tab
+- WeekNavigation remains visible in both Meal Plan and Groceries views
+- Empty state shown when no meals have recipe IDs (custom meals without URLs)
+- Header text changed from "Meal Plan" to "Meals" to avoid duplication with tab button text
+- Added 12 new tests covering: tab switching, grocery data loading, empty states, error handling, null data fields, parse recipe flow, week navigation while on groceries
+- Mocked `@/lib/pantry`, `@/lib/constants` (SHOW_PARSE_BUTTONS), and `supabase.functions.invoke` in test file
+
+### Files changed
+- src/components/mealplan/MealPlanPage.tsx (modified — added Groceries tab with grocery data loading)
+- tests/unit/components/mealplan/MealPlanPage.test.tsx (modified — added 12 grocery tests, updated header text references, added pantry/constants/invoke mocks)
+
+### Quality checks
+- Build: pass
+- Tests: pass (957 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- Reusing GroceryListSection across both EventDetailPage and MealPlanPage works cleanly — the component accepts generic Recipe/RecipeIngredient arrays
+- The `loadGroceryData` pattern: query meal_plan_items → extract recipe_ids → Promise.all(recipe_ingredients, recipe_content, recipes) — mirrors EventDetailPage's `loadGroceryData`
+- When adding tab/view state, watch for duplicate text between header and tab buttons — rename the heading to avoid test selector conflicts
+- `SHOW_PARSE_BUTTONS` constant is currently `false` in production; mock it to `true` in tests to cover parse button interactions
+- Removing defensive early returns (`if (!recipe?.url) return`) in favor of try/catch eliminates unreachable branches that are difficult to test
 
 ---
