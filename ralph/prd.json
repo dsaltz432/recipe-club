@@ -223,7 +223,7 @@
         "Tests pass with 100% coverage on all required directories (npm run test:coverage)"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Sections 8, 10. PantryDialog.tsx (~156 lines) and PantrySection.tsx (~156 lines) are near-identical with minor wrapper differences (Dialog vs Card). Fix: extract a PantryContent component (src/components/pantry/PantryContent.tsx) with the shared add/remove logic and item list rendering. PantryDialog wraps it in a Dialog, PantrySection wraps it in a Card. Delete confirmation: currently trash icon immediately deletes. Fix: add AlertDialog around the delete action. Success feedback: addItem currently clears input without toast. Fix: add toast.success(`Added '${itemName}' to pantry`). Error specificity: catch block shows generic message. Fix: check error.code — if '23505' (unique violation), say 'This item is already in your pantry'; otherwise show the actual error message. Pantry link in Meals: in MealPlanPage.tsx groceries view, add a small Button that opens PantryDialog. Import PantryDialog and add it to the groceries view header. GroceryListSection pantry exclusion text (line 245): change from small muted text to a visible info banner with an icon."
     },
     {

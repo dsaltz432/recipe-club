@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
+import PantryDialog from "@/components/pantry/PantryDialog";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import {
   AlertDialog,
@@ -67,6 +69,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedSlotForRating, setSelectedSlotForRating] = useState<RatingSlotData | null>(null);
   const [uncookConfirmSlot, setUncookConfirmSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
+  const [showPantryDialog, setShowPantryDialog] = useState(false);
 
   const navigate = useNavigate();
 
@@ -790,31 +793,51 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       )}
 
       {viewTab === "groceries" && (
-        items.some((i) => i.recipeId) ? (
-          <GroceryListSection
-            recipes={groceryRecipes}
-            recipeIngredients={recipeIngredients}
-            recipeContentMap={recipeContentMap}
-            onParseRecipe={handleParseRecipe}
-            eventName="Weekly Meal Plan"
-            isLoading={isLoadingGroceries}
-            pantryItems={pantryItems}
+        <>
+          <div className="flex justify-end mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPantryDialog(true)}
+              className="text-xs"
+            >
+              <UtensilsCrossed className="h-3.5 w-3.5 mr-1" />
+              Manage Pantry
+            </Button>
+          </div>
+          {items.some((i) => i.recipeId) ? (
+            <GroceryListSection
+              recipes={groceryRecipes}
+              recipeIngredients={recipeIngredients}
+              recipeContentMap={recipeContentMap}
+              onParseRecipe={handleParseRecipe}
+              eventName="Weekly Meal Plan"
+              isLoading={isLoadingGroceries}
+              pantryItems={pantryItems}
+            />
+          ) : items.length > 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <UtensilsCrossed className="h-8 w-8 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-sm">
+                Your planned meals don&apos;t have linked recipes. Add a recipe URL to see ingredients here.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-sm">
+                No meals planned this week. Add meals to see a grocery list.
+              </p>
+            </div>
+          )}
+
+          <PantryDialog
+            open={showPantryDialog}
+            onOpenChange={setShowPantryDialog}
+            userId={userId}
+            onPantryChange={loadPantryItems}
           />
-        ) : items.length > 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <UtensilsCrossed className="h-8 w-8 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-sm">
-              Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-sm">
-              No meals planned this week. Add meals to see a grocery list.
-            </p>
-          </div>
-        )
+        </>
       )}
 
       {ratingDialogOpen && selectedSlotForRating && (

@@ -23,6 +23,16 @@ vi.mock("@/components/events/EventRatingDialog", () => ({
   ),
 }));
 
+// Mock PantryDialog
+vi.mock("@/components/pantry/PantryDialog", () => ({
+  default: ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) =>
+    open ? (
+      <div data-testid="pantry-dialog">
+        <button onClick={() => onOpenChange(false)}>Close Pantry</button>
+      </div>
+    ) : null,
+}));
+
 // Mock Supabase
 const mockSupabaseFrom = vi.fn();
 const mockInvoke = vi.fn();
@@ -1794,6 +1804,35 @@ describe("MealPlanPage", () => {
       expect(
         screen.getByText("No meals planned this week. Add meals to see a grocery list.")
       ).toBeInTheDocument();
+    });
+
+    it("shows Manage Pantry button and opens PantryDialog on click", async () => {
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      // Manage Pantry button should be visible
+      const manageButton = screen.getByRole("button", { name: /Manage Pantry/ });
+      expect(manageButton).toBeInTheDocument();
+
+      // Click to open PantryDialog
+      fireEvent.click(manageButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("pantry-dialog")).toBeInTheDocument();
+      });
+
+      // Close the dialog
+      fireEvent.click(screen.getByText("Close Pantry"));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("pantry-dialog")).not.toBeInTheDocument();
+      });
     });
 
     it("loads grocery data when switching to Groceries tab with meals", async () => {

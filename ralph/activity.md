@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 12
-**Current Task:** US-012 complete
+**Tasks Completed:** 13
+**Current Task:** US-013 complete
 
 ---
 
@@ -414,5 +414,42 @@ Three UX improvements to EventDetailPage.tsx:
 - When replacing a delete-and-retry flow with a simple retry, the handler is much simpler: just re-invoke the edge function with the existing `pendingRecipeId`
 - Radix Dialog's `onOpenChange(false)` fires when user presses Escape or clicks overlay — `fireEvent.keyDown(document, { key: "Escape" })` triggers it in tests
 - For `src/pages/` components (not in required coverage dirs), focused tests on specific behavior changes are sufficient — no need for 100% coverage
+
+---
+
+## 2026-02-20 — US-013: Consolidate pantry components and improve UX
+
+### What was implemented
+Eight changes across pantry components, MealPlanPage, and GroceryListSection:
+
+- **Shared PantryContent component**: Extracted shared logic from PantryDialog and PantrySection into `src/components/pantry/PantryContent.tsx`. Contains all state management (items, newItemName, isLoading, isAdding, deletingId, confirmDeleteItem), handlers (loadItems, handleAdd, handleRemoveClick, handleConfirmRemove, handleKeyDown), and UI (add form, loading/empty/list states, delete confirmation AlertDialog). Takes `userId`, `onPantryChange`, and `active` props.
+- **PantryDialog refactored**: Now a thin wrapper — Dialog with header + PantryContent. Passes `active={open}` so items reload when dialog opens.
+- **PantrySection refactored**: Now a thin wrapper — Card with header + PantryContent. Passes `active={true}` since the component only renders when userId is truthy.
+- **Delete confirmation**: Clicking the trash icon opens an AlertDialog ("Remove from pantry? Remove '[item]' from your pantry?") instead of immediately deleting. "Remove" confirms, "Cancel" dismisses.
+- **Success toast on add**: `toast.success(\`Added '${trimmed}' to pantry\`)` shown after successful add.
+- **Specific error messages**: Catches Postgres error code `23505` (unique violation) → "This item is already in your pantry". Other errors → "Failed to add item".
+- **Manage Pantry button**: MealPlanPage groceries tab now shows a "Manage Pantry" button (outline, sm, with UtensilsCrossed icon) that opens PantryDialog. Passes `loadPantryItems` as `onPantryChange` so pantry items refresh after changes.
+- **Prominent pantry exclusion banner**: GroceryListSection pantry exclusion message changed from small muted text (`text-xs text-muted-foreground`) to a visible info banner with purple background, border, and Info icon (`bg-purple-50 rounded-md border border-purple-100`). Text updated to "N pantry items excluded from this list".
+
+### Files changed
+- `src/components/pantry/PantryContent.tsx` (new: shared pantry logic and UI)
+- `src/components/pantry/PantryDialog.tsx` (refactored: thin Dialog wrapper around PantryContent)
+- `src/components/pantry/PantrySection.tsx` (refactored: thin Card wrapper around PantryContent)
+- `src/components/mealplan/MealPlanPage.tsx` (added PantryDialog import, Button import, showPantryDialog state, Manage Pantry button in groceries tab)
+- `src/components/recipes/GroceryListSection.tsx` (added Info icon import, changed pantry exclusion text to prominent banner)
+- `tests/unit/components/pantry/PantrySection.test.tsx` (updated: 15 tests — delete confirmation flow, cancel confirmation, success toast, specific error messages for 23505 and generic errors)
+- `tests/unit/components/recipes/GroceryListSection.test.tsx` (updated: pantry excluded text assertions to match new "from this list" suffix)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (added: PantryDialog mock, Manage Pantry button test with open/close flow)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1196 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- The `active` prop pattern works well for PantryContent: Dialog passes `active={open}` to trigger load/reload; Section passes `active={true}` for load-on-mount. The useEffect dependency on `active` handles both.
+- `src/components/pantry/` is NOT in the required 100% coverage directories — PantryContent.tsx has 94.44% branch coverage (the `if (active)` false branch is uncovered when used from PantrySection which always passes true). This is acceptable.
+- When adding a new component dependency to a parent (PantryDialog to MealPlanPage), always add a `vi.mock()` for it in the parent's test file — even if the mock is simple, it prevents the real component from importing Supabase/other modules that aren't mocked.
+- AlertDialog confirmation pattern: set state with item data → dialog reads state → confirm handler uses `!` assertion since it's only callable when dialog is open → clear state. Same pattern used in MealPlanPage (uncook) and now PantryContent (delete).
 
 ---

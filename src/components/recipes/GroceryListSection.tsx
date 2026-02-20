@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShoppingCart, Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -248,9 +248,12 @@ const GroceryListSection = ({
         )}
 
         {!isLoading && pantryExcludedCount > 0 && (
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded
-          </p>
+          <div className="flex items-center gap-2 mt-3 p-2 bg-purple-50 rounded-md border border-purple-100">
+            <Info className="h-4 w-4 text-purple shrink-0" />
+            <p className="text-sm text-purple-700">
+              {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded from this list
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -371,7 +371,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("2 pantry items excluded")).toBeInTheDocument();
+    expect(screen.getByText("2 pantry items excluded from this list")).toBeInTheDocument();
   });
 
   it("shows singular 'item' when one pantry item excluded", () => {
@@ -392,7 +392,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("1 pantry item excluded")).toBeInTheDocument();
+    expect(screen.getByText("1 pantry item excluded from this list")).toBeInTheDocument();
   });
 
   it("does not show excluded message when no pantry items match", () => {
