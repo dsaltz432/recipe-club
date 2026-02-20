@@ -62,8 +62,8 @@ import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
-import { v4 as uuidv4 } from "uuid";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
+import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 // import CookModeSection from "@/components/recipes/CookModeSection"; // Cook Mode disabled
 import PantryDialog from "@/components/pantry/PantryDialog";
@@ -589,40 +589,19 @@ const EventDetailPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      toast.error("Please select an image or PDF file");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File is too large (max 5MB)");
-      return;
-    }
-
     setIsUploadingRecipeImage(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("recipe-images")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("recipe-images").getPublicUrl(filePath);
-
+      const publicUrl = await uploadRecipeFile(file);
       setRecipeUrl(publicUrl);
       toast.success("File uploaded!");
     } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error("Failed to upload file");
+      if (error instanceof FileValidationError) {
+        toast.error(error.message);
+      } else {
+        console.error("Error uploading file:", error);
+        toast.error("Failed to upload file");
+      }
     } finally {
       setIsUploadingRecipeImage(false);
       if (recipeImageInputRef.current) {

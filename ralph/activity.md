@@ -43,19 +43,24 @@ Defensive `if (!x) return` guards in callbacks that can only fire when `x` is tr
 `vitest.config.ts` uses `pool: "forks"` with `maxForks: 4` and `testTimeout: 15000` to prevent resource-contention timeouts in the 38-file test suite.
 
 ### File Upload to Storage Pattern
-When uploading files to Supabase storage in a dialog:
-1. Add `supabase.storage` mock alongside `supabase.from` mock
-2. Mock `uuid` with `vi.mock("uuid", () => ({ v4: () => "mock-uuid-123" }))`
+Upload logic is in `src/lib/upload.ts` (`uploadRecipeFile` + `FileValidationError`). Components import and call this utility.
+
+For testing **upload utility consumers** (AddMealDialog, EventDetailPage, etc.):
+1. Mock `@/lib/upload` with `vi.hoisted` for the FileValidationError class: `const { FileValidationError, mockUploadRecipeFile } = vi.hoisted(() => { class FileValidationError extends Error { ... } return { FileValidationError, mockUploadRecipeFile: vi.fn() }; });`
+2. `vi.mock("@/lib/upload", () => ({ uploadRecipeFile: (...args) => mockUploadRecipeFile(...args), FileValidationError }))`
 3. Access file input via `document.querySelector('input[type="file"]')` (hidden inputs aren't accessible by label)
 4. Trigger upload with `fireEvent.change(fileInput, { target: { files: [file] } })`
+
+For testing **the upload utility itself** (`tests/unit/lib/upload.test.ts`):
+1. Mock `supabase.storage` and `uuid` directly
 
 ### Edge Function Testing with RPC
 When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` interface and implementation in `tests/helpers/edge-function-setup.ts`. Mock as `vi.fn().mockResolvedValue({ data: null, error: null })`. Override in individual tests with `mockSupabase.rpc.mockResolvedValue(...)`.
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 5
-**Current Task:** US-005 complete
+**Tasks Completed:** 6
+**Current Task:** US-006 complete
 
 ---
 
@@ -202,5 +207,35 @@ Five bugs fixed across auth.ts, UserManagement.tsx, EventDetailPage.tsx, AuthGua
 - BUG-016 was already fixed — always grep the full codebase to verify before making changes
 - `toast.warning()` exists in sonner for non-critical warnings (vs `toast.error()` for failures)
 - The mounted flag pattern is standard React cleanup for async useEffect — prevents "Can't perform a React state update on an unmounted component" warnings
+
+---
+
+## 2026-02-20 — US-006: Fix low-severity code quality issues
+
+### What was implemented
+Three changes addressing code quality bugs and shared utility extraction:
+
+- **BUG-019**: `fileInputRef.current!.value = ''` was already replaced with `if (fileInputRef.current)` guard in a previous session. Added unmount-during-upload test to cover the false branch (component unmounts → React nulls ref → finally block safely skips assignment).
+- **BUG-022**: `clearTimeout(debounceRef.current!)` was already replaced with `if` guard. Changed to `clearTimeout(debounceRef.current as ReturnType<typeof setTimeout>)` — type cast avoids both the `!` assertion and the uncoverable V8 branch from an `if` guard. `clearTimeout` safely handles null.
+- **BUG-021**: Extracted shared `uploadRecipeFile()` utility in `src/lib/upload.ts`. The utility handles file validation (type + size), UUID filename generation, Supabase storage upload, and public URL retrieval. `FileValidationError` class allows callers to distinguish validation errors from upload errors. Refactored all three upload sites (AddMealDialog, EventDetailPage, PersonalMealDetailPage) to use it.
+
+### Files changed
+- `src/lib/upload.ts` (new: shared upload utility)
+- `src/components/mealplan/AddMealDialog.tsx` (refactored to use uploadRecipeFile, clearTimeout type cast)
+- `src/pages/EventDetailPage.tsx` (refactored to use uploadRecipeFile, removed uuid import)
+- `src/pages/PersonalMealDetailPage.tsx` (refactored to use uploadRecipeFile, removed uuid import)
+- `tests/unit/lib/upload.test.ts` (new: 13 tests for upload utility)
+- `tests/unit/components/mealplan/AddMealDialog.test.tsx` (updated: mocks @/lib/upload instead of raw storage, added unmount test)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1090 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- `vi.hoisted()` is required when `vi.mock` factory references variables defined in the test file — the factory is hoisted above variable declarations
+- React nulls `useRef` DOM refs on unmount — unmounting during an async operation creates the null ref scenario that `if (ref.current)` guards protect against
+- V8 counts `if (x)` and `x ?? y` as branches even when one branch is unreachable; use type casts (`as`) to avoid uncoverable branches when the guard is truly unnecessary
+- When extracting shared utilities, mock the utility module in consumer tests (`vi.mock("@/lib/upload")`) rather than mocking the utility's dependencies
 
 ---

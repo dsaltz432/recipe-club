@@ -3,19 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@tests/utils";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { toast } from "sonner";
 
-// Mock Supabase
+// Mock Supabase (still needed for recipe search)
 const mockSupabaseFrom = vi.fn();
-const mockUpload = vi.fn();
-const mockGetPublicUrl = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
-    storage: {
-      from: () => ({
-        upload: mockUpload,
-        getPublicUrl: mockGetPublicUrl,
-      }),
-    },
   },
 }));
 
@@ -26,8 +18,23 @@ vi.mock("sonner", () => ({
   },
 }));
 
-vi.mock("uuid", () => ({
-  v4: () => "mock-uuid-123",
+// Mock upload utility — vi.hoisted ensures these are available when vi.mock factory runs
+const { FileValidationError, mockUploadRecipeFile } = vi.hoisted(() => {
+  class FileValidationError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "FileValidationError";
+    }
+  }
+  return {
+    FileValidationError,
+    mockUploadRecipeFile: vi.fn(),
+  };
+});
+
+vi.mock("@/lib/upload", () => ({
+  uploadRecipeFile: (...args: unknown[]) => mockUploadRecipeFile(...args),
+  FileValidationError,
 }));
 
 const createMockQueryBuilder = (overrides: Record<string, unknown> = {}) => ({
@@ -50,10 +57,9 @@ describe("AddMealDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder());
-    mockUpload.mockResolvedValue({ error: null });
-    mockGetPublicUrl.mockReturnValue({
-      data: { publicUrl: "https://storage.example.com/recipe-images/mock-uuid-123.jpg" },
-    });
+    mockUploadRecipeFile.mockResolvedValue(
+      "https://storage.example.com/recipe-images/mock-uuid-123.jpg"
+    );
   });
 
   it("renders dialog with title and description", () => {
@@ -593,7 +599,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await waitFor(() => {
-        expect(mockUpload).toHaveBeenCalledWith("mock-uuid-123.jpg", file);
+        expect(mockUploadRecipeFile).toHaveBeenCalledWith(file);
         expect(toast.success).toHaveBeenCalledWith("File uploaded!");
       });
 
@@ -611,7 +617,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await waitFor(() => {
-        expect(mockUpload).toHaveBeenCalled();
+        expect(mockUploadRecipeFile).toHaveBeenCalled();
       });
 
       const nameInput = screen.getByLabelText("Meal Name *") as HTMLInputElement;
@@ -631,7 +637,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await waitFor(() => {
-        expect(mockUpload).toHaveBeenCalled();
+        expect(mockUploadRecipeFile).toHaveBeenCalled();
       });
 
       const nameInput = screen.getByLabelText("Meal Name *") as HTMLInputElement;
@@ -647,7 +653,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await waitFor(() => {
-        expect(mockUpload).toHaveBeenCalled();
+        expect(mockUploadRecipeFile).toHaveBeenCalled();
       });
 
       // Submit
@@ -669,7 +675,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await waitFor(() => {
-        expect(mockUpload).toHaveBeenCalled();
+        expect(mockUploadRecipeFile).toHaveBeenCalled();
       });
 
       // Manually change URL — should reset fileUploaded
@@ -687,7 +693,11 @@ describe("AddMealDialog", () => {
       );
     });
 
-    it("rejects non-image/non-PDF files", async () => {
+    it("rejects non-image/non-PDF files via FileValidationError", async () => {
+      mockUploadRecipeFile.mockRejectedValueOnce(
+        new FileValidationError("Please select an image or PDF file")
+      );
+
       render(<AddMealDialog {...defaultProps} />);
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -698,10 +708,13 @@ describe("AddMealDialog", () => {
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Please select an image or PDF file");
       });
-      expect(mockUpload).not.toHaveBeenCalled();
     });
 
-    it("rejects files over 5MB", async () => {
+    it("rejects files over 5MB via FileValidationError", async () => {
+      mockUploadRecipeFile.mockRejectedValueOnce(
+        new FileValidationError("File is too large (max 5MB)")
+      );
+
       render(<AddMealDialog {...defaultProps} />);
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -712,11 +725,10 @@ describe("AddMealDialog", () => {
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("File is too large (max 5MB)");
       });
-      expect(mockUpload).not.toHaveBeenCalled();
     });
 
     it("handles upload error", async () => {
-      mockUpload.mockResolvedValueOnce({ error: new Error("Upload failed") });
+      mockUploadRecipeFile.mockRejectedValueOnce(new Error("Upload failed"));
 
       render(<AddMealDialog {...defaultProps} />);
 
@@ -739,7 +751,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
 
       await waitFor(() => {
-        expect(mockUpload).toHaveBeenCalledWith("mock-uuid-123.pdf", file);
+        expect(mockUploadRecipeFile).toHaveBeenCalledWith(file);
         expect(toast.success).toHaveBeenCalledWith("File uploaded!");
       });
     });
@@ -750,7 +762,31 @@ describe("AddMealDialog", () => {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(fileInput, { target: { files: [] } });
 
-      expect(mockUpload).not.toHaveBeenCalled();
+      expect(mockUploadRecipeFile).not.toHaveBeenCalled();
+    });
+
+    it("handles unmount during upload without crashing (null ref)", async () => {
+      let resolveUpload!: (value: string) => void;
+      mockUploadRecipeFile.mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveUpload = resolve; })
+      );
+
+      const { unmount } = render(<AddMealDialog {...defaultProps} />);
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = createFile("recipe.jpg", "image/jpeg");
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // Unmount while upload is in progress — clears fileInputRef.current
+      unmount();
+
+      // Resolve the upload — finally block runs with null ref
+      resolveUpload("https://example.com/test.jpg");
+
+      // Allow microtask to settle
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(mockUploadRecipeFile).toHaveBeenCalledWith(file);
     });
   });
 });

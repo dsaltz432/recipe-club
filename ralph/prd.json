@@ -102,7 +102,7 @@
         "Tests pass with 100% coverage on all required directories (npm run test:coverage)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "BUG-019: src/components/mealplan/AddMealDialog.tsx line 117. In the finally block of handleFileUpload: fileInputRef.current!.value = ''. If dialog unmounts during upload, this crashes. Fix: use optional chaining. BUG-022: AddMealDialog.tsx lines 160-162. The useEffect cleanup uses clearTimeout(debounceRef.current!). While clearTimeout(undefined) is harmless in practice, the ! assertion is technically incorrect. Fix: remove the ! or add a guard. BUG-021: PersonalMealDetailPage.tsx lines 315-320 and EventDetailPage.tsx lines 608-609 both upload to recipe-images bucket with slightly different patterns. Fix: extract a shared uploadRecipeFile(file: File): Promise<string> utility in src/lib/upload.ts that handles bucket upload, public URL retrieval, and error handling. Both pages should import and use this utility. Add tests in tests/unit/lib/upload.test.ts."
     },
     {
