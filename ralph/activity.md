@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 11
-**Current Task:** US-011 complete
+**Tasks Completed:** 12
+**Current Task:** US-012 complete
 
 ---
 
@@ -385,5 +385,34 @@ Five UX improvements across MealPlanSlot, MealPlanPage, and MealPlanGrid:
 - AlertDialog from shadcn/ui requires separate `AlertDialogAction` and `AlertDialogCancel` components — test with `getByRole("button", { name: "Continue" })` and `getByRole("button", { name: "Cancel" })`
 - When adding a confirmation step to an existing action, split the handler into two: one that opens the dialog (sets state), one that performs the action (reads state + clears). Use `!` non-null assertion on the state since the confirm handler is only callable when the dialog is open.
 - `sr-only` CSS class makes text invisible but accessible to screen readers — use `container.querySelector(".sr-only")` in tests to verify
+
+---
+
+## 2026-02-20 — US-012: Improve event detail parse flow UX
+
+### What was implemented
+Three UX improvements to EventDetailPage.tsx:
+
+- **Dismissible parse dialog during parsing**: Changed `onOpenChange` handler to allow closing the dialog while parsing is in progress. Shows `window.confirm()` warning: "Parsing is in progress. The recipe has been saved. Close anyway?" If confirmed, dialog closes and `loadEventData()` refreshes to show the saved recipe. If cancelled, dialog stays open and parsing continues.
+
+- **Clearer parse failure messaging**: Replaced the old "Recipe parsing failed" error box with a two-part display: (1) green success box: "Your recipe has been saved!" + "However, we couldn't extract ingredients automatically." (2) red error detail box with the specific error message. Button labels changed from "Keep Recipe Anyway" / "Try Different URL" to "Continue without ingredients" / "Try parsing again". Replaced `handleRemoveAndRetry` (which deleted the recipe) with `handleRetryParse` that re-invokes the parse-recipe edge function on the same saved recipe without deleting it.
+
+- **Edit recipe URL optional**: Removed URL requirement from edit recipe dialog. Label changed from "Recipe URL *" to "Recipe URL", placeholder changed to "https:// (optional)". `handleSaveRecipeEdit` now only validates URL format if one is provided (empty URL saves as `null`). Save button disabled condition changed from `!isValidUrl(editRecipeUrl)` to just `!editRecipeName.trim()`. URL change detection updated to compare with empty string fallback: `(recipeToEdit.url || "") !== (editRecipeUrl.trim() || "")`.
+
+### Files changed
+- `src/pages/EventDetailPage.tsx` (parse dialog onOpenChange, failure UI, handleRetryParse, edit URL optional)
+- `tests/unit/pages/EventDetailPage.test.tsx` (new: 12 tests covering all three changes)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1193 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- EventDetailPage is 1790+ lines — for tests, mock child components (EventRecipesTab, GroceryListSection, PantrySection etc.) and expose their callbacks via the mock to drive parent state changes
+- `window.confirm()` in `onOpenChange` works well for mid-parse dismiss — the confirm blocks the React state update until user responds
+- When replacing a delete-and-retry flow with a simple retry, the handler is much simpler: just re-invoke the edge function with the existing `pendingRecipeId`
+- Radix Dialog's `onOpenChange(false)` fires when user presses Escape or clicks overlay — `fireEvent.keyDown(document, { key: "Escape" })` triggers it in tests
+- For `src/pages/` components (not in required coverage dirs), focused tests on specific behavior changes are sufficient — no need for 100% coverage
 
 ---

@@ -723,19 +723,34 @@ const EventDetailPage = () => {
     loadEventData();
   };
 
-  const handleRemoveAndRetry = async () => {
-    if (pendingRecipeId) {
-      try {
-        await supabase.from("recipes").delete().eq("id", pendingRecipeId);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-    setParseStatus("idle");
+  const handleRetryParse = async () => {
+    const retryRecipeId = pendingRecipeId!;
+    setParseStatus("parsing");
     setParseError(null);
-    setPendingRecipeId(null);
-    setParseStep("saving");
-    // Keep form values so user can change the URL
+    setParseStep("parsing");
+
+    try {
+      const { error: retryError } = await supabase.functions.invoke("parse-recipe", {
+        body: { recipeId: retryRecipeId, recipeUrl: recipeUrl.trim(), recipeName: recipeName.trim() },
+      });
+      if (retryError) throw retryError;
+
+      // Success: close dialog and refresh
+      setParseStatus("idle");
+      setParseError(null);
+      setPendingRecipeId(null);
+      setParseStep("saving");
+      setRecipeName("");
+      setRecipeUrl("");
+      setShowAddForm(false);
+      toast.success("Recipe parsed successfully!");
+      loadEventData();
+    } catch (error) {
+      console.error("Error retrying parse:", error);
+      const msg = error instanceof Error ? error.message : "Failed to parse recipe";
+      setParseStatus("failed");
+      setParseError(msg);
+    }
   };
 
   const handleEditRecipeClick = (recipe: Recipe) => {
@@ -749,12 +764,12 @@ const EventDetailPage = () => {
       toast.error("Please enter a recipe name");
       return;
     }
-    if (!editRecipeUrl.trim() || !isValidUrl(editRecipeUrl)) {
+    if (editRecipeUrl.trim() && !isValidUrl(editRecipeUrl)) {
       toast.error("Please enter a valid URL starting with http:// or https://");
       return;
     }
 
-    const urlChanged = recipeToEdit.url !== editRecipeUrl.trim();
+    const urlChanged = (recipeToEdit.url || "") !== (editRecipeUrl.trim() || "");
 
     setIsEditingRecipe(true);
     try {
@@ -762,7 +777,7 @@ const EventDetailPage = () => {
         .from("recipes")
         .update({
           name: editRecipeName.trim(),
-          url: editRecipeUrl.trim(),
+          url: editRecipeUrl.trim() || null,
         })
         .eq("id", recipeToEdit.id);
 
@@ -1345,14 +1360,27 @@ const EventDetailPage = () => {
       <Dialog
         open={showAddForm}
         onOpenChange={(open) => {
-          if (!open && parseStatus !== "parsing") {
-            setShowAddForm(false);
-            setRecipeName("");
-            setRecipeUrl("");
-            setParseStatus("idle");
-            setParseError(null);
-            setPendingRecipeId(null);
-            setParseStep("saving");
+          if (!open) {
+            if (parseStatus === "parsing") {
+              if (window.confirm("Parsing is in progress. The recipe has been saved. Close anyway?")) {
+                setShowAddForm(false);
+                setRecipeName("");
+                setRecipeUrl("");
+                setParseStatus("idle");
+                setParseError(null);
+                setPendingRecipeId(null);
+                setParseStep("saving");
+                loadEventData();
+              }
+            } else {
+              setShowAddForm(false);
+              setRecipeName("");
+              setRecipeUrl("");
+              setParseStatus("idle");
+              setParseError(null);
+              setPendingRecipeId(null);
+              setParseStep("saving");
+            }
           }
         }}
       >
@@ -1409,16 +1437,23 @@ const EventDetailPage = () => {
 
           {parseStatus === "failed" && (
             <div className="space-y-4 py-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-700 font-medium mb-1">Recipe parsing failed</p>
-                <p className="text-xs text-red-600">{parseError}</p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-700 font-medium mb-1">Your recipe has been saved!</p>
+                <p className="text-xs text-muted-foreground">
+                  However, we couldn't extract ingredients automatically.
+                </p>
               </div>
+              {parseError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-xs text-red-600">{parseError}</p>
+                </div>
+              )}
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={handleKeepRecipeAnyway}>
-                  Keep Recipe Anyway
+                  Continue without ingredients
                 </Button>
-                <Button onClick={handleRemoveAndRetry} className="bg-purple hover:bg-purple-dark">
-                  Try Different URL
+                <Button onClick={handleRetryParse} className="bg-purple hover:bg-purple-dark">
+                  Try parsing again
                 </Button>
               </div>
             </div>
@@ -1534,13 +1569,13 @@ const EventDetailPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-recipe-url">Recipe URL *</Label>
+              <Label htmlFor="edit-recipe-url">Recipe URL</Label>
               <Input
                 id="edit-recipe-url"
                 type="url"
                 value={editRecipeUrl}
                 onChange={(e) => setEditRecipeUrl(e.target.value)}
-                placeholder="https://..."
+                placeholder="https:// (optional)"
                 className={editRecipeUrl.trim() && !isValidUrl(editRecipeUrl) ? "border-red-500" : ""}
               />
               {editRecipeUrl.trim() && !isValidUrl(editRecipeUrl) && (
@@ -1559,7 +1594,7 @@ const EventDetailPage = () => {
             </Button>
             <Button
               onClick={handleSaveRecipeEdit}
-              disabled={isEditingRecipe || !editRecipeName.trim() || !isValidUrl(editRecipeUrl)}
+              disabled={isEditingRecipe || !editRecipeName.trim()}
               className="bg-purple hover:bg-purple-dark"
             >
               {isEditingRecipe ? "Saving..." : "Save Changes"}

@@ -203,7 +203,7 @@
         "Tests pass with 100% coverage on events directory (npm run test:coverage)"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 5 findings. EventDetailPage.tsx (1799 lines). Parse dialog dismissibility (line 1371): onOpenChange checks parseStatus !== 'parsing' and blocks close. Fix: allow close during parsing but show a warning via window.confirm() or a nested AlertDialog: 'Parsing is in progress. The recipe has been saved. Close anyway?'. If confirmed, close dialog and let parsing continue in background. Parse failure recovery (lines 1433-1448): current UX shows 'Keep Recipe Anyway' and 'Try Different URL'. Fix: reword to clarify the recipe IS saved — 'Your recipe has been saved! However, we couldn't extract ingredients automatically. You can: [Try parsing again] [Continue without ingredients]'. Remove the confusing 'Try Different URL' which deletes and re-adds. Edit recipe URL validation (line 1585): disabled={!isValidUrl(editRecipeUrl)} makes URL required. Fix: make URL optional — disabled={isEditingRecipe || !editRecipeName.trim()} (remove URL validation from disabled condition)."
     },
     {
