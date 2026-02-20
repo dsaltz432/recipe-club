@@ -104,6 +104,7 @@ const EventDetailPage = () => {
   const [recipeUrl, setRecipeUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingRecipeImage, setIsUploadingRecipeImage] = useState(false);
+  const [uploadingFileName, setUploadingFileName] = useState("");
   const recipeImageInputRef = useRef<HTMLInputElement>(null);
 
   // Edit Recipe state
@@ -590,10 +591,15 @@ const EventDetailPage = () => {
     if (!file) return;
 
     setIsUploadingRecipeImage(true);
+    setUploadingFileName(file.name);
 
     try {
       const publicUrl = await uploadRecipeFile(file);
       setRecipeUrl(publicUrl);
+      if (!recipeName.trim()) {
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        setRecipeName(baseName);
+      }
       toast.success("File uploaded!");
     } catch (error) {
       if (error instanceof FileValidationError) {
@@ -604,6 +610,7 @@ const EventDetailPage = () => {
       }
     } finally {
       setIsUploadingRecipeImage(false);
+      setUploadingFileName("");
       if (recipeImageInputRef.current) {
         recipeImageInputRef.current.value = "";
       }
@@ -1489,11 +1496,18 @@ const EventDetailPage = () => {
                       onClick={() => recipeImageInputRef.current?.click()}
                       disabled={isUploadingRecipeImage}
                       className="shrink-0"
+                      aria-label="Upload photo or PDF"
                     >
                       {isUploadingRecipeImage ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          <span className="text-xs truncate max-w-[100px]">{uploadingFileName || "Uploading..."}</span>
+                        </>
                       ) : (
-                        <Upload className="h-4 w-4" />
+                        <>
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload
+                        </>
                       )}
                     </Button>
                     <input

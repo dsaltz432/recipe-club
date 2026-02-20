@@ -56,6 +56,7 @@ const AddMealDialog = ({
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [fileUploaded, setFileUploaded] = useState(false);
+  const [uploadingFileName, setUploadingFileName] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +77,7 @@ const AddMealDialog = ({
     if (!file) return;
 
     setIsUploadingFile(true);
+    setUploadingFileName(file.name);
     try {
       const publicUrl = await uploadRecipeFile(file);
       setUrl(publicUrl);
@@ -94,6 +96,7 @@ const AddMealDialog = ({
       }
     } finally {
       setIsUploadingFile(false);
+      setUploadingFileName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -230,16 +233,21 @@ const AddMealDialog = ({
                 <Button
                   type="button"
                   variant="outline"
-                  size="icon"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploadingFile}
                   className="shrink-0"
                   aria-label="Upload photo or PDF"
                 >
                   {isUploadingFile ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
+                    </>
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <>
+                      <Upload className="h-4 w-4 mr-1" />
+                      Upload
+                    </>
                   )}
                 </Button>
                 <input

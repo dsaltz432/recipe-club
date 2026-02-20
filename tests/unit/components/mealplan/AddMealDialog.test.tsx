@@ -573,10 +573,41 @@ describe("AddMealDialog", () => {
       return file;
     };
 
-    it("renders upload button in Custom tab", () => {
+    it("renders upload button with text label in Custom tab", () => {
       render(<AddMealDialog {...defaultProps} />);
 
       expect(screen.getByLabelText("Upload photo or PDF")).toBeInTheDocument();
+      expect(screen.getByText("Upload")).toBeInTheDocument();
+    });
+
+    it("shows filename during upload", async () => {
+      let resolveUpload!: (value: string) => void;
+      mockUploadRecipeFile.mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveUpload = resolve; })
+      );
+
+      render(<AddMealDialog {...defaultProps} />);
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = createFile("my-recipe-photo.jpg", "image/jpeg");
+
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // Should show filename while uploading
+      await waitFor(() => {
+        expect(screen.getByText("my-recipe-photo.jpg")).toBeInTheDocument();
+      });
+
+      // "Upload" text should be gone during upload
+      expect(screen.queryByText("Upload")).not.toBeInTheDocument();
+
+      // Resolve the upload
+      resolveUpload("https://storage.example.com/test.jpg");
+
+      // After upload completes, "Upload" text returns
+      await waitFor(() => {
+        expect(screen.getByText("Upload")).toBeInTheDocument();
+      });
     });
 
     it("triggers file input when upload button is clicked", () => {

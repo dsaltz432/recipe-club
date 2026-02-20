@@ -76,6 +76,7 @@ const PersonalMealDetailPage = () => {
   const [recipeUrl, setRecipeUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingRecipeImage, setIsUploadingRecipeImage] = useState(false);
+  const [uploadingFileName, setUploadingFileName] = useState("");
   const recipeImageInputRef = useRef<HTMLInputElement>(null);
 
   // Edit Recipe state
@@ -298,10 +299,15 @@ const PersonalMealDetailPage = () => {
     if (!file) return;
 
     setIsUploadingRecipeImage(true);
+    setUploadingFileName(file.name);
 
     try {
       const publicUrl = await uploadRecipeFile(file);
       setRecipeUrl(publicUrl);
+      if (!recipeName.trim()) {
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        setRecipeName(baseName);
+      }
       toast.success("File uploaded!");
     } catch (error) {
       if (error instanceof FileValidationError) {
@@ -312,6 +318,7 @@ const PersonalMealDetailPage = () => {
       }
     } finally {
       setIsUploadingRecipeImage(false);
+      setUploadingFileName("");
       if (recipeImageInputRef.current) {
         recipeImageInputRef.current.value = "";
       }
@@ -327,22 +334,40 @@ const PersonalMealDetailPage = () => {
 
     setIsSubmitting(true);
     try {
-      const { error: recipeError } = await supabase
+      const { data: insertedRecipe, error: recipeError } = await supabase
         .from("recipes")
         .insert({
           name: recipeName.trim(),
           url: recipeUrl.trim() || null,
           event_id: event.eventId,
           created_by: user.id,
-        });
+        })
+        .select()
+        .single();
 
       if (recipeError) throw recipeError;
+
+      const savedName = recipeName.trim();
+      const savedUrl = recipeUrl.trim();
 
       toast.success("Recipe added!");
       setRecipeName("");
       setRecipeUrl("");
       setShowAddForm(false);
       loadEventData();
+
+      // Trigger parse-recipe in background if URL is present
+      if (savedUrl && insertedRecipe) {
+        supabase.functions.invoke("parse-recipe", {
+          body: { recipeId: insertedRecipe.id, recipeUrl: savedUrl, recipeName: savedName },
+        }).then(({ error: parseError }) => {
+          if (parseError) {
+            console.error("Error parsing recipe:", parseError);
+          } else {
+            loadEventData();
+          }
+        });
+      }
     } catch (error) {
       console.error("Error saving recipe:", error);
       toast.error("Failed to save recipe");
@@ -685,11 +710,18 @@ const PersonalMealDetailPage = () => {
                   onClick={() => recipeImageInputRef.current?.click()}
                   disabled={isUploadingRecipeImage}
                   className="shrink-0"
+                  aria-label="Upload photo or PDF"
                 >
                   {isUploadingRecipeImage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      <span className="text-xs truncate max-w-[100px]">{uploadingFileName || "Uploading..."}</span>
+                    </>
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <>
+                      <Upload className="h-4 w-4 mr-1" />
+                      Upload
+                    </>
                   )}
                 </Button>
                 <input

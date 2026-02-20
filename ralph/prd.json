@@ -240,7 +240,7 @@
         "Tests pass with 100% coverage on all required directories (npm run test:coverage)"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 11 findings. Upload buttons: EventDetailPage.tsx lines 1474-1486 and AddMealDialog.tsx lines 226-240 both show only an Upload icon. Fix: add text label 'Upload' or 'Photo/PDF' next to the icon. For mobile, at minimum add an aria-label. Upload progress: currently shows only a Loader2 spinner. Fix: show the filename being uploaded (truncated if long) and optionally a 'Uploading...' text. Since Supabase storage doesn't provide upload progress events, a determinate progress bar isn't feasible — use an indeterminate bar with filename. PersonalMealDetailPage parse: PersonalMealDetailPage.tsx lines 341-372 uploads and saves but doesn't invoke parse-recipe. Fix: after successful upload+save in handleAddRecipe, invoke supabase.functions.invoke('parse-recipe', { body: { recipeId, recipeUrl, recipeName } }) — same pattern as EventDetailPage and MealPlanPage. Name auto-fill: EventDetailPage fills URL but not name from filename. AddMealDialog fills name from filename. Fix: make both consistent by also auto-filling name in EventDetailPage when the name/title field is empty."
     },
     {

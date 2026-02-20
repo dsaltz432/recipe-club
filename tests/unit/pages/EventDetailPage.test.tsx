@@ -512,4 +512,83 @@ describe("EventDetailPage", () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe("Upload button UX improvements", () => {
+    it("upload button shows 'Upload' text label", async () => {
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText("Tomato")).toBeInTheDocument();
+      });
+
+      // Open add recipe dialog
+      fireEvent.click(screen.getByText("Add Recipe"));
+      await waitFor(() => {
+        expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+      });
+
+      expect(screen.getByLabelText("Upload photo or PDF")).toBeInTheDocument();
+      expect(screen.getByText("Upload")).toBeInTheDocument();
+    });
+
+    it("auto-fills recipe name from filename when name is empty", async () => {
+      const { uploadRecipeFile } = await import("@/lib/upload");
+      (uploadRecipeFile as ReturnType<typeof vi.fn>).mockResolvedValueOnce("https://storage.example.com/test.jpg");
+
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText("Tomato")).toBeInTheDocument();
+      });
+
+      // Open add recipe dialog
+      fireEvent.click(screen.getByText("Add Recipe"));
+      await waitFor(() => {
+        expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+      });
+
+      // Upload a file without filling in the name
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "chicken-tikka-masala.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // Name should be auto-filled from filename
+      await waitFor(() => {
+        const nameInput = screen.getByLabelText("Recipe Name *") as HTMLInputElement;
+        expect(nameInput.value).toBe("chicken tikka masala");
+      });
+    });
+
+    it("does not overwrite existing recipe name on upload", async () => {
+      const { uploadRecipeFile } = await import("@/lib/upload");
+      (uploadRecipeFile as ReturnType<typeof vi.fn>).mockResolvedValueOnce("https://storage.example.com/test.jpg");
+
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText("Tomato")).toBeInTheDocument();
+      });
+
+      // Open add recipe dialog
+      fireEvent.click(screen.getByText("Add Recipe"));
+      await waitFor(() => {
+        expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+      });
+
+      // Fill in name first
+      fireEvent.change(screen.getByLabelText("Recipe Name *"), {
+        target: { value: "My Custom Name" },
+      });
+
+      // Upload a file
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(uploadRecipeFile).toHaveBeenCalledWith(file);
+      });
+
+      // Name should NOT be overwritten
+      const nameInput = screen.getByLabelText("Recipe Name *") as HTMLInputElement;
+      expect(nameInput.value).toBe("My Custom Name");
+    });
+  });
 });

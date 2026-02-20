@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 13
-**Current Task:** US-013 complete
+**Tasks Completed:** 14
+**Current Task:** US-014 complete
 
 ---
 
@@ -451,5 +451,37 @@ Eight changes across pantry components, MealPlanPage, and GroceryListSection:
 - `src/components/pantry/` is NOT in the required 100% coverage directories — PantryContent.tsx has 94.44% branch coverage (the `if (active)` false branch is uncovered when used from PantrySection which always passes true). This is acceptable.
 - When adding a new component dependency to a parent (PantryDialog to MealPlanPage), always add a `vi.mock()` for it in the parent's test file — even if the mock is simple, it prevents the real component from importing Supabase/other modules that aren't mocked.
 - AlertDialog confirmation pattern: set state with item data → dialog reads state → confirm handler uses `!` assertion since it's only callable when dialog is open → clear state. Same pattern used in MealPlanPage (uncook) and now PantryContent (delete).
+
+---
+
+## 2026-02-20 — US-014: Improve upload UX and consistency
+
+### What was implemented
+Five improvements across all three upload-capable components (EventDetailPage, AddMealDialog, PersonalMealDetailPage):
+
+- **Upload button text labels**: All three upload buttons now show "Upload" text alongside the Upload icon. Added `aria-label="Upload photo or PDF"` to EventDetailPage and PersonalMealDetailPage (AddMealDialog already had it). Removed `size="icon"` from AddMealDialog button to accommodate text.
+- **Upload progress with filename**: All three components now show the filename being uploaded during the upload state (e.g., "my-recipe-photo.jpg" in a truncated span with `max-w-[100px]`). New `uploadingFileName` state added to each component, set on upload start, cleared on upload finish. Spinner remains alongside the filename.
+- **PersonalMealDetailPage parse-recipe trigger**: After a recipe is saved with a URL, `supabase.functions.invoke("parse-recipe")` is called in the background (fire-and-forget with `.then()`). On success, `loadEventData()` is called to refresh. On error, the error is logged to console. The recipe insert now uses `.select().single()` to get the inserted recipe ID for the parse call.
+- **Filename auto-fill consistency**: EventDetailPage and PersonalMealDetailPage now auto-fill the recipe name from the filename (minus extension, with hyphens/underscores replaced by spaces) when the name field is empty — matching AddMealDialog's existing behavior. If a name is already entered, it's not overwritten.
+- **V8 branch coverage fix**: Removed `|| "Uploading..."` fallback from AddMealDialog's upload filename display — the fallback was unreachable (filename is always set before `isUploadingFile=true`) and caused a V8 branch coverage gap. EventDetailPage and PersonalMealDetailPage retain the fallback since they're not in required 100% coverage directories.
+
+### Files changed
+- `src/pages/EventDetailPage.tsx` (upload button text, aria-label, filename display, name auto-fill, uploadingFileName state)
+- `src/components/mealplan/AddMealDialog.tsx` (upload button text, filename display, uploadingFileName state, removed `size="icon"`)
+- `src/pages/PersonalMealDetailPage.tsx` (upload button text, aria-label, filename display, name auto-fill, uploadingFileName state, parse-recipe trigger, `.select().single()` on insert)
+- `tests/unit/components/mealplan/AddMealDialog.test.tsx` (2 new tests: upload button text label, filename shown during upload)
+- `tests/unit/pages/EventDetailPage.test.tsx` (3 new tests: upload button text label, auto-fill name from filename, no overwrite of existing name)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1200 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- V8 counts `||` in JSX expressions as branches — when the fallback is unreachable (state is always set), remove it entirely to avoid branch coverage gaps
+- `supabase.functions.invoke()` can be called fire-and-forget with `.then()` for background processing that doesn't block the UI
+- When adding `.select().single()` to an insert, the return type changes from `{ error }` to `{ data, error }` — destructure both
+- Filename auto-fill pattern: `file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")` strips extension and normalizes separators
+- `src/pages/` is NOT in the required 100% coverage directories — tests there are for confidence, focus on specific behavior changes
 
 ---
