@@ -698,7 +698,22 @@ export type Database = {
       };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      increment_ingredient_used_count: {
+        Args: {
+          p_ingredient_id: string;
+          p_user_id?: string;
+        };
+        Returns: undefined;
+      };
+      replace_recipe_ingredients: {
+        Args: {
+          p_recipe_id: string;
+          p_ingredients: unknown;
+        };
+        Returns: undefined;
+      };
+    };
     Enums: {};
     CompositeTypes: {};
   };

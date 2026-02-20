@@ -1047,27 +1047,24 @@ const EventDetailPage = () => {
 
     try {
       // Update event status to completed
-      await supabase
+      const { error: statusError } = await supabase
         .from("scheduled_events")
         .update({ status: "completed" })
         .eq("id", event.eventId);
 
-      // Increment the ingredient's used_count
-      if (event.ingredientId) {
-        const { data: ingredientData } = await supabase
-          .from("ingredients")
-          .select("used_count")
-          .eq("id", event.ingredientId)
-          .single();
+      if (statusError) throw statusError;
 
-        await supabase
-          .from("ingredients")
-          .update({
-            used_count: (ingredientData?.used_count || 0) + 1,
-            last_used_date: new Date().toISOString(),
-            last_used_by: user?.id,
-          })
-          .eq("id", event.ingredientId);
+      // Atomically increment the ingredient's used_count via RPC
+      if (event.ingredientId) {
+        const { error: rpcError } = await supabase.rpc(
+          "increment_ingredient_used_count",
+          {
+            p_ingredient_id: event.ingredientId,
+            p_user_id: user?.id,
+          }
+        );
+
+        if (rpcError) throw rpcError;
       }
 
       toast.success("Event marked as completed!");
@@ -1712,7 +1709,7 @@ const EventDetailPage = () => {
                 mode="single"
                 selected={editDate}
                 onSelect={setEditDate}
-                disabled={(date) => date < new Date()}
+                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
                 initialFocus
               />
             </div>

@@ -53,9 +53,9 @@ When uploading files to Supabase storage in a dialog:
 When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` interface and implementation in `tests/helpers/edge-function-setup.ts`. Mock as `vi.fn().mockResolvedValue({ data: null, error: null })`. Override in individual tests with `mockSupabase.rpc.mockResolvedValue(...)`.
 
 ## Current Status
-**Last Updated:** 2026-02-19
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Last Updated:** 2026-02-20
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ---
 
@@ -140,5 +140,36 @@ Also removed an unreachable `if (firstRecipe)` guard in `handleAddRecipeMeal` (r
 - V8 branch coverage counts `??` (nullish coalescing) as a branch — test data must include null values to cover the fallback
 - When testing file upload in edit mode, must wait for `toast.success("File uploaded!")` (not just mock resolution) to ensure all state updates complete before submitting
 - `setItems` callbacks that use ternary (`item.id === editingItem.id ? {...} : item`) need multiple items in test data to cover the else branch
+
+---
+
+## 2026-02-20 — US-004: Fix event management logic bugs
+
+### What was implemented
+Four bugs fixed across RecipeClubEvents.tsx and EventDetailPage.tsx, plus one new migration and one new test file:
+
+- **BUG-004**: Added empty array guards before `.in()` calls in `loadEvents`. If `eventIds` is empty, skip the recipes query. If `recipeIds` is empty, skip the notes query. Prevents undefined PostgREST behavior with `.in('col', [])`.
+- **BUG-005/006**: Replaced read-then-write ingredient increment with atomic RPC function `increment_ingredient_used_count(p_ingredient_id, p_user_id)`. Eliminates race condition. Applied in both RecipeClubEvents.tsx `handleRatingsComplete` and EventDetailPage.tsx `handleRatingsComplete`. Added error checks (`if (statusError) throw statusError`, `if (rpcError) throw rpcError`).
+- **BUG-007**: Fixed date picker disabled function in both RecipeClubEvents.tsx and EventDetailPage.tsx edit dialogs. Changed `date < new Date()` to `{ const today = new Date(); today.setHours(0,0,0,0); return date < today; }` so today's date is selectable.
+
+Also: removed two unreachable guards (`if (!isAdmin)` in cancelEvent, `if (!editDate)` in handleSaveEdit) and one redundant `recipe.event_id || undefined` fallback (guard ensures event_id is truthy). Added RPC function types to `src/integrations/supabase/types.ts`.
+
+### Files changed
+- `src/components/events/RecipeClubEvents.tsx` (empty array guards, RPC increment, date picker fix, unreachable guard removal)
+- `src/pages/EventDetailPage.tsx` (RPC increment, date picker fix)
+- `src/integrations/supabase/types.ts` (added Functions: increment_ingredient_used_count, replace_recipe_ingredients)
+- `supabase/migrations/20260220000001_increment_ingredient_used_count_rpc.sql` (new)
+- `tests/unit/components/events/RecipeClubEvents.test.tsx` (new: 57 tests, 100% coverage)
+
+### Quality checks
+- Build: pass
+- Tests: pass (901 tests in required directories, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- `supabase.rpc()` requires function types in `src/integrations/supabase/types.ts` — add to `Functions` object or TypeScript will resolve the parameter as `never`
+- V8 branch coverage counts `||` fallbacks in `a?.b || c` as separate branches — when a guard makes the falsy branch unreachable, remove the fallback or use non-null assertion
+- When mocking EventRatingDialog in parent tests, use the full alias path `@/components/events/EventRatingDialog` not relative `./EventRatingDialog`
+- PostgREST `.in('col', [])` has undefined behavior — always guard with `if (ids.length > 0)`
 
 ---

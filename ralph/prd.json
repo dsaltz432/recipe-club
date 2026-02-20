@@ -68,7 +68,7 @@
         "Tests pass with 100% coverage on events directory (npm run test:coverage)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "BUG-004: src/components/events/RecipeClubEvents.tsx lines 83,95. When eventsData is empty, eventIds is []. The .in('event_id', []) call has undefined PostgREST behavior. Fix: add early return guards. BUG-005+BUG-006: RecipeClubEvents.tsx lines 328-365. handleRatingsComplete reads used_count then writes back — race condition, plus no error check on the read. Fix: create migration with PL/pgSQL RPC: CREATE OR REPLACE FUNCTION increment_ingredient_used_count(p_ingredient_id UUID) RETURNS void AS $$ BEGIN UPDATE ingredients SET used_count = used_count + 1, last_used_date = now() WHERE id = p_ingredient_id; END; $$ LANGUAGE plpgsql SECURITY DEFINER; Then replace the read+write with a single supabase.rpc('increment_ingredient_used_count', { p_ingredient_id: ingredientId }) call. Still need to separately update last_used_by. BUG-007: src/pages/EventDetailPage.tsx line 1715. Fix: disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}."
     },
     {

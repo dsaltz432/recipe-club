@@ -76,25 +76,33 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
 
       const eventIds = eventsData?.map(e => e.id) || [];
 
-      // Fetch recipes for these events (recipes now have event_id directly)
-      const { data: recipesData, error: recipesError } = await supabase
-        .from("recipes")
-        .select("*")
-        .in("event_id", eventIds);
+      // Fetch recipes for these events (skip if no events to avoid empty .in())
+      let recipesData: Array<{ id: string; name: string; url: string | null; event_id: string | null; ingredient_id: string | null; created_by: string | null; created_at: string }> = [];
+      if (eventIds.length > 0) {
+        const { data, error: recipesError } = await supabase
+          .from("recipes")
+          .select("*")
+          .in("event_id", eventIds);
 
-      if (recipesError) throw recipesError;
+        if (recipesError) throw recipesError;
+        recipesData = data || [];
+      }
 
-      // Fetch notes for these recipes
-      const recipeIds = recipesData?.map(r => r.id) || [];
-      const { data: notesData, error: notesError } = await supabase
-        .from("recipe_notes")
-        .select(`
-          *,
-          profiles (name, avatar_url)
-        `)
-        .in("recipe_id", recipeIds);
+      // Fetch notes for these recipes (skip if no recipes to avoid empty .in())
+      const recipeIds = recipesData.map(r => r.id);
+      let notesData: Array<{ recipe_id: string; id: string; user_id: string; notes: string | null; photos: string[] | null; created_at: string; profiles: { name: string; avatar_url: string | null } | null }> = [];
+      if (recipeIds.length > 0) {
+        const { data, error: notesError } = await supabase
+          .from("recipe_notes")
+          .select(`
+            *,
+            profiles (name, avatar_url)
+          `)
+          .in("recipe_id", recipeIds);
 
-      if (notesError) throw notesError;
+        if (notesError) throw notesError;
+        notesData = (data as typeof notesData) || [];
+      }
 
       // Build event map
       const eventMap = new Map<string, EventData>();
@@ -137,7 +145,7 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
             id: recipe.id,
             name: recipe.name,
             url: recipe.url || undefined,
-            eventId: recipe.event_id || undefined,
+            eventId,
             ingredientId: recipe.ingredient_id || undefined,
             createdBy: recipe.created_by || undefined,
             createdAt: recipe.created_at,
@@ -187,11 +195,6 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
   }, []);
 
   const cancelEvent = async (eventId: string) => {
-    if (!isAdmin) {
-      toast.error("Only admins can cancel events");
-      return;
-    }
-
     try {
       // Find the event
       const { data: eventData, error: findError } = await supabase
@@ -329,29 +332,24 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
     // After ratings are submitted, complete the event and increment used_count
     try {
       // Update event status to completed
-      await supabase
+      const { error: statusError } = await supabase
         .from("scheduled_events")
         .update({ status: "completed" })
         .eq("id", event.eventId);
 
-      // Increment the ingredient's used_count
-      if (event.ingredientId) {
-        // First get current count
-        const { data: ingredientData } = await supabase
-          .from("ingredients")
-          .select("used_count")
-          .eq("id", event.ingredientId)
-          .single();
+      if (statusError) throw statusError;
 
-        // Then increment
-        await supabase
-          .from("ingredients")
-          .update({
-            used_count: (ingredientData?.used_count || 0) + 1,
-            last_used_date: new Date().toISOString(),
-            last_used_by: userId,
-          })
-          .eq("id", event.ingredientId);
+      // Atomically increment the ingredient's used_count via RPC
+      if (event.ingredientId) {
+        const { error: rpcError } = await supabase.rpc(
+          "increment_ingredient_used_count",
+          {
+            p_ingredient_id: event.ingredientId,
+            p_user_id: userId,
+          }
+        );
+
+        if (rpcError) throw rpcError;
       }
 
       toast.success("Event marked as completed!");
@@ -365,14 +363,9 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
   };
 
   const handleSaveEdit = async () => {
-    if (!editDate) {
-      toast.error("Please select a date");
-      return;
-    }
-
     setIsUpdating(true);
     try {
-      const newEventDate = format(editDate, "yyyy-MM-dd");
+      const newEventDate = format(editDate!, "yyyy-MM-dd");
 
       // Get the event details including calendar_event_id and ingredient name
       const { data: eventData, error: fetchError } = await supabase
@@ -398,7 +391,7 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
       if (eventData.calendar_event_id) {
         const calendarResult = await updateCalendarEvent({
           calendarEventId: eventData.calendar_event_id,
-          date: editDate,
+          date: editDate!,
           time: editTime,
           ingredientName: eventData.ingredients?.name || "Unknown",
         });
@@ -548,7 +541,7 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
                 mode="single"
                 selected={editDate}
                 onSelect={setEditDate}
-                disabled={(date) => date < new Date()}
+                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
                 initialFocus
               />
             </div>
