@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 7
-**Current Task:** US-007 complete
+**Tasks Completed:** 8
+**Current Task:** US-008 complete
 
 ---
 
@@ -265,5 +265,37 @@ Three UX improvements to auth flow, plus comprehensive test coverage:
 - Mock `react-router-dom` with spread of `vi.importActual` to preserve MemoryRouter and other utilities
 - The `isDevMode` mock must default to `false` in `beforeEach` and be overridden to `true` per-describe block for dev mode tests
 - AuthGuard mounted flag test: create a pending promise, unmount, then resolve — verify no navigation occurred
+
+---
+
+## 2026-02-20 — US-008: Improve Home tab non-admin experience
+
+### What was implemented
+Four UX improvements across HomeSection, CountdownCard, IngredientBank, and IngredientWheel:
+
+- **Non-admin CTA button**: HomeSection.tsx non-admin empty state now includes a "Browse Recipes" button that navigates to `/dashboard/recipes`. Added `useNavigate` import and `Button` + `BookOpen` icon. Text updated from "Check back soon or browse past recipes in the Recipes tab!" to "Check back soon or browse past recipes!" with a visible button below.
+- **CountdownCard "It's Time!" guidance**: When countdown reaches zero, the "It's Time!" pulsing text now also shows a clickable link: "Head to the event for recipes and cooking!" that navigates to `/events/{eventId}`.
+- **IngredientBank "Bank full" message**: When `isAdmin && isFull`, a green banner shows "Bank full — spin the wheel!" above the ingredient list. The add ingredient input and suggestions section are still hidden (existing behavior).
+- **Time format standardization**: IngredientWheel.tsx `formatTime` changed from lowercase ("pm"/"am") to uppercase ("PM"/"AM") to match CountdownCard's format. Both now use uppercase AM/PM consistently.
+
+### Files changed
+- `src/components/home/HomeSection.tsx` (added navigate, Button, BookOpen; added CTA button in non-admin empty state)
+- `src/components/home/CountdownCard.tsx` (added guidance link in "It's Time!" state)
+- `src/components/ingredients/IngredientBank.tsx` (added "Bank full" message)
+- `src/components/wheel/IngredientWheel.tsx` (changed "pm"/"am" to "PM"/"AM")
+- `tests/unit/components/home/HomeSection.test.tsx` (new: 7 tests)
+- `tests/unit/components/home/CountdownCard.test.tsx` (new: 19 tests)
+- `tests/unit/components/ingredients/IngredientBank.test.tsx` (added 2 tests for bank full message)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1140 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- `src/components/home/` is NOT in the required 100% coverage directories — tests there are for confidence but not coverage-gated
+- CountdownCard uses Radix UI Dialog/AlertDialog which are tricky with fake timers — Dialog interaction tests timeout easily; keep tests focused on rendering and simple interactions
+- Dashboard navigation uses URL-based routing (`/dashboard/recipes`, `/dashboard/events`) via `useNavigate` — no `setActiveTab` prop needed
+- IngredientWheel and CountdownCard both have their own `formatTime` helpers — standardize at the format level, not by extracting a shared util (too much coupling for a 1-line change)
 
 ---

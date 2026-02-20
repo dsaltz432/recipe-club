@@ -135,7 +135,7 @@
         "Tests pass with 100% coverage on all required directories (npm run test:coverage)"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 3 findings. HomeSection.tsx (89 lines): lines 71-83 render a Card saying 'No Event Scheduled' with text suggesting to browse Recipes tab but no button. Fix: add a Button with onClick={() => navigate('/dashboard/recipes')} or use the tab switching mechanism. The component receives a setActiveTab prop or can use react-router navigation. CountdownCard.tsx: when countdown reaches zero, shows pulsing 'It's Time!' text (around the countdown display logic). Fix: below the pulsing text, add a small paragraph with a link to the event detail: 'Head to the event for recipes and cooking!' linked to /events/{eventId}. The eventId should be available from the activeEvent prop. IngredientBank.tsx: the add section conditionally renders based on ingredient count vs MIN_INGREDIENTS_TO_SPIN. When hidden, no explanation is shown. Fix: when count >= MIN_INGREDIENTS_TO_SPIN, show a Badge or small text like 'Bank full — spin the wheel!'. Time format: CountdownCard uses 'h:mm A' (7:00 PM) while IngredientWheel uses lowercase (7:00 pm). Standardize on uppercase AM/PM."
     },
     {

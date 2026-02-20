@@ -265,8 +265,16 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
           <div className="flex-shrink-0 self-center">
             <div className={`text-center p-4 sm:p-6 rounded-2xl ${isSoon ? 'bg-gradient-to-br from-orange/20 to-orange/5 border border-orange/20' : 'bg-gradient-to-br from-purple/20 to-purple/5 border border-purple/20'}`}>
               {isTimeUp ? (
-                <div className="text-xl sm:text-2xl font-bold text-orange animate-pulse">
-                  It's Time!
+                <div className="space-y-2">
+                  <div className="text-xl sm:text-2xl font-bold text-orange animate-pulse">
+                    It's Time!
+                  </div>
+                  <button
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    className="text-xs sm:text-sm text-purple hover:text-purple-dark underline underline-offset-2"
+                  >
+                    Head to the event for recipes and cooking!
+                  </button>
                 </div>
               ) : (
                 <>

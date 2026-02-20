@@ -778,6 +778,46 @@ describe("IngredientBank - Full Bank", () => {
     expect(screen.queryByPlaceholderText(/add a new ingredient/i)).not.toBeInTheDocument();
   });
 
+  it("shows 'bank full' message when bank is at capacity for admin", async () => {
+    const fullBankIngredients: Ingredient[] = Array.from({ length: 10 }, (_, i) =>
+      createMockIngredient({ id: `${i}`, name: `Ingredient ${i}`, inBank: true })
+    );
+
+    render(
+      <IngredientBank
+        ingredients={fullBankIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Bank full — spin the wheel!")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show 'bank full' message for non-admin when bank is full", async () => {
+    const fullBankIngredients: Ingredient[] = Array.from({ length: 10 }, (_, i) =>
+      createMockIngredient({ id: `${i}`, name: `Ingredient ${i}`, inBank: true })
+    );
+
+    render(
+      <IngredientBank
+        ingredients={fullBankIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={false}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/ready to spin/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Bank full — spin the wheel!")).not.toBeInTheDocument();
+  });
+
   it("shows error when trying to add suggestion to full bank", async () => {
     // Create 15 ingredients
     const fullBankIngredients: Ingredient[] = Array.from({ length: 15 }, (_, i) =>

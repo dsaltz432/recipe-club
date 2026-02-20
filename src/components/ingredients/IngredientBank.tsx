@@ -353,6 +353,13 @@ const IngredientBank = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
+        {/* Bank full message */}
+        {isAdmin && isFull && (
+          <div className="text-center py-2 px-3 bg-green/10 text-green rounded-lg text-sm font-medium">
+            Bank full — spin the wheel!
+          </div>
+        )}
+
         {/* Add Ingredient - Admin only */}
         {isAdmin && !isFull && (
           <div className="space-y-3">
