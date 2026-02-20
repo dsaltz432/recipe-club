@@ -317,6 +317,84 @@ describe("MealPlanSlot", () => {
     expect(screen.queryByTitle("View meal details")).not.toBeInTheDocument();
   });
 
+  it("has aria-labels on action buttons", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+        recipeUrl: "https://example.com/salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    const onMarkCooked = vi.fn();
+    render(
+      <MealPlanSlot
+        {...defaultProps}
+        items={items}
+        onViewMealEvent={onViewMealEvent}
+        onMarkCooked={onMarkCooked}
+      />
+    );
+
+    expect(screen.getByLabelText("Edit Grilled Salmon")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove Grilled Salmon")).toBeInTheDocument();
+    expect(screen.getByLabelText("Open Grilled Salmon recipe link")).toBeInTheDocument();
+    expect(screen.getByLabelText("View meal details")).toBeInTheDocument();
+    expect(screen.getByLabelText("Mark as cooked")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add another meal")).toBeInTheDocument();
+  });
+
+  it("shows visible text labels on action buttons", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    const onMarkCooked = vi.fn();
+    render(
+      <MealPlanSlot
+        {...defaultProps}
+        items={items}
+        onViewMealEvent={onViewMealEvent}
+        onMarkCooked={onMarkCooked}
+      />
+    );
+
+    expect(screen.getByText("View")).toBeInTheDocument();
+    expect(screen.getByText("Done")).toBeInTheDocument();
+  });
+
+  it("shows Undo text label when cooked", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+        cookedAt: "2026-02-19T12:00:00Z",
+      },
+    ];
+
+    const onUncook = vi.fn();
+    render(<MealPlanSlot {...defaultProps} items={items} onUncook={onUncook} />);
+
+    expect(screen.getByText("Undo")).toBeInTheDocument();
+  });
+
   describe("cooked state", () => {
     it("shows green styling when all items are cooked", () => {
       const items: MealPlanItem[] = [
@@ -335,6 +413,44 @@ describe("MealPlanSlot", () => {
 
       const slot = container.querySelector(".bg-green-50");
       expect(slot).toBeInTheDocument();
+    });
+
+    it("shows sr-only Cooked text for screen readers when cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      const srOnly = container.querySelector(".sr-only");
+      expect(srOnly).toBeInTheDocument();
+      expect(srOnly?.textContent).toBe("Cooked");
+    });
+
+    it("does not show sr-only Cooked text when not cooked", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      const srOnly = container.querySelector(".sr-only");
+      expect(srOnly).not.toBeInTheDocument();
     });
 
     it("shows checkmark icons when cooked", () => {

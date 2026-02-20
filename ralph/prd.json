@@ -187,7 +187,7 @@
         "Tests pass with 100% coverage on mealplan directory (npm run test:coverage)"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 7 findings. MealPlanSlot.tsx (134 lines): lines 91-129 have 4 icon-only buttons (ChefHat, RotateCcw, Check, Plus) with only title attributes. Fix: add short text labels next to icons. On mobile, these should still be compact — consider using sr-only text + aria-label for the tightest spaces, or abbreviations ('View', 'Undo', 'Cook', '+'). Also add aria-label attributes to all icon buttons. Undo Cook (MealPlanPage.tsx): handleUncook currently resets cooked_at immediately. Fix: add a state like uncookConfirmSlot and show an AlertDialog: 'This will mark the meal as uncooked. Ratings will be preserved. Continue?'. Grocery empty state (MealPlanPage.tsx lines 228-236): currently says 'Add meals to your plan...' even when custom meals exist but have no recipe_id/ingredients. Fix: check if there are meals in the current week but none have recipe_ids — show 'Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.' vs 'No meals planned this week. Add meals to see a grocery list.'. MealPlanGrid.tsx date labels: lines 31-36 use text-xs. Change to text-sm."
     },
     {

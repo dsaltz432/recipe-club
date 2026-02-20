@@ -1792,7 +1792,7 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       expect(
-        screen.getByText("Add meals to your plan to generate a grocery list.")
+        screen.getByText("No meals planned this week. Add meals to see a grocery list.")
       ).toBeInTheDocument();
     });
 
@@ -1934,7 +1934,7 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       expect(
-        screen.getByText("Add meals to your plan to generate a grocery list.")
+        screen.getByText("Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.")
       ).toBeInTheDocument();
     });
 
@@ -2654,7 +2654,7 @@ describe("MealPlanPage", () => {
       // Should show empty state since no meals
       await waitFor(() => {
         expect(
-          screen.getByText("Add meals to your plan to generate a grocery list.")
+          screen.getByText("No meals planned this week. Add meals to see a grocery list.")
         ).toBeInTheDocument();
       });
     });
@@ -3015,6 +3015,12 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByTitle("Undo cook"));
 
+      // Confirmation dialog should appear
+      await waitFor(() => {
+        expect(screen.getByText("Undo cook?")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Meal unmarked as cooked");
       });
@@ -3118,9 +3124,67 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByTitle("Undo cook"));
 
+      // Confirmation dialog should appear
+      await waitFor(() => {
+        expect(screen.getByText("Undo cook?")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Failed to uncook meal");
       });
+    });
+
+    it("cancels uncook when Cancel is clicked in confirmation dialog", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: "Toast",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                  cooked_at: "2026-02-19T12:00:00Z",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Toast")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTitle("Undo cook"));
+
+      // Confirmation dialog should appear
+      await waitFor(() => {
+        expect(screen.getByText("Undo cook?")).toBeInTheDocument();
+      });
+
+      // Click Cancel
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+      // Dialog should close, no uncook happened
+      await waitFor(() => {
+        expect(screen.queryByText("Undo cook?")).not.toBeInTheDocument();
+      });
+      expect(toast.success).not.toHaveBeenCalledWith("Meal unmarked as cooked");
     });
 
     it("handles event creation error during mark as cooked", async () => {
@@ -3302,6 +3366,12 @@ describe("MealPlanPage", () => {
       // Uncook the first slot (breakfast)
       const undoButtons = screen.getAllByTitle("Undo cook");
       fireEvent.click(undoButtons[0]);
+
+      // Confirmation dialog should appear
+      await waitFor(() => {
+        expect(screen.getByText("Undo cook?")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Meal unmarked as cooked");

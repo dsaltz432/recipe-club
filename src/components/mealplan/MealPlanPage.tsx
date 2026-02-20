@@ -2,12 +2,22 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed } from "lucide-react";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, EventRecipeWithNotes } from "@/types";
 
@@ -56,6 +66,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [isLoadingGroceries, setIsLoadingGroceries] = useState(false);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedSlotForRating, setSelectedSlotForRating] = useState<RatingSlotData | null>(null);
+  const [uncookConfirmSlot, setUncookConfirmSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
 
   const navigate = useNavigate();
 
@@ -673,9 +684,16 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setSelectedSlotForRating(null);
   };
 
-  const handleUncook = async (dayOfWeek: number, mealType: string) => {
+  const handleUncook = (dayOfWeek: number, mealType: string) => {
+    setUncookConfirmSlot({ dayOfWeek, mealType });
+  };
+
+  const handleConfirmUncook = async () => {
+    const slot = uncookConfirmSlot!;
+    setUncookConfirmSlot(null);
+
     const slotItems = items.filter(
-      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
+      (i) => i.dayOfWeek === slot.dayOfWeek && i.mealType === slot.mealType
     );
 
     try {
@@ -782,11 +800,18 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             isLoading={isLoadingGroceries}
             pantryItems={pantryItems}
           />
+        ) : items.length > 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <UtensilsCrossed className="h-8 w-8 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-sm">
+              Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-sm">
-              Add meals to your plan to generate a grocery list.
+              No meals planned this week. Add meals to see a grocery list.
             </p>
           </div>
         )
@@ -806,6 +831,21 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           mode="rating"
         />
       )}
+
+      <AlertDialog open={!!uncookConfirmSlot} onOpenChange={() => setUncookConfirmSlot(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo cook?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the meal as uncooked. Ratings will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUncook}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

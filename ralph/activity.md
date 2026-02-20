@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 10
-**Current Task:** US-010 complete
+**Tasks Completed:** 11
+**Current Task:** US-011 complete
 
 ---
 
@@ -354,5 +354,36 @@ Six changes adding edit/delete capability for personal recipes:
 - `recipe.url || ""` creates a V8 branch — need test data with both truthy and falsy `url` values to cover both branches
 - Unreachable guards in dialog handlers (`if (!editingRecipe) return`) kill coverage — remove them and use `!` non-null assertions since the handler is only callable when the dialog is open
 - Simplify dialog `onOpenChange` callbacks: use `() => setState(null)` instead of `(open) => { if (!open) setState(null) }` to avoid an uncoverable branch
+
+---
+
+## 2026-02-20 — US-011: Improve meal plan slot labels and action UX
+
+### What was implemented
+Five UX improvements across MealPlanSlot, MealPlanPage, and MealPlanGrid:
+
+- **Button text labels**: MealPlanSlot action buttons now have visible text labels alongside icons: "View" (ChefHat), "Undo" (RotateCcw), "Done" (Check). Plus button remains icon-only since its meaning is universally understood.
+- **Aria-labels**: All interactive elements in MealPlanSlot have `aria-label` attributes: edit/remove buttons use dynamic labels (`Edit ${name}`, `Remove ${name}`), external links use `Open ${name} recipe link`, action buttons use their title text. Added `sr-only` "Cooked" text for screen readers when a slot is in cooked state.
+- **Undo confirmation dialog**: MealPlanPage `handleUncook` now opens an AlertDialog ("Undo cook? This will mark the meal as uncooked. Ratings will be preserved.") instead of immediately resetting `cooked_at`. User must click "Continue" to confirm or "Cancel" to abort.
+- **Grocery empty state messages**: MealPlanPage groceries tab now distinguishes two empty states: (1) "No meals planned this week. Add meals to see a grocery list." when `items.length === 0`, (2) "Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here." when items exist but none have `recipeId`.
+- **Date label sizing**: MealPlanGrid date labels changed from `text-[10px]` to `text-sm` for improved readability.
+
+### Files changed
+- `src/components/mealplan/MealPlanSlot.tsx` (aria-labels, text labels, sr-only Cooked, touch target padding)
+- `src/components/mealplan/MealPlanPage.tsx` (AlertDialog import, uncookConfirmSlot state, handleConfirmUncook, grocery empty state split, AlertDialog JSX)
+- `src/components/mealplan/MealPlanGrid.tsx` (date label text-[10px] → text-sm)
+- `tests/unit/components/mealplan/MealPlanSlot.test.tsx` (7 new tests: aria-labels, text labels, sr-only Cooked)
+- `tests/unit/components/mealplan/MealPlanGrid.test.tsx` (1 new test: date label text-sm class)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (1 new test: uncook cancel; 6 updated tests: uncook confirmation flow, empty state text)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1181 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- AlertDialog from shadcn/ui requires separate `AlertDialogAction` and `AlertDialogCancel` components — test with `getByRole("button", { name: "Continue" })` and `getByRole("button", { name: "Cancel" })`
+- When adding a confirmation step to an existing action, split the handler into two: one that opens the dialog (sets state), one that performs the action (reads state + clears). Use `!` non-null assertion on the state since the confirm handler is only callable when the dialog is open.
+- `sr-only` CSS class makes text invisible but accessible to screen readers — use `container.querySelector(".sr-only")` in tests to verify
 
 ---

@@ -35,7 +35,7 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onRemoveMeal, onEditMeal, o
           {DAY_LABELS.map((day, i) => (
             <div key={day} className="p-2 text-center">
               <div className="text-xs font-semibold">{day}</div>
-              <div className="text-[10px] text-muted-foreground">{getDateLabel(i)}</div>
+              <div className="text-sm text-muted-foreground">{getDateLabel(i)}</div>
             </div>
           ))}
         </div>

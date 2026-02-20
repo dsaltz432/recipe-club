@@ -36,6 +36,13 @@ describe("MealPlanGrid", () => {
     expect(screen.getByText("2/14")).toBeInTheDocument();
   });
 
+  it("renders date labels with readable text-sm font size", () => {
+    render(<MealPlanGrid {...defaultProps} />);
+
+    const dateLabel = screen.getByText("2/8");
+    expect(dateLabel.className).toContain("text-sm");
+  });
+
   it("renders meal type row labels", () => {
     render(<MealPlanGrid {...defaultProps} />);
 
