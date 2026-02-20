@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
 import { isDevMode } from "@/lib/devMode";
+import { toast } from "sonner";
 
 const GoogleSignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,18 +22,19 @@ const GoogleSignIn = () => {
       // Supabase handles the redirect
     } catch (error) {
       console.error("Error signing in:", error);
+      toast.error("Sign in failed. Please try again.");
       setIsLoading(false);
     }
   };
 
   const handleEmailSignIn = async () => {
-    if (!email || !password) return;
     try {
       setIsLoading(true);
       await signInWithEmail(email, password);
       navigate("/dashboard");
     } catch (error) {
       console.error("Error signing in:", error);
+      toast.error("Sign in failed. Please try again.");
       setIsLoading(false);
     }
   };
@@ -57,7 +59,7 @@ const GoogleSignIn = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="any password"
+            placeholder="Password"
           />
         </div>
         <Button

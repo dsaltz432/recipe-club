@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 6
-**Current Task:** US-006 complete
+**Tasks Completed:** 7
+**Current Task:** US-007 complete
 
 ---
 
@@ -237,5 +237,33 @@ Three changes addressing code quality bugs and shared utility extraction:
 - React nulls `useRef` DOM refs on unmount — unmounting during an async operation creates the null ref scenario that `if (ref.current)` guards protect against
 - V8 counts `if (x)` and `x ?? y` as branches even when one branch is unreachable; use type casts (`as`) to avoid uncoverable branches when the guard is truly unnecessary
 - When extracting shared utilities, mock the utility module in consumer tests (`vi.mock("@/lib/upload")`) rather than mocking the utility's dependencies
+
+---
+
+## 2026-02-20 — US-007: Improve auth error feedback and session handling
+
+### What was implemented
+Three UX improvements to auth flow, plus comprehensive test coverage:
+
+- **GoogleSignIn toast.error**: Both `handleGoogleSignIn` and `handleEmailSignIn` catch blocks already had `toast.error("Sign in failed. Please try again.")` (implemented in prior session). Verified both paths are tested.
+- **AuthGuard session expiry toast**: `toast.info("Your session has expired. Please sign in again.")` already shown before `navigate("/")` when `isAuthenticated()` returns false (implemented in US-005 mounted flag work). Verified with test.
+- **Dev mode placeholder**: Password field placeholder already says "Password" (not "any password"). Verified with dedicated test.
+- **Unreachable guard removal**: Removed `if (!email || !password) return;` from `handleEmailSignIn` — the button is `disabled={isLoading || !email || !password}` so this guard was unreachable and caused a branch coverage gap (92.3% → 100%).
+
+### Files changed
+- `src/components/auth/GoogleSignIn.tsx` (removed unreachable guard on line 31)
+- `tests/unit/components/auth/GoogleSignIn.test.tsx` (new: 17 tests covering both production and dev mode)
+- `tests/unit/components/auth/AuthGuard.test.tsx` (new: 5 tests covering auth check, session expiry toast, mounted flag cleanup)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1098 tests, 100% coverage on all required directories including auth)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- Auth component tests need `vi.hoisted()` for mock functions referenced in `vi.mock()` factories
+- Mock `react-router-dom` with spread of `vi.importActual` to preserve MemoryRouter and other utilities
+- The `isDevMode` mock must default to `false` in `beforeEach` and be overridden to `true` per-describe block for dev mode tests
+- AuthGuard mounted flag test: create a pending promise, unmount, then resolve — verify no navigation occurred
 
 ---

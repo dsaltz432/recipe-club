@@ -118,7 +118,7 @@
         "Tests pass with 100% coverage on all required directories (npm run test:coverage)"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 1 findings. GoogleSignIn.tsx:23-24 — error is caught and console.error'd but no toast. Fix: add toast.error('Sign in failed. Please try again.') in the catch block. For Google OAuth, also handle the case where the OAuth popup is closed without completing (don't show error for user-initiated cancel). AuthGuard.tsx:20-25 — when session check fails or session is expired, user sees spinner then redirect with no explanation. Fix: before navigate('/'), show toast.info('Your session has expired. Please sign in again.'). GoogleSignIn.tsx:54 — the email form password placeholder says 'any password'. Fix: change to 'Password'. Note: the auth tests use vi.resetModules() + vi.doMock() + dynamic import() pattern — see activity.md Codebase Patterns."
     },
     {

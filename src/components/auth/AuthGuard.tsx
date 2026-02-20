@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAuthenticated } from "@/lib/auth";
+import { toast } from "sonner";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       const authenticated = await isAuthenticated();
       if (!mounted) return;
       if (!authenticated) {
+        toast.info("Your session has expired. Please sign in again.");
         navigate("/");
       } else {
         setIsAuthed(true);
