@@ -319,7 +319,6 @@ const Dashboard = () => {
           <TabsContent value="recipes">
             <RecipeHub
               userId={user?.id}
-              userEmail={user?.email}
             />
           </TabsContent>
 

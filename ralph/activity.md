@@ -46,6 +46,9 @@ When testing a parent component that renders a complex dialog (like EventRatingD
 ### Unreachable Guards Kill Coverage
 Defensive `if (!x) return` guards in callbacks that can only fire when `x` is truthy (e.g., dialog onComplete when dialog only renders if state is set) are unreachable and cause branch coverage gaps. Remove them or use non-null assertion (`x!`) since the guard can never be hit.
 
+### Vitest Worker Config
+`vitest.config.ts` uses `pool: "forks"` with `maxForks: 4` and `testTimeout: 15000` to prevent resource-contention timeouts in the 38-file test suite. Without this, tests that pass individually may time out when run together.
+
 ### Supabase Mock — No AI
 When AI features are removed, the supabase mock no longer needs `functions: { invoke: vi.fn() }`. Only mock what the component actually uses.
 
@@ -61,8 +64,8 @@ When removing a feature (sharing/saving), changes cascade across:
 
 ## Current Status
 **Last Updated:** 2026-02-19
-**Tasks Completed:** 7
-**Current Task:** US-007 complete
+**Tasks Completed:** 8
+**Current Task:** US-008 complete
 
 ---
 
@@ -326,5 +329,37 @@ When a file is uploaded and added as a meal, `addItemToPlan` returns the recipe 
 - The `fileUploaded` flag must be reset when users manually edit the URL (prevents stale shouldParse=true)
 - EventDetailPage already had complete upload-to-parse flow — only AddMealDialog needed changes
 - Ref guards in finally blocks (`if (ref.current)`) create uncoverable branches — use `ref.current!` instead
+
+---
+
+## 2026-02-19 18:00 — US-008: Final dead code cleanup and coverage verification
+
+### What was implemented
+- Removed orphaned `SavedRecipe` and `RecipeShare` interfaces from `src/types/index.ts` (leftover from sharing removal in US-002)
+- Removed unused `createMockSavedRecipe` factory and `SavedRecipe` import from `tests/utils.tsx`
+- Removed unused `userId` prop from `RecipeCardProps` in `RecipeCard.tsx` (was only used for sharing/saving)
+- Removed unused `userId` prop passing from `RecipeHub.tsx` to `RecipeCard`
+- Removed unused `userEmail` prop from `RecipeHubProps` interface (was only used for sharing)
+- Removed unused `userEmail={user?.email}` prop passing from `Dashboard.tsx` to `RecipeHub`
+- Fixed test suite reliability: added `testTimeout: 15000` and limited `maxForks: 4` in `vitest.config.ts` to prevent resource-contention timeouts (suite went from ~933s with 2 failures to ~16s with 0 failures)
+
+### Files changed
+- src/types/index.ts (modified — removed SavedRecipe, RecipeShare interfaces)
+- src/components/recipes/RecipeCard.tsx (modified — removed unused userId prop)
+- src/components/recipes/RecipeHub.tsx (modified — removed userId prop passing, userEmail prop)
+- src/pages/Dashboard.tsx (modified — removed userEmail prop passing)
+- tests/utils.tsx (modified — removed SavedRecipe import and createMockSavedRecipe factory)
+- vitest.config.ts (modified — added testTimeout, pool/forks config)
+
+### Quality checks
+- Build: pass
+- Tests: pass (998 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- When running large test suites with jsdom environments, limiting maxForks prevents worker timeouts from resource contention
+- After removing features across multiple stories, a final cleanup pass catches orphaned types and props that weren't caught during individual story implementation
+- The `userEmail` prop was a cascade from sharing removal — it was only used by ShareRecipeDialog which was deleted in US-002, but the prop plumbing in RecipeHub/Dashboard wasn't cleaned up
+- Test suite runtime improved from ~933s to ~16s by limiting concurrent workers to 4
 
 ---

@@ -29,7 +29,6 @@ type RecipeSubTab = "club" | "personal";
 
 interface RecipeHubProps {
   userId?: string;
-  userEmail?: string;
 }
 
 const RecipeHub = ({ userId }: RecipeHubProps) => {
@@ -422,7 +421,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
-                userId={userId}
               />
             ))}
           </div>

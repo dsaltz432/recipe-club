@@ -154,7 +154,7 @@
         "IngredientWheel.tsx remains the only exception (~55% coverage acceptable)"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "This is the final cleanup story. Run npm run test:coverage and check every file in the coverage report. Fix any gaps. Common issues: removed components still imported somewhere, unused type exports, test files importing deleted mocks. Run npm run build to catch any TypeScript errors. Run npm run lint to catch style issues. The coverage report 'Uncovered Line #s' column shows exactly what needs tests."
     },
     {

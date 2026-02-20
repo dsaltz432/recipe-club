@@ -152,25 +152,6 @@ export interface CombinedCookPlan {
   tips: string[];
 }
 
-export interface SavedRecipe {
-  id: string;
-  userId: string;
-  recipeId: string;
-  savedAt?: string;
-}
-
-export interface RecipeShare {
-  id: string;
-  recipeId: string;
-  sharedBy: string;
-  sharedWithEmail: string;
-  message?: string;
-  viewedAt?: string;
-  sharedAt?: string;
-  // Joined data
-  recipeName?: string;
-  sharedByName?: string;
-}
 
 export interface MealPlan {
   id: string;

@@ -40,7 +40,6 @@ interface RecipeWithNotes extends Recipe {
 
 interface RecipeCardProps {
   recipe: RecipeWithNotes;
-  userId?: string;
 }
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
