@@ -422,6 +422,97 @@ describe("MealPlanPage", () => {
     });
   });
 
+  it("calculates sort_order based on existing items in the slot", async () => {
+    // Load plan with existing items in the same slot (day 0, dinner)
+    // First item has null sort_order to exercise the ?? 0 fallback
+    const insertMock = vi.fn().mockReturnThis();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "meal_plans") {
+        return createPlanMock("plan-1");
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: "item-1",
+                plan_id: "plan-1",
+                recipe_id: "recipe-1",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: null,
+                recipes: { name: "Existing Meal 1", url: null },
+              },
+              {
+                id: "item-2",
+                plan_id: "plan-1",
+                recipe_id: "recipe-2",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 1,
+                recipes: { name: "Existing Meal 2", url: null },
+              },
+            ],
+            error: null,
+          }),
+          insert: insertMock,
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: "item-new",
+              plan_id: "plan-1",
+              recipe_id: "recipe-new",
+              day_of_week: 0,
+              meal_type: "dinner",
+              custom_name: null,
+              custom_url: null,
+              sort_order: 2,
+              recipes: { name: "New Meal", url: null },
+            },
+            error: null,
+          }),
+        });
+      }
+      if (table === "recipes") {
+        return createMockQueryBuilder({
+          single: vi.fn().mockResolvedValue({
+            data: { id: "recipe-new" },
+            error: null,
+          }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    render(<MealPlanPage {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Existing Meal 1")).toBeInTheDocument();
+    });
+
+    // Click the "Add another meal" button in the occupied Sunday Dinner slot
+    const addButtons = screen.getAllByTitle("Add another meal");
+    fireEvent.click(addButtons[0]);
+
+    // Add custom meal
+    fireEvent.change(screen.getByLabelText("Meal Name *"), {
+      target: { value: "New Meal" },
+    });
+    fireEvent.click(screen.getByText("Add to Plan"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalled();
+    });
+
+    // Verify the insert was called with sort_order: 2 (max of 0,1 = 1, plus 1 = 2)
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ sort_order: 2 })
+    );
+  });
+
   it("clears pending slot when dialog closes", async () => {
     render(<MealPlanPage {...defaultProps} />);
 
@@ -888,8 +979,154 @@ describe("MealPlanPage", () => {
     expect(screen.getByText('Replace "Pancakes" for Sunday breakfast.')).toBeInTheDocument();
   });
 
-  it("replaces a meal via edit flow (delete old + insert new)", async () => {
-    // Load plan with existing item
+  it("replaces a meal via edit flow (UPDATE in place)", async () => {
+    // Load plan with two items — second item exercises the ternary else branch in setItems
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "meal_plans") {
+        return createPlanMock("plan-1");
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: "item-1",
+                plan_id: "plan-1",
+                recipe_id: null,
+                day_of_week: 0,
+                meal_type: "breakfast",
+                custom_name: "Pancakes",
+                custom_url: null,
+                sort_order: 0,
+                recipes: null,
+              },
+              {
+                id: "item-2",
+                plan_id: "plan-1",
+                recipe_id: null,
+                day_of_week: 1,
+                meal_type: "dinner",
+                custom_name: "Pasta",
+                custom_url: null,
+                sort_order: 0,
+                recipes: null,
+              },
+            ],
+            error: null,
+          }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    render(<MealPlanPage {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Pancakes")).toBeInTheDocument();
+    });
+
+    // Set up mocks for the UPDATE-based edit flow:
+    // 1. recipes.insert (creates new recipe for custom meal)
+    // 2. meal_plan_items.update (updates existing item in place)
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder({
+          single: vi.fn().mockResolvedValue({
+            data: { id: "recipe-waffles" },
+            error: null,
+          }),
+        });
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    // Click meal name to edit
+    fireEvent.click(screen.getByText("Pancakes"));
+
+    // Fill in replacement meal
+    fireEvent.change(screen.getByLabelText("Meal Name *"), {
+      target: { value: "Waffles" },
+    });
+    fireEvent.click(screen.getByText("Add to Plan"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Updated meal to "Waffles"');
+    });
+  });
+
+  it("edits a meal with existing recipeId via UPDATE (updates recipe record)", async () => {
+    // Load plan with existing item that has a recipeId
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "meal_plans") {
+        return createPlanMock("plan-1");
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: "item-1",
+                plan_id: "plan-1",
+                recipe_id: "recipe-existing",
+                day_of_week: 0,
+                meal_type: "breakfast",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Old Recipe", url: null },
+              },
+            ],
+            error: null,
+          }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    render(<MealPlanPage {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Old Recipe")).toBeInTheDocument();
+    });
+
+    // Set up mocks for the UPDATE-based edit flow:
+    // 1. recipes.update (updates existing linked recipe)
+    // 2. meal_plan_items.update (updates item in place)
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        });
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    // Click meal name to edit
+    fireEvent.click(screen.getByText("Old Recipe"));
+
+    // Fill in replacement meal
+    fireEvent.change(screen.getByLabelText("Meal Name *"), {
+      target: { value: "New Recipe Name" },
+    });
+    fireEvent.click(screen.getByText("Add to Plan"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Updated meal to "New Recipe Name"');
+    });
+  });
+
+  it("handles edit custom meal error", async () => {
+    // Load plan with existing item (no recipeId)
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "meal_plans") {
         return createPlanMock("plan-1");
@@ -912,20 +1149,6 @@ describe("MealPlanPage", () => {
             ],
             error: null,
           }),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: "item-new",
-              plan_id: "plan-1",
-              recipe_id: null,
-              day_of_week: 0,
-              meal_type: "breakfast",
-              custom_name: "Waffles",
-              custom_url: null,
-              sort_order: 0,
-              recipes: null,
-            },
-            error: null,
-          }),
         });
       }
       return createMockQueryBuilder();
@@ -937,32 +1160,13 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Now set up delete mock + recipe creation for the replace flow
+    // Set up mocks for the UPDATE-based edit flow to fail on recipe insert
     mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "meal_plan_items") {
-        return createMockQueryBuilder({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: "item-new",
-              plan_id: "plan-1",
-              recipe_id: "recipe-waffles",
-              day_of_week: 0,
-              meal_type: "breakfast",
-              custom_name: null,
-              custom_url: null,
-              sort_order: 0,
-              recipes: { name: "Waffles", url: null },
-            },
-            error: null,
-          }),
-        });
-      }
       if (table === "recipes") {
         return createMockQueryBuilder({
           single: vi.fn().mockResolvedValue({
-            data: { id: "recipe-waffles" },
-            error: null,
+            data: null,
+            error: { message: "Recipe insert failed" },
           }),
         });
       }
@@ -979,8 +1183,74 @@ describe("MealPlanPage", () => {
     fireEvent.click(screen.getByText("Add to Plan"));
 
     await waitFor(() => {
-      // Should show success for both delete and add
-      expect(toast.success).toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith("Failed to update meal");
+    });
+  });
+
+  it("handles meal_plan_items update error during custom meal edit", async () => {
+    // Load plan with existing item (no recipeId)
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "meal_plans") {
+        return createPlanMock("plan-1");
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: "item-1",
+                plan_id: "plan-1",
+                recipe_id: null,
+                day_of_week: 0,
+                meal_type: "breakfast",
+                custom_name: "Pancakes",
+                custom_url: null,
+                sort_order: 0,
+                recipes: null,
+              },
+            ],
+            error: null,
+          }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    render(<MealPlanPage {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Pancakes")).toBeInTheDocument();
+    });
+
+    // Recipe insert succeeds, but meal_plan_items update fails
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder({
+          single: vi.fn().mockResolvedValue({
+            data: { id: "recipe-ok" },
+            error: null,
+          }),
+        });
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          eq: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    // Click meal name to edit
+    fireEvent.click(screen.getByText("Pancakes"));
+
+    // Fill in replacement meal
+    fireEvent.change(screen.getByLabelText("Meal Name *"), {
+      target: { value: "Waffles" },
+    });
+    fireEvent.click(screen.getByText("Add to Plan"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update meal");
     });
   });
 
@@ -1124,12 +1394,12 @@ describe("MealPlanPage", () => {
     });
   });
 
-  it("replaces a meal via recipe tab edit flow (delete old + add recipe)", async () => {
+  it("replaces a meal via recipe tab edit flow (UPDATE in place)", async () => {
     const mockRecipes = [
       { id: "r-1", name: "Club Pasta", url: "https://example.com/pasta", event_id: "e-1" },
     ];
 
-    // Load plan with existing item
+    // Load plan with two items — second item exercises ternary else branch in setItems
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "meal_plans") {
         return createPlanMock("plan-1");
@@ -1149,21 +1419,18 @@ describe("MealPlanPage", () => {
                 sort_order: 0,
                 recipes: null,
               },
+              {
+                id: "item-2",
+                plan_id: "plan-1",
+                recipe_id: null,
+                day_of_week: 1,
+                meal_type: "dinner",
+                custom_name: "Other Meal",
+                custom_url: null,
+                sort_order: 0,
+                recipes: null,
+              },
             ],
-            error: null,
-          }),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: "item-new",
-              plan_id: "plan-1",
-              recipe_id: "r-1",
-              day_of_week: 0,
-              meal_type: "breakfast",
-              custom_name: null,
-              custom_url: null,
-              sort_order: 0,
-              recipes: { name: "Club Pasta", url: "https://example.com/pasta" },
-            },
             error: null,
           }),
         });
@@ -1182,25 +1449,11 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Old Meal")).toBeInTheDocument();
     });
 
-    // Set up delete mock for edit flow
+    // Set up UPDATE mock for recipe edit flow
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "meal_plan_items") {
         return createMockQueryBuilder({
           eq: vi.fn().mockResolvedValue({ error: null }),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: "item-new",
-              plan_id: "plan-1",
-              recipe_id: "r-1",
-              day_of_week: 0,
-              meal_type: "breakfast",
-              custom_name: null,
-              custom_url: null,
-              sort_order: 0,
-              recipes: { name: "Club Pasta", url: "https://example.com/pasta" },
-            },
-            error: null,
-          }),
         });
       }
       if (table === "recipes") {
@@ -1231,7 +1484,90 @@ describe("MealPlanPage", () => {
     fireEvent.click(screen.getByText("Add 1 to Plan"));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith('Updated meal to "Club Pasta"');
+    });
+  });
+
+  it("handles recipe tab edit flow error", async () => {
+    const mockRecipes = [
+      { id: "r-1", name: "Club Pasta", url: "https://example.com/pasta", event_id: "e-1" },
+    ];
+
+    // Load plan with existing item
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "meal_plans") {
+        return createPlanMock("plan-1");
+      }
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: "item-1",
+                plan_id: "plan-1",
+                recipe_id: null,
+                day_of_week: 0,
+                meal_type: "breakfast",
+                custom_name: "Old Meal",
+                custom_url: null,
+                sort_order: 0,
+                recipes: null,
+              },
+            ],
+            error: null,
+          }),
+        });
+      }
+      if (table === "recipes") {
+        return createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: mockRecipes, error: null }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    render(<MealPlanPage {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Old Meal")).toBeInTheDocument();
+    });
+
+    // Set up UPDATE mock to fail
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "meal_plan_items") {
+        return createMockQueryBuilder({
+          eq: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+        });
+      }
+      if (table === "recipes") {
+        return createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: mockRecipes, error: null }),
+        });
+      }
+      return createMockQueryBuilder();
+    });
+
+    // Click meal name to edit
+    fireEvent.click(screen.getByText("Old Meal"));
+
+    // Switch to recipes tab
+    fireEvent.click(screen.getByText("From Recipes"));
+
+    // Search
+    fireEvent.change(screen.getByPlaceholderText("Search recipes..."), {
+      target: { value: "pasta" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Club Pasta")).toBeInTheDocument();
+    });
+
+    // Select recipe and submit
+    fireEvent.click(screen.getByText("Club Pasta"));
+    fireEvent.click(screen.getByText("Add 1 to Plan"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update meal");
     });
   });
 
@@ -3156,6 +3492,179 @@ describe("MealPlanPage", () => {
 
       // parse-recipe should NOT have been called
       expect(mockInvoke).not.toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    it("invokes parse-recipe when editing a custom meal with a file upload", async () => {
+      // Load plan with existing item (no recipeId)
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "dinner",
+                  custom_name: "Old Meal",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-edit-upload" },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Old Meal")).toBeInTheDocument();
+      });
+
+      // Set up mocks for the edit flow
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-edit-upload" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      // Click meal name to edit
+      fireEvent.click(screen.getByText("Old Meal"));
+
+      // Upload a file
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["test"], "recipe-photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // Wait for the full upload to complete (including name auto-fill)
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("File uploaded!");
+      });
+
+      // Submit the edit form
+      fireEvent.click(screen.getByText("Add to Plan"));
+
+      await waitFor(() => {
+        // AddMealDialog normalizes filename: "recipe-photo" → "recipe photo" (hyphens to spaces)
+        expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
+          body: {
+            recipeId: "recipe-edit-upload",
+            recipeUrl: "https://storage.example.com/recipe-images/mock-uuid-456.jpg",
+            recipeName: "recipe photo",
+          },
+        });
+      });
+    });
+
+    it("handles parse error during edit with file upload", async () => {
+      mockInvoke.mockResolvedValueOnce({ data: null, error: new Error("Parse failed during edit") });
+
+      // Load plan with existing item (no recipeId)
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: null,
+                  day_of_week: 0,
+                  meal_type: "dinner",
+                  custom_name: "Old Meal",
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: null,
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-edit-parse-fail" },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Old Meal")).toBeInTheDocument();
+      });
+
+      // Set up mocks for the edit flow
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-edit-parse-fail" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      // Click meal name to edit
+      fireEvent.click(screen.getByText("Old Meal"));
+
+      // Upload a file
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["test"], "recipe-photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // Wait for the full upload to complete
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("File uploaded!");
+      });
+
+      // Submit the edit form
+      fireEvent.click(screen.getByText("Add to Plan"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
+      });
     });
 
     it("handles parse-recipe error gracefully", async () => {

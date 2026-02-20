@@ -54,8 +54,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-19
-**Tasks Completed:** 2
-**Current Task:** US-002 complete
+**Tasks Completed:** 3
+**Current Task:** US-003 complete
 
 ---
 
@@ -112,5 +112,33 @@ Also: missing fields (recipeId/recipeUrl) now return 400 instead of 500. Added .
 - Anthropic API uses `type: "document"` for PDFs, `type: "image"` for images — different content block types
 - `response.headers.get("content-length")` returns null when header is absent — always check both header and actual buffer size
 - The edge function `catch` block's `if (recipeId)` false branch is unreachable in practice (body parse failures return 400 before throw) — this is a defensive guard
+
+---
+
+## 2026-02-19 — US-003: Fix MealPlanPage data integrity bugs
+
+### What was implemented
+Three bugs fixed in `src/components/mealplan/MealPlanPage.tsx`:
+
+- **BUG-003**: Added `await` before `addItemToPlan()` in the `handleAddRecipeMeal` for loop. Without this, multiple items were inserted concurrently causing race conditions and `setPendingSlot(null)` firing before inserts completed.
+- **BUG-008**: Rewrote edit flows in both `handleAddCustomMeal` and `handleAddRecipeMeal` to use `supabase.from("meal_plan_items").update()` instead of delete-then-insert. This preserves `cooked_at` status. Custom meal edit handles three cases: (1) item has existing `recipeId` → update the recipes row + meal_plan_items, (2) item has no `recipeId` → insert new recipe + update meal_plan_items, (3) file upload with parse → update recipe + invoke parse-recipe edge function. Recipe tab edit simply updates `recipe_id` and clears `custom_name`/`custom_url`.
+- **BUG-018**: Added sort_order calculation in `addItemToPlan`. Filters existing items by `dayOfWeek + mealType`, finds max `sortOrder` (with `?? 0` fallback for null values), inserts new item with `sort_order: max + 1`.
+
+Also removed an unreachable `if (firstRecipe)` guard in `handleAddRecipeMeal` (replaced with `recipes[0]!` non-null assertion) per codebase pattern "Unreachable Guards Kill Coverage".
+
+### Files changed
+- `src/components/mealplan/MealPlanPage.tsx` (edit flows rewritten, await added, sort_order calculation added)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (68 tests: added 8 new tests for UPDATE edit flows, sort_order, error handling, edit-with-parse)
+
+### Quality checks
+- Build: pass
+- Tests: pass (844 tests in required directories, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- AddMealDialog normalizes filenames: `name.replace(/[-_]/g, " ")` — test expectations must account for this
+- V8 branch coverage counts `??` (nullish coalescing) as a branch — test data must include null values to cover the fallback
+- When testing file upload in edit mode, must wait for `toast.success("File uploaded!")` (not just mock resolution) to ensure all state updates complete before submitting
+- `setItems` callbacks that use ternary (`item.id === editingItem.id ? {...} : item`) need multiple items in test data to cover the else branch
 
 ---

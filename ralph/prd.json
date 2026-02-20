@@ -50,7 +50,7 @@
         "Tests pass with 100% coverage on mealplan directory (npm run test:coverage)"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "All fixes in src/components/mealplan/MealPlanPage.tsx (708 lines). BUG-003 (line 306): handleAddRecipeMeal has a for loop calling addItemToPlan() without await. Add await before addItemToPlan(). Also ensure setPendingSlot(null) at line 308 only runs after the loop completes. BUG-008 (lines 277-296, 299-307): Both handleAddCustomMeal and handleAddRecipeMeal delete the old item via handleRemoveMeal(editingItem.id) then insert new. Fix: when editingItem is present, use supabase .from('meal_plan_items').update({recipe_id, ...}).eq('id', editingItem.id) instead of delete+insert. This preserves cooked_at. Only delete+insert if the recipe_id itself needs to change (custom→recipe or vice versa). BUG-018 (lines 358-368): meal_plan_items insert has no sort_order. Fix: before inserting, query max sort_order for the same plan_id+day_of_week+meal_type, then insert with sort_order = max + 1 (default to 0 if none exist). Test file: tests/unit/components/mealplan/MealPlanPage.test.tsx."
     },
     {

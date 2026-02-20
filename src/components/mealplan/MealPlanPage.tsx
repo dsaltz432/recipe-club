@@ -276,8 +276,74 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   const handleAddCustomMeal = async (name: string, url?: string, shouldParse?: boolean) => {
     if (editingItem) {
-      await handleRemoveMeal(editingItem.id);
+      // Update the existing item in place instead of delete+insert to preserve cooked_at
+      try {
+        // If the existing item has a recipeId, update that recipe; otherwise create a new one
+        let linkedRecipeId = editingItem.recipeId;
+        if (linkedRecipeId) {
+          // Update the existing linked recipe
+          await supabase
+            .from("recipes")
+            .update({ name, url: url || null })
+            .eq("id", linkedRecipeId);
+        } else {
+          // Create a new recipe record
+          const { data: newRecipe, error: recipeError } = await supabase
+            .from("recipes")
+            .insert({
+              name,
+              url: url || null,
+              created_by: userId,
+              event_id: null,
+              ingredient_id: null,
+            })
+            .select("id")
+            .single();
+
+          if (recipeError) throw recipeError;
+          linkedRecipeId = newRecipe.id;
+        }
+
+        const updatePayload = {
+          recipe_id: linkedRecipeId,
+          custom_name: null as string | null,
+          custom_url: null as string | null,
+        };
+        const { error } = await supabase
+          .from("meal_plan_items")
+          .update(updatePayload as typeof updatePayload & { plan_id?: string })
+          .eq("id", editingItem.id);
+
+        if (error) throw error;
+
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === editingItem.id
+              ? { ...item, recipeId: linkedRecipeId, recipeName: name, recipeUrl: url, customName: undefined, customUrl: undefined }
+              : item
+          )
+        );
+        toast.success(`Updated meal to "${name}"`);
+
+        if (shouldParse && linkedRecipeId && url) {
+          try {
+            const { error: parseError } = await supabase.functions.invoke("parse-recipe", {
+              body: { recipeId: linkedRecipeId, recipeUrl: url, recipeName: name },
+            });
+            if (parseError) throw parseError;
+            toast.success("Recipe is being parsed!");
+          } catch (parseErr) {
+            console.error("Error parsing recipe:", parseErr);
+            toast.error("Failed to parse recipe");
+          }
+        }
+      } catch (error) {
+        console.error("Error updating meal:", error);
+        toast.error("Failed to update meal");
+      }
       setEditingItem(null);
+      setPendingSlot(null);
+      return;
     }
     // pendingSlot is always set when the dialog is mounted
     const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, url);
@@ -298,12 +364,41 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   const handleAddRecipeMeal = async (recipes: Array<{ id: string; name: string; url?: string }>) => {
     if (editingItem) {
-      await handleRemoveMeal(editingItem.id);
+      // When editing, update the existing item in place instead of delete+insert
+      // AddMealDialog always validates at least one recipe is selected
+      const firstRecipe = recipes[0]!;
+      try {
+        const updatePayload = {
+          recipe_id: firstRecipe.id,
+          custom_name: null as string | null,
+          custom_url: null as string | null,
+        };
+        const { error } = await supabase
+          .from("meal_plan_items")
+          .update(updatePayload as typeof updatePayload & { plan_id?: string })
+          .eq("id", editingItem.id);
+
+        if (error) throw error;
+
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === editingItem.id
+              ? { ...item, recipeId: firstRecipe.id, recipeName: firstRecipe.name, recipeUrl: firstRecipe.url, customName: undefined, customUrl: undefined }
+              : item
+          )
+        );
+        toast.success(`Updated meal to "${firstRecipe.name}"`);
+      } catch (error) {
+        console.error("Error updating meal:", error);
+        toast.error("Failed to update meal");
+      }
       setEditingItem(null);
+      setPendingSlot(null);
+      return;
     }
     // pendingSlot is always set when the dialog is mounted
     for (const recipe of recipes) {
-      addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
+      await addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
     }
     setPendingSlot(null);
   };
@@ -355,6 +450,16 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         linkedRecipeId = newRecipe.id;
       }
 
+      // Calculate sort_order: max existing sort_order for this slot + 1
+      const existingInSlot = items.filter(
+        (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
+      );
+      const maxSortOrder = existingInSlot.reduce(
+        (max, i) => Math.max(max, i.sortOrder ?? 0),
+        -1
+      );
+      const nextSortOrder = maxSortOrder + 1;
+
       const { data, error } = await supabase
         .from("meal_plan_items")
         .insert({
@@ -362,6 +467,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           day_of_week: dayOfWeek,
           meal_type: mealType,
           recipe_id: linkedRecipeId,
+          sort_order: nextSortOrder,
         })
         .select("*, recipes (name, url)")
         .single();
