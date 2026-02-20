@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Loader2, Search } from "lucide-react";
+import { toast } from "sonner";
+import { Check, Loader2, Search, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from "uuid";
 
 interface RecipeResult {
   id: string;
@@ -25,7 +27,7 @@ interface AddMealDialogProps {
   onOpenChange: (open: boolean) => void;
   dayOfWeek: number;
   mealType: string;
-  onAddCustomMeal: (name: string, url?: string) => void;
+  onAddCustomMeal: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal: (recipes: Array<{ id: string; name: string; url?: string }>) => void;
   editingItemName?: string;
 }
@@ -52,7 +54,10 @@ const AddMealDialog = ({
   const [searchResults, setSearchResults] = useState<RecipeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [fileUploaded, setFileUploaded] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setActiveTab("custom");
@@ -62,6 +67,55 @@ const AddMealDialog = ({
     setSearchResults([]);
     setIsSearching(false);
     setSelectedRecipes([]);
+    setIsUploadingFile(false);
+    setFileUploaded(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      toast.error("Please select an image or PDF file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File is too large (max 5MB)");
+      return;
+    }
+
+    setIsUploadingFile(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("recipe-images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("recipe-images").getPublicUrl(fileName);
+
+      setUrl(publicUrl);
+      setFileUploaded(true);
+      if (!name.trim()) {
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        setName(baseName);
+      }
+      toast.success("File uploaded!");
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload file");
+    } finally {
+      setIsUploadingFile(false);
+      fileInputRef.current!.value = "";
+    }
   };
 
   const handleClose = () => {
@@ -109,7 +163,7 @@ const AddMealDialog = ({
   }, [searchQuery]);
 
   const handleCustomSubmit = () => {
-    onAddCustomMeal(name.trim(), url.trim() || undefined);
+    onAddCustomMeal(name.trim(), url.trim() || undefined, fileUploaded);
     handleClose();
   };
 
@@ -182,15 +236,39 @@ const AddMealDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meal-url">Recipe URL (optional)</Label>
-              <Input
-                id="meal-url"
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://..."
-                className={url.trim() && !isValidUrl(url) ? "border-red-500" : ""}
-              />
+              <Label htmlFor="meal-url">Recipe URL or Photo/PDF</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="meal-url"
+                  type="url"
+                  value={url}
+                  onChange={(e) => { setUrl(e.target.value); setFileUploaded(false); }}
+                  placeholder="https://..."
+                  className={url.trim() && !isValidUrl(url) ? "border-red-500" : ""}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingFile}
+                  className="shrink-0"
+                  aria-label="Upload photo or PDF"
+                >
+                  {isUploadingFile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,application/pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
               {url.trim() && !isValidUrl(url) && (
                 <p className="text-sm text-red-500">
                   URL must start with http:// or https://

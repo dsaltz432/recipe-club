@@ -274,13 +274,25 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setShowAddMealDialog(true);
   };
 
-  const handleAddCustomMeal = async (name: string, url?: string) => {
+  const handleAddCustomMeal = async (name: string, url?: string, shouldParse?: boolean) => {
     if (editingItem) {
       await handleRemoveMeal(editingItem.id);
       setEditingItem(null);
     }
     // pendingSlot is always set when the dialog is mounted
-    addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, url);
+    const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, url);
+    if (shouldParse && recipeId && url) {
+      try {
+        const { error } = await supabase.functions.invoke("parse-recipe", {
+          body: { recipeId, recipeUrl: url, recipeName: name },
+        });
+        if (error) throw error;
+        toast.success("Recipe is being parsed!");
+      } catch (error) {
+        console.error("Error parsing recipe:", error);
+        toast.error("Failed to parse recipe");
+      }
+    }
     setPendingSlot(null);
   };
 
@@ -319,8 +331,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   };
 
-  const addItemToPlan = async (name: string, dayOfWeek: number, mealType: string, url?: string, recipeId?: string) => {
-    if (!planId) return;
+  const addItemToPlan = async (name: string, dayOfWeek: number, mealType: string, url?: string, recipeId?: string): Promise<string | undefined> => {
+    if (!planId) return undefined;
 
     try {
       let linkedRecipeId = recipeId;
@@ -372,9 +384,11 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       setItems((prev) => [...prev, newItem]);
       toast.success(`Added "${name}" to plan`);
+      return linkedRecipeId;
     } catch (error) {
       console.error("Error adding meal:", error);
       toast.error("Failed to add meal");
+      return undefined;
     }
   };
 

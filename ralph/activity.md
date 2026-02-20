@@ -61,8 +61,8 @@ When removing a feature (sharing/saving), changes cascade across:
 
 ## Current Status
 **Last Updated:** 2026-02-19
-**Tasks Completed:** 6
-**Current Task:** US-006 complete
+**Tasks Completed:** 7
+**Current Task:** US-007 complete
 
 ---
 
@@ -275,5 +275,56 @@ When removing a feature (sharing/saving), changes cascade across:
 - Mocking complex child dialogs in parent component tests is much simpler than mocking all their internal Supabase calls
 - Unreachable `if (!state) return` guards in callbacks gated by conditional rendering cause branch coverage gaps — use non-null assertion instead
 - Multi-slot tests (items in different slots) are needed to cover `else` branches in `setItems` map callbacks where some items match and others don't
+
+### File Upload to Storage Pattern
+When uploading files to Supabase storage in a dialog:
+1. Add `supabase.storage` mock alongside `supabase.from` mock (separate `mockUpload`/`mockGetPublicUrl` fns)
+2. Mock `uuid` with `vi.mock("uuid", () => ({ v4: () => "mock-uuid-123" }))`
+3. Access file input via `document.querySelector('input[type="file"]')` (hidden inputs aren't accessible by label)
+4. Trigger upload with `fireEvent.change(fileInput, { target: { files: [file] } })`
+5. Unreachable `if (fileInputRef.current)` guards in finally blocks → use non-null assertion `fileInputRef.current!`
+
+### Triggering Parse After Upload
+When a file is uploaded and added as a meal, `addItemToPlan` returns the recipe ID. If `shouldParse` flag is true, invoke `parse-recipe` edge function with `{ recipeId, recipeUrl, recipeName }`. The `shouldParse` flag flows from AddMealDialog through `onAddCustomMeal(name, url, shouldParse)`.
+
+---
+
+## 2026-02-19 16:00 — US-007: Add recipe photo/PDF upload with AI parsing
+
+### What was implemented
+- Added file upload capability to AddMealDialog's Custom tab:
+  - Upload button (with Upload icon) next to URL input
+  - Uploads to `recipe-images` Supabase storage bucket
+  - Auto-fills URL field with uploaded file's public URL
+  - Auto-fills meal name from filename when name is empty
+  - Shows Loader2 spinner during upload
+  - Validates file type (images + PDF) and size (max 5MB)
+  - Resets `fileUploaded` flag when URL is manually changed
+- Modified `onAddCustomMeal` signature to include `shouldParse` boolean (3rd param)
+- Modified `addItemToPlan` in MealPlanPage to return the recipe ID
+- Added parse-recipe invocation in `handleAddCustomMeal` when `shouldParse=true`
+- EventDetailPage already had complete upload flow (no changes needed)
+- Parse-recipe edge function already handles images/PDFs (no changes needed)
+- Added 11 new tests to AddMealDialog.test.tsx (upload button render, click trigger, file upload success, name auto-fill, shouldParse flag, manual URL reset, invalid file types, oversized files, upload errors, PDF support, empty file selection)
+- Added 3 new tests to MealPlanPage.test.tsx (parse-recipe after upload, no parse on manual URL, parse error handling)
+- Added storage mock + uuid mock to both test files
+
+### Files changed
+- src/components/mealplan/AddMealDialog.tsx (modified — added file upload UI, shouldParse flag)
+- src/components/mealplan/MealPlanPage.tsx (modified — parse-recipe trigger, addItemToPlan returns ID)
+- tests/unit/components/mealplan/AddMealDialog.test.tsx (modified — 11 new tests, storage/uuid/toast mocks, updated label references)
+- tests/unit/components/mealplan/MealPlanPage.test.tsx (modified — 3 new tests, storage/uuid mocks)
+
+### Quality checks
+- Build: pass
+- Tests: pass (998 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- Supabase storage mock pattern: separate `mockUpload`/`mockGetPublicUrl` fns inside `storage: { from: () => ({...}) }`
+- Hidden file inputs need `document.querySelector('input[type="file"]')` — not accessible by label
+- The `fileUploaded` flag must be reset when users manually edit the URL (prevents stale shouldParse=true)
+- EventDetailPage already had complete upload-to-parse flow — only AddMealDialog needed changes
+- Ref guards in finally blocks (`if (ref.current)`) create uncoverable branches — use `ref.current!` instead
 
 ---

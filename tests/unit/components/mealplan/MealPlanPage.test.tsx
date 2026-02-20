@@ -26,11 +26,23 @@ vi.mock("@/components/events/EventRatingDialog", () => ({
 // Mock Supabase
 const mockSupabaseFrom = vi.fn();
 const mockInvoke = vi.fn();
+const mockStorageUpload = vi.fn();
+const mockStorageGetPublicUrl = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
     functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
+    storage: {
+      from: () => ({
+        upload: mockStorageUpload,
+        getPublicUrl: mockStorageGetPublicUrl,
+      }),
+    },
   },
+}));
+
+vi.mock("uuid", () => ({
+  v4: () => "mock-uuid-456",
 }));
 
 // Mock pantry module
@@ -102,6 +114,10 @@ describe("MealPlanPage", () => {
     mockGetPantryItems.mockResolvedValue([]);
     mockEnsureDefaultPantryItems.mockResolvedValue(undefined);
     mockInvoke.mockResolvedValue({ data: {}, error: null });
+    mockStorageUpload.mockResolvedValue({ error: null });
+    mockStorageGetPublicUrl.mockReturnValue({
+      data: { publicUrl: "https://storage.example.com/recipe-images/mock-uuid-456.jpg" },
+    });
 
     // Default mock: create a new plan for the current week
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -3039,6 +3055,170 @@ describe("MealPlanPage", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("File Upload and Parse", () => {
+    it("invokes parse-recipe after adding custom meal with uploaded file", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-upload-1" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-upload-1",
+                plan_id: "plan-new",
+                recipe_id: "recipe-upload-1",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Uploaded Recipe", url: "https://storage.example.com/recipe-images/mock-uuid-456.jpg" },
+              },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      // Open Add Meal dialog
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      // Upload a file
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["test"], "recipe.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(mockStorageUpload).toHaveBeenCalled();
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByText("Add to Plan"));
+
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
+          body: {
+            recipeId: "recipe-upload-1",
+            recipeUrl: "https://storage.example.com/recipe-images/mock-uuid-456.jpg",
+            recipeName: "recipe",
+          },
+        });
+      });
+    });
+
+    it("does not invoke parse-recipe when URL is typed manually", async () => {
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Tacos" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/tacos" },
+      });
+      fireEvent.click(screen.getByText("Add to Plan"));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Added"));
+      });
+
+      // parse-recipe should NOT have been called
+      expect(mockInvoke).not.toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    it("handles parse-recipe error gracefully", async () => {
+      mockInvoke.mockResolvedValueOnce({ data: null, error: new Error("Parse failed") });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-upload-2" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-upload-2",
+                plan_id: "plan-new",
+                recipe_id: "recipe-upload-2",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Photo Recipe", url: "https://storage.example.com/recipe-images/photo.jpg" },
+              },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      // Upload a file
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["test"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(mockStorageUpload).toHaveBeenCalled();
+      });
+
+      fireEvent.click(screen.getByText("Add to Plan"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
       });
     });
   });

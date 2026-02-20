@@ -138,7 +138,7 @@
         "Tests pass with 100% coverage (npm run test:coverage)"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Existing infrastructure: PhotoUpload component (src/components/recipes/PhotoUpload.tsx, 192 lines) handles image/PDF upload to Supabase storage. parse-recipe edge function (supabase/functions/parse-recipe/index.ts, 393 lines) already detects Supabase storage URLs (line 105), downloads as base64 (lines 108-121), and sends to Claude vision API. The 'recipe-images' bucket is already configured. EventDetailPage already has a file upload flow (lines 588-632) that uploads to recipe-images bucket. For AddMealDialog.tsx (297 lines), add a similar upload flow in the Custom tab. Key flow: user uploads image -> file goes to Supabase storage -> get public URL -> create recipe record with that URL -> invoke parse-recipe edge function -> show parsed results."
     },
     {
