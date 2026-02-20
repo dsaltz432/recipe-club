@@ -213,11 +213,11 @@ const Dashboard = () => {
             <div className="hidden md:flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5 bg-purple/5 px-3 py-1 rounded-full">
                 <span className="font-bold text-purple">{completedEventsCount}</span>
-                <span className="text-muted-foreground">Events</span>
+                <span className="text-muted-foreground">Club Events</span>
               </div>
               <div className="flex items-center gap-1.5 bg-orange/5 px-3 py-1 rounded-full">
                 <span className="font-bold text-orange">{userRecipesCount}</span>
-                <span className="text-muted-foreground">Recipes</span>
+                <span className="text-muted-foreground">Club Recipes</span>
               </div>
             </div>
           </div>
@@ -242,11 +242,11 @@ const Dashboard = () => {
                 <div className="flex justify-around text-xs">
                   <div className="text-center">
                     <div className="font-bold text-purple">{completedEventsCount}</div>
-                    <div className="text-muted-foreground">Events</div>
+                    <div className="text-muted-foreground">Club Events</div>
                   </div>
                   <div className="text-center">
                     <div className="font-bold text-orange">{userRecipesCount}</div>
-                    <div className="text-muted-foreground">Recipes</div>
+                    <div className="text-muted-foreground">Club Recipes</div>
                   </div>
                 </div>
               </div>
@@ -277,21 +277,21 @@ const Dashboard = () => {
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
-              <TabsTrigger value="home" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+              <TabsTrigger value="home" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
                 <Home className="h-4 w-4" />
-                <span className="text-sm hidden sm:inline">Home</span>
+                <span className="text-[10px] sm:text-sm">Home</span>
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+              <TabsTrigger value="events" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
                 <Calendar className="h-4 w-4" />
-                <span className="text-sm hidden sm:inline">Events</span>
+                <span className="text-[10px] sm:text-sm">Events</span>
               </TabsTrigger>
-              <TabsTrigger value="recipes" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+              <TabsTrigger value="recipes" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
                 <BookOpen className="h-4 w-4" />
-                <span className="text-sm hidden sm:inline">Recipes</span>
+                <span className="text-[10px] sm:text-sm">Recipes</span>
               </TabsTrigger>
-              <TabsTrigger value="meals" className="flex items-center justify-center gap-1.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-2.5">
+              <TabsTrigger value="meals" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
                 <CalendarDays className="h-4 w-4" />
-                <span className="text-sm hidden sm:inline">Meals</span>
+                <span className="text-[10px] sm:text-sm">Meals</span>
               </TabsTrigger>
             </TabsList>
 

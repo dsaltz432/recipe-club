@@ -442,6 +442,7 @@ describe("RecipeClubEvents", () => {
     // Click Cancel → confirmation dialog
     fireEvent.click(screen.getByText("Cancel"));
     expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
+    expect(screen.getByText(/permanently delete the event.*recipes.*notes.*ratings.*meal plan references.*Google Calendar/)).toBeInTheDocument();
 
     // Confirm cancel
     fireEvent.click(screen.getByText("Cancel Event"));

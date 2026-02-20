@@ -577,7 +577,7 @@ const PersonalMealDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/dashboard/meals")}
+              onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard/meals")}
               className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4 sm:mr-2" />

@@ -513,6 +513,56 @@ describe("EventDetailPage", () => {
     });
   });
 
+  describe("Back button navigation", () => {
+    it("navigates back via history when history exists", async () => {
+      setupLoadMocks();
+      Object.defineProperty(window.history, "state", {
+        value: { idx: 1 },
+        writable: true,
+        configurable: true,
+      });
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByText("Tomato")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /Events/i }));
+      expect(mockNavigate).toHaveBeenCalledWith(-1);
+
+      // Reset
+      Object.defineProperty(window.history, "state", {
+        value: null,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("falls back to /dashboard/events for deep links", async () => {
+      setupLoadMocks();
+      Object.defineProperty(window.history, "state", {
+        value: { idx: 0 },
+        writable: true,
+        configurable: true,
+      });
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByText("Tomato")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /Events/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard/events");
+
+      // Reset
+      Object.defineProperty(window.history, "state", {
+        value: null,
+        writable: true,
+        configurable: true,
+      });
+    });
+  });
+
   describe("Upload button UX improvements", () => {
     it("upload button shows 'Upload' text label", async () => {
       renderPage();

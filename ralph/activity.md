@@ -485,3 +485,36 @@ Five improvements across all three upload-capable components (EventDetailPage, A
 - `src/pages/` is NOT in the required 100% coverage directories — tests there are for confidence, focus on specific behavior changes
 
 ---
+
+## 2026-02-20 — US-015: Improve Dashboard navigation and mobile tab UX
+
+### What was implemented
+Five UX improvements across Dashboard, EventDetailPage, PersonalMealDetailPage, and RecipeClubEvents:
+
+- **Mobile tab labels**: Dashboard.tsx tab bar now shows short text labels below icons on mobile. Changed from `hidden sm:inline` (text hidden on mobile) to always-visible with `text-[10px] sm:text-sm`. Tab layout changed to `flex-col sm:flex-row` so labels appear below icons on mobile and beside icons on desktop.
+- **Back button navigation**: EventDetailPage and PersonalMealDetailPage back buttons now use `window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard/[tab]")`. This prefers browser history for natural back navigation within the app, but falls back to the explicit dashboard tab path for deep links (when no history exists).
+- **Cancel event confirmation text**: Both RecipeClubEvents.tsx and EventDetailPage.tsx cancel confirmation dialogs now mention all cascading effects: "This will permanently delete the event and all associated recipes, notes, ratings, meal plan references, and Google Calendar event. This cannot be undone."
+- **Header count labels**: Dashboard.tsx header stats changed from "Events" / "Recipes" to "Club Events" / "Club Recipes" in both desktop and mobile views, clarifying these are community-wide counts.
+- **Tests**: Added Dashboard.test.tsx (2 tests: mobile tab labels, count labels), added back button tests to EventDetailPage.test.tsx (2 tests: history navigation, deep link fallback), added cancel dialog text assertion to RecipeClubEvents.test.tsx.
+
+### Files changed
+- `src/pages/Dashboard.tsx` (tab bar flex-col layout, count labels)
+- `src/pages/EventDetailPage.tsx` (back button navigation, cancel dialog text)
+- `src/pages/PersonalMealDetailPage.tsx` (back button navigation)
+- `src/components/events/RecipeClubEvents.tsx` (cancel dialog text)
+- `tests/unit/pages/Dashboard.test.tsx` (new: 2 tests)
+- `tests/unit/pages/EventDetailPage.test.tsx` (2 new tests for back button)
+- `tests/unit/components/events/RecipeClubEvents.test.tsx` (1 new assertion for cancel dialog text)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1204 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- `window.history.state?.idx` is set by React Router v6 — `idx > 0` means there's history to go back to, `idx === 0` or `null` means deep link / first page
+- `Object.defineProperty(window.history, "state", { value: ..., writable: true, configurable: true })` works in JSDOM for testing history state
+- Dashboard.tsx is in `src/pages/` (not a required coverage directory) — tests are for confidence, not coverage gates
+- Dropdown menu interactions in tests are complex (require clicking trigger then item) — for pages not in required directories, focused tests on simpler interactions are sufficient
+
+---

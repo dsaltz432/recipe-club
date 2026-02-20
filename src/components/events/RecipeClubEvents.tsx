@@ -511,7 +511,7 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Event?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel this event? This will remove the calendar invite and all associated recipes.
+              This will permanently delete the event and all associated recipes, notes, ratings, meal plan references, and Google Calendar event. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
