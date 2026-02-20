@@ -518,3 +518,38 @@ Five UX improvements across Dashboard, EventDetailPage, PersonalMealDetailPage, 
 - Dropdown menu interactions in tests are complex (require clicking trigger then item) — for pages not in required directories, focused tests on simpler interactions are sufficient
 
 ---
+
+## 2026-02-20 — US-016: Accessibility improvements
+
+### What was implemented
+Accessibility improvements across six components:
+
+- **Aria-labels on icon-only buttons**: Added `aria-label` attributes to all icon-only buttons: EventRecipesTab (edit/delete recipe, edit/delete note — 4 buttons), IngredientBank (add ingredient, remove from bank — 2 buttons), WeekNavigation (previous/next week — 2 buttons), PhotoUpload (remove photo — 1 button), EventRatingDialog (star rating — 5 buttons). Dynamic labels include context (e.g., `Edit recipe ${recipe.name}`, `Remove ${ingredient.name} from bank`, `Rate ${star} out of 5 stars`).
+- **Text alternatives for color-only indicators**: Already implemented in US-011 — MealPlanSlot has `<span className="sr-only">Cooked</span>` for the green cooked state. No additional work needed.
+- **Touch target improvements**: MealPlanSlot — external link and remove buttons `p-1` → `p-2`, view/undo/done/plus buttons `p-0.5` → `p-1`. PhotoUpload — remove photo button `p-1` → `p-2`. All now meet minimum 32px (h-8 w-8) touch target.
+- **Descriptive photo alt text**: EventRecipesTab note photos changed from `alt=""` to `alt={`Photo for ${recipe.name}`}`. RecipeCard already had proper alt text (`${recipe.name} photo ${idx + 1}`).
+
+### Files changed
+- `src/components/events/EventRecipesTab.tsx` (4 aria-labels on buttons, descriptive alt text on note photos)
+- `src/components/events/EventRatingDialog.tsx` (aria-labels on 5 star rating buttons)
+- `src/components/ingredients/IngredientBank.tsx` (aria-labels on add and remove buttons)
+- `src/components/mealplan/WeekNavigation.tsx` (aria-labels on prev/next buttons)
+- `src/components/mealplan/MealPlanSlot.tsx` (increased touch target padding on 6 buttons)
+- `src/components/recipes/PhotoUpload.tsx` (aria-label on remove button, increased touch target)
+- `tests/unit/components/events/EventRecipesTab.test.tsx` (3 new tests: recipe button aria-labels, note button aria-labels, photo alt text)
+- `tests/unit/components/events/EventRatingDialog.test.tsx` (1 new test: star button aria-labels)
+- `tests/unit/components/ingredients/IngredientBank.test.tsx` (2 new tests + 1 fix: add button aria-label, remove button aria-labels, fixed empty-name query)
+- `tests/unit/components/mealplan/WeekNavigation.test.tsx` (1 new test: navigation button aria-labels)
+- `tests/unit/components/recipes/PhotoUpload.test.tsx` (1 new test: remove photo aria-labels)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1212 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- When adding aria-labels to existing icon-only buttons, existing tests that query by `{ name: "" }` will break — update to match the new aria-label text
+- RecipeCard and MealPlanSlot already had proper accessibility from US-010 and US-011 respectively — always check existing state before modifying
+- Touch target padding increases (p-0.5 → p-1, p-1 → p-2) are minimal visual changes but meaningful accessibility improvements — they don't break compact layouts
+
+---

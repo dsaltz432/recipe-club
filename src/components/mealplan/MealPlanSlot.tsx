@@ -74,13 +74,13 @@ const MealPlanSlot = ({
               </button>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 {url && (
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-purple p-1" aria-label={`Open ${name} recipe link`}>
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-purple p-2" aria-label={`Open ${name} recipe link`}>
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
                 <button
                   onClick={() => onRemoveMeal(item.id)}
-                  className="text-muted-foreground hover:text-red-500 p-1"
+                  className="text-muted-foreground hover:text-red-500 p-2"
                   title="Remove meal"
                   aria-label={`Remove ${name}`}
                 >
@@ -97,7 +97,7 @@ const MealPlanSlot = ({
           {onViewMealEvent && (
             <button
               onClick={() => onViewMealEvent(dayOfWeek, mealType)}
-              className="text-muted-foreground hover:text-purple transition-colors p-0.5 flex items-center gap-0.5"
+              className="text-muted-foreground hover:text-purple transition-colors p-1 flex items-center gap-0.5"
               title="View meal details"
               aria-label="View meal details"
             >
@@ -108,7 +108,7 @@ const MealPlanSlot = ({
           {isCooked && onUncook && (
             <button
               onClick={() => onUncook(dayOfWeek, mealType)}
-              className="text-green-600 hover:text-orange-500 transition-colors p-0.5 flex items-center gap-0.5"
+              className="text-green-600 hover:text-orange-500 transition-colors p-1 flex items-center gap-0.5"
               title="Undo cook"
               aria-label="Undo cook"
             >
@@ -119,7 +119,7 @@ const MealPlanSlot = ({
           {!isCooked && onMarkCooked && (
             <button
               onClick={() => onMarkCooked(dayOfWeek, mealType)}
-              className="text-muted-foreground hover:text-green-600 transition-colors p-0.5 flex items-center gap-0.5"
+              className="text-muted-foreground hover:text-green-600 transition-colors p-1 flex items-center gap-0.5"
               title="Mark as cooked"
               aria-label="Mark as cooked"
             >
@@ -129,7 +129,7 @@ const MealPlanSlot = ({
           )}
           <button
             onClick={() => onAddMeal(dayOfWeek, mealType)}
-            className="text-muted-foreground hover:text-purple transition-colors p-0.5"
+            className="text-muted-foreground hover:text-purple transition-colors p-1"
             title="Add another meal"
             aria-label="Add another meal"
           >

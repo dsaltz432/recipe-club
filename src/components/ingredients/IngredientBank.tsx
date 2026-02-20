@@ -379,6 +379,7 @@ const IngredientBank = ({
                   onClick={() => addIngredient()}
                   size="icon"
                   className="bg-purple hover:bg-purple-dark shrink-0"
+                  aria-label="Add ingredient"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -484,6 +485,7 @@ const IngredientBank = ({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove ${ingredient.name} from bank`}
                       onClick={() => removeFromBank(ingredient.id)}
                     >
                       <X className="h-4 w-4" />

@@ -192,12 +192,40 @@ describe("IngredientBank", () => {
     );
 
     await waitFor(() => {
-      const removeButtons = screen.getAllByRole("button", { name: "" });
-      // Filter for X buttons (remove buttons)
-      const xButtons = removeButtons.filter(
-        (btn) => btn.querySelector("svg")
-      );
-      expect(xButtons.length).toBeGreaterThan(0);
+      const removeButtons = screen.getAllByRole("button", { name: /Remove .+ from bank/ });
+      expect(removeButtons.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("has aria-label on add ingredient button", async () => {
+    render(
+      <IngredientBank
+        ingredients={mockIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add ingredient" })).toBeInTheDocument();
+    });
+  });
+
+  it("has aria-labels on remove ingredient buttons", async () => {
+    render(
+      <IngredientBank
+        ingredients={mockIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Remove Chicken from bank" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove Salmon from bank" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove Beef from bank" })).toBeInTheDocument();
     });
   });
 

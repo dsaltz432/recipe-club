@@ -258,6 +258,20 @@ describe("PhotoUpload", () => {
     });
   });
 
+  it("has aria-labels on remove photo buttons", () => {
+    const photos = [
+      "https://example.com/photo1.jpg",
+      "https://example.com/photo2.jpg",
+    ];
+
+    render(
+      <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
+    );
+
+    expect(screen.getByRole("button", { name: "Remove photo 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove photo 2" })).toBeInTheDocument();
+  });
+
   it("handles photo removal", async () => {
     const photos = ["https://example.com/storage/recipe-photos/photo1.jpg"];
 

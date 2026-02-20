@@ -570,6 +570,63 @@ describe("EventRecipesTab", () => {
     expect(screen.getByText("Bob's Notes")).toBeInTheDocument();
   });
 
+  it("has aria-labels on recipe edit and delete buttons", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Pasta Carbonara", createdBy: user.id }),
+        notes: [],
+      },
+    ];
+
+    render(<EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} />);
+
+    expect(screen.getByRole("button", { name: 'Edit recipe Pasta Carbonara' })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: 'Delete recipe Pasta Carbonara' })).toBeInTheDocument();
+  });
+
+  it("has aria-labels on note edit and delete buttons", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Test", createdBy: "other-user" }),
+        notes: [
+          createMockNote({ id: "n1", recipeId: "r1", userId: user.id, userName: "Test User", notes: "My notes" }),
+        ],
+      },
+    ];
+
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} expandedRecipeNotes={new Set(["r1"])} />
+    );
+
+    expect(screen.getByRole("button", { name: "Edit my notes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete my notes" })).toBeInTheDocument();
+  });
+
+  it("renders descriptive alt text on note photos", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Salmon Teriyaki", createdBy: "other-user" }),
+        notes: [
+          createMockNote({
+            id: "n1",
+            recipeId: "r1",
+            userId: "other-user",
+            userName: "Bob",
+            photos: ["https://example.com/photo1.jpg", "https://example.com/photo2.jpg"],
+          }),
+        ],
+      },
+    ];
+
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} expandedRecipeNotes={new Set(["r1"])} />
+    );
+
+    const photos = screen.getAllByRole("img");
+    expect(photos[0]).toHaveAttribute("alt", "Photo for Salmon Teriyaki");
+    expect(photos[1]).toHaveAttribute("alt", "Photo for Salmon Teriyaki");
+  });
+
   it("renders with null user gracefully", () => {
     const recipesWithNotes: EventRecipeWithRatings[] = [
       {

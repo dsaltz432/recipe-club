@@ -91,6 +91,13 @@ describe("WeekNavigation", () => {
     expect(defaultProps.onCurrentWeek).toHaveBeenCalled();
   });
 
+  it("has aria-labels on navigation buttons", () => {
+    render(<WeekNavigation {...defaultProps} />);
+
+    expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next week" })).toBeInTheDocument();
+  });
+
   it("hides Today button when on current week", () => {
     // Calculate current week's Sunday
     const now = new Date();

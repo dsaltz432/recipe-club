@@ -194,6 +194,7 @@ const EventRecipesTab = ({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 sm:h-8 sm:w-8"
+                            aria-label={`Edit recipe ${recipe.name}`}
                             onClick={() => onEditRecipeClick(recipe)}
                           >
                             <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -202,6 +203,7 @@ const EventRecipesTab = ({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                            aria-label={`Delete recipe ${recipe.name}`}
                             onClick={() => onDeleteRecipeClick(recipe)}
                           >
                             <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -252,7 +254,7 @@ const EventRecipesTab = ({
                                         <img
                                           key={idx}
                                           src={photo}
-                                          alt=""
+                                          alt={`Photo for ${recipe.name}`}
                                           className="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-lg shadow-sm shrink-0"
                                         />
                                       ))}
@@ -265,6 +267,7 @@ const EventRecipesTab = ({
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7 sm:h-8 sm:w-8"
+                                      aria-label="Edit my notes"
                                       onClick={() => onEditNoteClick(note)}
                                     >
                                       <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -273,6 +276,7 @@ const EventRecipesTab = ({
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7 sm:h-8 sm:w-8"
+                                      aria-label="Delete my notes"
                                       disabled={deletingNoteId === note.id}
                                       onClick={() => onDeleteNoteClick(note)}
                                     >
