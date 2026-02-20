@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 8
-**Current Task:** US-008 complete
+**Tasks Completed:** 9
+**Current Task:** US-009 complete
 
 ---
 
@@ -297,5 +297,31 @@ Four UX improvements across HomeSection, CountdownCard, IngredientBank, and Ingr
 - CountdownCard uses Radix UI Dialog/AlertDialog which are tricky with fake timers — Dialog interaction tests timeout easily; keep tests focused on rendering and simple interactions
 - Dashboard navigation uses URL-based routing (`/dashboard/recipes`, `/dashboard/events`) via `useNavigate` — no `setActiveTab` prop needed
 - IngredientWheel and CountdownCard both have their own `formatTime` helpers — standardize at the format level, not by extracting a shared util (too much coupling for a 1-line change)
+
+---
+
+## 2026-02-20 — US-009: Improve Recipe Hub search and empty states
+
+### What was implemented
+Four UX improvements to RecipeHub.tsx:
+
+- **Ingredient name search**: Added `recipe.ingredientName?.toLowerCase().includes(searchTerm.toLowerCase())` to the `matchesSearch` filter condition. Users can now search by ingredient name (e.g., searching "Salmon" finds recipes associated with the Salmon ingredient).
+- **Empty state text fix**: Changed personal recipes empty state from "No personal recipes yet. Add one or save a club recipe!" to "No personal recipes yet. Add one using the button above!" — the "save a club recipe" feature was removed in a prior change.
+- **Recipe counts in tab labels**: Added `clubCount` and `personalCount` state. Tab buttons now show "Club (N)" and "My Recipes (N)" after data loads. Counts update when switching tabs.
+- **Sort dropdown**: Added a Select dropdown with three sort options: "Newest First" (default, by created_at desc), "Alphabetical (A-Z)" (by name), "Highest Rated" (by averageRating desc, unrated = 0). Sorting is applied client-side on the filtered results.
+
+### Files changed
+- `src/components/recipes/RecipeHub.tsx` (search filter, empty state text, recipe counts, sort dropdown + sorting logic)
+- `tests/unit/components/recipes/RecipeHub.test.tsx` (59 tests: updated tab label assertions, added 8 new tests for ingredient search, sort options, recipe counts, null date/rating branches)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1152 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- V8 sort comparator branch coverage: the `??` and `||` operators in sort comparators need test data where the falsy value appears in BOTH the `a` and `b` positions — V8 counts each as a separate branch at the code location
+- When changing tab label text (e.g., "Club Recipes" → "Club (N)"), use `getByRole("button", { name: /^Club/ })` in tests to match regex patterns instead of exact text
+- Radix Select in tests: `fireEvent.click(trigger)` → `screen.getByRole("option", { name })` → `fireEvent.click(option)` — this pattern works reliably for changing Select values
 
 ---

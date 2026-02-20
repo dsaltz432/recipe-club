@@ -1252,18 +1252,18 @@ describe("RecipeHub - Sub-tabs", () => {
     vi.clearAllMocks();
   });
 
-  it("renders Club Recipes and My Recipes sub-tab buttons", async () => {
+  it("renders Club and My Recipes sub-tab buttons with counts", async () => {
     mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder([]));
 
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Club Recipes")).toBeInTheDocument();
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^Club/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
   });
 
-  it("shows club recipes by default", async () => {
+  it("shows club recipes by default with count in tab label", async () => {
     const mockRecipesData = [
       {
         id: "recipe-1",
@@ -1288,6 +1288,8 @@ describe("RecipeHub - Sub-tabs", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Club Recipe")).toBeInTheDocument();
+      // Club tab shows count after loading
+      expect(screen.getByRole("button", { name: "Club (1)" })).toBeInTheDocument();
     });
   });
 
@@ -1317,7 +1319,7 @@ describe("RecipeHub - Sub-tabs", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/no personal recipes yet/i)
+        screen.getByText(/no personal recipes yet\. add one using the button above!/i)
       ).toBeInTheDocument();
     });
   });
@@ -1495,7 +1497,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByText("My Recipes"));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+      expect(screen.getByText(/no personal recipes yet\. add one using the button above!/i)).toBeInTheDocument();
     });
   });
 
@@ -1510,7 +1512,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByText("My Recipes"));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+      expect(screen.getByText(/no personal recipes yet\. add one using the button above!/i)).toBeInTheDocument();
     });
   });
 
@@ -1601,7 +1603,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByText("My Recipes"));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet/i)).toBeInTheDocument();
+      expect(screen.getByText(/no personal recipes yet\. add one using the button above!/i)).toBeInTheDocument();
     });
   });
 
@@ -1767,19 +1769,470 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Wait for club tab to load
     await waitFor(() => {
-      expect(screen.getByText("Club Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^Club/ })).toBeInTheDocument();
     });
 
     // Switch to personal tab
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
     await waitFor(() => {
       expect(screen.queryByText(/all ingredients/i)).not.toBeInTheDocument();
     });
 
     // Switch back to club tab - exercises setSubTab("club") onClick
-    fireEvent.click(screen.getByText("Club Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /^Club/ }));
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/search recipes/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows personal count in My Recipes tab after switching", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "My Recipe 1",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+      {
+        id: "personal-2",
+        name: "My Recipe 2",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-14T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "My Recipes (2)" })).toBeInTheDocument();
+    });
+  });
+
+  it("shows personal count 0 when no userId", async () => {
+    mockSupabaseFrom.mockImplementation(() => createMockQueryBuilder([]));
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "My Recipes (0)" })).toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Ingredient Name Search", () => {
+  const mockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: null,
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+    },
+    {
+      id: "recipe-2",
+      name: "Chicken Stir Fry",
+      url: null,
+      event_id: "event-2",
+      ingredient_id: "ing-2",
+      created_by: "user-456",
+      created_at: "2025-01-14T10:00:00Z",
+      ingredients: { name: "Chicken" },
+    },
+  ];
+
+  const mockNotesData = [
+    {
+      id: "note-1",
+      recipe_id: "recipe-1",
+      user_id: "user-123",
+      notes: "Delicious",
+      photos: null,
+      created_at: "2025-01-15T10:00:00Z",
+      profiles: { name: "Test User", avatar_url: "avatar1.jpg" },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("searches recipes by ingredient name", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "salmon" } });
+
+    await waitFor(() => {
+      // "Salmon" matches the ingredientName, not the recipe name "Grilled Salmon" — but also matches recipe name
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
+    });
+  });
+
+  it("searches by ingredient name only (not in recipe name)", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Search for "chicken" - matches ingredient name for recipe-2
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "chicken" } });
+
+    await waitFor(() => {
+      // Chicken Stir Fry has ingredientName "Chicken"
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      expect(screen.queryByText("Grilled Salmon")).not.toBeInTheDocument();
+    });
+  });
+
+  it("handles search with no ingredientName on recipe", async () => {
+    // Recipe without ingredient data - exercises the ?. branch
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([
+          {
+            id: "recipe-1",
+            name: "Mystery Recipe",
+            url: null,
+            event_id: "event-1",
+            ingredient_id: null,
+            created_by: "user-123",
+            created_at: "2025-01-15T10:00:00Z",
+            ingredients: null,
+          },
+        ]);
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Mystery Recipe")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "something" } });
+
+    await waitFor(() => {
+      // No match since recipe has no ingredient name
+      expect(screen.queryByText("Mystery Recipe")).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Sort Options", () => {
+  const mockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Zesty Salmon",
+      url: null,
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+    },
+    {
+      id: "recipe-2",
+      name: "Apple Pie",
+      url: null,
+      event_id: "event-2",
+      ingredient_id: "ing-2",
+      created_by: "user-456",
+      created_at: "2025-01-20T10:00:00Z",
+      ingredients: { name: "Apple" },
+      profiles: { name: "Another User", avatar_url: "avatar2.jpg" },
+    },
+    {
+      id: "recipe-3",
+      name: "Mango Smoothie",
+      url: null,
+      event_id: "event-3",
+      ingredient_id: "ing-3",
+      created_by: "user-789",
+      created_at: "2025-01-10T10:00:00Z",
+      ingredients: { name: "Mango" },
+      profiles: { name: "Third User", avatar_url: "avatar3.jpg" },
+    },
+  ];
+
+  const mockNotesData = [
+    {
+      id: "note-1",
+      recipe_id: "recipe-1",
+      user_id: "user-123",
+      notes: "Test",
+      photos: null,
+      created_at: "2025-01-15T10:00:00Z",
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+    },
+  ];
+
+  const mockRatingsData = [
+    { recipe_id: "recipe-1", overall_rating: 5, would_cook_again: true, profiles: { name: "Sarah" } },
+    { recipe_id: "recipe-2", overall_rating: 3, would_cook_again: false, profiles: { name: "Daniel" } },
+    // recipe-3 has no ratings
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder(mockRatingsData);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("renders sort dropdown with default 'Newest First'", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Newest First")).toBeInTheDocument();
+    });
+  });
+
+  it("sorts alphabetically when 'Alphabetical (A-Z)' is selected", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Zesty Salmon")).toBeInTheDocument();
+    });
+
+    // Open sort dropdown
+    fireEvent.click(screen.getByText("Newest First"));
+    await waitFor(() => {
+      const alphaOption = screen.getByRole("option", { name: "Alphabetical (A-Z)" });
+      fireEvent.click(alphaOption);
+    });
+
+    // Wait for re-render - all three recipes should be visible
+    await waitFor(() => {
+      expect(screen.getByText("Apple Pie")).toBeInTheDocument();
+      expect(screen.getByText("Mango Smoothie")).toBeInTheDocument();
+      expect(screen.getByText("Zesty Salmon")).toBeInTheDocument();
+    });
+
+    // Verify alphabetical order by checking DOM order
+    const cards = screen.getAllByRole("heading", { level: 3 });
+    expect(cards[0].textContent).toBe("Apple Pie");
+    expect(cards[1].textContent).toBe("Mango Smoothie");
+    expect(cards[2].textContent).toBe("Zesty Salmon");
+  });
+
+  it("sorts by highest rated when selected", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Zesty Salmon")).toBeInTheDocument();
+    });
+
+    // Open sort dropdown
+    fireEvent.click(screen.getByText("Newest First"));
+    await waitFor(() => {
+      const ratedOption = screen.getByRole("option", { name: "Highest Rated" });
+      fireEvent.click(ratedOption);
+    });
+
+    // Wait for re-render - highest rated first (recipe-1: 5, recipe-2: 3, recipe-3: 0)
+    await waitFor(() => {
+      const cards = screen.getAllByRole("heading", { level: 3 });
+      expect(cards[0].textContent).toBe("Zesty Salmon"); // rating 5
+      expect(cards[1].textContent).toBe("Apple Pie"); // rating 3
+      expect(cards[2].textContent).toBe("Mango Smoothie"); // no rating (0)
+    });
+  });
+
+  it("sorts by newest first (default)", async () => {
+    render(<RecipeHub />);
+
+    // Default sort is newest first
+    await waitFor(() => {
+      const cards = screen.getAllByRole("heading", { level: 3 });
+      expect(cards[0].textContent).toBe("Apple Pie"); // 2025-01-20
+      expect(cards[1].textContent).toBe("Zesty Salmon"); // 2025-01-15
+      expect(cards[2].textContent).toBe("Mango Smoothie"); // 2025-01-10
+    });
+  });
+
+  it("sorts recipes with null createdAt using fallback", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([
+          {
+            id: "recipe-1",
+            name: "Old Recipe",
+            url: null,
+            event_id: "event-1",
+            ingredient_id: null,
+            created_by: null,
+            created_at: null,
+            ingredients: null,
+          },
+          {
+            id: "recipe-2",
+            name: "New Recipe",
+            url: null,
+            event_id: "event-2",
+            ingredient_id: null,
+            created_by: null,
+            created_at: "2025-01-20T10:00:00Z",
+            ingredients: null,
+          },
+        ]);
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      const cards = screen.getAllByRole("heading", { level: 3 });
+      expect(cards[0].textContent).toBe("New Recipe"); // has date
+      expect(cards[1].textContent).toBe("Old Recipe"); // null date → 0
+    });
+  });
+
+  it("sorts by highest rated with unrated recipe first in input", async () => {
+    // Unrated recipe first to ensure ?? 0 covers ratingA branch
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([
+          {
+            id: "recipe-unrated",
+            name: "Unrated First",
+            url: null,
+            event_id: "event-3",
+            ingredient_id: null,
+            created_by: null,
+            created_at: "2025-01-10T10:00:00Z",
+            ingredients: null,
+          },
+          {
+            id: "recipe-rated",
+            name: "Rated Recipe",
+            url: null,
+            event_id: "event-1",
+            ingredient_id: null,
+            created_by: null,
+            created_at: "2025-01-15T10:00:00Z",
+            ingredients: null,
+          },
+        ]);
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") {
+        return createMockQueryBuilder([
+          { recipe_id: "recipe-rated", overall_rating: 4, would_cook_again: true, profiles: { name: "User" } },
+        ]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Unrated First")).toBeInTheDocument();
+    });
+
+    // Switch to highest rated
+    fireEvent.click(screen.getByText("Newest First"));
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option", { name: "Highest Rated" }));
+    });
+
+    await waitFor(() => {
+      const cards = screen.getAllByRole("heading", { level: 3 });
+      expect(cards[0].textContent).toBe("Rated Recipe"); // rating 4
+      expect(cards[1].textContent).toBe("Unrated First"); // no rating → 0
+    });
+  });
+
+  it("sorts newest with all null createdAt dates", async () => {
+    // Both recipes have null createdAt — covers || 0 for both a and b
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([
+          {
+            id: "recipe-1",
+            name: "Recipe A",
+            url: null,
+            event_id: "event-1",
+            ingredient_id: null,
+            created_by: null,
+            created_at: null,
+            ingredients: null,
+          },
+          {
+            id: "recipe-2",
+            name: "Recipe B",
+            url: null,
+            event_id: "event-2",
+            ingredient_id: null,
+            created_by: null,
+            created_at: null,
+            ingredients: null,
+          },
+        ]);
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    // Both have null dates, so order is stable (0 - 0 = 0)
+    await waitFor(() => {
+      expect(screen.getByText("Recipe A")).toBeInTheDocument();
+      expect(screen.getByText("Recipe B")).toBeInTheDocument();
     });
   });
 });

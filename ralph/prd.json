@@ -152,7 +152,7 @@
         "Tests pass with 100% coverage on recipes directory (npm run test:coverage)"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 6 findings. RecipeHub.tsx (446 lines). Search (lines 312-325): filteredRecipes filters by name and notes only. Fix: add || recipe.ingredientName?.toLowerCase().includes(searchTerm.toLowerCase()) to the matchesSearch condition. The ingredientName field is already loaded from the ingredients join. Empty state: the personal tab empty state text is outdated (mentions saving club recipes, but SaveRecipeButton was removed in US-002). Fix: update the text. Recipe counts: the sub-tab buttons show 'Club Recipes' and 'My Recipes'. Fix: show counts like 'Club Recipes (12)' and 'My Recipes (3)' using recipes.length filtered by type. Sort: add a Select dropdown next to the search bar with options. Implement sorting on the filteredRecipes array: by created_at desc (newest), by name asc (alphabetical), by average rating desc (highest rated). The rating data is available in recipe.notes which contain ratings."
     },
     {

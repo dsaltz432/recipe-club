@@ -26,6 +26,7 @@ export interface RecipeWithNotes extends Recipe {
 }
 
 type RecipeSubTab = "club" | "personal";
+type SortOption = "newest" | "alphabetical" | "highest_rated";
 
 interface RecipeHubProps {
   userId?: string;
@@ -38,7 +39,10 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [ingredientFilter, setIngredientFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [subTab, setSubTab] = useState<RecipeSubTab>("club");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [showAddPersonal, setShowAddPersonal] = useState(false);
+  const [clubCount, setClubCount] = useState<number | null>(null);
+  const [personalCount, setPersonalCount] = useState<number | null>(null);
 
   const loadRecipes = async () => {
     try {
@@ -145,11 +149,13 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     });
 
     setRecipes(recipesWithNotes);
+    setClubCount(recipesWithNotes.length);
   };
 
   const loadPersonalRecipes = async () => {
     if (!userId) {
       setRecipes([]);
+      setPersonalCount(0);
       return;
     }
 
@@ -224,6 +230,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     }
 
     setRecipes(personalRecipes);
+    setPersonalCount(personalRecipes.length);
   };
 
   const buildRatingSummaries = (
@@ -313,6 +320,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     const matchesSearch =
       searchTerm === "" ||
       recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.ingredientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       recipe.notes.some(
         (n) => n.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -322,6 +330,20 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
       recipe.ingredientId === ingredientFilter;
 
     return matchesSearch && matchesIngredient;
+  });
+
+  // Sort filtered recipes
+  const sortedRecipes = [...filteredRecipes].sort((a, b) => {
+    if (sortOption === "alphabetical") {
+      return a.name.localeCompare(b.name);
+    }
+    if (sortOption === "highest_rated") {
+      const ratingA = a.ratingSummary?.averageRating ?? 0;
+      const ratingB = b.ratingSummary?.averageRating ?? 0;
+      return ratingB - ratingA;
+    }
+    // "newest" — by created_at descending (already default from DB, but sort explicitly)
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
   if (isLoading) {
@@ -342,7 +364,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
           onClick={() => setSubTab("club")}
           className={subTab === "club" ? "bg-purple hover:bg-purple-dark" : ""}
         >
-          Club Recipes
+          Club{clubCount !== null ? ` (${clubCount})` : ""}
         </Button>
         <Button
           variant={subTab === "personal" ? "default" : "outline"}
@@ -350,7 +372,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
           onClick={() => setSubTab("personal")}
           className={subTab === "personal" ? "bg-purple hover:bg-purple-dark" : ""}
         >
-          My Recipes
+          My Recipes{personalCount !== null ? ` (${personalCount})` : ""}
         </Button>
       </div>
 
@@ -369,6 +391,18 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 className="pl-10"
               />
             </div>
+
+            {/* Sort */}
+            <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="alphabetical">Alphabetical (A-Z)</SelectItem>
+                <SelectItem value="highest_rated">Highest Rated</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* Ingredient Filter (only for club tab) */}
             {subTab === "club" && (
@@ -402,7 +436,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         </div>
 
         {/* Recipe Grid */}
-        {filteredRecipes.length === 0 ? (
+        {sortedRecipes.length === 0 ? (
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
@@ -410,14 +444,14 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 {searchTerm || ingredientFilter !== "all"
                   ? "No recipes found matching your search."
                   : subTab === "personal"
-                  ? "No personal recipes yet. Add one or save a club recipe!"
+                  ? "No personal recipes yet. Add one using the button above!"
                   : "No recipes yet. Recipes are added through events."}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredRecipes.map((recipe) => (
+            {sortedRecipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
