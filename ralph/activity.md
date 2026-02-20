@@ -59,8 +59,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 14
-**Current Task:** US-014 complete
+**Tasks Completed:** 17 (ALL COMPLETE)
+**Current Task:** None — all stories passed
 
 ---
 
@@ -551,5 +551,38 @@ Accessibility improvements across six components:
 - When adding aria-labels to existing icon-only buttons, existing tests that query by `{ name: "" }` will break — update to match the new aria-label text
 - RecipeCard and MealPlanSlot already had proper accessibility from US-010 and US-011 respectively — always check existing state before modifying
 - Touch target padding increases (p-0.5 → p-1, p-1 → p-2) are minimal visual changes but meaningful accessibility improvements — they don't break compact layouts
+
+---
+
+## 2026-02-20 — US-017: Final verification and coverage check
+
+### What was implemented
+This is a verification-only story — no code changes needed. All prior stories (US-001 through US-016) left the codebase in a clean state.
+
+### Verification results
+- **npm run build**: Pass — no TypeScript errors, clean Vite build (938.82 KB bundle)
+- **npm run test:coverage**: Pass — 1212 tests, all 46 test files pass
+  - `src/components/events/` — 100% all metrics ✅
+  - `src/components/ingredients/` — 100% all metrics ✅
+  - `src/components/mealplan/` — 100% all metrics ✅
+  - `src/components/recipes/` — 100% all metrics ✅
+  - `src/lib/` — 100% all metrics ✅
+  - `src/components/wheel/IngredientWheel.tsx` — ~55% (exempt) ✅
+- **npm run lint**: Pass — 0 errors (4 warnings: 3 from auto-generated coverage files, 1 react-hooks/exhaustive-deps in RecipeHub.tsx)
+- **Dead code check**: No orphaned imports, unused variables, or dead code found across all 21 modified files
+- **New utility files**: `upload.ts` at 100% all metrics; `PantryContent.tsx` at 100% stmts/funcs/lines (94.44% branch — documented gap in non-required directory)
+
+### Files changed
+- None (verification only)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1212 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- The full remediation pass (US-001 through US-016) produced clean results with no loose ends — disciplined per-story testing prevents accumulation of coverage debt
+- The only non-100% branch in the codebase (outside exempt IngredientWheel) is PantryContent.tsx line 47 (`if (active)` false branch) in a non-required directory — acceptable trade-off vs testing complexity
+- 4 SQL migrations, 1 edge function rewrite, 14 component changes, and 6 new test files were delivered across 16 stories with zero regressions
 
 ---
