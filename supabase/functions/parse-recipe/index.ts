@@ -31,6 +31,36 @@ interface ParsedRecipe {
   ingredients: ParsedIngredient[];
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// BUG-001: Detect media type from URL extension or Content-Type header
+function detectMediaType(url: string, contentType?: string | null): string {
+  const extMap: Record<string, string> = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".heic": "image/heic",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+  };
+
+  try {
+    const urlPath = new URL(url).pathname.toLowerCase();
+    for (const [ext, type] of Object.entries(extMap)) {
+      if (urlPath.endsWith(ext)) return type;
+    }
+  } catch {
+    // Invalid URL, fall through to Content-Type check
+  }
+
+  if (contentType) {
+    const ct = contentType.split(";")[0].trim().toLowerCase();
+    if (ct.startsWith("image/") || ct === "application/pdf") return ct;
+  }
+
+  return "image/jpeg";
+}
+
 // Extract Schema.org/Recipe from JSON-LD script tags
 // deno-lint-ignore no-explicit-any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,6 +97,9 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // BUG-015: Extract recipeId before main try block so error status can always be updated
+  let recipeId: string | undefined;
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -81,11 +114,26 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const body: ParseRequest = await req.json();
-    const { recipeId, recipeUrl, recipeName } = body;
+
+    // BUG-015: Catch malformed JSON request body early with separate try-catch
+    let body: ParseRequest;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid request body" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    recipeId = body.recipeId;
+    const { recipeUrl, recipeName } = body;
 
     if (!recipeId || !recipeUrl) {
-      throw new Error("recipeId and recipeUrl are required");
+      return new Response(
+        JSON.stringify({ success: false, error: "recipeId and recipeUrl are required" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
     // Upsert recipe_content with status 'parsing'
@@ -101,9 +149,10 @@ serve(async (req) => {
     let recipeText = "";
     let isImage = false;
     let base64Content = "";
+    let detectedMediaType = "image/jpeg";
 
     const isStorageUrl = recipeUrl.includes("supabase") && recipeUrl.includes("storage");
-    const isPdfOrImage = /\.(pdf|jpg|jpeg|png|webp)(\?|$)/i.test(recipeUrl);
+    const isPdfOrImage = /\.(pdf|jpg|jpeg|png|webp|heic)(\?|$)/i.test(recipeUrl);
 
     if (isStorageUrl || isPdfOrImage) {
       // Download file and send as base64
@@ -111,11 +160,45 @@ serve(async (req) => {
       if (!response.ok) {
         throw new Error(`Failed to fetch recipe file: ${response.status}`);
       }
+
+      // BUG-010: File size validation via Content-Length header
+      const contentLength = response.headers.get("content-length");
+      if (contentLength && parseInt(contentLength, 10) > MAX_FILE_SIZE) {
+        await supabase.from("recipe_content").upsert({
+          recipe_id: recipeId,
+          status: "failed",
+          error_message: "File exceeds 10MB size limit",
+        }, { onConflict: "recipe_id" });
+        return new Response(
+          JSON.stringify({ success: false, error: "File exceeds 10MB size limit" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
+        );
+      }
+
       const arrayBuffer = await response.arrayBuffer();
+
+      // BUG-010: Also check actual buffer size (Content-Length may be absent)
+      if (arrayBuffer.byteLength > MAX_FILE_SIZE) {
+        await supabase.from("recipe_content").upsert({
+          recipe_id: recipeId,
+          status: "failed",
+          error_message: "File exceeds 10MB size limit",
+        }, { onConflict: "recipe_id" });
+        return new Response(
+          JSON.stringify({ success: false, error: "File exceeds 10MB size limit" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
+        );
+      }
+
+      // BUG-001: Detect media type from URL extension or Content-Type header
+      detectedMediaType = detectMediaType(recipeUrl, response.headers.get("content-type"));
+
+      // More memory-efficient base64 encoding using chunking
       const uint8Array = new Uint8Array(arrayBuffer);
+      const CHUNK_SIZE = 0x8000;
       let binary = "";
-      for (let i = 0; i < uint8Array.length; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
+      for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+        binary += String.fromCharCode(...uint8Array.subarray(i, i + CHUNK_SIZE));
       }
       base64Content = btoa(binary);
       isImage = true;
@@ -245,6 +328,9 @@ For ingredient names:
 - "dry oregano" / "dried oregano" are distinct from fresh oregano — keep as "dried oregano"`;
 
     // Call Anthropic API
+    // BUG-001: Use detected media type and correct content block type for PDFs
+    const contentBlockType = detectedMediaType === "application/pdf" ? "document" : "image";
+
     const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -266,10 +352,10 @@ For ingredient names:
                     text: `Parse this recipe "${recipeName}" and extract all structured data including ingredients, instructions, times, and servings.`,
                   },
                   {
-                    type: "image",
+                    type: contentBlockType,
                     source: {
                       type: "base64",
-                      media_type: "image/jpeg",
+                      media_type: detectedMediaType,
                       data: base64Content,
                     },
                   },
@@ -288,12 +374,20 @@ For ingredient names:
     const aiResult = await aiResponse.json();
     const aiText = aiResult.content?.[0]?.text || "";
 
-    // Parse the JSON response
+    // BUG-020: Parse JSON with validation — try regex extraction first, validate, fallback to full text
     let parsed: ParsedRecipe;
     try {
-      // Try to extract JSON from potential markdown code blocks
-      const jsonMatch = aiText.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, aiText];
-      parsed = JSON.parse(jsonMatch[1].trim());
+      const jsonMatch = aiText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[1].trim());
+        } catch {
+          // Regex extracted invalid JSON, fall back to full response text
+          parsed = JSON.parse(aiText.trim());
+        }
+      } else {
+        parsed = JSON.parse(aiText.trim());
+      }
     } catch {
       throw new Error(`Failed to parse AI response as JSON: ${aiText.slice(0, 200)}`);
     }
@@ -301,17 +395,9 @@ For ingredient names:
     // Save to DB — errors here don't prevent returning the parsed result
     const dbWarnings: string[] = [];
 
-    // Delete existing ingredients for re-parse support
-    const { error: deleteError } = await supabase
-      .from("recipe_ingredients")
-      .delete()
-      .eq("recipe_id", recipeId);
-    if (deleteError) dbWarnings.push(`Delete ingredients: ${deleteError.message}`);
-
-    // Insert parsed ingredients
-    if (parsed.ingredients && parsed.ingredients.length > 0 && !deleteError) {
+    // BUG-014: Use RPC for transactional ingredient replacement
+    if (parsed.ingredients && parsed.ingredients.length > 0) {
       const ingredientRows = parsed.ingredients.map((ing, index) => ({
-        recipe_id: recipeId,
         name: ing.name,
         quantity: ing.quantity,
         unit: ing.unit,
@@ -320,11 +406,18 @@ For ingredient names:
         sort_order: index,
       }));
 
-      const { error: ingredientsError } = await supabase
+      const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+        p_recipe_id: recipeId,
+        p_ingredients: ingredientRows,
+      });
+      if (rpcError) dbWarnings.push(`Replace ingredients: ${rpcError.message}`);
+    } else {
+      // No ingredients to insert — just delete any existing ones
+      const { error: deleteError } = await supabase
         .from("recipe_ingredients")
-        .insert(ingredientRows);
-
-      if (ingredientsError) dbWarnings.push(`Insert ingredients: ${ingredientsError.message}`);
+        .delete()
+        .eq("recipe_id", recipeId);
+      if (deleteError) dbWarnings.push(`Delete ingredients: ${deleteError.message}`);
     }
 
     // Upsert recipe_content with parsed data
@@ -360,17 +453,16 @@ For ingredient names:
   } catch (error) {
     console.error("Error in parse-recipe:", error);
 
-    // Try to update status to failed
+    // BUG-015: Use early-extracted recipeId directly instead of re-parsing the body
     try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      const body = await req.clone().json().catch(() => null);
-      if (body?.recipeId) {
+      if (recipeId) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
         await supabase
           .from("recipe_content")
           .upsert({
-            recipe_id: body.recipeId,
+            recipe_id: recipeId,
             status: "failed",
             error_message: error instanceof Error ? error.message : "Unknown error",
           }, { onConflict: "recipe_id" });

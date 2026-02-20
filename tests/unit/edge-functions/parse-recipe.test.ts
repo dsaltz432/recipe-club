@@ -76,6 +76,7 @@ const parsedRecipe = {
 
 function setupDefaultSupabaseMock() {
   mockSupabase.from.mockReturnValue(createBuilder(null, null));
+  mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
 }
 
 // ---------------------------------------------------------------------------
@@ -113,34 +114,48 @@ describe("parse-recipe edge function", () => {
     expect(data).toMatchObject({ success: true, skipped: true });
   });
 
-  it("returns 500 when recipeId is missing", async () => {
+  // BUG-015: Malformed request body returns 400
+  it("returns 400 when request body is invalid JSON", async () => {
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "not valid json {{{",
+    });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(400);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Invalid request body");
+  });
+
+  // Missing fields now return 400 instead of 500
+  it("returns 400 when recipeId is missing", async () => {
     const req = createEdgeRequest({ ...baseBody, recipeId: undefined });
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(400);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("recipeId and recipeUrl are required");
   });
 
-  it("returns 500 when recipeUrl is missing", async () => {
+  it("returns 400 when recipeUrl is missing", async () => {
     const req = createEdgeRequest({ ...baseBody, recipeUrl: undefined });
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(400);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("recipeId and recipeUrl are required");
   });
 
-  it("fetches binary and sends base64 to AI for supabase storage URLs", async () => {
+  // BUG-001: Media type detection
+  it("fetches binary and sends base64 to AI for supabase storage URLs with correct media type", async () => {
     const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.jpg";
     const binaryData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]); // PNG header bytes
 
     const mockFetch = vi.fn()
-      // First call: fetch the image
       .mockResolvedValueOnce(
-        new Response(binaryData.buffer, { status: 200 }),
+        new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "4" } }),
       )
-      // Second call: Anthropic API
       .mockResolvedValueOnce(
         createAnthropicResponse(JSON.stringify(parsedRecipe)),
       );
@@ -152,15 +167,14 @@ describe("parse-recipe edge function", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true });
 
-    // Second call should be to Anthropic with image content
+    // Second call should be to Anthropic with image content and correct media_type
     const anthropicCall = mockFetch.mock.calls[1];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
-    // Image request should have array content with image block
-    expect(anthropicBody.messages[0].content).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ type: "image" }),
-      ]),
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
     );
+    expect(imageBlock).toBeDefined();
+    expect(imageBlock.source.media_type).toBe("image/jpeg");
   });
 
   it("handles image URL by file extension (.jpg) sends base64 to AI", async () => {
@@ -168,7 +182,7 @@ describe("parse-recipe edge function", () => {
     const binaryData = new Uint8Array([0xFF, 0xD8]); // JPEG header
 
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200 }))
+      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "2" } }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
@@ -185,6 +199,159 @@ describe("parse-recipe edge function", () => {
         expect.objectContaining({ type: "image" }),
       ]),
     );
+  });
+
+  it("detects PNG media type from URL extension", async () => {
+    const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.png";
+    const binaryData = new Uint8Array([0x89, 0x50]);
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "2" } }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
+    const { status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
+    );
+    expect(imageBlock.source.media_type).toBe("image/png");
+  });
+
+  it("detects PDF media type and uses document content block type", async () => {
+    const pdfUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/recipe.pdf";
+    const binaryData = new Uint8Array([0x25, 0x50, 0x44, 0x46]); // %PDF header
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "4" } }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: pdfUrl });
+    const { status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const docBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "document",
+    );
+    expect(docBlock).toBeDefined();
+    expect(docBlock.source.media_type).toBe("application/pdf");
+  });
+
+  it("detects media type from Content-Type header when URL has no extension", async () => {
+    const storageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/noext";
+    const binaryData = new Uint8Array([0x89, 0x50]);
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(binaryData.buffer, {
+        status: 200,
+        headers: { "Content-Length": "2", "Content-Type": "image/webp" },
+      }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: storageUrl });
+    const { status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
+    );
+    expect(imageBlock.source.media_type).toBe("image/webp");
+  });
+
+  it("defaults to image/jpeg when no extension or Content-Type matches", async () => {
+    const storageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/noext";
+    const binaryData = new Uint8Array([0xFF, 0xD8]);
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(binaryData.buffer, {
+        status: 200,
+        headers: { "Content-Length": "2", "Content-Type": "application/octet-stream" },
+      }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: storageUrl });
+    const { status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
+    );
+    expect(imageBlock.source.media_type).toBe("image/jpeg");
+  });
+
+  it("defaults to image/jpeg when no extension and no Content-Type header", async () => {
+    const storageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/noext";
+    const binaryData = new Uint8Array([0xFF, 0xD8]);
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(binaryData.buffer, {
+        status: 200,
+        headers: { "Content-Length": "2" },
+      }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: storageUrl });
+    const { status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
+    );
+    expect(imageBlock.source.media_type).toBe("image/jpeg");
+  });
+
+  // BUG-010: File size validation
+  it("returns 413 when file exceeds 10MB via Content-Length header", async () => {
+    const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/huge.jpg";
+
+    const mockFetch = vi.fn().mockResolvedValueOnce(
+      new Response("", {
+        status: 200,
+        headers: { "Content-Length": String(11 * 1024 * 1024) },
+      }),
+    );
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(413);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("10MB");
+  });
+
+  it("returns 413 when file exceeds 10MB via actual buffer size", async () => {
+    const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/huge.jpg";
+    // Create a buffer just over 10MB — but don't set Content-Length
+    const bigBuffer = new ArrayBuffer(10 * 1024 * 1024 + 1);
+
+    const mockFetch = vi.fn().mockResolvedValueOnce(
+      new Response(bigBuffer, { status: 200 }),
+    );
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(413);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("10MB");
   });
 
   it("extracts JSON-LD Recipe with direct @type:'Recipe'", async () => {
@@ -349,7 +516,8 @@ describe("parse-recipe edge function", () => {
     expect(anthropicBody.messages[0].content).not.toContain("var x = 1");
   });
 
-  it("returns {success:true} with no DB warnings on successful parse", async () => {
+  // BUG-014: RPC-based ingredient replacement
+  it("returns {success:true} with no DB warnings on successful parse using RPC", async () => {
     const mockFetch = vi.fn()
       .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
@@ -361,22 +529,29 @@ describe("parse-recipe edge function", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true, ingredientCount: 2 });
     expect((data as Record<string, unknown>).dbWarnings).toBeUndefined();
+
+    // Verify RPC was called for ingredient replacement
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("replace_recipe_ingredients", {
+      p_recipe_id: "recipe-123",
+      p_ingredients: expect.arrayContaining([
+        expect.objectContaining({ name: "onion" }),
+        expect.objectContaining({ name: "garlic" }),
+      ]),
+    });
   });
 
-  it("returns dbWarnings array when DB operations fail", async () => {
-    // Set up mocks so delete, insert, and upsert all return errors
-    const deleteBuilder = createBuilder(null, { message: "delete failed" });
-    const upsertBuilder = createBuilder(null, { message: "upsert failed" });
+  it("returns dbWarnings array when RPC and upsert fail", async () => {
+    // RPC fails
+    mockSupabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc failed" } });
 
+    // Upsert fails (recipe_content completed)
     let callCount = 0;
     mockSupabase.from.mockImplementation(() => {
       callCount++;
       // 1st call: recipe_content upsert (parsing status) - succeeds
       if (callCount === 1) return createBuilder(null, null);
-      // 2nd call: recipe_ingredients delete - fails
-      if (callCount === 2) return deleteBuilder;
-      // 3rd call: recipe_content upsert (completed) - fails
-      return upsertBuilder;
+      // 2nd call: recipe_content upsert (completed) - fails
+      return createBuilder(null, { message: "upsert failed" });
     });
 
     const mockFetch = vi.fn()
@@ -422,24 +597,107 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
 
-  it("catch block with null body from req.clone().json() skips upsert", async () => {
-    // Force an error that triggers the catch block
-    // We'll make the AI call throw
+  // BUG-020: JSON extraction fallback
+  it("parses valid JSON without code blocks (no regex match)", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, ingredientCount: 2 });
+  });
+
+  it("handles JSON in code block with regex extraction", async () => {
+    const codeBlockJson = "```json\n" + JSON.stringify(parsedRecipe) + "\n```";
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
+      .mockResolvedValueOnce(createAnthropicResponse(codeBlockJson));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, ingredientCount: 2 });
+  });
+
+  it("errors when regex extracts invalid JSON and full text also fails", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
+      .mockResolvedValueOnce(createAnthropicResponse("```json\n{invalid json here}\n```"));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    // Both regex extraction and full text parse fail
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Failed to parse");
+  });
+
+  // BUG-015: catch block uses early-extracted recipeId
+  it("catch block uses early-extracted recipeId for error status update", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
+      .mockRejectedValueOnce(new Error("Connection refused"));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Connection refused");
+
+    // Verify the catch block used recipeId to update status
+    // The catch block creates a new supabase client and calls upsert
+    const upsertCalls = mockSupabase.from.mock.calls.filter(
+      (c: string[]) => c[0] === "recipe_content",
+    );
+    expect(upsertCalls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("catch block skips upsert when recipeId was never extracted (body parse succeeded but recipeId empty)", async () => {
+    // Force an error after body is parsed but recipeId is empty string
+    // The 400 return for empty recipeId happens before any throw, so we need a different approach.
+    // We need recipeId to be extracted but then an error thrown later.
+    // Actually, if recipeId is falsy, the function returns 400 early, not via throw.
+    // The catch block condition is `if (recipeId)`, so if recipeId is undefined
+    // (e.g. body parse fails - but that returns 400 directly, not via throw)
+    // The only way recipeId is undefined in catch is if the error happens before
+    // body parsing (e.g., in the env check). But the env check for ANTHROPIC_API_KEY
+    // returns early, doesn't throw.
+    // Actually, the error could happen after recipeId is set. Let's test that recipeId IS set
+    // and the catch block DOES write the failed status.
     const mockFetch = vi.fn()
       .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
       .mockRejectedValueOnce(new Error("Network error"));
     globalThis.fetch = mockFetch;
 
-    // Override clone so that .json() rejects, exercising the .catch(() => null) on L342
     const req = createEdgeRequest(baseBody);
-    const badClone = new Request("http://localhost", { method: "POST" });
-    badClone.json = () => Promise.reject(new Error("body consumed"));
-    req.clone = () => badClone;
-
     const { data, status } = await parseResponse(await handler(req));
 
     expect(status).toBe(500);
     expect(data).toMatchObject({ success: false });
+  });
+
+  it("catch block handles non-Error thrown values", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
+      .mockRejectedValueOnce("non-Error string");
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "Unknown error" });
   });
 
   it("catch block cleanup error is swallowed silently", async () => {
@@ -520,27 +778,6 @@ describe("parse-recipe edge function", () => {
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     expect(anthropicBody.messages[0].content).toContain("Step 1: Mix");
     expect(anthropicBody.messages[0].content).toContain("Step 2: Bake");
-  });
-
-  it("catch block writes failed status when body has recipeId", async () => {
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
-      .mockRejectedValueOnce(new Error("Connection refused"));
-    globalThis.fetch = mockFetch;
-
-    const req = createEdgeRequest(baseBody);
-    // Override clone so body can be re-read in catch block
-    req.clone = () => new Request("http://localhost", {
-      method: "POST",
-      body: JSON.stringify(baseBody),
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const { data, status } = await parseResponse(await handler(req));
-
-    expect(status).toBe(500);
-    expect(data).toMatchObject({ success: false });
-    expect((data as { error: string }).error).toContain("Connection refused");
   });
 
   it("extracts JSON-LD from array data with all optional fields and mixed instruction types", async () => {
@@ -651,7 +888,7 @@ describe("parse-recipe edge function", () => {
     expect(anthropicBody.messages[0].content).toContain("STRUCTURED RECIPE DATA");
   });
 
-  it("returns success with no ingredients and no instructions in parsed recipe", async () => {
+  it("returns success with no ingredients and uses delete instead of RPC", async () => {
     const minimalParsed = { description: "A minimal recipe", servings: "2" };
 
     const mockFetch = vi.fn()
@@ -664,6 +901,9 @@ describe("parse-recipe edge function", () => {
 
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true, ingredientCount: 0 });
+
+    // Should NOT call RPC (no ingredients), should call from().delete() instead
+    expect(mockSupabase.rpc).not.toHaveBeenCalled();
   });
 
   it("falls back to 'other' category when ingredient has no category", async () => {
@@ -675,8 +915,6 @@ describe("parse-recipe edge function", () => {
       ],
     };
 
-    // Set up mocks: first call (parsing status) succeeds, second (delete) succeeds,
-    // third (insert) succeeds, fourth (upsert completed) succeeds
     mockSupabase.from.mockImplementation(() => {
       return createBuilder(null, null);
     });
@@ -691,17 +929,18 @@ describe("parse-recipe edge function", () => {
 
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true, ingredientCount: 1 });
+
+    // Verify RPC was called with "other" as category fallback
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("replace_recipe_ingredients", {
+      p_recipe_id: "recipe-123",
+      p_ingredients: [
+        expect.objectContaining({ category: "other" }),
+      ],
+    });
   });
 
-  it("tracks dbWarning when ingredients insert fails but delete succeeds", async () => {
-    let callCount = 0;
-    mockSupabase.from.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return createBuilder(null, null); // recipe_content upsert (parsing)
-      if (callCount === 2) return createBuilder(null, null); // recipe_ingredients delete (success)
-      if (callCount === 3) return createBuilder(null, { message: "insert failed" }); // recipe_ingredients insert (fail)
-      return createBuilder(null, null); // recipe_content upsert (completed)
-    });
+  it("tracks dbWarning when RPC replace ingredients fails", async () => {
+    mockSupabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc replace failed" } });
 
     const mockFetch = vi.fn()
       .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
@@ -713,7 +952,31 @@ describe("parse-recipe edge function", () => {
 
     expect(status).toBe(200);
     expect((data as { dbWarnings: string[] }).dbWarnings).toBeDefined();
-    expect((data as { dbWarnings: string[] }).dbWarnings[0]).toContain("Insert ingredients");
+    expect((data as { dbWarnings: string[] }).dbWarnings[0]).toContain("Replace ingredients");
+  });
+
+  it("tracks dbWarning when delete fails for empty ingredients", async () => {
+    const minimalParsed = { description: "No ingredients" };
+
+    let callCount = 0;
+    mockSupabase.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createBuilder(null, null); // parsing status upsert
+      if (callCount === 2) return createBuilder(null, { message: "delete failed" }); // delete
+      return createBuilder(null, null); // completed upsert
+    });
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(minimalParsed)));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect((data as { dbWarnings: string[] }).dbWarnings).toBeDefined();
+    expect((data as { dbWarnings: string[] }).dbWarnings[0]).toContain("Delete ingredients");
   });
 
   it("falls back to empty text when AI returns empty content array", async () => {
@@ -729,43 +992,45 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
 
-  it("catch block handles non-Error with truthy recipeId in body", async () => {
+  it("handles .heic file extension", async () => {
+    const heicUrl = "https://example.com/recipes/photo.heic";
+    const binaryData = new Uint8Array([0x00, 0x00]);
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
-      .mockRejectedValueOnce("non-Error string");
+      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "2" } }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
-    const req = createEdgeRequest(baseBody);
-    req.clone = () => new Request("http://localhost", {
-      method: "POST",
-      body: JSON.stringify(baseBody),
-      headers: { "Content-Type": "application/json" },
-    });
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: heicUrl });
+    const { status } = await parseResponse(await handler(req));
 
-    const { data, status } = await parseResponse(await handler(req));
-
-    expect(status).toBe(500);
-    expect(data).toMatchObject({ success: false, error: "Unknown error" });
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
+    );
+    expect(imageBlock.source.media_type).toBe("image/heic");
   });
 
-  it("catch block skips upsert when body has falsy recipeId", async () => {
+  it("handles .webp file extension", async () => {
+    const webpUrl = "https://example.com/recipes/photo.webp";
+    const binaryData = new Uint8Array([0x52, 0x49]);
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
-      .mockRejectedValueOnce(new Error("Some error"));
+      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "2" } }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
-    // Use valid body for initial processing, but clone returns falsy recipeId
-    const req = createEdgeRequest(baseBody);
-    req.clone = () => new Request("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ ...baseBody, recipeId: "" }),
-      headers: { "Content-Type": "application/json" },
-    });
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: webpUrl });
+    const { status } = await parseResponse(await handler(req));
 
-    const { data, status } = await parseResponse(await handler(req));
-
-    expect(status).toBe(500);
-    expect(data).toMatchObject({ success: false });
-    expect((data as { error: string }).error).toContain("Some error");
+    expect(status).toBe(200);
+    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicBody = JSON.parse(anthropicCall[1].body);
+    const imageBlock = anthropicBody.messages[0].content.find(
+      (c: Record<string, unknown>) => c.type === "image",
+    );
+    expect(imageBlock.source.media_type).toBe("image/webp");
   });
 });

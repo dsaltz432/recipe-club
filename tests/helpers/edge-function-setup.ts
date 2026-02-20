@@ -104,6 +104,7 @@ export function createMockQueryBuilder<T = unknown>(
 
 export interface MockSupabaseClient {
   from: ReturnType<typeof vi.fn>;
+  rpc: ReturnType<typeof vi.fn>;
   auth: {
     admin: {
       getUserById: ReturnType<typeof vi.fn>;
@@ -135,6 +136,7 @@ export function createMockSupabaseClient(): MockSupabaseClient {
 
   return {
     from: fromFn,
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     auth: {
       admin: {
         getUserById: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
