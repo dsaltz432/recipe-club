@@ -106,12 +106,17 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
     setIsAdding(true);
     try {
       const { data: session } = await supabase.auth.getSession();
+      const userId = session.session?.user.id;
+      if (!userId) {
+        toast.error("Session expired. Please sign in again.");
+        return;
+      }
 
       const { error } = await supabase.from("allowed_users").insert({
         email,
         role: newRole,
         is_club_member: newIsClubMember,
-        invited_by: session.session?.user.id,
+        invited_by: userId,
       });
 
       if (error) throw error;

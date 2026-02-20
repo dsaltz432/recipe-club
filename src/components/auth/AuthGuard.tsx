@@ -12,8 +12,11 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       const authenticated = await isAuthenticated();
+      if (!mounted) return;
       if (!authenticated) {
         navigate("/");
       } else {
@@ -23,6 +26,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     };
 
     checkAuth();
+    return () => { mounted = false; };
   }, [navigate]);
 
   if (isChecking) {

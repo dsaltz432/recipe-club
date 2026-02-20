@@ -961,6 +961,7 @@ const EventDetailPage = () => {
 
         if (!calendarResult.success) {
           console.warn("Failed to update calendar event:", calendarResult.error);
+          toast.warning("Calendar sync failed. The event date was updated but your Google Calendar may be out of sync.");
         }
       }
 

@@ -9,8 +9,11 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       const authenticated = await isAuthenticated();
+      if (!mounted) return;
       if (authenticated) {
         navigate("/dashboard");
       }
@@ -18,6 +21,7 @@ const Index = () => {
     };
 
     checkAuth();
+    return () => { mounted = false; };
   }, [navigate]);
 
   if (isLoading) {

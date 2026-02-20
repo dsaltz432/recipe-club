@@ -57,11 +57,15 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 
   // First try to get the user from the profiles table
-  const { data: profileData } = await supabase
+  const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", sessionData.session.user.id)
     .single();
+
+  if (profileError) {
+    console.error("Profile query failed:", profileError);
+  }
 
   if (profileData) {
     return {

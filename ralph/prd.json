@@ -86,7 +86,7 @@
         "Tests pass with 100% coverage on all required directories (npm run test:coverage)"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "BUG-011: src/lib/auth.ts lines 60-64. The profile .single() query doesn't destructure error. Fix: const { data: profileData, error: profileError } = await supabase... then if (profileError) console.error('Profile query failed:', profileError). BUG-012: src/components/admin/UserManagement.tsx lines 108-114. invited_by uses session.session?.user.id without null check. Fix: const userId = session.session?.user.id; if (!userId) { toast.error('Session expired'); return; }. BUG-013: src/pages/EventDetailPage.tsx lines 954-965. Calendar update failure only console.warns. Fix: add toast.error('Calendar sync failed. The event date was updated but your Google Calendar may be out of sync.'). BUG-016: src/components/recipes/RecipeHub.tsx lines 123, 174. Current code already has ternary guard: ingredientName ? getIngredientColor(ingredientName) : undefined. Verify this is correct and no other unguarded calls exist. BUG-017: src/components/auth/AuthGuard.tsx (43 lines). No cleanup in useEffect. Fix: add let mounted = true at top of effect, check if (mounted) before setIsAuthed/setIsChecking, return () => { mounted = false } cleanup. Apply same pattern to src/pages/Index.tsx lines 11-21."
     },
     {

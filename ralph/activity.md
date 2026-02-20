@@ -54,8 +54,8 @@ When edge functions use `supabase.rpc()`, add `rpc` to `MockSupabaseClient` inte
 
 ## Current Status
 **Last Updated:** 2026-02-20
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ---
 
@@ -171,5 +171,36 @@ Also: removed two unreachable guards (`if (!isAdmin)` in cancelEvent, `if (!edit
 - V8 branch coverage counts `||` fallbacks in `a?.b || c` as separate branches — when a guard makes the falsy branch unreachable, remove the fallback or use non-null assertion
 - When mocking EventRatingDialog in parent tests, use the full alias path `@/components/events/EventRatingDialog` not relative `./EventRatingDialog`
 - PostgREST `.in('col', [])` has undefined behavior — always guard with `if (ids.length > 0)`
+
+---
+
+## 2026-02-20 — US-005: Fix error handling and null safety bugs
+
+### What was implemented
+Five bugs fixed across auth.ts, UserManagement.tsx, EventDetailPage.tsx, AuthGuard.tsx, and Index.tsx:
+
+- **BUG-011**: auth.ts `getCurrentUser` now destructures `error: profileError` from the profile `.single()` query and logs it with `console.error("Profile query failed:", profileError)`. Fallback to session data still occurs when profileData is null.
+- **BUG-012**: UserManagement.tsx `handleAddUser` extracts `userId = session.session?.user.id` and checks it's truthy before proceeding. Shows `toast.error("Session expired. Please sign in again.")` and returns early if not.
+- **BUG-013**: EventDetailPage.tsx edit dialog now shows `toast.warning("Calendar sync failed. The event date was updated but your Google Calendar may be out of sync.")` when Google Calendar update fails, instead of only `console.warn`.
+- **BUG-016**: Verified RecipeHub.tsx already has correct ternary guards at lines 123 and 174: `ingredientName ? getIngredientColor(ingredientName) : undefined`. No other unguarded calls found anywhere in the codebase.
+- **BUG-017**: AuthGuard.tsx and Index.tsx useEffect hooks now use `let mounted = true` pattern with `if (!mounted) return` before state updates and `return () => { mounted = false }` cleanup to prevent state updates on unmounted components.
+
+### Files changed
+- `src/lib/auth.ts` (profile error destructuring and logging)
+- `src/components/admin/UserManagement.tsx` (session null check with early return)
+- `src/pages/EventDetailPage.tsx` (toast warning for calendar sync failure)
+- `src/components/auth/AuthGuard.tsx` (mounted flag cleanup)
+- `src/pages/Index.tsx` (mounted flag cleanup)
+- `tests/unit/lib/auth.test.ts` (added profile error logging test)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1076 tests, 100% coverage on all required directories)
+- Lint: pass (0 errors)
+
+### Learnings for future iterations
+- BUG-016 was already fixed — always grep the full codebase to verify before making changes
+- `toast.warning()` exists in sonner for non-critical warnings (vs `toast.error()` for failures)
+- The mounted flag pattern is standard React cleanup for async useEffect — prevents "Can't perform a React state update on an unmounted component" warnings
 
 ---
