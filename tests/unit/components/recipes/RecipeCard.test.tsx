@@ -373,6 +373,88 @@ describe("RecipeCard - Edge Cases", () => {
   });
 });
 
+describe("RecipeCard - Personal Recipe Edit/Delete", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit and delete buttons for personal recipes with callbacks", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+  });
+
+  it("does not show edit/delete buttons when not personal", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: false });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+  });
+
+  it("does not show edit/delete buttons when callbacks are not provided", () => {
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+  });
+
+  it("calls onEdit with recipe when edit button is clicked", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    expect(onEdit).toHaveBeenCalledWith(recipe);
+  });
+
+  it("calls onDelete with recipe id when delete button is clicked", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true, id: "recipe-42" });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    expect(onDelete).toHaveBeenCalledWith("recipe-42");
+  });
+
+  it("does not show edit/delete when isPersonal is undefined", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: undefined });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+  });
+
+  it("shows Personal badge alongside edit/delete buttons", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.getByText("Personal")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+  });
+});
+
 describe("RecipeCard - Ratings Display", () => {
   it("displays rating summary when available", () => {
     const recipe = createMockRecipe({

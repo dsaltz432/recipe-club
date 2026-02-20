@@ -2236,3 +2236,519 @@ describe("RecipeHub - Sort Options", () => {
     });
   });
 });
+
+describe("RecipeHub - Edit Personal Recipe", () => {
+  const personalRecipesData = [
+    {
+      id: "personal-1",
+      name: "My Home Recipe",
+      url: "https://example.com/home",
+      event_id: null,
+      ingredient_id: null,
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      profiles: { name: "Test User", avatar_url: null },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows edit and delete buttons on personal recipe cards", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("My Home Recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+  });
+
+  it("opens edit dialog with pre-filled values when edit is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/recipe name/i)).toHaveValue("My Home Recipe");
+      expect(screen.getByLabelText(/recipe url/i)).toHaveValue("https://example.com/home");
+    });
+  });
+
+  it("saves edited recipe successfully", async () => {
+    const mockUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(personalRecipesData);
+        builder.update = mockUpdate;
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/recipe name/i), {
+      target: { value: "Updated Recipe" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith({
+        name: "Updated Recipe",
+        url: "https://example.com/home",
+      });
+    });
+  });
+
+  it("shows error toast when edit fails", async () => {
+    const { toast } = await import("sonner");
+    const mockUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(personalRecipesData);
+        builder.update = mockUpdate;
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update recipe");
+    });
+  });
+
+  it("closes edit dialog when cancel is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Edit Recipe")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows URL validation error in edit dialog", async () => {
+    const { toast } = await import("sonner");
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe url/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/recipe url/i), {
+      target: { value: "not-a-url" },
+    });
+
+    // Shows inline validation text
+    await waitFor(() => {
+      expect(screen.getByText("URL must start with http:// or https://")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "Please enter a valid URL starting with http:// or https://"
+      );
+    });
+  });
+
+  it("disables save button when name is empty", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/recipe name/i), {
+      target: { value: "" },
+    });
+
+    expect(screen.getByRole("button", { name: /save changes/i })).toBeDisabled();
+  });
+
+  it("closes edit dialog via Escape key (onOpenChange)", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Press Escape to close via Dialog's onOpenChange
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Edit Recipe")).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not show edit/delete buttons on club tab", async () => {
+    const clubRecipesData = [
+      {
+        id: "recipe-1",
+        name: "Club Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipe")).toBeInTheDocument();
+    });
+
+    // Club tab should not show edit/delete buttons
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+  });
+
+  it("opens edit dialog with empty URL for recipe without URL", async () => {
+    const recipesNoUrl = [
+      {
+        id: "personal-1",
+        name: "No URL Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(recipesNoUrl);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe url/i)).toHaveValue("");
+    });
+  });
+
+  it("saves edit with empty URL (URL is optional)", async () => {
+    const mockUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(personalRecipesData);
+        builder.update = mockUpdate;
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe url/i)).toBeInTheDocument();
+    });
+
+    // Clear the URL
+    fireEvent.change(screen.getByLabelText(/recipe url/i), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith({
+        name: "My Home Recipe",
+        url: null,
+      });
+    });
+  });
+});
+
+describe("RecipeHub - Delete Personal Recipe", () => {
+  const personalRecipesData = [
+    {
+      id: "personal-1",
+      name: "Recipe To Delete",
+      url: null,
+      event_id: null,
+      ingredient_id: null,
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      profiles: { name: "Test User", avatar_url: null },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows delete confirmation dialog when delete is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
+      expect(
+        screen.getByText(/are you sure you want to delete this recipe/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("deletes recipe when confirmed", async () => {
+    const { toast } = await import("sonner");
+    const mockDelete = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(personalRecipesData);
+        builder.delete = mockDelete;
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
+    });
+
+    // Click the "Delete" confirmation button
+    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() => {
+      expect(mockDelete).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith("Recipe deleted!");
+    });
+  });
+
+  it("shows error toast when delete fails", async () => {
+    const { toast } = await import("sonner");
+    const mockDelete = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(personalRecipesData);
+        builder.delete = mockDelete;
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to delete recipe");
+    });
+  });
+
+  it("closes delete dialog when cancel is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
+    });
+
+    // Click cancel in the AlertDialog
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Delete Recipe")).not.toBeInTheDocument();
+    });
+  });
+});

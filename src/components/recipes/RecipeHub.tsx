@@ -9,9 +9,27 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Search, BookOpen, Plus } from "lucide-react";
+import { Search, BookOpen, Plus, Loader2 } from "lucide-react";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary } from "@/types";
 import RecipeCard from "./RecipeCard";
 import AddPersonalRecipeDialog from "./AddPersonalRecipeDialog";
@@ -43,6 +61,12 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [showAddPersonal, setShowAddPersonal] = useState(false);
   const [clubCount, setClubCount] = useState<number | null>(null);
   const [personalCount, setPersonalCount] = useState<number | null>(null);
+  const [editingRecipe, setEditingRecipe] = useState<RecipeWithNotes | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [deletingRecipeId, setDeletingRecipeId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadRecipes = async () => {
     try {
@@ -306,6 +330,72 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     }
   };
 
+  const isValidUrl = (value: string) => {
+    return value.trim().startsWith("http://") || value.trim().startsWith("https://");
+  };
+
+  const handleEditRecipe = (recipe: RecipeWithNotes) => {
+    setEditingRecipe(recipe);
+    setEditName(recipe.name);
+    setEditUrl(recipe.url || "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (editUrl.trim() && !isValidUrl(editUrl)) {
+      toast.error("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+
+    setIsEditing(true);
+    try {
+      const { error } = await supabase
+        .from("recipes")
+        .update({
+          name: editName.trim(),
+          url: editUrl.trim() || null,
+        })
+        .eq("id", editingRecipe!.id);
+
+      if (error) throw error;
+
+      toast.success("Recipe updated!");
+      setEditingRecipe(null);
+      setIsLoading(true);
+      loadRecipes();
+    } catch (error) {
+      console.error("Error updating recipe:", error);
+      toast.error("Failed to update recipe");
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    setDeletingRecipeId(recipeId);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("recipes")
+        .delete()
+        .eq("id", deletingRecipeId!);
+
+      if (error) throw error;
+
+      toast.success("Recipe deleted!");
+      setDeletingRecipeId(null);
+      setIsLoading(true);
+      loadRecipes();
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
+      toast.error("Failed to delete recipe");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   useEffect(() => {
     loadUsedIngredients();
   }, [userId]);
@@ -455,6 +545,8 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
+                onEdit={subTab === "personal" ? handleEditRecipe : undefined}
+                onDelete={subTab === "personal" ? handleDeleteRecipe : undefined}
               />
             ))}
           </div>
@@ -473,6 +565,94 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
           }}
         />
       )}
+
+      {/* Edit Personal Recipe Dialog */}
+      <Dialog
+        open={!!editingRecipe}
+        onOpenChange={() => setEditingRecipe(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit Recipe</DialogTitle>
+            <DialogDescription>Update your personal recipe details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-recipe-name">Recipe Name *</Label>
+              <Input
+                id="edit-recipe-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter recipe name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-recipe-url">Recipe URL (optional)</Label>
+              <Input
+                id="edit-recipe-url"
+                type="url"
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                placeholder="https://..."
+                className={editUrl.trim() && !isValidUrl(editUrl) ? "border-red-500" : ""}
+              />
+              {editUrl.trim() && !isValidUrl(editUrl) && (
+                <p className="text-sm text-red-500">
+                  URL must start with http:// or https://
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditingRecipe(null)}
+              disabled={isEditing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={isEditing || !editName.trim()}
+              className="bg-purple hover:bg-purple-dark"
+            >
+              {isEditing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!deletingRecipeId}
+        onOpenChange={() => setDeletingRecipeId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Recipe</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this recipe? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

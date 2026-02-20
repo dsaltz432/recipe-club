@@ -170,7 +170,7 @@
         "Tests pass with 100% coverage on recipes directory (npm run test:coverage)"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "UX Audit Section 6: 'No way to edit or delete personal recipes from Recipe Hub.' RecipeCard.tsx (248 lines) has isPersonal prop (line 38) but no edit/delete UI. Fix: (1) Add onEdit?: (recipe: RecipeWithNotes) => void and onDelete?: (recipeId: string) => void props to RecipeCard. (2) When isPersonal && onEdit && onDelete, render small icon buttons (Pencil, Trash2 from lucide-react) in the card header next to the Personal badge. (3) In RecipeHub.tsx, add handleEditPersonalRecipe that opens a dialog (reuse the pattern from AddPersonalRecipeDialog — a Dialog with name + URL fields, pre-filled with current values, that calls supabase.from('recipes').update({name, url}).eq('id', recipeId)). (4) Add handleDeletePersonalRecipe that shows an AlertDialog confirmation then calls supabase.from('recipes').delete().eq('id', recipeId) and refreshes the list. (5) Pass these as onEdit/onDelete to RecipeCard only on the personal tab. RecipeCard tests: tests/unit/components/recipes/RecipeCard.test.tsx. RecipeHub tests: tests/unit/components/recipes/RecipeHub.test.tsx."
     },
     {

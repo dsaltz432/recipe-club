@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2 } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 
@@ -40,9 +40,11 @@ interface RecipeWithNotes extends Recipe {
 
 interface RecipeCardProps {
   recipe: RecipeWithNotes;
+  onEdit?: (recipe: RecipeWithNotes) => void;
+  onDelete?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const hasDetails = recipe.url || recipe.notes.length > 0;
@@ -99,6 +101,29 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             <Badge variant="outline" className="border-purple text-purple bg-purple/5">
               Personal
             </Badge>
+          )}
+
+          {recipe.isPersonal && onEdit && onDelete && (
+            <div className="flex items-center gap-1 ml-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                aria-label="Edit recipe"
+                onClick={() => onEdit(recipe)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                aria-label="Delete recipe"
+                onClick={() => onDelete(recipe.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           )}
 
           {recipe.ingredientName && (
