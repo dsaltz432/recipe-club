@@ -162,7 +162,7 @@ Replace `300` with the delay in seconds (e.g., 5 min = 300, 10 min = 600). `caff
 ### Run immediately
 
 ```bash
-caffeinate -i bash -c "./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1" &
+caffeinate -i ./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1 &
 ```
 
 ### Monitor progress
