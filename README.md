@@ -147,45 +147,29 @@ npm run test            # Run in watch mode
 
 All files in `src/components/events/`, `src/components/ingredients/`, `src/components/recipes/`, and `src/lib/` must have **100% test coverage**. The only exception is `src/components/wheel/IngredientWheel.tsx` (~55% is acceptable).
 
-## Scheduling Ralph (Autonomous Agent)
+## Running Ralph (Autonomous Agent)
 
-Ralph (`ralph.sh`) can be scheduled to run at a specific time using the macOS `at` command.
+Ralph (`ralph.sh`) runs Claude Code in a loop to autonomously implement tasks from `prd.json`. Run from the repo root.
 
-### One-time setup
-
-Enable the `atrun` daemon (requires admin password, only needed once):
+### Schedule a delayed run
 
 ```bash
-sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.atrun.plist
+caffeinate -i bash -c "sleep 300 && ./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1" &
 ```
 
-To check if it's already running:
+Replace `300` with the delay in seconds (e.g., 5 min = 300, 10 min = 600). `caffeinate -i` prevents the system from sleeping until ralph finishes.
+
+### Run immediately
 
 ```bash
-sudo launchctl list | grep atrun
+caffeinate -i bash -c "./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1" &
 ```
 
-If loaded, you'll see a line like `-  0  com.apple.atrun`. No output means it's not loaded.
-
-### Schedule a run
+### Monitor progress
 
 ```bash
-echo 'cd /Users/sarahglickman/Documents/Daniel/repositories/recipe-club && ./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1' | at 8:40 AM
+tail -f ./ralph/ralph.log
 ```
-
-Monitor progress live with:
-
-```bash
-tail -f /Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.log
-```
-
-### Useful commands
-
-| Command | What it does |
-|---------|-------------|
-| `atq` | List scheduled jobs |
-| `at -c <job_number>` | Inspect a specific job |
-| `atrm <job_number>` | Remove a scheduled job |
 
 ## Project Structure
 
