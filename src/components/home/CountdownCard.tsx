@@ -387,8 +387,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
         <AlertDialogHeader>
           <AlertDialogTitle>Cancel Event?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will cancel the {event.ingredientName} event and remove all associated recipes.
-            This action cannot be undone.
+            This will permanently delete the {event.ingredientName} event and all associated recipes, notes, ratings, meal plan references, and Google Calendar event. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
