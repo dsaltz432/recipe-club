@@ -568,7 +568,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   };
 
-  const markSlotAsCooked = async (slotItems: MealPlanItem[]) => {
+  const markSlotAsCooked = async (slotItems: MealPlanItem[], silent = false) => {
     try {
       const itemIds = slotItems.map((i) => i.id);
       const updatePayload = { cooked_at: new Date().toISOString() };
@@ -585,7 +585,9 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           itemIds.includes(item.id) ? { ...item, cookedAt: now } : item
         )
       );
-      toast.success("Marked as cooked!");
+      if (!silent) {
+        toast.success("Marked as cooked!");
+      }
     } catch (error) {
       console.error("Error marking as cooked:", error);
       toast.error("Failed to mark as cooked");
@@ -677,7 +679,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         i.mealType === selectedSlotForRating!.mealType
     );
 
-    await markSlotAsCooked(slotItems);
+    await markSlotAsCooked(slotItems, true);
     setRatingDialogOpen(false);
     setSelectedSlotForRating(null);
   };

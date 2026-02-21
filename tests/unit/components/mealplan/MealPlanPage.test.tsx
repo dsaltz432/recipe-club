@@ -2927,15 +2927,15 @@ describe("MealPlanPage", () => {
         expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
       });
 
-      // Complete rating
+      // Complete rating — silent=true suppresses "Marked as cooked!" toast
       fireEvent.click(screen.getByText("Complete Rating"));
 
       await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith("Marked as cooked!");
+        expect(screen.queryByTestId("rating-dialog")).not.toBeInTheDocument();
       });
 
-      // Dialog should be closed
-      expect(screen.queryByTestId("rating-dialog")).not.toBeInTheDocument();
+      // "Marked as cooked!" toast should NOT appear (silent mode after rating)
+      expect(toast.success).not.toHaveBeenCalledWith("Marked as cooked!");
     });
 
     it("closes rating dialog on cancel without marking as cooked", async () => {
