@@ -1062,7 +1062,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Waffles" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Save Changes"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Updated meal to "Waffles"');
@@ -1128,7 +1128,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "New Recipe Name" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Save Changes"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Updated meal to "New Recipe Name"');
@@ -1190,7 +1190,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Waffles" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Save Changes"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to update meal");
@@ -1257,7 +1257,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Waffles" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Save Changes"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to update meal");
@@ -1995,7 +1995,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Chicken", url: null },
+                  recipes: { name: "Chicken", url: "https://example.com/chicken" },
                 },
               ],
               error: null,
@@ -2052,7 +2052,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Chicken", url: null },
+                  recipes: { name: "Chicken", url: "https://example.com/chicken" },
                 },
               ],
               error: null,
@@ -2072,7 +2072,7 @@ describe("MealPlanPage", () => {
         if (table === "recipes") {
           return createMockQueryBuilder({
             in: vi.fn().mockResolvedValue({
-              data: [{ id: "recipe-1", name: "Chicken", url: null }],
+              data: [{ id: "recipe-1", name: "Chicken", url: "https://example.com/chicken" }],
               error: null,
             }),
           });
@@ -2302,24 +2302,6 @@ describe("MealPlanPage", () => {
             }),
           });
         }
-        if (table === "recipe_ingredients") {
-          return createMockQueryBuilder({
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-          });
-        }
-        if (table === "recipe_content") {
-          return createMockQueryBuilder({
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-          });
-        }
-        if (table === "recipes") {
-          return createMockQueryBuilder({
-            in: vi.fn().mockResolvedValue({
-              data: [{ id: "recipe-1", name: "No URL Recipe", url: null }],
-              error: null,
-            }),
-          });
-        }
         return createMockQueryBuilder();
       });
 
@@ -2332,12 +2314,13 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
-      await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
-      });
+      // Meals with recipe_id but no URL now show the "no linked recipes" message
+      // instead of the GroceryListSection
+      expect(
+        screen.getByText("Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.")
+      ).toBeInTheDocument();
 
       // No parse button should be shown since the recipe has no URL
-      // The GroceryListSection only shows parse buttons for recipes with URLs
       expect(screen.queryByText('Parse "No URL Recipe"')).not.toBeInTheDocument();
       // And invoke should never have been called
       expect(mockInvoke).not.toHaveBeenCalled();
@@ -2384,7 +2367,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Chicken", url: null },
+                  recipes: { name: "Chicken", url: "https://example.com/chicken" },
                 },
               ],
               error: null,
@@ -2404,7 +2387,7 @@ describe("MealPlanPage", () => {
         if (table === "recipes") {
           return createMockQueryBuilder({
             in: vi.fn().mockResolvedValue({
-              data: [{ id: "recipe-1", name: "Chicken", url: null }],
+              data: [{ id: "recipe-1", name: "Chicken", url: "https://example.com/chicken" }],
               error: null,
             }),
           });
@@ -2460,7 +2443,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Chicken", url: null },
+                  recipes: { name: "Chicken", url: "https://example.com/chicken" },
                 },
               ],
               error: null,
@@ -2518,7 +2501,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Soup", url: null },
+                  recipes: { name: "Soup", url: "https://example.com/soup" },
                 },
               ],
               error: null,
@@ -2572,7 +2555,7 @@ describe("MealPlanPage", () => {
         if (table === "recipes") {
           return createMockQueryBuilder({
             in: vi.fn().mockResolvedValue({
-              data: [{ id: "recipe-1", name: "Soup", url: null }],
+              data: [{ id: "recipe-1", name: "Soup", url: "https://example.com/soup" }],
               error: null,
             }),
           });
@@ -2616,7 +2599,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Chicken", url: null },
+                  recipes: { name: "Chicken", url: "https://example.com/chicken" },
                 },
               ],
               error: null,
@@ -2651,7 +2634,7 @@ describe("MealPlanPage", () => {
         if (table === "recipes") {
           return createMockQueryBuilder({
             in: vi.fn().mockResolvedValue({
-              data: [{ id: "recipe-1", name: "Chicken", url: null }],
+              data: [{ id: "recipe-1", name: "Chicken", url: "https://example.com/chicken" }],
               error: null,
             }),
           });
@@ -2826,7 +2809,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Pancakes", url: null },
+                  recipes: { name: "Pancakes", url: "https://example.com/pancakes" },
                   event_id: "event-123",
                 },
               ],
@@ -2869,7 +2852,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Pancakes", url: null },
+                  recipes: { name: "Pancakes", url: "https://example.com/pancakes" },
                 },
               ],
               error: null,
@@ -2919,7 +2902,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Pancakes", url: null },
+                  recipes: { name: "Pancakes", url: "https://example.com/pancakes" },
                   event_id: "event-123",
                 },
               ],
@@ -2973,7 +2956,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Pancakes", url: null },
+                  recipes: { name: "Pancakes", url: "https://example.com/pancakes" },
                   event_id: "event-123",
                 },
               ],
@@ -3244,7 +3227,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Pancakes", url: null },
+                  recipes: { name: "Pancakes", url: "https://example.com/pancakes" },
                 },
               ],
               error: null,
@@ -3297,7 +3280,7 @@ describe("MealPlanPage", () => {
                   custom_name: null,
                   custom_url: null,
                   sort_order: 0,
-                  recipes: { name: "Pancakes", url: null },
+                  recipes: { name: "Pancakes", url: "https://example.com/pancakes" },
                 },
                 {
                   id: "item-2",
@@ -3477,7 +3460,7 @@ describe("MealPlanPage", () => {
                   day_of_week: 0,
                   meal_type: "breakfast",
                   custom_name: null,
-                  custom_url: null,
+                  custom_url: "https://example.com/unnamed",
                   sort_order: 0,
                   recipes: null, // No joined recipe data
                   event_id: "event-123",
@@ -3678,15 +3661,16 @@ describe("MealPlanPage", () => {
       });
 
       // Submit the edit form
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Save Changes"));
 
       await waitFor(() => {
-        // AddMealDialog normalizes filename: "recipe-photo" → "recipe photo" (hyphens to spaces)
+        // In edit mode, the name field is pre-filled with the existing meal name,
+        // so the filename auto-fill doesn't apply (only applies when name is empty)
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
           body: {
             recipeId: "recipe-edit-upload",
             recipeUrl: "https://storage.example.com/recipe-images/mock-uuid-456.jpg",
-            recipeName: "recipe photo",
+            recipeName: "Old Meal",
           },
         });
       });
@@ -3769,7 +3753,7 @@ describe("MealPlanPage", () => {
       });
 
       // Submit the edit form
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Save Changes"));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");

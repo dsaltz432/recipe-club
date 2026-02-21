@@ -345,7 +345,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
               mode="single"
               selected={editEventDate}
               onSelect={setEditEventDate}
-              disabled={(date) => date < new Date()}
+              disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
               initialFocus
             />
           </div>

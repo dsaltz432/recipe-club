@@ -622,7 +622,7 @@ const EventDetailPage = () => {
       toast.error("Please enter a recipe name");
       return;
     }
-    if (!recipeUrl.trim() || !isValidUrl(recipeUrl)) {
+    if (recipeUrl.trim() && !isValidUrl(recipeUrl)) {
       toast.error("Please enter a valid URL starting with http:// or https://");
       return;
     }
@@ -1541,7 +1541,7 @@ const EventDetailPage = () => {
                 </Button>
                 <Button
                   onClick={handleSubmitRecipe}
-                  disabled={isSubmitting || !recipeName.trim() || !isValidUrl(recipeUrl)}
+                  disabled={isSubmitting || !recipeName.trim() || (!!recipeUrl.trim() && !isValidUrl(recipeUrl))}
                   className="bg-purple hover:bg-purple-dark"
                 >
                   {isSubmitting ? "Adding..." : "Add Recipe"}

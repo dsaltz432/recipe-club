@@ -1,7 +1,8 @@
-import { Download } from "lucide-react";
+import { Download, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CombinedGroceryItem } from "@/types";
-import { generateCSV, downloadCSV, groupByCategory } from "@/lib/groceryList";
+import { generateCSV, generatePlainText, downloadCSV, groupByCategory } from "@/lib/groceryList";
+import { toast } from "sonner";
 
 interface GroceryExportMenuProps {
   items: CombinedGroceryItem[];
@@ -16,11 +17,28 @@ const GroceryExportMenu = ({ items, eventName }: GroceryExportMenuProps) => {
     downloadCSV(csv, filename);
   };
 
+  const handleCopyToClipboard = async () => {
+    const grouped = groupByCategory(items);
+    const text = generatePlainText(grouped);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
+
   return (
-    <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
-      <Download className="h-4 w-4 mr-1" />
-      CSV
-    </Button>
+    <div className="flex gap-1">
+      <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
+        <Copy className="h-4 w-4 mr-1" />
+        Copy
+      </Button>
+      <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
+        <Download className="h-4 w-4 mr-1" />
+        CSV
+      </Button>
+    </div>
   );
 };
 

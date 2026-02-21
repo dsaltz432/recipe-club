@@ -596,10 +596,10 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     const slotItems = items.filter(
       (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
     );
-    const recipesInSlot = slotItems.filter((i) => i.recipeId);
+    const recipesWithUrls = slotItems.filter((i) => i.recipeId && (i.recipeUrl || i.customUrl));
 
-    if (recipesInSlot.length === 0) {
-      // No recipes to rate, just mark as cooked directly
+    if (recipesWithUrls.length === 0) {
+      // No recipes with URLs to rate, just mark as cooked directly
       await markSlotAsCooked(slotItems);
       return;
     }
@@ -658,7 +658,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       mealType,
       eventId,
       eventDate: slotDate.toISOString().split("T")[0],
-      recipes: recipesInSlot.map((item) => ({
+      recipes: recipesWithUrls.map((item) => ({
         recipe: {
           id: item.recipeId!,
           name: item.recipeName || item.customName || "Unnamed",
@@ -787,6 +787,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               onAddCustomMeal={handleAddCustomMeal}
               onAddRecipeMeal={handleAddRecipeMeal}
               editingItemName={editingItem ? (editingItem.recipeName || editingItem.customName || "Unnamed meal") : undefined}
+              editingItemUrl={editingItem ? (editingItem.recipeUrl || editingItem.customUrl || "") : undefined}
             />
           )}
         </>
@@ -805,7 +806,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               Manage Pantry
             </Button>
           </div>
-          {items.some((i) => i.recipeId) ? (
+          {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) ? (
             <GroceryListSection
               recipes={groceryRecipes}
               recipeIngredients={recipeIngredients}

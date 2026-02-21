@@ -56,6 +56,7 @@ import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
 interface PersonalEventData {
   eventId: string;
   eventDate: string;
+  ingredientName?: string;
   status: "scheduled" | "completed";
   createdBy?: string;
   recipesWithNotes: EventRecipeWithRatings[];
@@ -265,9 +266,14 @@ const PersonalMealDetailPage = () => {
         };
       });
 
+      const mealName = recipesWithNotes.length > 0
+        ? recipesWithNotes.map(r => r.recipe.name).join(", ")
+        : "Personal Meal";
+
       setEvent({
         eventId: eventData.id,
         eventDate: eventData.event_date,
+        ingredientName: mealName,
         status: eventData.status as "scheduled" | "completed",
         createdBy: eventData.created_by || undefined,
         recipesWithNotes,

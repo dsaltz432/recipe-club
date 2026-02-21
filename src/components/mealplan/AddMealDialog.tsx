@@ -30,6 +30,7 @@ interface AddMealDialogProps {
   onAddCustomMeal: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal: (recipes: Array<{ id: string; name: string; url?: string }>) => void;
   editingItemName?: string;
+  editingItemUrl?: string;
 }
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -46,6 +47,7 @@ const AddMealDialog = ({
   onAddCustomMeal,
   onAddRecipeMeal,
   editingItemName,
+  editingItemUrl,
 }: AddMealDialogProps) => {
   const [activeTab, setActiveTab] = useState<"custom" | "recipes">("custom");
   const [name, setName] = useState("");
@@ -62,8 +64,8 @@ const AddMealDialog = ({
 
   const resetForm = () => {
     setActiveTab("custom");
-    setName("");
-    setUrl("");
+    setName(editingItemName || "");
+    setUrl(editingItemUrl || "");
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
@@ -71,6 +73,13 @@ const AddMealDialog = ({
     setIsUploadingFile(false);
     setFileUploaded(false);
   };
+
+  useEffect(() => {
+    if (open) {
+      setName(editingItemName || "");
+      setUrl(editingItemUrl || "");
+    }
+  }, [open, editingItemName, editingItemUrl]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -277,7 +286,7 @@ const AddMealDialog = ({
                 disabled={!name.trim() || (!!url.trim() && !isValidUrl(url))}
                 className="bg-purple hover:bg-purple-dark"
               >
-                Add to Plan
+                {editingItemName ? "Save Changes" : "Add to Plan"}
               </Button>
             </div>
           </div>

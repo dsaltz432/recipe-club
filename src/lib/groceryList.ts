@@ -755,10 +755,15 @@ export function groupByCategory(
 }
 
 function simplePluralize(name: string): string {
+  // Avoid double-pluralization: if already looks plural, return as-is
+  const lastWord = name.split(" ").pop()!;
+  if (lastWord.length > 2 && lastWord.endsWith("s") && !lastWord.endsWith("ss") && !lastWord.endsWith("us")) {
+    return name;
+  }
   if (name.endsWith("leaf")) {
     return name.slice(0, -4) + "leaves";
   }
-  if (name.endsWith("s") || name.endsWith("sh") || name.endsWith("ch")) {
+  if (name.endsWith("ss") || name.endsWith("sh") || name.endsWith("ch") || name.endsWith("x") || name.endsWith("z")) {
     return name + "es";
   }
   if (name.endsWith("y") && !"aeiou".includes(name[name.length - 2])) {
@@ -925,6 +930,20 @@ export async function smartCombineIngredients(
     console.error("Smart combine failed, falling back to naive combine:", error);
     return null;
   }
+}
+
+export function generatePlainText(
+  groupedItems: Map<GroceryCategory, CombinedGroceryItem[]>
+): string {
+  const lines: string[] = [];
+  for (const [category, items] of groupedItems) {
+    lines.push(GROCERY_CATEGORIES[category].toUpperCase());
+    for (const item of items) {
+      lines.push(`  ${formatGroceryItem(item)}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n").trim();
 }
 
 export function downloadCSV(csvContent: string, filename: string): void {

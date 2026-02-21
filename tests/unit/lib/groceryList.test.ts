@@ -20,6 +20,7 @@ import {
   groupByCategory,
   formatGroceryItem,
   generateCSV,
+  generatePlainText,
   downloadCSV,
   filterPantryItems,
   filterSmartPantryItems,
@@ -3322,6 +3323,31 @@ describe("groceryList", () => {
       const csv = generateCSV(grouped);
       const lines = csv.split("\n");
       expect(lines[1]).toBe("Dairy,butter,1 1/2,tbsp,Recipe A");
+    });
+  });
+
+  describe("generatePlainText", () => {
+    it("generates plain text grouped by category", () => {
+      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      grouped.set("produce", [
+        { name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["R1"] },
+        { name: "garlic", totalQuantity: 3, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
+      ]);
+      grouped.set("dairy", [
+        { name: "butter", totalQuantity: 1, unit: "tbsp", category: "dairy", sourceRecipes: ["R1"] },
+      ]);
+
+      const text = generatePlainText(grouped);
+      expect(text).toContain("PRODUCE");
+      expect(text).toContain("  2 onions");
+      expect(text).toContain("  3 garlic cloves");
+      expect(text).toContain("DAIRY");
+      expect(text).toContain("  1 tbsp butter");
+    });
+
+    it("returns empty string for empty map", () => {
+      const text = generatePlainText(new Map());
+      expect(text).toBe("");
     });
   });
 
