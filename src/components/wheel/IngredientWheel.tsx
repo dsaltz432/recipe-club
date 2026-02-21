@@ -188,6 +188,20 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
     spinWheel();
   };
 
+  // Calculate font size for wheel segment labels to prevent text overflow.
+  // Scales down from 11px for long names in narrow segments, minimum 7px.
+  const getSegmentFontSize = (name: string, segmentAngle: number): number => {
+    const defaultSize = 11;
+    const minSize = 7;
+    // Approximate available width based on segment angle and radius
+    const availableWidth = Math.min(90, segmentAngle * 1.2);
+    // Estimate text width: ~6.5px per character at 11px font
+    const estimatedTextWidth = name.length * 6.5;
+    if (estimatedTextWidth <= availableWidth) return defaultSize;
+    const scale = availableWidth / estimatedTextWidth;
+    return Math.max(minSize, Math.round(defaultSize * scale * 10) / 10);
+  };
+
   // Generate wheel segments
   const renderWheel = () => {
     if (bankIngredients.length === 0) {
@@ -243,16 +257,19 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
             ? "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)"
             : "1px 1px 2px rgba(255,255,255,0.7), -1px -1px 2px rgba(255,255,255,0.7), 0 0 4px rgba(255,255,255,0.5)";
 
+          const fontSize = getSegmentFontSize(ingredient.name, segmentAngle);
+
           return (
             <div
               key={ingredient.id}
-              className="absolute text-[11px] font-bold"
+              className="absolute font-bold"
               style={{
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
                 color: textColor,
                 textShadow,
+                fontSize: `${fontSize}px`,
                 whiteSpace: "nowrap",
                 opacity: ingredient.usedCount > 2 ? 0.85 : 1,
               }}
