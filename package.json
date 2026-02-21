@@ -12,10 +12,9 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "dev:local": "supabase start && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt &  vite",
+    "dev:local": "supabase stop && supabase start && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt & vite",
     "dev:reset": "supabase db reset",
     "dev:stop": "supabase stop",
-    "test:combine": "cd test-combine && npm run dev",
     "deploy:functions": "supabase functions deploy --no-verify-jwt"
   },
   "dependencies": {

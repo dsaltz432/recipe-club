@@ -19,11 +19,7 @@ export default defineConfig({
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
     testTimeout: 15000,
     pool: "forks",
-    poolOptions: {
-      forks: {
-        maxForks: 4,
-      },
-    },
+    maxForks: 4,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

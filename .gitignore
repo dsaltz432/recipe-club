@@ -31,20 +31,8 @@ supabase/functions/.env
 # Test coverage reports
 coverage/
 
-# Ralph agent
-scripts/ralph/
-
-# Test app env
-test-combine/.env
-
 # Generated test/audit artifacts
-test-combine/combine-results.json
-test-combine/combine-evaluation-report.json
-test-combine/combine-final-evaluation-report.json
-test-combine/final-evaluation-report.json
-test-combine/tsconfig.tsbuildinfo
 E2E_TEST_RESULTS_*.md
 
 # Ralph loop
-scripts/ralph/
 ralph/
