@@ -170,7 +170,7 @@ If loaded, you'll see a line like `-  0  com.apple.atrun`. No output means it's 
 ### Schedule a run
 
 ```bash
-echo '/Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.sh > /Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.log 2>&1' | at 8:40 AM
+echo '/Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.sh 20 > /Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.log 2>&1' | at 8:40 AM
 ```
 
 Monitor progress live with:
