@@ -291,7 +291,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Homemade Tacos" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalled();
@@ -350,7 +350,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Leftovers" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalled();
@@ -425,7 +425,7 @@ describe("MealPlanPage", () => {
     fireEvent.click(screen.getByText("Club Pasta"));
 
     // Submit selection
-    fireEvent.click(screen.getByText("Add 1 to Plan"));
+    fireEvent.click(screen.getByText("Add 1 to Meal"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalled();
@@ -511,7 +511,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "New Meal" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalled();
@@ -759,7 +759,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Test Meal" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to add meal");
@@ -810,7 +810,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Failing Meal" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to add meal");
@@ -915,7 +915,7 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "No Plan Meal" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     // No success or error toast should be called
     expect(toast.success).not.toHaveBeenCalled();
@@ -1491,7 +1491,7 @@ describe("MealPlanPage", () => {
 
     // Select recipe and submit
     fireEvent.click(screen.getByText("Club Pasta"));
-    fireEvent.click(screen.getByText("Add 1 to Plan"));
+    fireEvent.click(screen.getByText("Add 1 to Meal"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Updated meal to "Club Pasta"');
@@ -1574,7 +1574,7 @@ describe("MealPlanPage", () => {
 
     // Select recipe and submit
     fireEvent.click(screen.getByText("Club Pasta"));
-    fireEvent.click(screen.getByText("Add 1 to Plan"));
+    fireEvent.click(screen.getByText("Add 1 to Meal"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to update meal");
@@ -2555,7 +2555,7 @@ describe("MealPlanPage", () => {
         if (table === "recipes") {
           return createMockQueryBuilder({
             in: vi.fn().mockResolvedValue({
-              data: [{ id: "recipe-1", name: "Soup", url: "https://example.com/soup" }],
+              data: [{ id: "recipe-1", name: "Soup", url: null }],
               error: null,
             }),
           });
@@ -3545,7 +3545,7 @@ describe("MealPlanPage", () => {
       });
 
       // Submit the form
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Add to Meal"));
 
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
@@ -3576,7 +3576,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
         target: { value: "https://example.com/tacos" },
       });
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Add to Meal"));
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Added"));
@@ -3817,7 +3817,7 @@ describe("MealPlanPage", () => {
         expect(mockStorageUpload).toHaveBeenCalled();
       });
 
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Add to Meal"));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");

@@ -74,7 +74,7 @@ describe("AddMealDialog", () => {
 
     expect(screen.getByLabelText("Meal Name *")).toBeInTheDocument();
     expect(screen.getByLabelText("Recipe URL or Photo/PDF")).toBeInTheDocument();
-    expect(screen.getByText("Add to Plan")).toBeInTheDocument();
+    expect(screen.getByText("Add to Meal")).toBeInTheDocument();
   });
 
   it("renders both tab buttons", () => {
@@ -103,20 +103,20 @@ describe("AddMealDialog", () => {
     expect(screen.getByLabelText("Meal Name *")).toBeInTheDocument();
   });
 
-  it("disables Add to Plan button when name is empty", () => {
+  it("disables Add to Meal button when name is empty", () => {
     render(<AddMealDialog {...defaultProps} />);
 
-    expect(screen.getByText("Add to Plan")).toBeDisabled();
+    expect(screen.getByText("Add to Meal")).toBeDisabled();
   });
 
-  it("enables Add to Plan button when name is entered", () => {
+  it("enables Add to Meal button when name is entered", () => {
     render(<AddMealDialog {...defaultProps} />);
 
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
 
-    expect(screen.getByText("Add to Plan")).not.toBeDisabled();
+    expect(screen.getByText("Add to Meal")).not.toBeDisabled();
   });
 
   it("submits custom meal with name only", () => {
@@ -125,7 +125,7 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", undefined, false);
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
@@ -140,7 +140,7 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
       target: { value: "https://example.com/tacos" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", "https://example.com/tacos", false);
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
@@ -166,7 +166,7 @@ describe("AddMealDialog", () => {
       target: { value: "not-a-url" },
     });
 
-    expect(screen.getByText("Add to Plan")).toBeDisabled();
+    expect(screen.getByText("Add to Meal")).toBeDisabled();
   });
 
   it("does not call onAddCustomMeal when URL is invalid", () => {
@@ -211,7 +211,7 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
-    fireEvent.click(screen.getByText("Add to Plan"));
+    fireEvent.click(screen.getByText("Add to Meal"));
 
     // Dialog closes
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
@@ -311,10 +311,10 @@ describe("AddMealDialog", () => {
     fireEvent.click(screen.getByText("Chicken Tikka"));
 
     // Button shows count
-    expect(screen.getByText("Add 1 to Plan")).toBeInTheDocument();
+    expect(screen.getByText("Add 1 to Meal")).toBeInTheDocument();
 
     // Submit
-    fireEvent.click(screen.getByText("Add 1 to Plan"));
+    fireEvent.click(screen.getByText("Add 1 to Meal"));
 
     expect(defaultProps.onAddRecipeMeal).toHaveBeenCalledWith([
       { id: "r-1", name: "Chicken Tikka", url: "https://example.com/tikka" },
@@ -345,7 +345,7 @@ describe("AddMealDialog", () => {
     });
 
     fireEvent.click(screen.getByText("Simple Salad"));
-    fireEvent.click(screen.getByText("Add 1 to Plan"));
+    fireEvent.click(screen.getByText("Add 1 to Meal"));
 
     expect(defaultProps.onAddRecipeMeal).toHaveBeenCalledWith([
       { id: "r-2", name: "Simple Salad", url: undefined },
@@ -379,9 +379,9 @@ describe("AddMealDialog", () => {
     fireEvent.click(screen.getByText("Chicken Tikka"));
     fireEvent.click(screen.getByText("Chicken Salad"));
 
-    expect(screen.getByText("Add 2 to Plan")).toBeInTheDocument();
+    expect(screen.getByText("Add 2 to Meal")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Add 2 to Plan"));
+    fireEvent.click(screen.getByText("Add 2 to Meal"));
 
     expect(defaultProps.onAddRecipeMeal).toHaveBeenCalledWith([
       { id: "r-1", name: "Chicken Tikka", url: "https://example.com/tikka" },
@@ -413,18 +413,18 @@ describe("AddMealDialog", () => {
 
     // Select
     fireEvent.click(screen.getByText("Chicken Tikka"));
-    expect(screen.getByText("Add 1 to Plan")).toBeInTheDocument();
+    expect(screen.getByText("Add 1 to Meal")).toBeInTheDocument();
 
     // Deselect
     fireEvent.click(screen.getByText("Chicken Tikka"));
-    expect(screen.getByText("Add to Plan")).toBeDisabled();
+    expect(screen.getByText("Add to Meal")).toBeDisabled();
   });
 
   it("disables recipe submit button when none selected", () => {
     render(<AddMealDialog {...defaultProps} />);
     fireEvent.click(screen.getByText("From Recipes"));
 
-    const addButton = screen.getByText("Add to Plan");
+    const addButton = screen.getByText("Add to Meal");
     expect(addButton).toBeDisabled();
   });
 
@@ -485,7 +485,7 @@ describe("AddMealDialog", () => {
     });
 
     expect(screen.queryByText("URL must start with http:// or https://")).not.toBeInTheDocument();
-    expect(screen.getByText("Add to Plan")).not.toBeDisabled();
+    expect(screen.getByText("Add to Meal")).not.toBeDisabled();
   });
 
   it("shows Searching indicator while searching", async () => {
@@ -688,7 +688,7 @@ describe("AddMealDialog", () => {
       });
 
       // Submit
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Add to Meal"));
 
       expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith(
         "recipe",
@@ -714,7 +714,7 @@ describe("AddMealDialog", () => {
         target: { value: "https://example.com/other" },
       });
 
-      fireEvent.click(screen.getByText("Add to Plan"));
+      fireEvent.click(screen.getByText("Add to Meal"));
 
       // shouldParse should be false since URL was manually changed
       expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith(

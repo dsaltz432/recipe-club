@@ -552,7 +552,7 @@ const PersonalMealDetailPage = () => {
               onClick={() => navigate("/dashboard/meals")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Meal Plan
+              Back to Meals
             </Button>
           </div>
         </header>
@@ -565,7 +565,7 @@ const PersonalMealDetailPage = () => {
                 This meal event doesn't exist or has been removed.
               </p>
               <Button className="mt-4" onClick={() => navigate("/dashboard/meals")}>
-                Go to Meal Plan
+                Go to Meals
               </Button>
             </CardContent>
           </Card>
@@ -587,7 +587,7 @@ const PersonalMealDetailPage = () => {
               className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Meal Plan</span>
+              <span className="hidden sm:inline">Meals</span>
             </Button>
             <div className="flex items-center gap-2 min-w-0">
               <ChefHat className="h-5 w-5 shrink-0 text-purple" />

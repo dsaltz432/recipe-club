@@ -286,7 +286,7 @@ const AddMealDialog = ({
                 disabled={!name.trim() || (!!url.trim() && !isValidUrl(url))}
                 className="bg-purple hover:bg-purple-dark"
               >
-                {editingItemName ? "Save Changes" : "Add to Plan"}
+                {editingItemName ? "Save Changes" : "Add to Meal"}
               </Button>
             </div>
           </div>
@@ -359,8 +359,8 @@ const AddMealDialog = ({
                 className="bg-purple hover:bg-purple-dark"
               >
                 {selectedRecipes.length === 0
-                  ? "Add to Plan"
-                  : `Add ${selectedRecipes.length} to Plan`}
+                  ? "Add to Meal"
+                  : `Add ${selectedRecipes.length} to Meal`}
               </Button>
             </div>
           </div>
