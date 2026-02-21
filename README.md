@@ -147,6 +147,46 @@ npm run test            # Run in watch mode
 
 All files in `src/components/events/`, `src/components/ingredients/`, `src/components/recipes/`, and `src/lib/` must have **100% test coverage**. The only exception is `src/components/wheel/IngredientWheel.tsx` (~55% is acceptable).
 
+## Scheduling Ralph (Autonomous Agent)
+
+Ralph (`ralph.sh`) can be scheduled to run at a specific time using the macOS `at` command.
+
+### One-time setup
+
+Enable the `atrun` daemon (requires admin password, only needed once):
+
+```bash
+sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.atrun.plist
+```
+
+To check if it's already running:
+
+```bash
+sudo launchctl list | grep atrun
+```
+
+If loaded, you'll see a line like `-  0  com.apple.atrun`. No output means it's not loaded.
+
+### Schedule a run
+
+```bash
+echo '/Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.sh > /Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.log 2>&1' | at 8:40 AM
+```
+
+Monitor progress live with:
+
+```bash
+tail -f /Users/sarahglickman/Documents/Daniel/repositories/recipe-club/ralph/ralph.log
+```
+
+### Useful commands
+
+| Command | What it does |
+|---------|-------------|
+| `atq` | List scheduled jobs |
+| `at -c <job_number>` | Inspect a specific job |
+| `atrm <job_number>` | Remove a scheduled job |
+
 ## Project Structure
 
 ```
