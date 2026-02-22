@@ -103,7 +103,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "activeForm": "Adding cooked actions to PersonalMealDetailPage",
       "notes": "File: src/pages/PersonalMealDetailPage.tsx (~950 lines). Data loading: Change line 140 from `.select('recipe_id')` to `.select('id, recipe_id, cooked_at')`. Add state: `mealItems` array to store the meal_plan_items rows, `uncookConfirmOpen` boolean. Derive `isCooked = mealItems.length > 0 && mealItems.every(item => item.cooked_at)`. New imports: add Check and RotateCcw to the lucide-react import (lines 38-48). New functions: handleMarkCooked — `supabase.from('meal_plan_items').update({ cooked_at: new Date().toISOString() }).or('event_id.eq.${eventId}')`, update local mealItems state, toast.success('Marked as cooked!'). handleConfirmUncook — same pattern but `{ cooked_at: null }`, toast.success('Marked as uncooked'). UI: Inside the Event Info card (after line 662), add a div with: if isCooked — green 'Cooked' badge + RotateCcw 'Undo' button; if !isCooked && mealItems.length > 0 — Check 'Mark as Cooked' button. Add an AlertDialog for uncook confirmation. Note: PersonalMealDetailPage is in src/pages/ which is NOT in the required 100% coverage directories."
     },

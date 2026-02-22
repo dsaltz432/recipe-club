@@ -45,6 +45,8 @@ import {
   Menu,
   LogOut,
   BookOpen,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { signOut } from "@/lib/auth";
@@ -103,6 +105,10 @@ const PersonalMealDetailPage = () => {
   // Rating dialog state
   const [showRatingDialog, setShowRatingDialog] = useState(false);
 
+  // Cooked state
+  const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null }>>([]);
+  const [uncookConfirmOpen, setUncookConfirmOpen] = useState(false);
+
   // Notes expansion state
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
 
@@ -116,6 +122,45 @@ const PersonalMealDetailPage = () => {
       }
       return newSet;
     });
+  };
+
+  const isCooked = mealItems.length > 0 && mealItems.every((item) => item.cooked_at);
+
+  const handleMarkCooked = async () => {
+    if (!eventId) return;
+    try {
+      const { error } = await supabase
+        .from("meal_plan_items")
+        .update({ cooked_at: new Date().toISOString() } as Record<string, unknown>)
+        .or(`event_id.eq.${eventId}`);
+
+      if (error) throw error;
+
+      setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: new Date().toISOString() })));
+      toast.success("Marked as cooked!");
+    } catch (error) {
+      console.error("Error marking as cooked:", error);
+      toast.error("Failed to mark as cooked");
+    }
+  };
+
+  const handleConfirmUncook = async () => {
+    if (!eventId) return;
+    setUncookConfirmOpen(false);
+    try {
+      const { error } = await supabase
+        .from("meal_plan_items")
+        .update({ cooked_at: null } as Record<string, unknown>)
+        .or(`event_id.eq.${eventId}`);
+
+      if (error) throw error;
+
+      setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: null })));
+      toast.success("Marked as uncooked");
+    } catch (error) {
+      console.error("Error marking as uncooked:", error);
+      toast.error("Failed to mark as uncooked");
+    }
   };
 
   const loadEventData = async () => {
@@ -137,11 +182,21 @@ const PersonalMealDetailPage = () => {
       // Load meal plan items linked to this event to find associated recipes
       const { data: mealItemsData } = await supabase
         .from("meal_plan_items")
-        .select("recipe_id")
+        .select("*")
         // event_id column added by migration; use .or() to bypass generated types
         .or(`event_id.eq.${eventId}`);
 
-      const linkedRecipeIds = (mealItemsData || [])
+      const mealItemsList = (mealItemsData || []).map((m) => {
+        const row = m as Record<string, unknown>;
+        return {
+          id: row.id as string,
+          recipe_id: row.recipe_id as string,
+          cooked_at: row.cooked_at as string | null,
+        };
+      });
+      setMealItems(mealItemsList);
+
+      const linkedRecipeIds = mealItemsList
         .map((m) => m.recipe_id)
         .filter((id): id is string => !!id);
 
@@ -660,6 +715,35 @@ const PersonalMealDetailPage = () => {
                   <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
                 </span>
               </div>
+              {isCooked ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-medium">
+                    <Check className="h-3.5 w-3.5" />
+                    Cooked
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setUncookConfirmOpen(true)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                    Undo
+                  </Button>
+                </div>
+              ) : mealItems.length > 0 ? (
+                <div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleMarkCooked}
+                    className="text-green-700 border-green-300 hover:bg-green-50"
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Mark as Cooked
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -922,6 +1006,24 @@ const PersonalMealDetailPage = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Undo Cook Confirmation */}
+      <AlertDialog open={uncookConfirmOpen} onOpenChange={setUncookConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo cooked status?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the meal as uncooked.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUncook}>
+              Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

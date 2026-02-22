@@ -16,11 +16,12 @@
 - Removing component props cascades: child interface → parent interface → parent destructuring → parent JSX → parent tests. Build won't pass until all references are removed.
 - MealPlanSlot is now display-only (no edit/cook/uncook), MealPlanGrid passes only onAddMeal + onViewMealEvent
 - Dead code in MealPlanPage (editingItem state, edit branches in handleAddCustomMeal/handleAddRecipeMeal, EventRatingDialog, uncook AlertDialog) has been removed as part of US-001
+- `cooked_at` column on meal_plan_items is not in generated Supabase types — use `as Record<string, unknown>` for update payloads and row access, `select("*")` instead of named columns
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ---
 
@@ -128,5 +129,34 @@
 ### Learnings for future iterations
 - This was a straightforward prop removal since MealPlanPage's edit branches (which passed these props) were already removed in US-001. No other callers existed.
 - The `useEffect` for pre-filling was only needed for editing — safe to remove entirely since add mode always starts with empty fields.
+
+---
+
+## 2026-02-22 11:00 — US-005: Add Mark as Cooked / Undo Cook to PersonalMealDetailPage
+
+### What was implemented
+- Updated meal_plan_items query from `.select("recipe_id")` to `.select("*")` to get id, recipe_id, and cooked_at columns
+- Added `mealItems` state array to store meal_plan_items rows, `uncookConfirmOpen` boolean state
+- Derived `isCooked` from mealItems: true when all items have cooked_at set
+- Added `Check` and `RotateCcw` to lucide-react imports
+- Added `handleMarkCooked` function: updates cooked_at on all meal_plan_items for the event, updates local state, shows toast
+- Added `handleConfirmUncook` function: sets cooked_at to null on all meal_plan_items, updates local state, shows toast
+- Added cooked UI to Event Info card: green 'Cooked' badge + 'Undo' button when cooked, 'Mark as Cooked' button when not cooked and items exist
+- Added AlertDialog for uncook confirmation
+- Used `as Record<string, unknown>` pattern to bypass generated Supabase types for cooked_at column (same pattern as MealPlanPage uses for event_id/cooked_at)
+
+### Files changed
+- src/pages/PersonalMealDetailPage.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1575 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories (PersonalMealDetailPage is in src/pages/ — not in required 100% coverage)
+
+### Learnings for future iterations
+- The `cooked_at` column on meal_plan_items is not in the generated Supabase types. Use `as Record<string, unknown>` for update payloads and row access, and `select("*")` instead of naming columns that don't exist in types.
+- PersonalMealDetailPage is in src/pages/ which does NOT require 100% coverage, so no new tests were needed for this story.
+- The mealItems state is populated from loadEventData and updated optimistically in handleMarkCooked/handleConfirmUncook for instant UI feedback.
 
 ---
