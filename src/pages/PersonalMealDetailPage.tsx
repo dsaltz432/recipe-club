@@ -449,6 +449,8 @@ const PersonalMealDetailPage = () => {
       return;
     }
 
+    const urlChanged = (recipeToEdit.url || "") !== (editRecipeUrl.trim() || "");
+
     setIsEditingRecipe(true);
     try {
       const { error } = await supabase
@@ -461,7 +463,22 @@ const PersonalMealDetailPage = () => {
 
       if (error) throw error;
 
-      toast.success("Recipe updated!");
+      // Trigger re-parse in background if URL changed and new URL is non-empty
+      if (urlChanged && editRecipeUrl.trim()) {
+        supabase.functions.invoke("parse-recipe", {
+          body: { recipeId: recipeToEdit.id, recipeUrl: editRecipeUrl.trim(), recipeName: editRecipeName.trim() },
+        }).then(({ error: parseError }) => {
+          if (parseError) {
+            console.error("Error re-parsing recipe:", parseError);
+          } else {
+            loadEventData();
+          }
+        });
+        toast.success("Recipe updated and re-parsed!");
+      } else {
+        toast.success("Recipe updated!");
+      }
+
       setRecipeToEdit(null);
       loadEventData();
     } catch (error) {

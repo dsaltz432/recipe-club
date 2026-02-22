@@ -21,11 +21,12 @@
 - `cooked_at` column on meal_plan_items is not in generated Supabase types — use `as Record<string, unknown>` for update payloads and row access, `select("*")` instead of named columns
 - RecipeHub eagerly loads both club and personal recipe counts on mount. Club count comes from the default tab load (loadClubRecipes). Personal count is loaded via an inline async IIFE in the userId useEffect to avoid lint warnings about missing deps.
 - When changing behavior that affects text content of buttons used in tests (e.g., adding counts), update test selectors from `getByText("exact text")` to `getByRole("button", { name: /regex/ })` for robustness
+- `mockFunctionsInvoke` (supabase.functions.invoke mock) returns `undefined` by default after `vi.clearAllMocks()`. Any code that calls `.then()` on the result will throw. Tests that trigger code paths calling `functions.invoke().then()` MUST set `mockFunctionsInvoke.mockResolvedValue({ data: null, error: null })` first.
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 11
-**Current Task:** US-011 complete
+**Tasks Completed:** 12
+**Current Task:** US-012 complete
 
 ---
 
@@ -348,5 +349,35 @@
 - Defining async functions as component-level `const` and referencing them in useEffect generates `react-hooks/exhaustive-deps` lint warnings. Inlining the async logic as an IIFE inside the useEffect avoids this warning while keeping the same behavior.
 - When a change makes previously-null state always populated before render (e.g., eagerly loading counts), test selectors using `getByText("exact text")` break because the text content changes. Use `getByRole("button", { name: /regex/ })` which is more resilient to text content changes.
 - To test the "null data" branch of `(data || [])`, use a mock builder where both `order` and `then` resolve with `{ data: null, error: null }`. To test the "error/catch" branch, override `eq` to return a rejecting thenable — this specifically targets loadPersonalCount's code path without affecting loadClubRecipes which uses `.not().order()`.
+
+---
+
+## 2026-02-22 18:00 — US-012: Smart re-parse on recipe edit — only when URL/file changes
+
+### What was implemented
+- EventDetailPage `handleSaveRecipeEdit`: added background `parse-recipe` invoke when URL changes (using fire-and-forget `.then()` pattern matching existing codebase pattern from PersonalMealDetailPage line 422)
+- PersonalMealDetailPage `handleSaveRecipeEdit`: added `urlChanged` detection (same as EventDetailPage's existing check) and background `parse-recipe` invoke when URL changes
+- Both pages: toast changes from "Recipe updated!" to "Recipe updated and re-parsed!" when URL changes; stays "Recipe updated!" for name-only changes
+- Updated 5 EventDetailPage test assertions from "Recipe updated!" to "Recipe updated and re-parsed!" for tests that change URLs
+- Added 1 new test verifying name-only changes produce "Recipe updated!" toast and do NOT call parse-recipe
+- Added `mockFunctionsInvoke.mockResolvedValue(...)` to dev mode test that triggers URL changes (needed because `.then()` on undefined throws)
+- No PersonalMealDetailPage test file exists (src/pages/ not in required 100% coverage)
+
+### Files changed
+- src/pages/EventDetailPage.tsx
+- src/pages/PersonalMealDetailPage.tsx
+- tests/unit/pages/EventDetailPage.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1603 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- `mockFunctionsInvoke` defaults to returning `undefined` after `vi.clearAllMocks()`. Code using `.then()` on `functions.invoke()` will fail in tests unless the mock is configured with `mockResolvedValue`. Always add this to tests that trigger code paths calling `functions.invoke().then()`.
+- EventDetailPage already had `urlChanged` detection for notification purposes — reusing this for the parse trigger was straightforward.
+- PersonalMealDetailPage didn't have `urlChanged` — needed to add it before the try block (same pattern as EventDetailPage).
+- The fire-and-forget `.then()` pattern (not awaited, with `loadEventData()` on success) is the standard approach for background parse in this codebase.
 
 ---

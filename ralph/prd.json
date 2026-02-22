@@ -245,7 +245,7 @@
         "Tests pass"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "activeForm": "Adding smart re-parse on edit",
       "notes": "Files: src/pages/EventDetailPage.tsx, src/pages/PersonalMealDetailPage.tsx. Both files have handleSaveRecipeEdit that updates name/url via supabase.from('recipes').update(). Neither currently triggers re-parse on edit. EventDetailPage already has `const urlChanged = (recipeToEdit!.url || '') !== (editRecipeUrl.trim() || '')` at line 751, but only uses it for notifications. Reuse this check to also trigger parse. PersonalMealDetailPage needs the same urlChanged check added. For both: after the successful update, if urlChanged and the new URL is non-empty, call `supabase.functions.invoke('parse-recipe', { body: { recipeId: recipeToEdit.id, recipeUrl: newUrl, recipeName: newName } })` in background (.then pattern, same as PersonalMealDetailPage line 367). If urlChanged, toast 'Recipe updated and re-parsed!'. If !urlChanged, toast 'Recipe updated!'. EventDetailPage already has full parse infrastructure (parseStatus, RecipeParseProgress) — for the EDIT case, use the simpler background invoke pattern (not the full stepper) since the recipe already exists. Both pages are in src/pages/ (not in required 100% coverage), but existing tests must pass and new assertions should verify the invoke/no-invoke behavior."
     },

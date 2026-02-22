@@ -1076,7 +1076,7 @@ describe("EventDetailPage", () => {
 
   // ---- SAVE RECIPE EDIT ----
 
-  it("saves recipe edit successfully", async () => {
+  it("saves recipe edit with URL change and triggers re-parse", async () => {
     mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
 
     render(<EventDetailPage />);
@@ -1095,7 +1095,7 @@ describe("EventDetailPage", () => {
     const nameInput = screen.getByPlaceholderText("Recipe name");
     fireEvent.change(nameInput, { target: { value: "Updated Chicken Parm" } });
 
-    // Set a valid URL
+    // Set a valid URL (different from original)
     const urlInput = screen.getByPlaceholderText("https:// (optional)");
     fireEvent.change(urlInput, { target: { value: "https://example.com/updated" } });
 
@@ -1104,8 +1104,44 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
+    });
+
+    // parse-recipe should be called because URL changed
+    expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.objectContaining({
+      body: expect.objectContaining({ recipeUrl: "https://example.com/updated" }),
+    }));
+  });
+
+  it("saves recipe edit with name-only change and does NOT trigger re-parse", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Change only the name, keep URL the same
+    const nameInput = screen.getByPlaceholderText("Recipe name");
+    fireEvent.change(nameInput, { target: { value: "Updated Chicken Parm" } });
+
+    // Click Save
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
     });
+
+    // parse-recipe should NOT be called because URL didn't change
+    expect(mockFunctionsInvoke).not.toHaveBeenCalledWith("parse-recipe", expect.anything());
   });
 
   it("shows validation error when editing recipe with empty name", async () => {
@@ -2638,7 +2674,9 @@ describe("EventDetailPage", () => {
 
   // ---- EDIT RECIPE WITH URL CHANGE (SENDS NOTIFICATION) ----
 
-  it("saves recipe edit with URL change and sends notification", async () => {
+  it("saves recipe edit with URL change and sends notification and re-parse", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
+
     render(<EventDetailPage />);
 
     await waitFor(() => {
@@ -2663,11 +2701,11 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
     });
 
-    // Notification should be sent since URL changed
-    expect(mockFunctionsInvoke).toHaveBeenCalled();
+    // Both notification and parse-recipe should be called since URL changed
+    expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
   });
 
   // ---- EDIT RECIPE ERROR ----
@@ -3936,7 +3974,7 @@ describe("EventDetailPage", () => {
 
   // ---- HANDLE EDIT RECIPE SAVE WITH URL CHANGE ----
 
-  it("saves recipe edit with URL change triggering notification", async () => {
+  it("saves recipe edit with URL change triggering notification and re-parse", async () => {
     mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
 
     render(<EventDetailPage />);
@@ -3959,13 +3997,14 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
     });
 
-    // Notification should be sent because URL changed
+    // Both notification and parse-recipe should be called because URL changed
     await waitFor(() => {
       expect(mockFunctionsInvoke).toHaveBeenCalledWith("notify-recipe-change", expect.anything());
     });
+    expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
   });
 
   it("saves recipe edit with no URL change skips notification", async () => {
@@ -4415,6 +4454,7 @@ describe("EventDetailPage", () => {
 
   it("skips notification in dev mode when editing recipe", async () => {
     mockIsDevMode.mockReturnValue(true);
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     render(<EventDetailPage />);
@@ -4437,7 +4477,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
     });
 
     // Should NOT have called functions.invoke for notification (skipped in dev mode)
@@ -4477,7 +4517,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
     });
 
     await waitFor(() => {
