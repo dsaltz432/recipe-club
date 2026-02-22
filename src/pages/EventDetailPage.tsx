@@ -173,7 +173,7 @@ const EventDetailPage = () => {
   const parseStepIndex = parseSteps.findIndex(s => s.key === parseStep);
   const progressPercent = parseStep === "done"
     ? 100
-    : Math.round(((parseStepIndex >= 0 ? parseStepIndex : 0) / parseSteps.length) * 100);
+    : Math.round((parseStepIndex / parseSteps.length) * 100);
 
   // Notes expansion state - tracks which recipes have notes expanded
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -294,12 +294,10 @@ const EventDetailPage = () => {
 
       // Finalize averages
       ratingsByRecipe.forEach((summary) => {
-        if (summary.totalRatings > 0) {
-          summary.averageRating = summary.averageRating / summary.totalRatings;
-          summary.wouldCookAgainPercent = Math.round(
-            (summary.wouldCookAgainPercent / summary.totalRatings) * 100
-          );
-        }
+        summary.averageRating = summary.averageRating / summary.totalRatings;
+        summary.wouldCookAgainPercent = Math.round(
+          (summary.wouldCookAgainPercent / summary.totalRatings) * 100
+        );
       });
 
       // Build recipes with notes and ratings
@@ -367,7 +365,6 @@ const EventDetailPage = () => {
   };
 
   const loadGroceryData = async (recipeIds: string[]): Promise<{ ingredients: RecipeIngredient[]; contentMap: Record<string, RecipeContent> } | null> => {
-    if (recipeIds.length === 0) return null;
     setIsLoadingIngredients(true);
     try {
       const [ingredientsResult, contentResult] = await Promise.all([
@@ -444,7 +441,7 @@ const EventDetailPage = () => {
       const eid = forEventId || eventId;
       if (result && eid) {
         const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
-        saveGroceryCache("event", eid, user?.id || "", result, sortedRecipeIds);
+        saveGroceryCache("event", eid, user!.id, result, sortedRecipeIds);
       }
     } catch {
       setSmartGroceryItems(null);
@@ -471,13 +468,12 @@ const EventDetailPage = () => {
       }
 
       // Reload grocery data and run smart combine with fresh data
-      const recipeIds = event?.recipesWithNotes.map((r) => r.recipe.id) || [];
+      const recipeIds = event!.recipesWithNotes.map((r) => r.recipe.id);
       const groceryData = await loadGroceryData(recipeIds);
+      if (!groceryData) return;
 
-      if (groceryData) {
-        const allRecipes = event?.recipesWithNotes.map((r) => r.recipe) || [];
-        await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-      }
+      const allRecipes = event!.recipesWithNotes.map((r) => r.recipe);
+      await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
     } catch (error) {
       console.error("Error parsing recipe:", error);
       toast.error("Failed to parse recipe. Please try again.");
@@ -524,21 +520,19 @@ const EventDetailPage = () => {
       loadGroceryData(recipeIds).then(async (groceryData) => {
         if (!groceryData) return;
         // Check cache before running AI combine
-        if (eventId) {
-          const cached = await loadGroceryCache("event", eventId, user?.id || "");
-          if (cached) {
-            const currentParsedIds = event.recipesWithNotes
-              .filter((r) => groceryData.contentMap[r.recipe.id]?.status === "completed")
-              .map((r) => r.recipe.id)
-              .sort();
-            const cachedIds = [...cached.recipeIds].sort();
-            if (
-              currentParsedIds.length === cachedIds.length &&
-              currentParsedIds.every((id, i) => id === cachedIds[i])
-            ) {
-              setSmartGroceryItems(cached.items);
-              return;
-            }
+        const cached = await loadGroceryCache("event", eventId!, user?.id || "");
+        if (cached) {
+          const currentParsedIds = event.recipesWithNotes
+            .filter((r) => groceryData.contentMap[r.recipe.id]?.status === "completed")
+            .map((r) => r.recipe.id)
+            .sort();
+          const cachedIds = [...cached.recipeIds].sort();
+          if (
+            currentParsedIds.length === cachedIds.length &&
+            currentParsedIds.every((id, i) => id === cachedIds[i])
+          ) {
+            setSmartGroceryItems(cached.items);
+            return;
           }
         }
         // Cache miss or stale — run smart combine with fresh data
@@ -611,21 +605,11 @@ const EventDetailPage = () => {
     } finally {
       setIsUploadingRecipeImage(false);
       setUploadingFileName("");
-      if (recipeImageInputRef.current) {
-        recipeImageInputRef.current.value = "";
-      }
+      recipeImageInputRef.current!.value = "";
     }
   };
 
   const handleSubmitRecipe = async () => {
-    if (!recipeName.trim()) {
-      toast.error("Please enter a recipe name");
-      return;
-    }
-    if (recipeUrl.trim() && !isValidUrl(recipeUrl)) {
-      toast.error("Please enter a valid URL starting with http:// or https://");
-      return;
-    }
     if (!user?.id || !event) {
       return;
     }
@@ -676,13 +660,13 @@ const EventDetailPage = () => {
         setParseStep("loading");
         await loadEventData();
 
-        const recipeIds = [...(event.recipesWithNotes.map((r) => r.recipe.id) || []), newRecipeId];
+        const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
         const groceryData = await loadGroceryData(recipeIds);
 
         // Combining step (only if 2+ parsed recipes)
         if (willCombine && groceryData) {
           setParseStep("combining");
-          const allRecipes = [...(event.recipesWithNotes.map((r) => r.recipe) || []), insertedRecipe as unknown as Recipe];
+          const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
           await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
           await new Promise(resolve => setTimeout(resolve, 200));
         }
@@ -767,16 +751,12 @@ const EventDetailPage = () => {
   };
 
   const handleSaveRecipeEdit = async () => {
-    if (!recipeToEdit || !editRecipeName.trim()) {
-      toast.error("Please enter a recipe name");
-      return;
-    }
     if (editRecipeUrl.trim() && !isValidUrl(editRecipeUrl)) {
       toast.error("Please enter a valid URL starting with http:// or https://");
       return;
     }
 
-    const urlChanged = (recipeToEdit.url || "") !== (editRecipeUrl.trim() || "");
+    const urlChanged = (recipeToEdit!.url || "") !== (editRecipeUrl.trim() || "");
 
     setIsEditingRecipe(true);
     try {
@@ -786,7 +766,7 @@ const EventDetailPage = () => {
           name: editRecipeName.trim(),
           url: editRecipeUrl.trim() || null,
         })
-        .eq("id", recipeToEdit.id);
+        .eq("id", recipeToEdit!.id);
 
       if (error) throw error;
 
@@ -838,12 +818,12 @@ const EventDetailPage = () => {
 
         if (error) throw error;
         toast.success("Notes updated!");
-      } else if (recipeForNewNote) {
+      } else {
         // Create new note for recipe
         const { error } = await supabase
           .from("recipe_notes")
           .insert({
-            recipe_id: recipeForNewNote.id,
+            recipe_id: recipeForNewNote!.id,
             user_id: user.id,
             notes: editNotes.trim() || null,
             photos: editPhotos.length > 0 ? editPhotos : null,
@@ -869,9 +849,8 @@ const EventDetailPage = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!noteToDelete) return;
-
-    setDeletingNoteId(noteToDelete.id);
+    const note = noteToDelete!;
+    setDeletingNoteId(note.id);
     setNoteToDelete(null);
 
     try {
@@ -879,7 +858,7 @@ const EventDetailPage = () => {
       const { error } = await supabase
         .from("recipe_notes")
         .delete()
-        .eq("id", noteToDelete.id);
+        .eq("id", note.id);
 
       if (error) throw error;
       toast.success("Notes removed");
@@ -897,15 +876,12 @@ const EventDetailPage = () => {
   };
 
   const handleConfirmDeleteRecipe = async () => {
-    if (!recipeToDelete) return;
     try {
-      const { error } = await supabase.from("recipes").delete().eq("id", recipeToDelete.id);
+      const { error } = await supabase.from("recipes").delete().eq("id", recipeToDelete!.id);
       if (error) throw error;
       setRecipeToDelete(null);
       toast.success("Recipe removed");
-      if (eventId) {
-        deleteGroceryCache("event", eventId, user?.id || "");
-      }
+      deleteGroceryCache("event", eventId!, user!.id);
       loadEventData();
     } catch (error) {
       console.error("Error deleting recipe:", error);
@@ -915,27 +891,22 @@ const EventDetailPage = () => {
   };
 
   const handleEditEventClick = () => {
-    if (!event) return;
-    setEditDate(parseISO(event.eventDate));
-    setEditTime(event.eventTime || "19:00");
+    setEditDate(parseISO(event!.eventDate));
+    setEditTime(event!.eventTime || "19:00");
     setShowEditDialog(true);
   };
 
   const handleSaveEventEdit = async () => {
-    if (!editDate || !event) {
-      toast.error("Please select a date");
-      return;
-    }
 
     setIsUpdating(true);
     try {
-      const newEventDate = format(editDate, "yyyy-MM-dd");
+      const newEventDate = format(editDate!, "yyyy-MM-dd");
 
       // Get the event details including calendar_event_id
       const { data: eventData, error: fetchError } = await supabase
         .from("scheduled_events")
         .select("*, ingredients (name)")
-        .eq("id", event.eventId)
+        .eq("id", event!.eventId)
         .single();
 
       if (fetchError) throw fetchError;
@@ -947,7 +918,7 @@ const EventDetailPage = () => {
           event_date: newEventDate,
           event_time: editTime,
         })
-        .eq("id", event.eventId);
+        .eq("id", event!.eventId);
 
       if (updateError) throw updateError;
 
@@ -955,7 +926,7 @@ const EventDetailPage = () => {
       if (eventData.calendar_event_id) {
         const calendarResult = await updateCalendarEvent({
           calendarEventId: eventData.calendar_event_id,
-          date: editDate,
+          date: editDate!,
           time: editTime,
           ingredientName: eventData.ingredients?.name || "Unknown",
         });
@@ -978,15 +949,13 @@ const EventDetailPage = () => {
   };
 
   const handleCancelEvent = async () => {
-    if (!event) return;
-
     setIsCanceling(true);
     try {
       // Get the event data including calendar_event_id
       const { data: eventData, error: findError } = await supabase
         .from("scheduled_events")
         .select("*, ingredients (*)")
-        .eq("id", event.eventId)
+        .eq("id", event!.eventId)
         .single();
 
       if (findError) throw findError;
@@ -1045,29 +1014,25 @@ const EventDetailPage = () => {
   };
 
   const handleRatingsComplete = async () => {
-    if (!event) return;
-
     try {
       // Update event status to completed
       const { error: statusError } = await supabase
         .from("scheduled_events")
         .update({ status: "completed" })
-        .eq("id", event.eventId);
+        .eq("id", event!.eventId);
 
       if (statusError) throw statusError;
 
       // Atomically increment the ingredient's used_count via RPC
-      if (event.ingredientId) {
-        const { error: rpcError } = await supabase.rpc(
-          "increment_ingredient_used_count",
-          {
-            p_ingredient_id: event.ingredientId,
-            p_user_id: user?.id,
-          }
-        );
+      const { error: rpcError } = await supabase.rpc(
+        "increment_ingredient_used_count",
+        {
+          p_ingredient_id: event!.ingredientId,
+          p_user_id: user?.id,
+        }
+      );
 
-        if (rpcError) throw rpcError;
-      }
+      if (rpcError) throw rpcError;
 
       toast.success("Event marked as completed!");
       setShowRatingDialog(false);
@@ -1366,20 +1331,9 @@ const EventDetailPage = () => {
       {/* Add Recipe Dialog */}
       <Dialog
         open={showAddForm}
-        onOpenChange={(open) => {
-          if (!open) {
-            if (parseStatus === "parsing") {
-              if (window.confirm("Parsing is in progress. The recipe has been saved. Close anyway?")) {
-                setShowAddForm(false);
-                setRecipeName("");
-                setRecipeUrl("");
-                setParseStatus("idle");
-                setParseError(null);
-                setPendingRecipeId(null);
-                setParseStep("saving");
-                loadEventData();
-              }
-            } else {
+        onOpenChange={() => {
+          if (parseStatus === "parsing") {
+            if (window.confirm("Parsing is in progress. The recipe has been saved. Close anyway?")) {
               setShowAddForm(false);
               setRecipeName("");
               setRecipeUrl("");
@@ -1387,7 +1341,16 @@ const EventDetailPage = () => {
               setParseError(null);
               setPendingRecipeId(null);
               setParseStep("saving");
+              loadEventData();
             }
+          } else {
+            setShowAddForm(false);
+            setRecipeName("");
+            setRecipeUrl("");
+            setParseStatus("idle");
+            setParseError(null);
+            setPendingRecipeId(null);
+            setParseStep("saving");
           }
         }}
       >
@@ -1501,7 +1464,7 @@ const EventDetailPage = () => {
                       {isUploadingRecipeImage ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                          <span className="text-xs truncate max-w-[100px]">{uploadingFileName || "Uploading..."}</span>
+                          <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
                         </>
                       ) : (
                         <>
@@ -1544,7 +1507,7 @@ const EventDetailPage = () => {
                   disabled={isSubmitting || !recipeName.trim() || (!!recipeUrl.trim() && !isValidUrl(recipeUrl))}
                   className="bg-purple hover:bg-purple-dark"
                 >
-                  {isSubmitting ? "Adding..." : "Add Recipe"}
+                  Add Recipe
                 </Button>
               </div>
             </>
@@ -1555,10 +1518,8 @@ const EventDetailPage = () => {
       {/* Edit Recipe Dialog */}
       <Dialog
         open={!!recipeToEdit}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRecipeToEdit(null);
-          }
+        onOpenChange={() => {
+          setRecipeToEdit(null);
         }}
       >
         <DialogContent className="sm:max-w-lg">
@@ -1620,11 +1581,9 @@ const EventDetailPage = () => {
       {/* Edit/Add Note Dialog */}
       <Dialog
         open={!!noteToEdit || !!recipeForNewNote}
-        onOpenChange={(open) => {
-          if (!open) {
-            setNoteToEdit(null);
-            setRecipeForNewNote(null);
-          }
+        onOpenChange={() => {
+          setNoteToEdit(null);
+          setRecipeForNewNote(null);
         }}
       >
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -1801,7 +1760,7 @@ const EventDetailPage = () => {
         <EventRatingDialog
           event={event}
           recipes={event.recipesWithNotes}
-          userId={user?.id || ""}
+          userId={user!.id}
           onComplete={ratingDialogMode === "completing" ? handleRatingsComplete : handleRatingsSubmitted}
           onCancel={() => setShowRatingDialog(false)}
           mode={ratingDialogMode}

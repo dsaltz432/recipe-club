@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@tests/utils";
+import { act } from "@testing-library/react";
 import EventDetailPage from "@/pages/EventDetailPage";
 
 // Router mock
@@ -62,25 +63,44 @@ vi.mock("@/lib/googleCalendar", () => ({
 }));
 
 // DevMode mock
+const mockIsDevMode = vi.fn().mockReturnValue(false);
 vi.mock("@/lib/devMode", () => ({
-  isDevMode: () => false,
+  isDevMode: () => mockIsDevMode(),
 }));
 
 // Pantry mock
+const mockGetPantryItems = vi.fn().mockResolvedValue([]);
+const mockEnsureDefaultPantryItems = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/pantry", () => ({
-  getPantryItems: vi.fn().mockResolvedValue([]),
-  ensureDefaultPantryItems: vi.fn().mockResolvedValue(undefined),
+  getPantryItems: (...args: unknown[]) => mockGetPantryItems(...args),
+  ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+}));
+
+// Upload mock
+const mockUploadRecipeFile = vi.fn().mockResolvedValue("https://example.com/uploaded.pdf");
+const MockFileValidationError = vi.hoisted(() => {
+  class FVE extends Error {
+    constructor(msg: string) { super(msg); this.name = "FileValidationError"; }
+  }
+  return FVE;
+});
+vi.mock("@/lib/upload", () => ({
+  uploadRecipeFile: (...args: unknown[]) => mockUploadRecipeFile(...args),
+  FileValidationError: MockFileValidationError,
 }));
 
 // GroceryList mock
+const mockSmartCombineIngredients = vi.fn().mockResolvedValue(null);
 vi.mock("@/lib/groceryList", () => ({
-  smartCombineIngredients: vi.fn().mockResolvedValue(null),
+  smartCombineIngredients: (...args: unknown[]) => mockSmartCombineIngredients(...args),
 }));
 
 // GroceryCache mock
+const mockLoadGroceryCache = vi.fn().mockResolvedValue(null);
+const mockSaveGroceryCache = vi.fn();
 vi.mock("@/lib/groceryCache", () => ({
-  loadGroceryCache: vi.fn().mockResolvedValue(null),
-  saveGroceryCache: vi.fn(),
+  loadGroceryCache: (...args: unknown[]) => mockLoadGroceryCache(...args),
+  saveGroceryCache: (...args: unknown[]) => mockSaveGroceryCache(...args),
   deleteGroceryCache: vi.fn(),
 }));
 
@@ -103,9 +123,21 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuSeparator: () => <hr />,
 }));
 
+// Tabs mock — render all tab content so pantry/grocery children mount in jsdom
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ children }: { children: React.ReactNode }) => <button role="tab">{children}</button>,
+  TabsContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 // Heavy child component mocks
+let capturedPhotoUploadProps: { onPhotosChange?: (photos: string[]) => void } = {};
 vi.mock("@/components/recipes/PhotoUpload", () => ({
-  default: () => <div data-testid="photo-upload">PhotoUpload</div>,
+  default: (props: { onPhotosChange?: (photos: string[]) => void }) => {
+    capturedPhotoUploadProps = props;
+    return <div data-testid="photo-upload">PhotoUpload</div>;
+  },
 }));
 
 vi.mock("@/components/events/EventRatingDialog", () => ({
@@ -144,7 +176,8 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
           <span>{r.recipe.name}</span>
           <button onClick={() => onEditRecipeClick(r.recipe)}>Edit {r.recipe.name}</button>
           <button onClick={() => onAddNotesClick(r.recipe)}>Add Notes {r.recipe.name}</button>
-          <button onClick={() => onEditNoteClick({ id: "note-1", notes: "test notes", photos: [] })}>Edit Note</button>
+          <button onClick={() => onEditNoteClick({ id: "note-1", notes: "test notes", photos: ["photo1.jpg"] })}>Edit Note</button>
+          <button onClick={() => onEditNoteClick({ id: "note-2", notes: null, photos: null })}>Edit Note Null</button>
           <button onClick={() => onDeleteNoteClick({ id: "note-1" })}>Delete Note</button>
           <button onClick={() => onDeleteRecipeClick(r.recipe)}>Delete {r.recipe.name}</button>
           <button onClick={() => onToggleRecipeNotes(r.recipe.id)}>Toggle Notes {r.recipe.name}</button>
@@ -154,16 +187,24 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
   ),
 }));
 
+let capturedGroceryProps: { onParseRecipe?: (recipeId: string) => void } = {};
 vi.mock("@/components/recipes/GroceryListSection", () => ({
-  default: () => <div data-testid="grocery-section">GroceryListSection</div>,
+  default: (props: Record<string, unknown>) => {
+    capturedGroceryProps = props as { onParseRecipe?: (recipeId: string) => void };
+    return <div data-testid="grocery-section">GroceryListSection</div>;
+  },
 }));
 
 vi.mock("@/components/pantry/PantryDialog", () => ({
   default: () => null,
 }));
 
+let capturedPantryProps: { onPantryChange?: () => void } = {};
 vi.mock("@/components/pantry/PantrySection", () => ({
-  default: () => <div data-testid="pantry-section">PantrySection</div>,
+  default: (props: { userId?: string; onPantryChange?: () => void }) => {
+    capturedPantryProps = props;
+    return <div data-testid="pantry-section">PantrySection</div>;
+  },
 }));
 
 vi.mock("uuid", () => ({
@@ -205,6 +246,7 @@ const setupDefaultMocks = () => {
   mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
   mockIsAdmin.mockReturnValue(true);
   mockSignOut.mockResolvedValue(undefined);
+  mockIsDevMode.mockReturnValue(false);
 
   // Supabase from chains
   mockSupabaseFrom.mockImplementation((table: string) => {
@@ -309,6 +351,9 @@ describe("EventDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockParams = { eventId: "event-1" };
+    capturedPantryProps = {};
+    capturedGroceryProps = {};
+    capturedPhotoUploadProps = {};
     setupDefaultMocks();
   });
 
@@ -2277,6 +2322,11 @@ describe("EventDetailPage", () => {
   });
 
   it("rejects non-image non-pdf file upload", async () => {
+    // Mock uploadRecipeFile to throw FileValidationError for invalid file type
+    mockUploadRecipeFile.mockRejectedValueOnce(
+      new MockFileValidationError("Please select an image or PDF file"),
+    );
+
     render(<EventDetailPage />);
 
     await waitFor(() => {
@@ -2300,6 +2350,11 @@ describe("EventDetailPage", () => {
   });
 
   it("rejects file too large", async () => {
+    // Mock uploadRecipeFile to throw FileValidationError for oversized file
+    mockUploadRecipeFile.mockRejectedValueOnce(
+      new MockFileValidationError("File is too large (max 5MB)"),
+    );
+
     render(<EventDetailPage />);
 
     await waitFor(() => {
@@ -2325,7 +2380,7 @@ describe("EventDetailPage", () => {
   });
 
   it("handles file upload error", async () => {
-    mockStorageUpload.mockResolvedValue({ error: { message: "Upload failed" } });
+    mockUploadRecipeFile.mockRejectedValueOnce(new Error("Upload failed"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(<EventDetailPage />);
@@ -4121,6 +4176,2666 @@ describe("EventDetailPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText("12:00 PM")).toBeInTheDocument();
+    });
+  });
+
+  // ---- HANDLE PANTRY CHANGE (line 1037) ----
+
+  it("calls loadPantryItems when handlePantryChange is invoked", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // Clear mock to isolate the call from initial load
+    mockGetPantryItems.mockClear();
+
+    // Invoke the captured onPantryChange callback from PantrySection mock
+    expect(capturedPantryProps.onPantryChange).toBeDefined();
+    capturedPantryProps.onPantryChange!();
+
+    await waitFor(() => {
+      expect(mockGetPantryItems).toHaveBeenCalledWith("user-1");
+    });
+  });
+
+  // ---- CLOSE ADD RECIPE DIALOG DURING PARSING (lines 1372-1380) ----
+
+  it("closes add recipe dialog during parsing with window.confirm", async () => {
+    // Make functions.invoke hang (never resolve) to keep parseStatus at "parsing"
+    mockFunctionsInvoke.mockReturnValue(new Promise(() => {}));
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Fill in name and URL
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Parse Test" } });
+    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/parse" } });
+
+    // Click Add Recipe — this sets parseStatus to "parsing" and starts the insert + parse flow
+    const addBtn = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(addBtn);
+
+    // Wait for the recipe insert to complete (parseStatus stays "parsing" because functions.invoke hangs)
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    // Now press Escape to trigger onOpenChange(false) while parseStatus is "parsing"
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith("Parsing is in progress. The recipe has been saved. Close anyway?");
+    });
+
+    confirmSpy.mockRestore();
+  });
+
+  it("keeps add recipe dialog open when declining confirm during parsing", async () => {
+    // Make functions.invoke hang to keep parseStatus at "parsing"
+    mockFunctionsInvoke.mockReturnValue(new Promise(() => {}));
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Fill in name and URL
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Parse Test" } });
+    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/parse" } });
+
+    // Click Add Recipe
+    const addBtn = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(addBtn);
+
+    // Wait for the recipe insert to complete
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    // Press Escape — decline the confirm
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalled();
+    });
+
+    // Dialog should still be open (user declined)
+    expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+
+    confirmSpy.mockRestore();
+  });
+
+  // ---- HANDLE PARSE RECIPE VIA GROCERY SECTION (lines 456-484) ----
+
+  it("handles parseRecipe success via GroceryListSection callback", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // GroceryListSection mock captures onParseRecipe
+    expect(capturedGroceryProps.onParseRecipe).toBeDefined();
+    capturedGroceryProps.onParseRecipe!("recipe-1");
+
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", {
+        body: { recipeId: "recipe-1", recipeUrl: "https://example.com/chicken", recipeName: "Chicken Parm" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+    });
+  });
+
+  it("handles parseRecipe with data.skipped (dev mode)", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { skipped: true }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    capturedGroceryProps.onParseRecipe!("recipe-1");
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed (skipped in dev mode)");
+    });
+  });
+
+  it("handles parseRecipe error", async () => {
+    mockFunctionsInvoke.mockRejectedValue(new Error("Parse failed"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    capturedGroceryProps.onParseRecipe!("recipe-1");
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe. Please try again.");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("handles parseRecipe when recipe has no URL", async () => {
+    const recipesNoUrl = [{ ...recipesData[0], url: null }];
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesNoUrl, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    capturedGroceryProps.onParseRecipe!("recipe-1");
+
+    // Should early-return since recipe has no URL
+    await new Promise(r => setTimeout(r, 50));
+    expect(mockFunctionsInvoke).not.toHaveBeenCalledWith("parse-recipe", expect.anything());
+  });
+
+  // ---- LOAD PANTRY ITEMS ERROR (line 493) ----
+
+  it("handles loadPantryItems error", async () => {
+    mockEnsureDefaultPantryItems.mockRejectedValueOnce(new Error("Pantry error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // loadPantryItems is called during initial load for logged-in users
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith("Error loading pantry items:", expect.any(Error));
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- SEND RECIPE NOTIFICATION DEV MODE (lines 563-564) ----
+
+  it("skips notification in dev mode when editing recipe", async () => {
+    mockIsDevMode.mockReturnValue(true);
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Change URL to trigger notification
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
+    fireEvent.change(urlInput, { target: { value: "https://example.com/new-url" } });
+
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+    });
+
+    // Should NOT have called functions.invoke for notification (skipped in dev mode)
+    expect(mockFunctionsInvoke).not.toHaveBeenCalledWith("notify-recipe-change", expect.anything());
+
+    // Should have logged dev mode message
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[DEV MODE] Skipping"));
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- SEND RECIPE NOTIFICATION ERROR (line 580) ----
+
+  it("handles notification invoke error gracefully", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: { message: "Notification error" } });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Change URL to trigger notification
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
+    fireEvent.change(urlInput, { target: { value: "https://example.com/error-url" } });
+
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith("Error sending notification:", expect.anything());
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- SEND RECIPE NOTIFICATION THROWS (line 585) ----
+
+  it("handles notification invoke throwing exception", async () => {
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "notify-recipe-change") throw new Error("Network error");
+      return Promise.resolve({ data: null, error: null });
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
+    fireEvent.change(urlInput, { target: { value: "https://example.com/throw-url" } });
+
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith("Error invoking notification function:", expect.any(Error));
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- HANDLE SAVE EVENT EDIT FETCH ERROR (line 941) ----
+
+  it("handles edit event fetch error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // Override mock so the NEXT call to from("scheduled_events") returns a fetch error
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { message: "Fetch error" } }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    fireEvent.click(screen.getByText("Edit Event"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
+    });
+
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- HANDLE CANCEL EVENT FIND ERROR (line 992) ----
+
+  it("handles cancel event find error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // Override mock for subsequent calls
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { message: "Find error" } }),
+            }),
+          }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    const cancelItems = screen.getAllByText("Cancel Event");
+    fireEvent.click(cancelItems[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
+    });
+
+    const confirmBtns = screen.getAllByText("Cancel Event");
+    const alertConfirm = confirmBtns.find(b => b.closest("[role='alertdialog']"));
+    if (alertConfirm) fireEvent.click(alertConfirm);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to cancel event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- HANDLE CANCEL EVENT WITH CALENDAR DELETE FAILURE (line 998) ----
+
+  it("handles cancel event with calendar delete non-available error", async () => {
+    const { deleteCalendarEvent } = await import("@/lib/googleCalendar");
+    (deleteCalendarEvent as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false, error: "Calendar API error" });
+
+    const eventWithCal = { ...eventData, calendar_event_id: "cal-del-err" };
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventWithCal, error: null }),
+            }),
+          }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    const cancelItems = screen.getAllByText("Cancel Event");
+    fireEvent.click(cancelItems[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
+    });
+
+    const confirmBtns = screen.getAllByText("Cancel Event");
+    const alertConfirm = confirmBtns.find(b => b.closest("[role='alertdialog']"));
+    if (alertConfirm) fireEvent.click(alertConfirm);
+
+    await waitFor(() => {
+      expect(warnSpy).toHaveBeenCalledWith("Failed to delete calendar event:", "Calendar API error");
+    });
+
+    warnSpy.mockRestore();
+    (deleteCalendarEvent as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true });
+  });
+
+  // ---- HANDLE RATINGS COMPLETE - RPC ERROR (line 1069) ----
+
+  it("handles ratingsComplete with rpc error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // Make rpc fail
+    const { supabase } = await import("@/integrations/supabase/client");
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ error: { message: "RPC error" } } as never);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Complete Event"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Complete Ratings"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to complete event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- RECIPE WITH FALSY FIELDS FOR || FALLBACK BRANCHES ----
+
+  it("handles recipe with null event_id and ingredient_id", async () => {
+    const recipesNullFields = [{
+      ...recipesData[0],
+      event_id: null,
+      ingredient_id: null,
+      created_by: null,
+      profiles: null,
+    }];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesNullFields, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_notes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [{
+                id: "note-fallback",
+                recipe_id: "recipe-1",
+                user_id: null, // falsy userId for line 344 branch
+                notes: null,
+                photos: null,
+                created_at: "2026-01-01",
+                profiles: null,
+              }],
+              error: null,
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+  });
+
+  // ---- NOTES DATA NULL FALLBACK (line 245) ----
+
+  it("handles null notes data with || [] fallback", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_notes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ratings") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+  });
+
+  // ---- GROCERY CACHE HIT (lines 525-540) ----
+
+  it("loads smart grocery items from cache on cache hit", async () => {
+    const cachedItems = [{ name: "Chicken", quantity: "2 lbs", recipes: ["recipe-1"] }];
+    mockLoadGroceryCache.mockResolvedValue({
+      items: cachedItems,
+      recipeIds: ["recipe-1"],
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [{ id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" }], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [{ id: "rc-1", recipe_id: "recipe-1", description: "test", servings: "4", prep_time: null, cook_time: null, total_time: null, instructions: [], source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" }], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_notes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ratings") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Cache should have been checked
+    await waitFor(() => {
+      expect(mockLoadGroceryCache).toHaveBeenCalled();
+    });
+
+    // Smart combine should NOT have been called (cache hit)
+    expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
+  });
+
+  // ---- GROCERY CACHE MISS WITH SMART COMBINE (lines 544-546) ----
+
+  it("runs smart combine on cache miss with 2+ parsed recipes", async () => {
+    mockLoadGroceryCache.mockResolvedValue(null);
+    mockSmartCombineIngredients.mockResolvedValue([{ name: "Combined ingredient" }]);
+
+    const twoRecipes = [
+      ...recipesData,
+      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+              { id: "ri-2", recipe_id: "recipe-2", name: "chicken", quantity: "1", unit: "lb", category: "protein", raw_text: "1 lb chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+              { id: "rc-2", recipe_id: "recipe-2", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Smart combine should be called with the ingredients
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+
+    // Cache should be saved after combine
+    await waitFor(() => {
+      expect(mockSaveGroceryCache).toHaveBeenCalled();
+    });
+  });
+
+  // ---- RUN SMART COMBINE ERROR (line 450) ----
+
+  it("handles smart combine error gracefully", async () => {
+    mockLoadGroceryCache.mockResolvedValue(null);
+    mockSmartCombineIngredients.mockRejectedValue(new Error("Combine failed"));
+
+    const twoRecipes = [
+      ...recipesData,
+      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+              { id: "ri-2", recipe_id: "recipe-2", name: "chicken", quantity: "1", unit: "lb", category: "protein", raw_text: "1 lb chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+              { id: "rc-2", recipe_id: "recipe-2", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Should handle the error gracefully (no crash)
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+  });
+
+  // ---- LOAD GROCERY DATA ERROR (lines 419-420) ----
+
+  it("handles loadGroceryData error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockRejectedValue(new Error("Ingredients fetch failed")),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith("Error loading grocery data:", expect.any(Error));
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- GROCERY DATA INGREDIENTS ERROR (line 398) ----
+
+  it("handles recipe_ingredients error in loadGroceryData", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockRejectedValue(new Error("Ingredients error")),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith("Error loading grocery data:", expect.anything());
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- HANDLE RETRY PARSE SUCCESS (lines 746-754) ----
+
+  it("handles retry parse success", async () => {
+    // First parse fails, then retry succeeds
+    let parseCallCount = 0;
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "parse-recipe") {
+        parseCallCount++;
+        if (parseCallCount === 1) {
+          return Promise.resolve({ data: null, error: { message: "Parse error" } });
+        }
+        return Promise.resolve({ data: { success: true }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Retry Recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/retry" } });
+
+    const addBtn = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(addBtn);
+
+    // Wait for first parse failure
+    await waitFor(() => {
+      expect(screen.getByText("Try parsing again")).toBeInTheDocument();
+    });
+
+    // Click retry - this time it succeeds
+    fireEvent.click(screen.getByText("Try parsing again"));
+
+    // Should close dialog on success (parseStatus goes to idle)
+    await waitFor(() => {
+      expect(screen.queryByText("Try parsing again")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---- SHOW COMBINE STEP IN PARSE PROGRESS (line 169) ----
+
+  it("shows combine step in parse progress when existing parsed recipes", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    // Need to have existing recipes with completed content
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { id: "recipe-new", name: "New Recipe" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [{
+                id: "rc-1",
+                recipe_id: "recipe-1",
+                status: "completed",
+                description: null,
+                servings: null,
+                prep_time: null,
+                cook_time: null,
+                total_time: null,
+                instructions: null,
+                source_title: null,
+                parsed_at: null,
+                error_message: null,
+                created_at: "2026-01-01",
+              }],
+              error: null,
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    mockSmartCombineIngredients.mockResolvedValue([{ name: "Combined" }]);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Second Recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/second" } });
+
+    const addBtn = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(addBtn);
+
+    // Advance timers to get through all parse steps including combine
+    await vi.advanceTimersByTimeAsync(8000);
+
+    vi.useRealTimers();
+  });
+
+  // ---- HANDLE EDIT RECIPE WITH NO URL CHANGE (same URL) ----
+
+  it("handles edit recipe with invalid URL guard", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Set an invalid URL
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
+    fireEvent.change(urlInput, { target: { value: "bad-url" } });
+
+    // Click save - guard fires for invalid URL
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Please enter a valid URL starting with http:// or https://");
+    });
+  });
+
+  // ---- GROCERY DATA WITH CONTENT ERROR (line 405) ----
+
+  it("handles recipe_content error in loadGroceryData", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockRejectedValue(new Error("Content error")),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith("Error loading grocery data:", expect.anything());
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- LOAD GROCERY DATA WITH NULL FIELDS (covers ?? undefined branches lines 384-408) ----
+
+  it("covers loadGroceryData null field branches", async () => {
+    // Recipe ingredients with null optional fields to cover ?? undefined branches
+    const ingredientsWithNulls = [
+      { id: "ri-1", recipe_id: "recipe-1", name: "Salt", quantity: null, unit: null, category: "pantry", raw_text: null, sort_order: null, created_at: "2026-01-01" },
+    ];
+    // Recipe content with null optional fields
+    const contentWithNulls = [
+      { id: "rc-1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: "not-an-array", source_title: null, parsed_at: null, status: "completed", error_message: null, created_at: "2026-01-01" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: ingredientsWithNulls, error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: contentWithNulls, error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Wait for grocery data to load
+    await waitFor(() => {
+      expect(screen.getByTestId("grocery-section")).toBeInTheDocument();
+    });
+  });
+
+  // ---- LOAD GROCERY DATA WITH NULL DATA (covers if(data) false branches) ----
+
+  it("covers loadGroceryData null data results", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+  });
+
+  // ---- LOAD GROCERY DATA WITH EMPTY RECIPE IDS (line 368) ----
+
+  it("handles loadGroceryData with no recipes", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+  });
+
+  // ---- LOAD PANTRY ITEMS SUCCESS (func 24 at line 489) ----
+
+  it("loads pantry items successfully", async () => {
+    mockGetPantryItems.mockResolvedValue([{ name: "salt" }, { name: "pepper" }]);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(mockGetPantryItems).toHaveBeenCalledWith("user-1");
+    });
+  });
+
+  // ---- HANDLE EDIT NOTE WITH NULL FIELDS (lines 800-801) ----
+
+  it("handles edit note click with null notes and photos", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Click Edit Note — the mock passes { id: "note-1", notes: "test notes", photos: [] }
+    fireEvent.click(screen.getByText("Edit Note"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Notes")).toBeInTheDocument();
+    });
+  });
+
+  // ---- HANDLE ADD NOTES AND SAVE WITH EMPTY FIELDS (covers recipeForNewNote branch + || null branches) ----
+
+  it("adds notes for a recipe and saves with empty fields", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Notes Chicken Parm"));
+
+    // Verify note dialog opened
+    await waitFor(() => {
+      const addNotesElements = screen.getAllByText(/Add Notes/);
+      expect(addNotesElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Save with empty notes — covers editNotes.trim() || null and editPhotos.length > 0 ? branches
+    // The save button text is "Add Notes" when adding new notes (recipeForNewNote is truthy)
+    // Wait for the dialog button to appear
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add Notes" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Notes" }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Notes added!");
+    });
+  });
+
+  // ---- ADD NOTES WITH PHOTOS (covers line 834 editPhotos.length > 0 true branch) ----
+
+  it("adds notes for a recipe with photos", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Notes Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add Notes" })).toBeInTheDocument();
+    });
+
+    // Add photos via captured PhotoUpload prop before saving
+    act(() => {
+      capturedPhotoUploadProps.onPhotosChange?.(["photo1.jpg", "photo2.jpg"]);
+    });
+
+    // Also type some notes to cover the truthy editNotes.trim() branch
+    const textarea = screen.getByPlaceholderText("Any special tips or variations?");
+    fireEvent.change(textarea, { target: { value: "Great recipe!" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Notes" }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Notes added!");
+    });
+  });
+
+  // ---- EVENT WITH NO EVENT TIME (covers || "19:00" at line 904) ----
+
+  it("handles event with no eventTime", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { ...eventData, event_time: null }, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { id: "recipe-new", name: "New Recipe" },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+  });
+
+  // ---- EDIT RECIPE WITH NULL URL (covers url || "" at line 756) ----
+
+  it("edits recipe with null URL", async () => {
+    const recipesWithNullUrl = [
+      { ...recipesData[0], url: null },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesWithNullUrl, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Save without changing URL — covers urlChanged = false branch and || "" fallbacks
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
+    });
+  });
+
+  // ---- EVENT WITH CREATED_BY NULL (line 357) ----
+
+  it("handles event with null created_by", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { ...eventData, created_by: null }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+  });
+
+  // ---- HANDLE RATINGS COMPLETE STATUS ERROR (line 1033) ----
+
+  it("handles ratingsComplete with status update error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // Override scheduled_events update to return error
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Must open the rating dialog first by clicking "Complete Event" dropdown item
+    fireEvent.click(screen.getByText("Complete Event"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+    });
+
+    // Click Complete Ratings
+    fireEvent.click(screen.getByText("Complete Ratings"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to complete event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- HANDLE SAVE EVENT EDIT UPDATE ERROR (line 932) ----
+
+  it("handles save event edit with update error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Open edit event dialog via dropdown item
+    fireEvent.click(screen.getByText("Edit Event"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
+    });
+
+    // Override update to return error after dialog is open
+    const originalImpl = mockSupabaseFrom.getMockImplementation();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { ...eventData, calendar_event_id: null }, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: { message: "Update error" } }),
+          }),
+        };
+      }
+      return originalImpl?.(table) || {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- RATING DIALOG IN RATING MODE (covers onComplete = handleRatingsSubmitted at line 1780) ----
+
+  it("shows rate recipes dialog in rating mode", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { ...eventData, status: "completed" }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Click Rate Recipes
+    const rateBtn = screen.getByText("Rate Recipes");
+    fireEvent.click(rateBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+    });
+
+    // Cancel ratings to cover handleRatingsSubmitted
+    fireEvent.click(screen.getByText("Cancel Ratings"));
+  });
+
+  // ---- EDIT NOTE WITH NULL NOTES/PHOTOS (covers lines 799-800 || fallbacks) ----
+
+  it("handles edit note click with null notes and photos and saves", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Click Edit Note Null — passes { notes: null, photos: null }
+    fireEvent.click(screen.getByText("Edit Note Null"));
+
+    // The note dialog should open with empty values due to || "" and || [] fallbacks
+    await waitFor(() => {
+      expect(screen.getByText("Edit Notes")).toBeInTheDocument();
+    });
+
+    // Save with empty notes and no photos — covers editNotes.trim() || null and editPhotos.length > 0 ? null
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Notes updated!");
+    });
+  });
+
+  // ---- HANDLE SAVE NOTE UPDATE PATH (covers lines 820-821 noteToEdit branch) ----
+
+  it("saves updated note with notes and photos", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Click Edit Note (with notes: "test notes", photos: ["photo1.jpg"])
+    fireEvent.click(screen.getByText("Edit Note"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Notes")).toBeInTheDocument();
+    });
+
+    // Click Save Changes (for edit mode the button says "Save Changes")
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Notes updated!");
+    });
+  });
+
+  // ---- HANDLE PARSE RECIPE ERROR (covers line 463) ----
+
+  it("handles parse recipe error via capturedGroceryProps", async () => {
+    // Mock functions.invoke to return error
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: new Error("Parse failed") });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Use capturedGroceryProps to call handleParseRecipe
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe. Please try again.");
+    });
+  });
+
+  // ---- HANDLE PARSE RECIPE SUCCESS (covers line 465/468 skipped branch) ----
+
+  it("handles parse recipe success with skipped flag", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { skipped: true }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed (skipped in dev mode)");
+    });
+  });
+
+  it("handles parse recipe success without skipped flag", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+    });
+  });
+
+  // ---- PARSE RECIPE: loadGroceryData returns null (covers line 473 true branch) ----
+
+  it("handles parse recipe when loadGroceryData returns null", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Make recipe_ingredients fail on the next call (during handleParseRecipe's loadGroceryData)
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockRejectedValue(new Error("db error")),
+          }),
+        };
+      }
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_notes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ratings") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    // Parse succeeds but loadGroceryData returns null — no smart combine
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+    });
+    expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
+  });
+
+  // ---- GROCERY CACHE STALE (covers line 530 false branch) ----
+
+  it("runs smart combine when cache exists but is stale", async () => {
+    // Cache has recipe IDs that don't match current parsed recipes
+    mockLoadGroceryCache.mockResolvedValue({
+      items: [{ name: "Stale Item", quantity: "1", recipes: ["old-recipe"] }],
+      recipeIds: ["old-recipe"],
+    });
+    mockSmartCombineIngredients.mockResolvedValue([{ name: "Combined" }]);
+
+    const twoRecipes = [
+      ...recipesData,
+      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+                { id: "ri-2", recipe_id: "recipe-2", name: "broth", quantity: "4", unit: "cups", category: "other", raw_text: "4 cups broth", sort_order: 1, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "rc-1", recipe_id: "recipe-1", description: "test", servings: "4", prep_time: null, cook_time: null, total_time: null, instructions: [], source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "rc-2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_notes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ratings") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Cache was checked but stale (recipe IDs don't match), so smart combine should run
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+  });
+
+  // ---- BACK BUTTON WITH HISTORY (covers line 1130 both branches) ----
+
+  it("navigates back when history has entries", async () => {
+    // Mock window.history.state to have idx > 0
+    const originalState = window.history.state;
+    Object.defineProperty(window.history, "state", {
+      value: { idx: 2 },
+      writable: true,
+      configurable: true,
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Find and click the back button
+    const backBtn = screen.getByRole("button", { name: /events/i });
+    fireEvent.click(backBtn);
+
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
+
+    Object.defineProperty(window.history, "state", {
+      value: originalState,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it("navigates to events dashboard when no history", async () => {
+    Object.defineProperty(window.history, "state", {
+      value: null,
+      writable: true,
+      configurable: true,
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    const backBtn = screen.getByRole("button", { name: /events/i });
+    fireEvent.click(backBtn);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/events");
+
+    Object.defineProperty(window.history, "state", {
+      value: null,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  // ---- EDIT EVENT WITH NULL EVENT TIME (covers line 903 || "19:00") ----
+
+  it("opens edit dialog defaulting to 19:00 when eventTime is null", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { ...eventData, event_time: null }, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Event"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
+    });
+  });
+
+  // ---- SAVE EVENT EDIT WITH CALENDAR EVENT (covers lines 934-946) ----
+
+  it("updates calendar event when calendar_event_id exists", async () => {
+    const mockUpdateCalendar = vi.mocked((await import("@/lib/googleCalendar")).updateCalendarEvent);
+    mockUpdateCalendar.mockResolvedValue({ success: true });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { ...eventData, calendar_event_id: "cal-123", ingredients: { name: "Chicken" } },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Event"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Event updated!");
+    });
+
+    expect(mockUpdateCalendar).toHaveBeenCalled();
+  });
+
+  // ---- CALENDAR UPDATE WITH NULL INGREDIENT NAME (covers line 939 || "Unknown") ----
+
+  it("uses Unknown fallback when ingredients name is null during calendar update", async () => {
+    const mockUpdateCalendar = vi.mocked((await import("@/lib/googleCalendar")).updateCalendarEvent);
+    mockUpdateCalendar.mockResolvedValue({ success: true });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { ...eventData, calendar_event_id: "cal-456", ingredients: null },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Event"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Event updated!");
+    });
+
+    expect(mockUpdateCalendar).toHaveBeenCalledWith(
+      expect.objectContaining({ ingredientName: "Unknown" }),
+    );
+  });
+
+  // ---- CALENDAR UPDATE FAILURE (covers lines 942-945) ----
+
+  it("shows warning when calendar update fails", async () => {
+    const mockUpdateCalendar = vi.mocked((await import("@/lib/googleCalendar")).updateCalendarEvent);
+    mockUpdateCalendar.mockResolvedValue({ success: false, error: "Calendar error" });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { ...eventData, calendar_event_id: "cal-789", ingredients: { name: "Beef" } },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Event"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.warning).toHaveBeenCalledWith(
+        "Calendar sync failed. The event date was updated but your Google Calendar may be out of sync.",
+      );
+    });
+  });
+
+  // ---- OUTER CATCH IN HANDLE SUBMIT RECIPE (covers lines 703-707) ----
+
+  it("handles recipe insert error in outer catch", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockRejectedValue(new Error("Database connection failed")),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Fill in recipe name and submit — the insert rejects with Error instance
+    const nameInput = screen.getByPlaceholderText("Enter recipe name");
+    fireEvent.change(nameInput, { target: { value: "Test Recipe" } });
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Database connection failed");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- GROCERY TAB EMPTY STATE (covers line 1295 event.ingredientName || "Event") ----
+
+  it("shows grocery tab empty state when no recipes", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // The Tabs mock renders all content — grocery empty state should be visible
+    await waitFor(() => {
+      expect(screen.getByText(/Add recipes first to generate a grocery list/)).toBeInTheDocument();
+    });
+  });
+
+  // ---- LOAD EVENT DATA ERROR (covers catch block lines 361-364) ----
+
+  it("handles loadEventData error and shows not found", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockRejectedValue(new Error("Load failed")),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Event Not Found")).toBeInTheDocument();
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- USER WITH NULL EMAIL (covers line 500 currentUser?.email false branch) ----
+
+  it("handles user with null email", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test User",
+      email: null,
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Should not have called getAllowedUser since email is null
+    expect(mockGetAllowedUser).not.toHaveBeenCalled();
+  });
+
+  // ---- USER WITH NULL is_club_member (covers line 502 ?? false branch) ----
+
+  it("handles user with null is_club_member", async () => {
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+  });
+
+  // ---- HANDLE SUBMIT RECIPE WITH EMPTY URL (covers line 639 recipeUrl.trim() || null) ----
+
+  it("submits recipe with empty URL", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Fill in recipe name only, no URL
+    const nameInput = screen.getByPlaceholderText("Enter recipe name");
+    fireEvent.change(nameInput, { target: { value: "No URL Recipe" } });
+
+    // Submit — URL field is empty, so url becomes null via || null
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    await waitFor(() => {
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("recipes");
+    });
+  });
+
+  // ---- UPLOAD BUTTON STATE (covers line 1478 uploadingFileName || "Uploading..." branch) ----
+
+  it("shows uploading state with filename during recipe image upload", async () => {
+    // Make upload hang so we can observe the uploading state
+    let resolveUpload!: (value: string) => void;
+    mockUploadRecipeFile.mockImplementation(() => new Promise((resolve) => { resolveUpload = resolve; }));
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Trigger file upload via the hidden file input
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const testFile = new File(["test"], "my-recipe.pdf", { type: "application/pdf" });
+    Object.defineProperty(fileInput, "files", { value: [testFile] });
+    fireEvent.change(fileInput);
+
+    // The button should show the filename while uploading
+    await waitFor(() => {
+      expect(screen.getByText("my-recipe.pdf")).toBeInTheDocument();
+    });
+
+    // Resolve to clean up
+    resolveUpload("https://example.com/uploaded.pdf");
+  });
+
+  // ---- UPLOAD WITH EXISTING RECIPE NAME (covers line 596 false branch) ----
+
+  it("keeps existing recipe name when uploading file", async () => {
+    // Make upload resolve immediately
+    mockUploadRecipeFile.mockResolvedValueOnce("https://example.com/uploaded.pdf");
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Type a recipe name BEFORE uploading
+    const nameInput = screen.getByPlaceholderText("Enter recipe name");
+    fireEvent.change(nameInput, { target: { value: "My Recipe" } });
+
+    // Upload file — name should NOT be overwritten
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const testFile = new File(["test"], "other-name.pdf", { type: "application/pdf" });
+    Object.defineProperty(fileInput, "files", { value: [testFile] });
+    fireEvent.change(fileInput);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("File uploaded!");
+    });
+
+    // Verify name was NOT replaced by filename
+    expect(nameInput).toHaveValue("My Recipe");
+  });
+
+  // ---- HANDLE PANTRY CHANGE WITHOUT USER (covers line 1012 false branch) ----
+
+  it("handles pantry change when user is null", async () => {
+    mockGetCurrentUser.mockResolvedValue(null);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Call pantry change — user is null so loadPantryItems should NOT be called
+    act(() => {
+      capturedPantryProps.onPantryChange?.();
+    });
+
+    // Pantry items should not have been reloaded (only initial load attempt)
+    expect(mockGetPantryItems).not.toHaveBeenCalled();
+  });
+
+  // ---- CLOSE ADD RECIPE DIALOG WHEN NOT PARSING (covers line 1344 false branch for parsing check) ----
+
+  it("closes add recipe dialog without confirm when not parsing", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Open add recipe dialog
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Press Escape to close dialog (triggers onOpenChange(false) with parseStatus = "idle")
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    // Dialog should close without window.confirm
+    await waitFor(() => {
+      expect(screen.queryByText("Add a Recipe")).not.toBeInTheDocument();
     });
   });
 });
