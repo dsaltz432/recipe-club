@@ -39,7 +39,7 @@
         "Tests pass"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "activeForm": "Simplifying MealPlanGrid",
       "notes": "File: src/components/mealplan/MealPlanGrid.tsx (70 lines). Remove from interface (lines 8, 10-11): onEditMeal, onMarkCooked, onUncook. Remove from destructuring (line 17). Remove from <MealPlanSlot> props (lines 55, 57-58). Tests: tests/unit/components/mealplan/MealPlanGrid.test.tsx — remove onEditMeal, onMarkCooked, onUncook from defaultProps. Remove any tests that verify these props are passed through."
     },

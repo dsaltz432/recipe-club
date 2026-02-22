@@ -19,8 +19,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 1
-**Current Task:** US-001 complete
+**Tasks Completed:** 2
+**Current Task:** US-002 complete
 
 ---
 
@@ -57,5 +57,27 @@
 - Removing props from a child component cascades up through parent components and their tests. US-002 and US-003 are now partially done since MealPlanGrid and MealPlanPage cleanup was needed for typecheck to pass.
 - When removing functions, follow the entire dependency chain: functions → state → imports → JSX. Each removed function may reference state that becomes unused.
 - The parse combine step (lines 358-362 in MealPlanPage) requires a specific test with 2+ recipes on groceries tab.
+
+---
+
+## 2026-02-22 10:00 — US-002: Simplify MealPlanGrid — remove pass-through props
+
+### What was implemented
+- No code changes needed — all US-002 ACs were already satisfied by US-001's cascading cleanup
+- Verified: MealPlanGrid interface only has `items`, `weekStart`, `onAddMeal`, `onViewMealEvent`
+- Verified: MealPlanSlot receives only `items`, `dayOfWeek`, `mealType`, `onAddMeal`, `onViewMealEvent`
+- Verified: MealPlanGrid.test.tsx has no references to onEditMeal, onMarkCooked, or onUncook
+
+### Files changed
+- (none — already clean from US-001)
+
+### Quality checks
+- Build: pass
+- Tests: pass (9 MealPlanGrid tests)
+- Coverage: MealPlanGrid.tsx 100% Stmts/Branch/Funcs/Lines
+- Typecheck: pass
+
+### Learnings for future iterations
+- When cascading cleanup in US-001 is thorough, downstream stories may already be complete. Always verify before writing code.
 
 ---
