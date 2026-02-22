@@ -137,6 +137,7 @@ const EventDetailPage = () => {
   // Rating dialog state
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [ratingDialogMode, setRatingDialogMode] = useState<"completing" | "rating">("completing");
+  const [ratingRecipes, setRatingRecipes] = useState<EventRecipeWithRatings[] | null>(null);
 
   // Grocery list state
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
@@ -1003,6 +1004,13 @@ const EventDetailPage = () => {
 
   const handleRateRecipesClick = () => {
     setRatingDialogMode("rating");
+    setRatingRecipes(null);
+    setShowRatingDialog(true);
+  };
+
+  const handleRateRecipe = (recipeWithRatings: EventRecipeWithRatings) => {
+    setRatingDialogMode("rating");
+    setRatingRecipes([recipeWithRatings]);
     setShowRatingDialog(true);
   };
 
@@ -1019,6 +1027,7 @@ const EventDetailPage = () => {
   const handleRatingsSubmitted = () => {
     // Just reload the data to show updated ratings
     setShowRatingDialog(false);
+    setRatingRecipes(null);
     loadEventData();
   };
 
@@ -1045,6 +1054,7 @@ const EventDetailPage = () => {
 
       toast.success("Event marked as completed!");
       setShowRatingDialog(false);
+      setRatingRecipes(null);
       loadEventData();
     } catch (error) {
       console.error("Error completing event:", error);
@@ -1281,6 +1291,7 @@ const EventDetailPage = () => {
               onEditNoteClick={handleEditNoteClick}
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
+              onRateRecipe={handleRateRecipe}
             />
           </TabsContent>
 
@@ -1730,10 +1741,10 @@ const EventDetailPage = () => {
       {showRatingDialog && event && (
         <EventRatingDialog
           event={event}
-          recipes={event.recipesWithNotes}
+          recipes={ratingRecipes || event.recipesWithNotes}
           userId={user!.id}
           onComplete={ratingDialogMode === "completing" ? handleRatingsComplete : handleRatingsSubmitted}
-          onCancel={() => setShowRatingDialog(false)}
+          onCancel={() => { setShowRatingDialog(false); setRatingRecipes(null); }}
           mode={ratingDialogMode}
         />
       )}

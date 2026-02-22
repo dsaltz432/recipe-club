@@ -29,8 +29,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 14
-**Current Task:** US-014 complete
+**Tasks Completed:** 15
+**Current Task:** US-015 complete
 
 ---
 
@@ -424,6 +424,8 @@
 - `GroceryCategory` type import is only needed in files that use it directly — RecipeCard uses `GROCERY_CATEGORIES` record and `CATEGORY_ORDER` array without directly referencing the type.
 - `event_id` column on `meal_plan_items` is not in generated Supabase types — use two-step insert+update pattern: first `.insert()` the standard columns, then `.update({ event_id: ... } as Record<string, unknown>)` on the new row. This avoids the overload mismatch error from spreading `Record<string, unknown>` into the insert payload.
 - PersonalMealDetailPage now uses AddMealDialog (shared with MealPlanPage) and RecipeParseProgress for the add-recipe flow. `dayOfWeek`, `mealType`, and `plan_id` are extracted from the first meal_plan_item loaded for the event.
+- EventRatingDialog accepts `recipes: EventRecipeWithNotes[]` — passing a single-element array works for inline single-recipe rating. Both PersonalMealDetailPage and EventDetailPage use `ratingRecipes` state (null = all, array = specific) to share one dialog for "Rate all" (hamburger menu) and "Rate one" (inline button) flows.
+- EventRecipesTab has optional `onRateRecipe` prop. When provided: rated recipes show pencil edit button, unrated recipes show "Rate" button with star icon.
 
 ---
 
@@ -458,5 +460,36 @@
 - PersonalMealDetailPage doesn't have the grocery combine/smart-combine infrastructure — the parse progress uses 3 steps (saving, parsing, loading) instead of 4 (no combining step). This is correct since the page doesn't have a grocery tab.
 - The `dayOfWeek` and `mealType` are derived from the first meal_plan_item. All items in a given event share the same slot since they're all created for the same meal.
 - File upload still works through AddMealDialog's built-in upload flow (same component used by MealPlanPage).
+
+---
+
+## 2026-02-22 21:00 — US-015: Inline rating editing on recipe cards in EventRecipesTab
+
+### What was implemented
+- Added `onRateRecipe?: (recipe: EventRecipeWithRatings) => void` optional prop to EventRecipesTab interface
+- Added pencil icon button next to rating stars for rated recipes (aria-label: `Edit rating for {name}`)
+- Added "Rate" button with star icon for unrated recipes (aria-label: `Rate {name}`)
+- Both buttons only appear when `onRateRecipe` is provided — existing usages without the prop are unaffected
+- PersonalMealDetailPage: added `ratingRecipes` state and `handleRateRecipe` callback. Opens EventRatingDialog with single recipe when rate button clicked, all recipes when hamburger menu "Rate Recipes" used
+- EventDetailPage: same pattern — added `ratingRecipes` state, `handleRateRecipe` callback, wired to EventRecipesTab
+- EventRatingDialog already supports receiving a single recipe in recipes[] array — no changes needed
+- Added 8 new tests to EventRecipesTab.test.tsx: Rate button visibility (unrated, zero-rated), absence without callback, edit rating button visibility (rated), absence without callback, click callbacks for both Rate and Edit rating
+
+### Files changed
+- src/components/events/EventRecipesTab.tsx
+- src/pages/PersonalMealDetailPage.tsx
+- src/pages/EventDetailPage.tsx
+- tests/unit/components/events/EventRecipesTab.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1636 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories, EventRecipesTab.tsx 100%
+
+### Learnings for future iterations
+- EventRatingDialog already accepts a `recipes: EventRecipeWithNotes[]` prop — passing a single-element array "just works" for inline rating of individual recipes.
+- The `ratingRecipes` state pattern (null = all recipes, array = specific recipes) avoids duplicating the dialog component and keeps the hamburger menu "Rate all" and inline "Rate one" flows sharing the same dialog.
+- The `onRateRecipe` prop is optional so existing usages of EventRecipesTab (before this change) don't need updating — the buttons simply don't render.
 
 ---

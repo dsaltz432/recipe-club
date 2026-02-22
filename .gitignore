@@ -39,3 +39,5 @@ E2E_TEST_RESULTS_*.md
 
 # Ralph loop
 ralph/
+.vercel
+.env*.local

@@ -103,6 +103,7 @@ const PersonalMealDetailPage = () => {
 
   // Rating dialog state
   const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [ratingRecipes, setRatingRecipes] = useState<EventRecipeWithRatings[] | null>(null);
 
   // Cooked state
   const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
@@ -674,11 +675,18 @@ const PersonalMealDetailPage = () => {
   };
 
   const handleRateRecipesClick = () => {
+    setRatingRecipes(null);
+    setShowRatingDialog(true);
+  };
+
+  const handleRateRecipe = (recipeWithRatings: EventRecipeWithRatings) => {
+    setRatingRecipes([recipeWithRatings]);
     setShowRatingDialog(true);
   };
 
   const handleRatingsSubmitted = () => {
     setShowRatingDialog(false);
+    setRatingRecipes(null);
     loadEventData();
   };
 
@@ -852,6 +860,7 @@ const PersonalMealDetailPage = () => {
           onEditNoteClick={handleEditNoteClick}
           onDeleteNoteClick={handleDeleteClick}
           onDeleteRecipeClick={handleDeleteRecipeClick}
+          onRateRecipe={handleRateRecipe}
         />
       </main>
 
@@ -1077,10 +1086,10 @@ const PersonalMealDetailPage = () => {
       {showRatingDialog && event && (
         <EventRatingDialog
           event={event}
-          recipes={event.recipesWithNotes}
+          recipes={ratingRecipes || event.recipesWithNotes}
           userId={user?.id || ""}
           onComplete={handleRatingsSubmitted}
-          onCancel={() => setShowRatingDialog(false)}
+          onCancel={() => { setShowRatingDialog(false); setRatingRecipes(null); }}
           mode="rating"
         />
       )}

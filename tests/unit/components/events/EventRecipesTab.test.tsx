@@ -643,6 +643,145 @@ describe("EventRecipesTab", () => {
     // Add notes should still show when user is null (no note match)
     expect(screen.getByText("Add notes")).toBeInTheDocument();
   });
+
+  it("shows Rate button for unrated recipe when onRateRecipe is provided", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Unrated Pasta", createdBy: "other-user" }),
+        notes: [],
+      },
+    ];
+
+    const onRateRecipe = vi.fn();
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} onRateRecipe={onRateRecipe} />
+    );
+
+    expect(screen.getByRole("button", { name: "Rate Unrated Pasta" })).toBeInTheDocument();
+  });
+
+  it("shows Rate button when ratingSummary has zero ratings and onRateRecipe is provided", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Zero Rated", createdBy: "other-user" }),
+        notes: [],
+        ratingSummary: {
+          recipeId: "r1",
+          averageRating: 0,
+          wouldCookAgainPercent: 0,
+          totalRatings: 0,
+          memberRatings: [],
+        },
+      },
+    ];
+
+    const onRateRecipe = vi.fn();
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} onRateRecipe={onRateRecipe} />
+    );
+
+    expect(screen.getByRole("button", { name: "Rate Zero Rated" })).toBeInTheDocument();
+  });
+
+  it("does not show Rate button when onRateRecipe is not provided", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "No Rate Callback", createdBy: "other-user" }),
+        notes: [],
+      },
+    ];
+
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} />
+    );
+
+    expect(screen.queryByRole("button", { name: /Rate No Rate Callback/ })).not.toBeInTheDocument();
+  });
+
+  it("shows edit rating pencil button for rated recipe when onRateRecipe is provided", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Rated Dish", createdBy: "other-user" }),
+        notes: [],
+        ratingSummary: {
+          recipeId: "r1",
+          averageRating: 4,
+          wouldCookAgainPercent: 100,
+          totalRatings: 1,
+          memberRatings: [{ initial: "A", wouldCookAgain: true }],
+        },
+      },
+    ];
+
+    const onRateRecipe = vi.fn();
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} onRateRecipe={onRateRecipe} />
+    );
+
+    expect(screen.getByRole("button", { name: "Edit rating for Rated Dish" })).toBeInTheDocument();
+  });
+
+  it("does not show edit rating button for rated recipe when onRateRecipe is not provided", () => {
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      {
+        recipe: createMockRecipe({ id: "r1", name: "Rated No CB", createdBy: "other-user" }),
+        notes: [],
+        ratingSummary: {
+          recipeId: "r1",
+          averageRating: 4,
+          wouldCookAgainPercent: 100,
+          totalRatings: 1,
+          memberRatings: [{ initial: "A", wouldCookAgain: true }],
+        },
+      },
+    ];
+
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} />
+    );
+
+    expect(screen.queryByRole("button", { name: /Edit rating for/ })).not.toBeInTheDocument();
+  });
+
+  it("calls onRateRecipe with correct recipe data when Rate button clicked", () => {
+    const recipe = createMockRecipe({ id: "r1", name: "Rate Me", createdBy: "other-user" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    const onRateRecipe = vi.fn();
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} onRateRecipe={onRateRecipe} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Rate Rate Me" }));
+    expect(onRateRecipe).toHaveBeenCalledWith({ recipe, notes: [], ratingSummary: undefined });
+  });
+
+  it("calls onRateRecipe with correct recipe data when edit rating button clicked", () => {
+    const recipe = createMockRecipe({ id: "r1", name: "Edit My Rating", createdBy: "other-user" });
+    const ratingSummary = {
+      recipeId: "r1",
+      averageRating: 3.5,
+      wouldCookAgainPercent: 50,
+      totalRatings: 2,
+      memberRatings: [
+        { initial: "A", wouldCookAgain: true },
+        { initial: "B", wouldCookAgain: false },
+      ],
+    };
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [], ratingSummary },
+    ];
+
+    const onRateRecipe = vi.fn();
+    render(
+      <EventRecipesTab {...defaultProps} recipesWithNotes={recipesWithNotes} onRateRecipe={onRateRecipe} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit rating for Edit My Rating" }));
+    expect(onRateRecipe).toHaveBeenCalledWith({ recipe, notes: [], ratingSummary });
+  });
 });
 
 describe("renderStars", () => {

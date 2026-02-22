@@ -53,6 +53,7 @@ interface EventRecipesTabProps {
   onEditNoteClick: (note: RecipeNote) => void;
   onDeleteNoteClick: (note: RecipeNote) => void;
   onDeleteRecipeClick: (recipe: Recipe) => void;
+  onRateRecipe?: (recipe: EventRecipeWithRatings) => void;
 }
 
 const EventRecipesTab = ({
@@ -68,6 +69,7 @@ const EventRecipesTab = ({
   onEditNoteClick,
   onDeleteNoteClick,
   onDeleteRecipeClick,
+  onRateRecipe,
 }: EventRecipesTabProps) => {
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -157,6 +159,17 @@ const EventRecipesTab = ({
                                   : ratingSummary.averageRating.toFixed(1)}
                                 /5
                               </span>
+                              {onRateRecipe && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 ml-1"
+                                  aria-label={`Edit rating for ${recipe.name}`}
+                                  onClick={() => onRateRecipe({ recipe, notes, ratingSummary })}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              )}
                             </div>
                             {ratingSummary.memberRatings &&
                               ratingSummary.memberRatings.length > 0 && (
@@ -179,6 +192,19 @@ const EventRecipesTab = ({
                                 </div>
                               )}
                           </div>
+                        )}
+                        {/* Rate button for unrated recipes */}
+                        {onRateRecipe && (!ratingSummary || ratingSummary.totalRatings === 0) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 mt-1 text-xs text-muted-foreground hover:text-purple"
+                            aria-label={`Rate ${recipe.name}`}
+                            onClick={() => onRateRecipe({ recipe, notes, ratingSummary })}
+                          >
+                            <Star className="h-3 w-3 mr-1" />
+                            Rate
+                          </Button>
                         )}
                       </div>
                     </div>
