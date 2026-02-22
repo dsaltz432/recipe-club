@@ -570,112 +570,6 @@ describe("MealPlanPage", () => {
     });
   });
 
-  it("removes a meal item", async () => {
-    // Mock plan with existing item
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "meal_plans") {
-        return createPlanMock("plan-1");
-      }
-      if (table === "meal_plan_items") {
-        return createMockQueryBuilder({
-          order: vi.fn().mockResolvedValue({
-            data: [
-              {
-                id: "item-1",
-                plan_id: "plan-1",
-                recipe_id: null,
-                day_of_week: 0,
-                meal_type: "breakfast",
-                custom_name: "Pancakes",
-                custom_url: null,
-                sort_order: 0,
-                recipes: null,
-              },
-            ],
-            error: null,
-          }),
-        });
-      }
-      return createMockQueryBuilder();
-    });
-
-    render(<MealPlanPage {...defaultProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Pancakes")).toBeInTheDocument();
-    });
-
-    // Now set up delete mock
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "meal_plan_items") {
-        return createMockQueryBuilder({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        });
-      }
-      return createMockQueryBuilder();
-    });
-
-    fireEvent.click(screen.getByTitle("Remove meal"));
-
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Meal removed");
-    });
-  });
-
-  it("handles remove meal error", async () => {
-    // Setup to load with an existing item
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "meal_plans") {
-        return createPlanMock("plan-1");
-      }
-      if (table === "meal_plan_items") {
-        return createMockQueryBuilder({
-          order: vi.fn().mockResolvedValue({
-            data: [
-              {
-                id: "item-1",
-                plan_id: "plan-1",
-                recipe_id: null,
-                day_of_week: 0,
-                meal_type: "breakfast",
-                custom_name: "Pancakes",
-                custom_url: null,
-                sort_order: 0,
-                recipes: null,
-              },
-            ],
-            error: null,
-          }),
-        });
-      }
-      return createMockQueryBuilder();
-    });
-
-    render(<MealPlanPage {...defaultProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Pancakes")).toBeInTheDocument();
-    });
-
-    // Now set up delete to fail
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "meal_plan_items") {
-        const builder = createMockQueryBuilder();
-        builder.delete = vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
-        });
-        return builder;
-      }
-      return createMockQueryBuilder();
-    });
-
-    fireEvent.click(screen.getByTitle("Remove meal"));
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to remove meal");
-    });
-  });
-
   it("handles plan load error", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "meal_plans") {
@@ -2205,9 +2099,10 @@ describe("MealPlanPage", () => {
         });
       });
 
+      // (2500ms delay for "done" step animation before toast fires)
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
-      });
+      }, { timeout: 5000 });
     });
 
     it("handles parse recipe error", async () => {
@@ -4443,11 +4338,94 @@ describe("MealPlanPage", () => {
       // Click "Try Again" to retry
       fireEvent.click(screen.getByText("Try Again"));
       await waitFor(() => {
-        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+        expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
       });
     });
 
+    it("shows step labels in parse progress dialog", async () => {
+      let resolveInvoke: (value: { data: unknown; error: null }) => void;
+      mockInvoke.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveInvoke = resolve;
+      }));
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-steps-test" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-steps",
+                plan_id: "plan-new",
+                recipe_id: "recipe-steps-test",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Steps Test", url: "https://example.com/steps" },
+              },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Steps Test" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/steps" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
+      });
+
+      // Step labels should be visible
+      expect(screen.getByText("Adding recipe")).toBeInTheDocument();
+      expect(screen.getByText("Parsing ingredients & instructions")).toBeInTheDocument();
+      expect(screen.getByText("Loading recipe data")).toBeInTheDocument();
+
+      // Wait for invoke to actually be called (there's a 200ms delay for the saving step)
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalled();
+      });
+
+      // Clean up: resolve the invoke to avoid dangling promise
+      resolveInvoke!({ data: {}, error: null });
+      // (2500ms delay for "done" step animation before toast fires)
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+      }, { timeout: 5000 });
+    });
+
     it("dismisses parse failure dialog via overlay close (calls handleParseKeep)", async () => {
+      // Reset invoke mock to clear any stale once-queue entries from prior tests
+      mockInvoke.mockReset();
       mockInvoke.mockResolvedValueOnce({ data: null, error: new Error("Parse failed") });
 
       mockSupabaseFrom.mockImplementation((table: string) => {
@@ -4503,10 +4481,10 @@ describe("MealPlanPage", () => {
       });
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      // Wait for the parse failure dialog
+      // Wait for the parse failure dialog (needs extra timeout due to 200ms saving step delay)
       await waitFor(() => {
         expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
 
       // Close button (X) on the dialog triggers onOpenChange which calls handleParseKeep
       const closeButton = screen.getByRole("button", { name: /close/i });
@@ -4579,7 +4557,12 @@ describe("MealPlanPage", () => {
 
       // Wait for the parsing dialog
       await waitFor(() => {
-        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+        expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
+      });
+
+      // Wait for invoke to actually be called (there's a 200ms delay for the saving step)
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalled();
       });
 
       // Close button fires onOpenChange, but since parseStatus is "parsing" (not "failed"),
@@ -4587,15 +4570,16 @@ describe("MealPlanPage", () => {
       const closeButton = screen.getByRole("button", { name: /close/i });
       fireEvent.click(closeButton);
 
-      // Dialog should still be showing "Parsing Recipe"
-      expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+      // Dialog should still be showing "Adding Recipe"
+      expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
       expect(toast.success).not.toHaveBeenCalledWith("Recipe saved without parsing");
 
       // Clean up: resolve the invoke to avoid dangling promise
       resolveInvoke!({ data: {}, error: null });
+      // (2500ms delay for "done" step animation before toast fires)
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
-      });
+      }, { timeout: 5000 });
     });
 
     it("handles loadGroceryData returning null after parse succeeds on groceries tab", async () => {
@@ -4669,7 +4653,12 @@ describe("MealPlanPage", () => {
 
       // Wait for parsing dialog
       await waitFor(() => {
-        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+        expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
+      });
+
+      // Wait for invoke to actually be called (there's a 200ms delay for the saving step)
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalled();
       });
 
       // Switch to Groceries tab while parse is in flight
@@ -4686,9 +4675,10 @@ describe("MealPlanPage", () => {
       resolveInvoke!({ data: {}, error: null });
 
       // Parse succeeds but smartCombine should NOT be called since groceryData is null
+      // (2500ms delay for "done" step animation before toast fires)
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
-      });
+      }, { timeout: 5000 });
     });
 
     it("reloads grocery data after successful parse while on groceries tab", async () => {
@@ -4778,7 +4768,12 @@ describe("MealPlanPage", () => {
 
       // Wait for the parsing dialog to appear
       await waitFor(() => {
-        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+        expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
+      });
+
+      // Wait for invoke to actually be called (there's a 200ms delay for the saving step)
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalled();
       });
 
       // Switch to Groceries tab while parse is still in flight
@@ -4792,9 +4787,10 @@ describe("MealPlanPage", () => {
       resolveInvoke!({ data: {}, error: null });
 
       // Parse succeeds and reloads grocery data + runs smart combine
+      // (2500ms delay for "done" step animation before toast fires)
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
-      });
+      }, { timeout: 5000 });
     });
   });
 });

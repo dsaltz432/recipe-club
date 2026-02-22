@@ -384,7 +384,25 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     }
   };
 
-  const handleDeleteRecipe = (recipeId: string) => {
+  const [deleteGuardMessage, setDeleteGuardMessage] = useState<string | null>(null);
+
+  const handleDeleteRecipe = async (recipeId: string) => {
+    // Check if recipe is linked to a meal plan or event
+    try {
+      const { count: mealCount } = await supabase
+        .from("meal_plan_items")
+        .select("*", { count: "exact", head: true })
+        .eq("recipe_id", recipeId);
+
+      const recipe = recipes.find(r => r.id === recipeId);
+      if ((mealCount && mealCount > 0) || recipe?.eventId) {
+        setDeleteGuardMessage("This recipe is used in a meal plan or event. Remove it from those first before deleting.");
+        return;
+      }
+    } catch {
+      // If check fails, allow deletion attempt anyway
+    }
+
     setDeletingRecipeId(recipeId);
   };
 
@@ -670,6 +688,24 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Guard Dialog */}
+      <AlertDialog
+        open={!!deleteGuardMessage}
+        onOpenChange={() => setDeleteGuardMessage(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cannot Delete Recipe</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteGuardMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>OK</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

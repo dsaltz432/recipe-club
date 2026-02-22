@@ -8,7 +8,6 @@ describe("MealPlanGrid", () => {
     items: [] as MealPlanItem[],
     weekStart: new Date(2026, 1, 8), // Sunday Feb 8 (local time)
     onAddMeal: vi.fn(),
-    onRemoveMeal: vi.fn(),
     onEditMeal: vi.fn(),
   };
 
@@ -85,25 +84,6 @@ describe("MealPlanGrid", () => {
     fireEvent.click(buttons[0]);
 
     expect(defaultProps.onAddMeal).toHaveBeenCalled();
-  });
-
-  it("calls onRemoveMeal when filled slot remove is clicked", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 0,
-        mealType: "breakfast",
-        sortOrder: 0,
-        recipeName: "Pancakes",
-      },
-    ];
-
-    render(<MealPlanGrid {...defaultProps} items={items} />);
-
-    fireEvent.click(screen.getByTitle("Remove meal"));
-
-    expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-1");
   });
 
   it("calls onEditMeal when a meal name is clicked", () => {

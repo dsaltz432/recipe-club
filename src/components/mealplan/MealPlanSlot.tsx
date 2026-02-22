@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, X, Check, RotateCcw } from "lucide-react";
+import { Plus, Check, RotateCcw } from "lucide-react";
 import type { MealPlanItem } from "@/types";
 
 interface MealPlanSlotProps {
@@ -7,7 +7,6 @@ interface MealPlanSlotProps {
   dayOfWeek: number;
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
-  onRemoveMeal: (itemId: string) => void;
   onEditMeal: (item: MealPlanItem) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
   onMarkCooked?: (dayOfWeek: number, mealType: string) => void;
@@ -26,7 +25,6 @@ const MealPlanSlot = ({
   dayOfWeek,
   mealType,
   onAddMeal,
-  onRemoveMeal,
   onEditMeal,
   onViewMealEvent,
   onMarkCooked,
@@ -49,10 +47,10 @@ const MealPlanSlot = ({
 
   return (
     <div
-      className={`relative w-full min-h-[60px] p-2 rounded-lg border ${
+      className={`relative w-full min-h-[60px] p-2 rounded-lg border transition-colors ${
         isCooked
-          ? "bg-green-50 border-green-200"
-          : "bg-purple/5 border-purple/20"
+          ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
+          : "bg-purple/5 border-purple/20 hover:bg-purple/10 hover:border-purple/40"
       }${onViewMealEvent ? " cursor-pointer" : ""}`}
       onClick={onViewMealEvent ? () => onViewMealEvent(dayOfWeek, mealType) : undefined}
       role={onViewMealEvent ? "button" : undefined}
@@ -64,7 +62,7 @@ const MealPlanSlot = ({
           const name = item.recipeName || item.customName || "Unnamed meal";
 
           return (
-            <div key={item.id} className="group flex items-start justify-between gap-1">
+            <div key={item.id} className="flex items-start justify-between gap-1">
               <button
                 className="flex-1 min-w-0 text-left cursor-pointer hover:text-purple transition-colors"
                 onClick={(e) => { e.stopPropagation(); onEditMeal(item); }}
@@ -76,16 +74,6 @@ const MealPlanSlot = ({
                   {name}
                 </p>
               </button>
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRemoveMeal(item.id); }}
-                  className="text-muted-foreground hover:text-red-500 p-2"
-                  title="Remove meal"
-                  aria-label={`Remove ${name}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
             </div>
           );
         })}

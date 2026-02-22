@@ -9,7 +9,6 @@ describe("MealPlanSlot", () => {
     dayOfWeek: 1,
     mealType: "dinner" as const,
     onAddMeal: vi.fn(),
-    onRemoveMeal: vi.fn(),
     onEditMeal: vi.fn(),
   };
 
@@ -79,25 +78,6 @@ describe("MealPlanSlot", () => {
     render(<MealPlanSlot {...defaultProps} items={items} />);
 
     expect(screen.getByText("Unnamed meal")).toBeInTheDocument();
-  });
-
-  it("calls onRemoveMeal when remove button is clicked", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    render(<MealPlanSlot {...defaultProps} items={items} />);
-
-    fireEvent.click(screen.getByTitle("Remove meal"));
-
-    expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-1");
   });
 
   it("does not show external link icons in populated cards", () => {
@@ -213,34 +193,6 @@ describe("MealPlanSlot", () => {
     fireEvent.click(screen.getByTitle("Add another meal"));
 
     expect(defaultProps.onAddMeal).toHaveBeenCalledWith(1, "dinner");
-  });
-
-  it("calls onRemoveMeal for correct item when multiple items exist", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-      {
-        id: "item-2",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 1,
-        customName: "Side Salad",
-      },
-    ];
-
-    render(<MealPlanSlot {...defaultProps} items={items} />);
-
-    const removeButtons = screen.getAllByTitle("Remove meal");
-    fireEvent.click(removeButtons[1]);
-
-    expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-2");
   });
 
   it("navigates on card click when onViewMealEvent is provided", () => {
@@ -359,7 +311,6 @@ describe("MealPlanSlot", () => {
     );
 
     expect(screen.getByLabelText("Edit Grilled Salmon")).toBeInTheDocument();
-    expect(screen.getByLabelText("Remove Grilled Salmon")).toBeInTheDocument();
     expect(screen.getByLabelText("View meal details")).toBeInTheDocument();
     expect(screen.getByLabelText("Mark as cooked")).toBeInTheDocument();
     expect(screen.getByLabelText("Add another meal")).toBeInTheDocument();
@@ -427,27 +378,6 @@ describe("MealPlanSlot", () => {
       fireEvent.click(screen.getByLabelText("Edit Grilled Salmon"));
 
       expect(defaultProps.onEditMeal).toHaveBeenCalledWith(items[0]);
-      expect(onViewMealEvent).not.toHaveBeenCalled();
-    });
-
-    it("remove button stops propagation", () => {
-      const items: MealPlanItem[] = [
-        {
-          id: "item-1",
-          planId: "plan-1",
-          dayOfWeek: 1,
-          mealType: "dinner",
-          sortOrder: 0,
-          recipeName: "Grilled Salmon",
-        },
-      ];
-
-      const onViewMealEvent = vi.fn();
-      render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
-
-      fireEvent.click(screen.getByTitle("Remove meal"));
-
-      expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-1");
       expect(onViewMealEvent).not.toHaveBeenCalled();
     });
 
@@ -529,6 +459,49 @@ describe("MealPlanSlot", () => {
 
       expect(onUncook).toHaveBeenCalledWith(1, "dinner");
       expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("hover effects on filled tiles", () => {
+    it("has hover classes on uncooked filled tile", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      const outerDiv = container.firstChild as HTMLElement;
+      expect(outerDiv.className).toContain("hover:bg-purple/10");
+      expect(outerDiv.className).toContain("hover:border-purple/40");
+      expect(outerDiv.className).toContain("transition-colors");
+    });
+
+    it("has hover classes on cooked filled tile", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+      const outerDiv = container.firstChild as HTMLElement;
+      expect(outerDiv.className).toContain("hover:bg-green-100");
+      expect(outerDiv.className).toContain("hover:border-green-300");
+      expect(outerDiv.className).toContain("transition-colors");
     });
   });
 

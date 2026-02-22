@@ -506,13 +506,23 @@ const PersonalMealDetailPage = () => {
   const handleConfirmDeleteRecipe = async () => {
     if (!recipeToDelete) return;
     try {
-      const { error } = await supabase.from("recipes").delete().eq("id", recipeToDelete.id);
+      // Delete the meal_plan_item that links to this recipe (not the recipe itself)
+      await supabase
+        .from("meal_plan_items")
+        .delete()
+        .eq("recipe_id", recipeToDelete.id);
+
+      // Unlink the recipe from this event so it stays in "My Recipes"
+      const { error } = await supabase
+        .from("recipes")
+        .update({ event_id: null })
+        .eq("id", recipeToDelete.id);
       if (error) throw error;
       setRecipeToDelete(null);
-      toast.success("Recipe removed");
+      toast.success("Recipe removed from meal");
       loadEventData();
     } catch (error) {
-      console.error("Error deleting recipe:", error);
+      console.error("Error removing recipe from meal:", error);
       toast.error("Failed to remove recipe");
       setRecipeToDelete(null);
     }
@@ -896,13 +906,13 @@ const PersonalMealDetailPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Recipe Confirmation */}
+      {/* Remove Recipe from Meal Confirmation */}
       <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Recipe?</AlertDialogTitle>
+            <AlertDialogTitle>Remove from meal?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove &quot;{recipeToDelete?.name}&quot;? This action cannot be undone.
+              Remove &quot;{recipeToDelete?.name}&quot; from this meal? The recipe will still be available in your personal recipes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

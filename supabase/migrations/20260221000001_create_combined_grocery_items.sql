@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS combined_grocery_items (
   context_id TEXT NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
-  source_recipe_ids TEXT[] NOT NULL DEFAULT '{}',
+  recipe_ids TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (context_type, context_id, user_id)

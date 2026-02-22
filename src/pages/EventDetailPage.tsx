@@ -53,8 +53,6 @@ import {
   BookOpen,
   UtensilsCrossed,
   // Flame, // Cook Mode disabled
-  Check,
-  Circle,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
@@ -71,8 +69,7 @@ import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache, deleteGroceryCache } from "@/lib/groceryCache";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 
 interface EventData {
   eventId: string;
@@ -169,11 +166,6 @@ const EventDetailPage = () => {
     ...(showCombineStep ? [{ key: "combining" as const, label: "Combining with other recipes" }] : []),
     { key: "notifying" as const, label: "Notifying club members" },
   ];
-
-  const parseStepIndex = parseSteps.findIndex(s => s.key === parseStep);
-  const progressPercent = parseStep === "done"
-    ? 100
-    : Math.round((parseStepIndex / parseSteps.length) * 100);
 
   // Notes expansion state - tracks which recipes have notes expanded
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -877,14 +869,17 @@ const EventDetailPage = () => {
 
   const handleConfirmDeleteRecipe = async () => {
     try {
-      const { error } = await supabase.from("recipes").delete().eq("id", recipeToDelete!.id);
+      const { error } = await supabase
+        .from("recipes")
+        .update({ event_id: null, ingredient_id: null })
+        .eq("id", recipeToDelete!.id);
       if (error) throw error;
       setRecipeToDelete(null);
-      toast.success("Recipe removed");
+      toast.success("Recipe removed from event");
       deleteGroceryCache("event", eventId!, user!.id);
       loadEventData();
     } catch (error) {
-      console.error("Error deleting recipe:", error);
+      console.error("Error removing recipe from event:", error);
       toast.error("Failed to remove recipe");
       setRecipeToDelete(null);
     }
@@ -1365,44 +1360,7 @@ const EventDetailPage = () => {
           </DialogHeader>
 
           {parseStatus === "parsing" && (
-            <div className="space-y-5 py-6">
-              <Progress value={progressPercent} className="h-2" />
-              <div className="space-y-3">
-                {parseSteps.map((step) => {
-                  const stepIdx = parseSteps.findIndex(s => s.key === step.key);
-                  const isDone = parseStep === "done";
-                  const currentIdx = isDone ? parseSteps.length : parseSteps.findIndex(s => s.key === parseStep);
-                  const isComplete = stepIdx < currentIdx;
-                  const isActive = step.key === parseStep;
-
-                  return (
-                    <div key={step.key} className="flex items-center gap-3">
-                      {isComplete ? (
-                        <Check className="h-5 w-5 text-green-500" />
-                      ) : isActive ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-purple" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-300" />
-                      )}
-                      <span className={cn(
-                        "text-sm",
-                        isComplete && "text-green-700",
-                        isActive && "text-foreground font-medium",
-                        !isComplete && !isActive && "text-muted-foreground"
-                      )}>
-                        {step.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              {parseStep === "done" && (
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <Check className="h-6 w-6 text-green-500" />
-                  <span className="text-lg font-semibold text-green-700">Recipe Added!</span>
-                </div>
-              )}
-            </div>
+            <RecipeParseProgress steps={parseSteps} currentStep={parseStep} />
           )}
 
           {parseStatus === "failed" && (
@@ -1657,14 +1615,13 @@ const EventDetailPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Recipe Confirmation */}
+      {/* Remove Recipe from Event Confirmation */}
       <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Recipe?</AlertDialogTitle>
+            <AlertDialogTitle>Remove from event?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove &quot;{recipeToDelete?.name}&quot;? This will also delete all
-              notes, ratings, and parsed data for this recipe. This action cannot be undone.
+              Remove &quot;{recipeToDelete?.name}&quot; from this event? The recipe will still be available in your personal recipes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

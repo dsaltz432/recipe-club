@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Ingredient, ScheduledEvent } from "@/types";
 import { MIN_INGREDIENTS_TO_SPIN, WHEEL_COLORS } from "@/lib/constants";
-import { getContrastTextColor } from "@/lib/ingredientColors";
+
 import confetti from "canvas-confetti";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -189,16 +189,13 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
   };
 
   // Calculate font size for wheel segment labels to prevent text overflow.
-  // Scales down from 11px for long names in narrow segments, minimum 7px.
-  const getSegmentFontSize = (name: string, segmentAngle: number): number => {
-    const defaultSize = 11;
-    const minSize = 7;
-    // Approximate available width based on segment angle and radius
-    const availableWidth = Math.min(90, segmentAngle * 1.2);
-    // Estimate text width: ~6.5px per character at 11px font
-    const estimatedTextWidth = name.length * 6.5;
-    if (estimatedTextWidth <= availableWidth) return defaultSize;
-    const scale = availableWidth / estimatedTextWidth;
+  // Only shrinks from 16px for long names (>12 chars), minimum 10px.
+  const getSegmentFontSize = (name: string): number => {
+    const defaultSize = 16;
+    const minSize = 10;
+    if (name.length <= 12) return defaultSize;
+    // Scale down gradually for longer names
+    const scale = 12 / name.length;
     return Math.max(minSize, Math.round(defaultSize * scale * 10) / 10);
   };
 
@@ -242,22 +239,17 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
           const mathAngle = segmentCenterAngle - 90;
           const radians = (mathAngle * Math.PI) / 180;
 
-          // Position label along the radius, closer to outer edge
-          const x = 50 + 36 * Math.cos(radians);
-          const y = 50 + 36 * Math.sin(radians);
+          // Position label along the radius
+          const x = 50 + 32 * Math.cos(radians);
+          const y = 50 + 32 * Math.sin(radians);
 
           // Text rotation: all text points radially toward the center
           const textRotation = segmentCenterAngle + 90;
 
-          // Get text color that contrasts well with the slice color
-          const sliceColor = sliceColors[i];
-          const textColor = getContrastTextColor(sliceColor);
-          // Use appropriate shadow based on text color
-          const textShadow = textColor === "#ffffff"
-            ? "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)"
-            : "1px 1px 2px rgba(255,255,255,0.7), -1px -1px 2px rgba(255,255,255,0.7), 0 0 4px rgba(255,255,255,0.5)";
+          // White text with dark shadow for readability on all slices
+          const textShadow = "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)";
 
-          const fontSize = getSegmentFontSize(ingredient.name, segmentAngle);
+          const fontSize = getSegmentFontSize(ingredient.name);
 
           return (
             <div
@@ -267,7 +259,7 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
-                color: textColor,
+                color: "#ffffff",
                 textShadow,
                 fontSize: `${fontSize}px`,
                 whiteSpace: "nowrap",

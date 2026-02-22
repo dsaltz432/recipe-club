@@ -836,7 +836,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove Recipe?")).toBeInTheDocument();
+      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
     });
   });
 
@@ -1342,17 +1342,17 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove Recipe?")).toBeInTheDocument();
+      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText("Remove"));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe removed");
+      expect(toast.success).toHaveBeenCalledWith("Recipe removed from event");
     });
   });
 
-  it("handles delete recipe error", async () => {
+  it("handles remove recipe from event error", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
         return {
@@ -1370,8 +1370,8 @@ describe("EventDetailPage", () => {
               order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
             }),
           }),
-          delete: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: { message: "Delete error" } }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: { message: "Update error" } }),
           }),
         };
       }
@@ -1394,7 +1394,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove Recipe?")).toBeInTheDocument();
+      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText("Remove"));
@@ -3922,14 +3922,14 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove Recipe?")).toBeInTheDocument();
+      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
     });
 
     const removeBtn = screen.getByRole("button", { name: /remove/i });
     fireEvent.click(removeBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe removed");
+      expect(toast.success).toHaveBeenCalledWith("Recipe removed from event");
     });
   });
 

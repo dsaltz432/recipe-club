@@ -3002,6 +3002,133 @@ describe("RecipeHub - Delete Personal Recipe", () => {
       expect(screen.queryByText("Delete Recipe")).not.toBeInTheDocument();
     });
   });
+  it("shows guard dialog when recipe is linked to a meal plan", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "meal_plan_items") {
+        const builder = createMockQueryBuilder([]);
+        // Override the then to return count > 0
+        builder.then = vi.fn((resolve) =>
+          Promise.resolve({ data: null, error: null, count: 1 }).then(resolve)
+        );
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cannot Delete Recipe")).toBeInTheDocument();
+      expect(
+        screen.getByText(/remove it from those first before deleting/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows guard dialog when recipe has an eventId", async () => {
+    const recipesWithEvent = [
+      {
+        id: "personal-event",
+        name: "Event Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: { type: "personal" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(recipesWithEvent);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "meal_plan_items") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cannot Delete Recipe")).toBeInTheDocument();
+    });
+
+    // Dismiss the guard dialog via OK button (covers onOpenChange handler)
+    fireEvent.click(screen.getByRole("button", { name: /OK/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Cannot Delete Recipe")).not.toBeInTheDocument();
+    });
+  });
+
+  it("allows deletion when guard check fails (fallback)", async () => {
+    const { toast } = await import("sonner");
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(personalRecipesData);
+        builder.delete = vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        });
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "meal_plan_items") {
+        const builder = createMockQueryBuilder([]);
+        // Make the guard check throw by rejecting at .eq()
+        builder.select = vi.fn().mockReturnValue({
+          eq: vi.fn().mockRejectedValue(new Error("DB error")),
+        });
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    // Guard fails, so deletion should still proceed — delete dialog should appear
+    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe deleted!");
+    });
+  });
 });
 
 describe("RecipeHub - Personal Event Filtering (US-007)", () => {

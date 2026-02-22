@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, UtensilsCrossed, Loader2 } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
+import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
@@ -85,6 +85,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
   const [pendingParseName, setPendingParseName] = useState<string>("");
+  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "combining" | "done">("saving");
+  const [showCombineStep, setShowCombineStep] = useState(false);
 
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
@@ -359,6 +361,15 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
     const doParse = async () => {
       try {
+        // Calculate whether to show combine step using current items state
+        const recipesWithUrls = items.filter(i => i.recipeId && (i.recipeUrl || i.customUrl));
+        const shouldCombine = recipesWithUrls.length >= 2;
+        setShowCombineStep(shouldCombine);
+
+        setParseStep("saving");
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        setParseStep("parsing");
         const recipe = items.find((i) => i.recipeId === pendingParseRecipeId);
         const { error } = await supabase.functions.invoke("parse-recipe", {
           body: {
@@ -368,17 +379,28 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           },
         });
         if (error) throw error;
+
+        setParseStep("loading");
+        // Reload grocery data if on grocery tab (use ref for current tab value)
+        let groceryData: { ingredients: RecipeIngredient[]; contentMap: Record<string, RecipeContent>; recipes: Recipe[] } | null = null;
+        if (viewTabRef.current === "groceries") {
+          groceryData = await loadGroceryData();
+        }
+
+        if (shouldCombine && groceryData) {
+          setParseStep("combining");
+          await runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        setParseStep("done");
+        await new Promise(resolve => setTimeout(resolve, 2500));
+
         setParseStatus("idle");
         setPendingParseRecipeId(null);
         setPendingParseName("");
+        setParseStep("saving");
         toast.success("Recipe parsed successfully!");
-        // Reload grocery data if on grocery tab (use ref for current tab value)
-        if (viewTabRef.current === "groceries") {
-          const groceryData = await loadGroceryData();
-          if (groceryData) {
-            runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
-          }
-        }
       } catch (error) {
         console.error("Error parsing recipe:", error);
         setParseStatus("failed");
@@ -390,6 +412,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   }, [parseStatus, pendingParseRecipeId]);
 
   const handleParseRetry = () => {
+    setParseStep("saving");
     setParseStatus("parsing");
   };
 
@@ -397,6 +420,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setParseStatus("idle");
     setPendingParseRecipeId(null);
     setPendingParseName("");
+    setParseStep("saving");
     toast.success("Recipe saved without parsing");
   };
 
@@ -481,7 +505,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (shouldParse && linkedRecipeId && url) {
           setPendingParseRecipeId(linkedRecipeId);
           setPendingParseName(name);
-              setParseStatus("parsing");
+          setParseStatus("parsing");
         }
       } catch (error) {
         console.error("Error updating meal:", error);
@@ -546,23 +570,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setShowAddMealDialog(false);
     setPendingSlot(null);
     setEditingItem(null);
-  };
-
-  const handleRemoveMeal = async (itemId: string) => {
-    try {
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .delete()
-        .eq("id", itemId);
-
-      if (error) throw error;
-
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-      toast.success("Meal removed");
-    } catch (error) {
-      console.error("Error removing meal:", error);
-      toast.error("Failed to remove meal");
-    }
   };
 
   const addItemToPlan = async (name: string, dayOfWeek: number, mealType: string, url?: string, recipeId?: string): Promise<string | undefined> => {
@@ -898,7 +905,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             items={items}
             weekStart={weekStart}
             onAddMeal={handleAddMeal}
-            onRemoveMeal={handleRemoveMeal}
             onEditMeal={handleEditMeal}
             onViewMealEvent={handleViewMealEvent}
             onMarkCooked={handleMarkCooked}
@@ -1009,7 +1015,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {parseStatus === "failed" ? "Parsing Failed" : "Parsing Recipe"}
+              {parseStatus === "failed" ? "Parsing Failed" : "Adding Recipe"}
             </DialogTitle>
             <DialogDescription>
               {parseStatus === "failed"
@@ -1018,10 +1024,15 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             </DialogDescription>
           </DialogHeader>
           {parseStatus === "parsing" && (
-            <div className="flex flex-col items-center gap-3 py-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <Progress value={60} />
-            </div>
+            <RecipeParseProgress
+              steps={[
+                { key: "saving", label: "Adding recipe" },
+                { key: "parsing", label: "Parsing ingredients & instructions" },
+                { key: "loading", label: "Loading recipe data" },
+                ...(showCombineStep ? [{ key: "combining", label: "Combining with other recipes" }] : []),
+              ]}
+              currentStep={parseStep}
+            />
           )}
           {parseStatus === "failed" && (
             <div className="flex gap-2 justify-end pt-2">
