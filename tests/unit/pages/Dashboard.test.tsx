@@ -44,6 +44,34 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+// Mock dropdown-menu to render children directly (Radix portals don't work in jsdom)
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <button onClick={onClick}>{children}</button>
+  ),
+  DropdownMenuSeparator: () => <hr />,
+}));
+
+// Mock Tabs to render children directly and capture onValueChange
+let capturedTabsProps: Record<string, unknown> = {};
+vi.mock("@/components/ui/tabs", () => {
+  const state = { activeValue: "" };
+  return {
+    Tabs: ({ children, value, ...rest }: { children: React.ReactNode; value?: string; onValueChange?: (v: string) => void }) => {
+      state.activeValue = value || "home";
+      capturedTabsProps = { children, value, ...rest };
+      return <div>{children}</div>;
+    },
+    TabsList: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    TabsTrigger: ({ children }: { children: React.ReactNode }) => <button role="tab">{children}</button>,
+    TabsContent: ({ children, value }: { children: React.ReactNode; value: string }) =>
+      value === state.activeValue ? <div>{children}</div> : null,
+  };
+});
+
 // Capture HomeSection callbacks
 let capturedHomeSectionProps: Record<string, unknown> = {};
 vi.mock("@/components/home/HomeSection", () => ({
@@ -76,6 +104,7 @@ describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTabParam = undefined;
+    capturedTabsProps = {};
     capturedHomeSectionProps = {};
     capturedEventsProps = {};
     mockSignOut.mockResolvedValue(undefined);
@@ -644,5 +673,232 @@ describe("Dashboard", () => {
     const onEventChange = capturedEventsProps.onEventChange as () => void;
     expect(onEventChange).toBeDefined();
     onEventChange();
+  });
+
+  // --- loadIngredients data mapping (lines 119-120) ---
+
+  it("loadIngredients maps data correctly via handleEventCreated", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
+    mockIsAdmin.mockReturnValue(true);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    // Set up order mock: first call for loadActiveEvent (chainable), second for loadIngredients (returns data)
+    mockFromResult.order
+      .mockReturnValueOnce(mockFromResult)
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: "i1",
+            name: "Tomato",
+            used_count: 2,
+            last_used_by: "user-2",
+            last_used_date: "2026-01-01",
+            created_by: "user-1",
+            in_bank: true,
+          },
+          {
+            id: "i2",
+            name: "Salt",
+            used_count: 0,
+            last_used_by: null,
+            last_used_date: null,
+            created_by: null,
+            in_bank: false,
+          },
+        ],
+        error: null,
+      });
+
+    const onEventCreated = capturedHomeSectionProps.onEventCreated as () => void;
+    onEventCreated();
+
+    await waitFor(() => {
+      const ingredients = capturedHomeSectionProps.ingredients as Array<Record<string, unknown>>;
+      expect(ingredients).toEqual([
+        {
+          id: "i1",
+          name: "Tomato",
+          usedCount: 2,
+          lastUsedBy: "user-2",
+          lastUsedDate: "2026-01-01",
+          createdBy: "user-1",
+          inBank: true,
+        },
+        {
+          id: "i2",
+          name: "Salt",
+          usedCount: 0,
+          lastUsedBy: undefined,
+          lastUsedDate: undefined,
+          createdBy: undefined,
+          inBank: false,
+        },
+      ]);
+    });
+  });
+
+  it("loadIngredients handles null data without error", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
+    mockIsAdmin.mockReturnValue(true);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    mockFromResult.order
+      .mockReturnValueOnce(mockFromResult)
+      .mockResolvedValueOnce({ data: null, error: null });
+
+    const onEventCreated = capturedHomeSectionProps.onEventCreated as () => void;
+    onEventCreated();
+
+    await waitFor(() => {
+      expect(capturedHomeSectionProps.ingredients).toEqual([]);
+    });
+  });
+
+  // --- Admin dropdown items (lines 255-262) ---
+
+  it("admin clicks Manage Users and navigates to /users", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Admin",
+      email: "admin@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
+    mockIsAdmin.mockReturnValue(true);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Manage Users"));
+    expect(mockNavigate).toHaveBeenCalledWith("/users");
+  });
+
+  it("clicks My Pantry opens pantry dialog", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("My Pantry"));
+    expect(screen.getByTestId("pantry-dialog")).toBeInTheDocument();
+  });
+
+  // --- handleTabChange (lines 31-33) ---
+
+  it("handleTabChange navigates to /dashboard/events for non-home tab", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    const handleTabChange = capturedTabsProps.onValueChange as (value: string) => void;
+    handleTabChange("events");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/events");
+  });
+
+  it("handleTabChange navigates to /dashboard for home tab", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    const handleTabChange = capturedTabsProps.onValueChange as (value: string) => void;
+    handleTabChange("home");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+  });
+
+  // --- handleRecipeAdded user?.id false branch (line 163) ---
+
+  it("handleRecipeAdded does not call loadStats when user has no id", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: null,
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    vi.clearAllMocks();
+    const onRecipeAdded = capturedHomeSectionProps.onRecipeAdded as () => void;
+    onRecipeAdded();
+
+    // loadStats should NOT be called when user has no id
+    expect(mockFromResult.in).not.toHaveBeenCalled();
+  });
+
+  // --- loadStats count || 0 fallback branches (lines 150-151) ---
+
+  it("loadStats handles null count with || 0 fallback", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    // Make the .in() chain return null count so eventsResult.count || 0 takes the fallback
+    mockFromResult.in.mockResolvedValue({ count: null, error: null });
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
   });
 });
