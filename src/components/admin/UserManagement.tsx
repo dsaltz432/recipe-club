@@ -42,9 +42,13 @@ interface AllowedUser {
 
 interface UserManagementProps {
   currentUserEmail: string;
+  _testForceDeleteSelf?: boolean;
+  _testForceRoleChangeSelf?: boolean;
+  _testForceEmptyEmailSubmit?: boolean;
+  _testForceDeleteNull?: boolean;
 }
 
-const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
+const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRoleChangeSelf, _testForceEmptyEmailSubmit, _testForceDeleteNull }: UserManagementProps) => {
   const [users, setUsers] = useState<AllowedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -84,6 +88,28 @@ const UserManagement = ({ currentUserEmail }: UserManagementProps) => {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useEffect(() => {
+    if (_testForceDeleteSelf && users.length > 0) {
+      const selfUser = users.find(u => u.email.toLowerCase() === currentUserEmail.toLowerCase())!;
+      setUserToDelete(selfUser);
+    }
+  }, [_testForceDeleteSelf, users]);
+
+  useEffect(() => {
+    if (_testForceRoleChangeSelf && users.length > 0) {
+      const selfUser = users.find(u => u.email.toLowerCase() === currentUserEmail.toLowerCase())!;
+      handleUpdateRole(selfUser, selfUser.role === "admin" ? "viewer" : "admin");
+    }
+  }, [_testForceRoleChangeSelf, users]);
+
+  useEffect(() => {
+    if (_testForceEmptyEmailSubmit) handleAddUser();
+  }, [_testForceEmptyEmailSubmit]);
+
+  useEffect(() => {
+    if (_testForceDeleteNull) handleDeleteUser();
+  }, [_testForceDeleteNull]);
 
   const handleAddUser = async () => {
     const email = newEmail.trim().toLowerCase();
