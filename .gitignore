@@ -34,5 +34,8 @@ coverage/
 # Generated test/audit artifacts
 E2E_TEST_RESULTS_*.md
 
+# Claude Code
+.claude/
+
 # Ralph loop
 ralph/
