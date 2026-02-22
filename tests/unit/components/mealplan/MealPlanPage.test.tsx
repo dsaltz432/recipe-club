@@ -51,6 +51,7 @@ const mockEnsureDefaultPantryItems = vi.fn();
 vi.mock("@/lib/pantry", () => ({
   getPantryItems: (...args: unknown[]) => mockGetPantryItems(...args),
   ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+  DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"],
 }));
 
 // Mock grocery list smart combine (preserve other exports like combineIngredients)

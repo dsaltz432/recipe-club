@@ -15,13 +15,14 @@
 - RecipeHub loads recipes lazily per sub-tab (club on mount, personal only when clicked)
 - Removing component props cascades: child interface → parent interface → parent destructuring → parent JSX → parent tests. Build won't pass until all references are removed.
 - MealPlanSlot is now display-only (no edit/cook/uncook), MealPlanGrid passes only onAddMeal + onViewMealEvent
+- All 5 test files that mock `@/lib/pantry` must include `DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"]` in the mock — PantryContent imports it for protected item logic
 - Dead code in MealPlanPage (editingItem state, edit branches in handleAddCustomMeal/handleAddRecipeMeal, EventRatingDialog, uncook AlertDialog) has been removed as part of US-001
 - `cooked_at` column on meal_plan_items is not in generated Supabase types — use `as Record<string, unknown>` for update payloads and row access, `select("*")` instead of named columns
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 6
-**Current Task:** US-006 complete
+**Tasks Completed:** 7
+**Current Task:** US-007 complete
 
 ---
 
@@ -188,5 +189,40 @@
 - The test file has multiple tests verifying the same delete recipe flow (lines 829, 1335, 3914). All need updating when behavior changes.
 - The error test mock needed to change from `update:` to `delete:` in the mock return value, matching the new Supabase call pattern.
 - PersonalMealDetailPage still uses the unlink pattern for meal plan recipes — different from club event deletion.
+
+---
+
+## 2026-02-22 13:00 — US-007: Pantry — protect salt, pepper, and water from removal
+
+### What was implemented
+- Exported `DEFAULT_PANTRY_ITEMS` from `src/lib/pantry.ts` (was `const`, now `export const`)
+- Imported `DEFAULT_PANTRY_ITEMS` in PantryContent.tsx for case-insensitive protection check
+- Protected items (salt, pepper, water) now show a muted "Default" label instead of the delete (Trash2) button
+- Non-protected items retain full delete button + confirmation dialog behavior
+- Updated all 5 test files that mock `@/lib/pantry` to include `DEFAULT_PANTRY_ITEMS` in their mock exports
+- Updated PantryContent.test.tsx: added tests for protected items having no delete button and showing "Default" label, changed removal tests to use non-protected "olive oil" item
+- Updated PantrySection.test.tsx: added `DEFAULT_PANTRY_ITEMS` to mock, added "olive oil" to mock data, changed removal tests to use non-protected item
+- Updated PantryDialog.test.tsx: same changes as PantrySection
+- Updated EventDetailPage.test.tsx and MealPlanPage.test.tsx: added `DEFAULT_PANTRY_ITEMS` to their `@/lib/pantry` mocks
+
+### Files changed
+- src/lib/pantry.ts
+- src/components/pantry/PantryContent.tsx
+- tests/unit/components/pantry/PantryContent.test.tsx
+- tests/unit/components/pantry/PantrySection.test.tsx
+- tests/unit/components/pantry/PantryDialog.test.tsx
+- tests/unit/pages/EventDetailPage.test.tsx
+- tests/unit/components/mealplan/MealPlanPage.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1577 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories, PantryContent.tsx 100%
+
+### Learnings for future iterations
+- Exporting a new constant from a module that's mocked in 5+ test files requires updating ALL those mocks — vitest will throw "No export defined on mock" if any mock is missing it.
+- Tests that exercise deletion flows must use non-protected items now. Mock data should always include at least one non-protected item (e.g., "olive oil") alongside the defaults.
+- The `DEFAULT_PANTRY_ITEMS.includes(item.name.toLowerCase())` check is case-insensitive because the array contains lowercase values and we lowercase the item name.
 
 ---

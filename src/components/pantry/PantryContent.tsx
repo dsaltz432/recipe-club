@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getPantryItems, addPantryItem, removePantryItem, ensureDefaultPantryItems } from "@/lib/pantry";
+import { getPantryItems, addPantryItem, removePantryItem, ensureDefaultPantryItems, DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 
 interface PantryContentProps {
   userId: string;
@@ -133,28 +133,35 @@ const PantryContent = ({ userId, onPantryChange, active }: PantryContentProps) =
         </p>
       ) : (
         <ul className="space-y-1 max-h-60 overflow-y-auto">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 group"
-            >
-              <span className="text-sm capitalize">{item.name}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => handleRemoveClick(item)}
-                disabled={deletingId === item.id}
-                aria-label={`Remove ${item.name}`}
+          {items.map((item) => {
+            const isProtected = DEFAULT_PANTRY_ITEMS.includes(item.name.toLowerCase());
+            return (
+              <li
+                key={item.id}
+                className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 group"
               >
-                {deletingId === item.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span className="text-sm capitalize">{item.name}</span>
+                {isProtected ? (
+                  <span className="text-xs text-muted-foreground px-2">Default</span>
                 ) : (
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleRemoveClick(item)}
+                    disabled={deletingId === item.id}
+                    aria-label={`Remove ${item.name}`}
+                  >
+                    {deletingId === item.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </Button>
                 )}
-              </Button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
 

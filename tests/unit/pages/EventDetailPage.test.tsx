@@ -74,6 +74,7 @@ const mockEnsureDefaultPantryItems = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/pantry", () => ({
   getPantryItems: (...args: unknown[]) => mockGetPantryItems(...args),
   ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+  DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"],
 }));
 
 // Upload mock

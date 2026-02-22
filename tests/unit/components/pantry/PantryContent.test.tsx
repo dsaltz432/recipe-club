@@ -13,6 +13,7 @@ vi.mock("@/lib/pantry", () => ({
   addPantryItem: (...args: unknown[]) => mockAddPantryItem(...args),
   removePantryItem: (...args: unknown[]) => mockRemovePantryItem(...args),
   ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+  DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"],
 }));
 
 // Mock sonner
@@ -29,6 +30,8 @@ describe("PantryContent", () => {
     mockGetPantryItems.mockResolvedValue([
       { id: "1", name: "salt" },
       { id: "2", name: "pepper" },
+      { id: "3", name: "water" },
+      { id: "4", name: "olive oil" },
     ]);
     mockAddPantryItem.mockResolvedValue(undefined);
     mockRemovePantryItem.mockResolvedValue(undefined);
@@ -48,6 +51,8 @@ describe("PantryContent", () => {
       expect(mockGetPantryItems).toHaveBeenCalledWith("user-1");
       expect(screen.getByText("salt")).toBeInTheDocument();
       expect(screen.getByText("pepper")).toBeInTheDocument();
+      expect(screen.getByText("water")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
   });
 
@@ -78,13 +83,13 @@ describe("PantryContent", () => {
     });
 
     const input = screen.getByPlaceholderText("Add an item...");
-    fireEvent.change(input, { target: { value: "olive oil" } });
+    fireEvent.change(input, { target: { value: "garlic" } });
     const addButton = input.closest("div")!.querySelector("button")!;
     fireEvent.click(addButton);
 
     await waitFor(() => {
-      expect(mockAddPantryItem).toHaveBeenCalledWith("user-1", "olive oil");
-      expect(toast.success).toHaveBeenCalledWith("Added 'olive oil' to pantry");
+      expect(mockAddPantryItem).toHaveBeenCalledWith("user-1", "garlic");
+      expect(toast.success).toHaveBeenCalledWith("Added 'garlic' to pantry");
       expect(onPantryChange).toHaveBeenCalled();
     });
   });
@@ -167,15 +172,42 @@ describe("PantryContent", () => {
     });
   });
 
-  it("removes an item via confirmation dialog and calls onPantryChange", async () => {
-    const onPantryChange = vi.fn();
-    render(<PantryContent userId="user-1" active={true} onPantryChange={onPantryChange} />);
+  it("hides delete button for protected default items (salt, pepper, water)", async () => {
+    render(<PantryContent userId="user-1" active={true} />);
 
     await waitFor(() => {
       expect(screen.getByText("salt")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Remove salt"));
+    // Protected items should NOT have a Remove button
+    expect(screen.queryByLabelText("Remove salt")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Remove pepper")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Remove water")).not.toBeInTheDocument();
+
+    // Protected items should show "Default" label
+    const defaultLabels = screen.getAllByText("Default");
+    expect(defaultLabels).toHaveLength(3);
+  });
+
+  it("shows delete button for non-protected items", async () => {
+    render(<PantryContent userId="user-1" active={true} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
+    });
+
+    expect(screen.getByLabelText("Remove olive oil")).toBeInTheDocument();
+  });
+
+  it("removes a non-protected item via confirmation dialog and calls onPantryChange", async () => {
+    const onPantryChange = vi.fn();
+    render(<PantryContent userId="user-1" active={true} onPantryChange={onPantryChange} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     await waitFor(() => {
       expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
@@ -183,7 +215,7 @@ describe("PantryContent", () => {
     fireEvent.click(screen.getByText("Remove"));
 
     await waitFor(() => {
-      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "1");
+      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "4");
       expect(onPantryChange).toHaveBeenCalled();
     });
   });
@@ -192,10 +224,10 @@ describe("PantryContent", () => {
     render(<PantryContent userId="user-1" active={true} />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Remove salt"));
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     await waitFor(() => {
       expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
@@ -203,7 +235,7 @@ describe("PantryContent", () => {
     fireEvent.click(screen.getByText("Remove"));
 
     await waitFor(() => {
-      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "1");
+      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "4");
     });
   });
 
@@ -212,10 +244,10 @@ describe("PantryContent", () => {
     render(<PantryContent userId="user-1" active={true} />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Remove salt"));
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     await waitFor(() => {
       expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
@@ -231,10 +263,10 @@ describe("PantryContent", () => {
     render(<PantryContent userId="user-1" active={true} />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Remove salt"));
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     await waitFor(() => {
       expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();

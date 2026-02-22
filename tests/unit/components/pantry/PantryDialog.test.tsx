@@ -13,6 +13,7 @@ vi.mock("@/lib/pantry", () => ({
   addPantryItem: (...args: unknown[]) => mockAddPantryItem(...args),
   removePantryItem: (...args: unknown[]) => mockRemovePantryItem(...args),
   ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+  DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"],
 }));
 
 // Mock sonner
@@ -29,6 +30,7 @@ describe("PantryDialog", () => {
     mockGetPantryItems.mockResolvedValue([
       { id: "1", name: "salt" },
       { id: "2", name: "pepper" },
+      { id: "3", name: "olive oil" },
     ]);
     mockAddPantryItem.mockResolvedValue(undefined);
     mockRemovePantryItem.mockResolvedValue(undefined);
@@ -145,18 +147,15 @@ describe("PantryDialog", () => {
     });
   });
 
-  it("removes an item", async () => {
+  it("removes a non-protected item", async () => {
     const onPantryChange = vi.fn();
     render(<PantryDialog open={true} onOpenChange={vi.fn()} userId="user-1" onPantryChange={onPantryChange} />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    const deleteButtons = screen.getAllByRole("button").filter(
-      (btn) => !btn.textContent?.includes("Add") && btn.closest("li")
-    );
-    fireEvent.click(deleteButtons[0]);
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     // Confirmation dialog appears - click Remove to confirm
     await waitFor(() => {
@@ -165,7 +164,7 @@ describe("PantryDialog", () => {
     fireEvent.click(screen.getByText("Remove"));
 
     await waitFor(() => {
-      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "1");
+      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "3");
       expect(onPantryChange).toHaveBeenCalled();
     });
   });
@@ -175,13 +174,10 @@ describe("PantryDialog", () => {
     render(<PantryDialog open={true} onOpenChange={vi.fn()} userId="user-1" />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    const deleteButtons = screen.getAllByRole("button").filter(
-      (btn) => !btn.textContent?.includes("Add") && btn.closest("li")
-    );
-    fireEvent.click(deleteButtons[0]);
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     // Confirmation dialog appears - click Remove to confirm
     await waitFor(() => {

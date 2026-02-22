@@ -13,6 +13,7 @@ vi.mock("@/lib/pantry", () => ({
   addPantryItem: (...args: unknown[]) => mockAddPantryItem(...args),
   removePantryItem: (...args: unknown[]) => mockRemovePantryItem(...args),
   ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
+  DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"],
 }));
 
 // Mock sonner
@@ -29,6 +30,7 @@ describe("PantrySection", () => {
     mockGetPantryItems.mockResolvedValue([
       { id: "1", name: "salt" },
       { id: "2", name: "pepper" },
+      { id: "3", name: "olive oil" },
     ]);
     mockAddPantryItem.mockResolvedValue(undefined);
     mockRemovePantryItem.mockResolvedValue(undefined);
@@ -177,12 +179,11 @@ describe("PantrySection", () => {
     render(<PantrySection userId="user-1" onPantryChange={vi.fn()} />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    // Click trash icon to open confirmation dialog
-    const deleteButtons = screen.getAllByRole("button", { name: /Remove/ });
-    fireEvent.click(deleteButtons[0]);
+    // Click trash icon on non-protected item to open confirmation dialog
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     // Confirmation dialog should appear
     await waitFor(() => {
@@ -193,7 +194,7 @@ describe("PantrySection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => {
-      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "1");
+      expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "3");
     });
   });
 
@@ -201,12 +202,11 @@ describe("PantrySection", () => {
     render(<PantrySection userId="user-1" />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    // Click trash icon to open confirmation dialog
-    const deleteButtons = screen.getAllByRole("button", { name: /Remove/ });
-    fireEvent.click(deleteButtons[0]);
+    // Click trash icon on non-protected item to open confirmation dialog
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     await waitFor(() => {
       expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
@@ -224,12 +224,11 @@ describe("PantrySection", () => {
     render(<PantrySection userId="user-1" />);
 
     await waitFor(() => {
-      expect(screen.getByText("salt")).toBeInTheDocument();
+      expect(screen.getByText("olive oil")).toBeInTheDocument();
     });
 
-    // Click trash icon → confirmation → confirm
-    const deleteButtons = screen.getAllByRole("button", { name: /Remove/ });
-    fireEvent.click(deleteButtons[0]);
+    // Click trash icon on non-protected item → confirmation → confirm
+    fireEvent.click(screen.getByLabelText("Remove olive oil"));
 
     await waitFor(() => {
       expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
