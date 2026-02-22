@@ -19,8 +19,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ---
 
@@ -101,5 +101,32 @@
 ### Learnings for future iterations
 - When a large cascading cleanup happens in an earlier story, verify downstream stories before writing code. US-001 cleaned up MealPlanPage so thoroughly that US-002 and US-003 were both already complete.
 - Unused test mocks for removed components should be cleaned up even if they don't cause test failures — they add confusion for future developers.
+
+---
+
+## 2026-02-22 10:30 — US-004: Clean up AddMealDialog — remove editing props and logic
+
+### What was implemented
+- Removed `editingItemName` and `editingItemUrl` from AddMealDialogProps interface and component destructuring
+- Changed `resetForm` to use empty strings instead of referencing removed props
+- Removed the `useEffect` that pre-filled name/url on dialog open (lines 75-80)
+- Made dialog title always "Add Meal" (removed conditional for "Edit Meal")
+- Made dialog description always the add text (removed conditional for Replace text)
+- Made submit button always "Add to Meal" (removed conditional for "Save Changes")
+- Updated AddMealDialog.test.tsx: merged "Edit Meal" title test and "Add Meal" title test into single test, removed editingItemName prop usage
+
+### Files changed
+- src/components/mealplan/AddMealDialog.tsx
+- tests/unit/components/mealplan/AddMealDialog.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1575 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: AddMealDialog.tsx 100% Stmts/Branch/Funcs/Lines
+
+### Learnings for future iterations
+- This was a straightforward prop removal since MealPlanPage's edit branches (which passed these props) were already removed in US-001. No other callers existed.
+- The `useEffect` for pre-filling was only needed for editing — safe to remove entirely since add mode always starts with empty fields.
 
 ---

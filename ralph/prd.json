@@ -84,7 +84,7 @@
         "Tests pass"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "activeForm": "Cleaning up AddMealDialog",
       "notes": "File: src/components/mealplan/AddMealDialog.tsx (371 lines). Remove from interface (lines 32-33): editingItemName, editingItemUrl. Remove from destructuring (lines 49-50). In resetForm (lines 66-67): change `setName(editingItemName || '')` to `setName('')` and `setUrl(editingItemUrl || '')` to `setUrl('')`. Remove the useEffect at lines 75-80 that pre-fills name/url on open. Change title (line 186) from `{editingItemName ? 'Edit Meal' : 'Add Meal'}` to just `'Add Meal'`. Change description (lines 188-192) from conditional to just the add text. Change button text (line 286) from `{editingItemName ? 'Save Changes' : 'Add to Meal'}` to just `'Add to Meal'`. Tests: tests/unit/components/mealplan/AddMealDialog.test.tsx — remove editingItemName/editingItemUrl from test defaultProps. Remove tests for 'Edit Meal' title, 'Save Changes' button, pre-filled name/url values. Keep tests for: add custom meal, add from recipes, search, file upload, URL validation, cancel."
     },

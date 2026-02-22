@@ -528,14 +528,7 @@ describe("AddMealDialog", () => {
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("shows Edit Meal title when editingItemName is set", () => {
-    render(<AddMealDialog {...defaultProps} editingItemName="Grilled Salmon" />);
-
-    expect(screen.getByText("Edit Meal")).toBeInTheDocument();
-    expect(screen.getByText('Replace "Grilled Salmon" for Monday dinner.')).toBeInTheDocument();
-  });
-
-  it("shows Add Meal title when editingItemName is not set", () => {
+  it("shows Add Meal title", () => {
     render(<AddMealDialog {...defaultProps} />);
 
     expect(screen.getByText("Add Meal")).toBeInTheDocument();

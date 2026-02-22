@@ -29,8 +29,6 @@ interface AddMealDialogProps {
   mealType: string;
   onAddCustomMeal: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal: (recipes: Array<{ id: string; name: string; url?: string }>) => void;
-  editingItemName?: string;
-  editingItemUrl?: string;
 }
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -46,8 +44,6 @@ const AddMealDialog = ({
   mealType,
   onAddCustomMeal,
   onAddRecipeMeal,
-  editingItemName,
-  editingItemUrl,
 }: AddMealDialogProps) => {
   const [activeTab, setActiveTab] = useState<"custom" | "recipes">("custom");
   const [name, setName] = useState("");
@@ -63,21 +59,14 @@ const AddMealDialog = ({
 
   const resetForm = () => {
     setActiveTab("custom");
-    setName(editingItemName || "");
-    setUrl(editingItemUrl || "");
+    setName("");
+    setUrl("");
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
     setSelectedRecipes([]);
     setIsUploadingFile(false);
   };
-
-  useEffect(() => {
-    if (open) {
-      setName(editingItemName || "");
-      setUrl(editingItemUrl || "");
-    }
-  }, [open, editingItemName, editingItemUrl]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,12 +172,10 @@ const AddMealDialog = ({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
-            {editingItemName ? "Edit Meal" : "Add Meal"}
+            Add Meal
           </DialogTitle>
           <DialogDescription>
-            {editingItemName
-              ? `Replace "${editingItemName}" for ${DAY_NAMES[dayOfWeek]} ${mealType}.`
-              : `Add a meal for ${DAY_NAMES[dayOfWeek]} ${mealType}.`}
+            {`Add a meal for ${DAY_NAMES[dayOfWeek]} ${mealType}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -283,7 +270,7 @@ const AddMealDialog = ({
                 disabled={!name.trim() || (!!url.trim() && !isValidUrl(url))}
                 className="bg-purple hover:bg-purple-dark"
               >
-                {editingItemName ? "Save Changes" : "Add to Meal"}
+                Add to Meal
               </Button>
             </div>
           </div>
