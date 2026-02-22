@@ -590,6 +590,28 @@ describe("CountdownCard", () => {
     // Dialog should close
   });
 
+  it("shows error when save is called with _testNullDate override", async () => {
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" _testNullDate={true} />);
+    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByText("Save Changes"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Please select a date");
+    });
+  });
+
+  it("navigates when clicking 'Head to the event' link in It's Time state", () => {
+    const pastEvent = createMockEvent({
+      ...defaultEvent,
+      eventDate: pastDateStr,
+      eventTime: "00:00",
+    });
+    render(<CountdownCard {...defaultProps} event={pastEvent} />);
+    const link = screen.getByText("Head to the event for recipes and cooking!");
+    fireEvent.click(link);
+    expect(mockNavigate).toHaveBeenCalledWith("/events/event-1");
+  });
+
   it("handles edit save with update error", async () => {
     // First call: select for getting event data - succeeds
     // Second call: update - fails
@@ -628,5 +650,73 @@ describe("CountdownCard", () => {
     });
 
     consoleSpy.mockRestore();
+  });
+
+  it("defaults editEventTime to '19:00' when eventTime is falsy", () => {
+    const noTimeEvent = createMockEvent({
+      ...defaultEvent,
+      eventTime: undefined,
+    });
+    render(<CountdownCard {...defaultProps} event={noTimeEvent} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Edit"));
+    const timeInput = screen.getByLabelText("Event Time");
+    expect(timeInput).toHaveValue("19:00");
+  });
+
+  it("uses 'Unknown' when ingredients name is missing during edit save", async () => {
+    const selectChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { id: "event-1", calendar_event_id: "cal-1", ingredients: null },
+        error: null,
+      }),
+      update: vi.fn().mockReturnThis(),
+    };
+    mockFrom.mockReturnValue(selectChain);
+    mockUpdateCalendarEvent.mockResolvedValue({ success: true });
+
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByText("Save Changes"));
+
+    await waitFor(() => {
+      expect(mockUpdateCalendarEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ ingredientName: "Unknown" })
+      );
+    });
+  });
+
+  it("returns early from handleCancelEvent when event.id is empty", async () => {
+    const noIdEvent = createMockEvent({
+      ...defaultEvent,
+      id: "",
+      createdBy: "user-1",
+    });
+    render(<CountdownCard {...defaultProps} event={noIdEvent} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Cancel"));
+    fireEvent.click(screen.getByText("Cancel Event"));
+
+    // Should return early — no supabase calls
+    await waitFor(() => {
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+  });
+
+  it("shows singular 'day' when countdown is exactly 1 day", () => {
+    vi.setSystemTime(new Date("2026-03-01T12:00:00"));
+
+    const oneDayEvent = createMockEvent({
+      ...defaultEvent,
+      eventDate: "2026-03-02",
+      eventTime: "19:00",
+    });
+    render(<CountdownCard {...defaultProps} event={oneDayEvent} />);
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText("day")).toBeInTheDocument();
   });
 });

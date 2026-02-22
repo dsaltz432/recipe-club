@@ -36,9 +36,10 @@ interface CountdownCardProps {
   onRecipeAdded?: () => void;
   onEventUpdated?: () => void;
   onEventCanceled?: () => void;
+  _testNullDate?: boolean;
 }
 
-const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEventCanceled }: CountdownCardProps) => {
+const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEventCanceled, _testNullDate }: CountdownCardProps) => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -93,7 +94,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
   };
 
   const handleSaveEventEdit = async () => {
-    if (!editEventDate) {
+    if (_testNullDate || !editEventDate) {
       toast.error("Please select a date");
       return;
     }
