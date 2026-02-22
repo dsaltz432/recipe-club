@@ -223,7 +223,7 @@
         "Tests pass"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "activeForm": "Eagerly loading recipe counts",
       "notes": "File: src/components/recipes/RecipeHub.tsx. Current behavior: useEffect at line 440 fires loadRecipes() when subTab changes. On mount, subTab='club', so only loadClubRecipes() runs (sets clubCount). personalCount stays null until user clicks 'My Recipes' tab. Fix: Add a separate useEffect that runs on mount to load just the counts for both tabs. Create a new function `loadCounts()` that does two lightweight count queries: (1) `supabase.from('recipes').select('*', { count: 'exact', head: true }).not('event_id', 'is', null)` for club count, and (2) `supabase.from('recipes').select('*', { count: 'exact', head: true }).eq('created_by', userId).is('event_id', null)` for personal count. Call loadCounts() in a new useEffect with [userId] dependency, separate from the full data loading useEffect. Actually, simpler approach: in the existing useEffect at line 440, after loading the active tab's recipes, also load just the count for the other tab. OR add a second useEffect that fires on mount to call both loadClubRecipes and loadPersonalRecipes just for counts. Simplest: add a loadBothCounts() function and call it in useEffect on mount. Tests: Verify that when RecipeHub mounts on 'club' tab, personalCount is populated (button shows 'My Recipes (N)')."
     },

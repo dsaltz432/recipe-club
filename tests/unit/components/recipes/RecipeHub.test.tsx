@@ -1346,9 +1346,9 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Click "My Recipes" tab
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(
@@ -1372,9 +1372,9 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Click "My Recipes" tab
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Add Recipe")).toBeInTheDocument();
@@ -1388,9 +1388,9 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Click "My Recipes" tab
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.queryByText("Add Recipe")).not.toBeInTheDocument();
@@ -1417,9 +1417,9 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Switch to personal tab
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.queryByText(/all ingredients/i)).not.toBeInTheDocument();
@@ -1456,9 +1456,9 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Switch to personal tab
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("My Home Recipe")).toBeInTheDocument();
@@ -1505,9 +1505,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Recipe With Notes")).toBeInTheDocument();
@@ -1527,9 +1527,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText(/no personal recipes yet\. add one using the button above!/i)).toBeInTheDocument();
@@ -1542,9 +1542,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText(/no personal recipes yet\. add one using the button above!/i)).toBeInTheDocument();
@@ -1562,9 +1562,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Add Recipe")).toBeInTheDocument();
@@ -1591,9 +1591,9 @@ describe("RecipeHub - Sub-tabs", () => {
 
     // Switch to personal tab
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     // Open the dialog
     await waitFor(() => {
@@ -1633,9 +1633,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText(/no personal recipes yet\. add one using the button above!/i)).toBeInTheDocument();
@@ -1670,9 +1670,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Anonymous Recipe")).toBeInTheDocument();
@@ -1712,9 +1712,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Recipe With Null Notes")).toBeInTheDocument();
@@ -1771,9 +1771,9 @@ describe("RecipeHub - Sub-tabs", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Recipes")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("My Recipes"));
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Recipe With Multiple Notes")).toBeInTheDocument();
@@ -1881,6 +1881,113 @@ describe("RecipeHub - Sub-tabs", () => {
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "My Recipes (0)" })).toBeInTheDocument();
+    });
+  });
+
+  it("eagerly loads personal count on mount without clicking tab", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "My Recipe 1",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+      {
+        id: "personal-2",
+        name: "My Recipe 2",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-14T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+      {
+        id: "personal-3",
+        name: "My Recipe 3",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-13T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Personal count should show immediately on mount without clicking the tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "My Recipes (3)" })).toBeInTheDocument();
+    });
+
+    // Club tab should still be the active tab (not switched)
+    expect(screen.getByRole("button", { name: /^Club/ })).toBeInTheDocument();
+  });
+
+  it("handles null data in loadPersonalCount gracefully", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          ...createMockQueryBuilder([]),
+          order: vi.fn().mockResolvedValue({ data: null, error: null }),
+          then: vi.fn((resolve: (v: unknown) => void) =>
+            Promise.resolve({ data: null, error: null }).then(resolve)
+          ),
+        };
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "ingredients") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      // personalCount should be 0 (from null data fallback)
+      expect(screen.getByRole("button", { name: "My Recipes (0)" })).toBeInTheDocument();
+    });
+  });
+
+  it("shows My Recipes without count when loadPersonalCount errors", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder([]);
+        // Override eq to return a rejecting thenable (loadPersonalCount uses .eq, loadClubRecipes uses .not/.order)
+        builder.eq = vi.fn().mockReturnValue({
+          then: (_resolve: unknown, reject: (e: unknown) => void) =>
+            reject(new Error("Network error")),
+        });
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "ingredients") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      // Club tab loaded successfully
+      expect(screen.getByRole("button", { name: "Club (0)" })).toBeInTheDocument();
+      // personalCount stays null because loadPersonalCount errored — no count shown
+      expect(screen.getByRole("button", { name: "My Recipes" })).toBeInTheDocument();
     });
   });
 });

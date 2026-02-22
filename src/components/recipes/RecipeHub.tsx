@@ -350,6 +350,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     }
   };
 
+
   const isValidUrl = (value: string) => {
     return value.trim().startsWith("http://") || value.trim().startsWith("https://");
   };
@@ -472,6 +473,29 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
 
   useEffect(() => {
     loadUsedIngredients();
+
+    // Eagerly load personal count so the tab button shows it on mount
+    (async () => {
+      if (!userId) {
+        setPersonalCount(0);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from("recipes")
+          .select("id, event_id, scheduled_events!event_id (type)")
+          .eq("created_by", userId);
+
+        const filtered = (data || []).filter(
+          (r) =>
+            !r.event_id ||
+            (r.scheduled_events as { type: string } | null)?.type === "personal"
+        );
+        setPersonalCount(filtered.length);
+      } catch {
+        // Count will be loaded when tab is clicked
+      }
+    })();
   }, [userId]);
 
   useEffect(() => {

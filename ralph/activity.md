@@ -19,11 +19,13 @@
 - All 5 test files that mock `@/lib/pantry` must include `DEFAULT_PANTRY_ITEMS: ["salt", "pepper", "water"]` in the mock — PantryContent imports it for protected item logic
 - Dead code in MealPlanPage (editingItem state, edit branches in handleAddCustomMeal/handleAddRecipeMeal, EventRatingDialog, uncook AlertDialog) has been removed as part of US-001
 - `cooked_at` column on meal_plan_items is not in generated Supabase types — use `as Record<string, unknown>` for update payloads and row access, `select("*")` instead of named columns
+- RecipeHub eagerly loads both club and personal recipe counts on mount. Club count comes from the default tab load (loadClubRecipes). Personal count is loaded via an inline async IIFE in the userId useEffect to avoid lint warnings about missing deps.
+- When changing behavior that affects text content of buttons used in tests (e.g., adding counts), update test selectors from `getByText("exact text")` to `getByRole("button", { name: /regex/ })` for robustness
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 10
-**Current Task:** US-010 complete
+**Tasks Completed:** 11
+**Current Task:** US-011 complete
 
 ---
 
@@ -319,5 +321,32 @@
 - When splitting a combined condition (`recipe.isPersonal && onEdit && onDelete`) into separate conditions, both the outer wrapper and individual button conditions need updating. The outer wrapper becomes `(onDelete || (recipe.isPersonal && onEdit))`.
 - Removing a guard condition (eventId check) requires updating or replacing the test that exercised that guard path, plus ensuring the guard dialog's dismiss path is still tested elsewhere.
 - Adding tests for club recipe deletion from the club tab doesn't require switching to "My Recipes" — club tab is the default.
+
+---
+
+## 2026-02-22 17:00 — US-011: RecipeHub — eagerly load My Recipes count on mount
+
+### What was implemented
+- Added inline async IIFE in the existing `userId` useEffect to eagerly load personal recipe count on mount
+- The count query uses `supabase.from("recipes").select("id, event_id, scheduled_events!event_id (type)").eq("created_by", userId)` — lightweight query with client-side filtering for personal recipes (no event_id or personal event type)
+- Without userId, personalCount is set to 0 synchronously
+- Error in count loading is caught silently — count will load when the tab is clicked
+- Updated 28 test selector references from `getByText("My Recipes")` to `getByRole("button", { name: /My Recipes/ })` for robustness (counts now affect button text on mount)
+- Added 3 new tests: eager mount count test (personalCount shows without clicking tab), null data handling in count query, error handling that keeps personalCount null
+
+### Files changed
+- src/components/recipes/RecipeHub.tsx
+- tests/unit/components/recipes/RecipeHub.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1602 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories, RecipeHub.tsx 100%
+
+### Learnings for future iterations
+- Defining async functions as component-level `const` and referencing them in useEffect generates `react-hooks/exhaustive-deps` lint warnings. Inlining the async logic as an IIFE inside the useEffect avoids this warning while keeping the same behavior.
+- When a change makes previously-null state always populated before render (e.g., eagerly loading counts), test selectors using `getByText("exact text")` break because the text content changes. Use `getByRole("button", { name: /regex/ })` which is more resilient to text content changes.
+- To test the "null data" branch of `(data || [])`, use a mock builder where both `order` and `then` resolve with `{ data: null, error: null }`. To test the "error/catch" branch, override `eq` to return a rejecting thenable — this specifically targets loadPersonalCount's code path without affecting loadClubRecipes which uses `.not().order()`.
 
 ---
