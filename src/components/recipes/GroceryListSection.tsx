@@ -374,7 +374,7 @@ const GroceryListSection = ({
             {showExcluded && (
               <ul className="px-8 pb-2 text-sm text-purple-700 list-disc">
                 {excludedItems.map((item) => (
-                  <li key={item.name}>{item.name}</li>
+                  <li key={item.name}>{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</li>
                 ))}
               </ul>
             )}

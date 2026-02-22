@@ -34,7 +34,7 @@
         "Tests pass"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "activeForm": "Capitalizing pantry items",
       "notes": "File: src/components/recipes/GroceryListSection.tsx. Line 377: `{excludedItems.map((item) => (<li key={item.name}>{item.name}</li>))}` — change to display `item.name` with first letter capitalized. Use a simple inline transform: `{item.name.charAt(0).toUpperCase() + item.name.slice(1)}`. Tests: tests/unit/components/recipes/GroceryListSection.test.tsx — verify the exclusion list renders 'Salt' not 'salt'."
     },

@@ -414,18 +414,18 @@ describe("GroceryListSection", () => {
     );
 
     // Collapsed by default - excluded item names not visible
-    expect(screen.queryByText("salt")).not.toBeInTheDocument();
-    expect(screen.queryByText("pepper")).not.toBeInTheDocument();
+    expect(screen.queryByText("Salt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
 
     // Click to expand
     const toggleButton = screen.getByRole("button", { name: /2 pantry items excluded/i });
     expect(toggleButton).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggleButton);
 
-    // Expanded - excluded item names visible
+    // Expanded - excluded item names visible (capitalized)
     expect(toggleButton).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("salt")).toBeInTheDocument();
-    expect(screen.getByText("pepper")).toBeInTheDocument();
+    expect(screen.getByText("Salt")).toBeInTheDocument();
+    expect(screen.getByText("Pepper")).toBeInTheDocument();
   });
 
   it("collapses excluded pantry items when toggle is clicked again", () => {
@@ -449,11 +449,11 @@ describe("GroceryListSection", () => {
 
     // Expand
     fireEvent.click(toggleButton);
-    expect(screen.getByText("salt")).toBeInTheDocument();
+    expect(screen.getByText("Salt")).toBeInTheDocument();
 
     // Collapse
     fireEvent.click(toggleButton);
-    expect(screen.queryByText("salt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Salt")).not.toBeInTheDocument();
     expect(toggleButton).toHaveAttribute("aria-expanded", "false");
   });
 
