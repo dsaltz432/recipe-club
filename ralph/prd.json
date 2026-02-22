@@ -88,7 +88,7 @@
         "Tests pass"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "activeForm": "Blocking club event recipe deletion",
       "notes": "Files: src/components/recipes/RecipeHub.tsx, src/components/recipes/RecipeCard.tsx. This partially reverts US-010 from the previous PRD. Two approaches:\n\n**Option A (recommended):** In RecipeHub.tsx, when passing onDelete to RecipeCard, filter by eventId: `onDelete={recipe.eventId ? undefined : handleDeleteRecipe}`. This way RecipeCard doesn't need to change — it just won't receive onDelete for event-linked recipes.\n\n**Option B:** Add an eventId guard back to handleDeleteRecipe (line ~473-490): `const recipe = [...clubRecipes, ...personalRecipes].find(r => r.id === recipeId); if (recipe?.eventId) { setDeleteGuardMessage('Remove this recipe from within the event page.'); return; }`.\n\nOption A is cleaner — the delete button simply doesn't render. In RecipeHub, the RecipeCard mapping (around line 740-750) currently passes `onDelete={handleDeleteRecipe}` for all recipes. Change to check `recipe.eventId`. Tests: Verify club event recipes don't show delete button, personal recipes still do."
     },

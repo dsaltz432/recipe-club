@@ -17,8 +17,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ---
 
@@ -120,5 +120,30 @@
 - When removing a UI element, trace all related state variables, imports, and JSX to find dead code — `showAddPersonal`, `AddPersonalRecipeDialog`, `Plus` all became dead
 - Empty state messages that reference removed UI ("button above") must be updated
 - `replace_all` in the Edit tool is effective for updating repeated test patterns
+
+---
+
+## 2026-02-22 19:15 — US-005: Block deletion of club event recipes from Recipes tab
+
+### What was implemented
+- Changed `onDelete` prop passed to RecipeCard in RecipeHub.tsx from always passing `handleDeleteRecipe` to conditionally passing `undefined` for club event recipes: `onDelete={recipe.eventId && !recipe.isPersonal ? undefined : handleDeleteRecipe}`
+- Club event recipes (have eventId, isPersonal=false) no longer show a delete button
+- Personal recipes (no eventId, or personal event type) still show the delete button
+- No changes needed to RecipeCard.tsx — it already handles `onDelete={undefined}` correctly by hiding the delete button
+
+### Files changed
+- src/components/recipes/RecipeHub.tsx (line 731 — conditional onDelete prop)
+- tests/unit/components/recipes/RecipeHub.test.tsx (updated 3 tests: "shows delete but not edit button on club tab" → "does not show edit or delete buttons on club event recipe cards", removed "deletes club recipe from club tab when not linked to meal plan" and "shows guard dialog when club recipe is linked to a meal plan", replaced with "does not show delete button on club event recipes")
+
+### Quality checks
+- Build: pass
+- Tests: pass (109/109 RecipeHub tests, 67/67 RecipeCard tests, 1633 total)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- `recipe.isPersonal` distinguishes personal meal recipes (which have eventId from personal events) from club event recipes — checking just `recipe.eventId` would break personal meal recipe deletion
+- Option A approach (pass `undefined` for onDelete) is cleaner than adding guard logic in the handler — the delete button simply doesn't render
+- RecipeCard didn't need changes — the conditional was entirely in RecipeHub's mapping over recipes
 
 ---

@@ -728,7 +728,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 key={recipe.id}
                 recipe={recipe}
                 onEdit={subTab === "personal" ? handleEditRecipe : undefined}
-                onDelete={handleDeleteRecipe}
+                onDelete={recipe.eventId && !recipe.isPersonal ? undefined : handleDeleteRecipe}
                 onEditRating={userId ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
                 ingredients={recipeIngredientsMap[recipe.id]}
