@@ -17,8 +17,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ---
 
@@ -92,5 +92,33 @@
 - When filtering ingredients, use `filteredIngredients` everywhere the original `ingredients` was referenced — count, expanded list, and category filtering all need updating
 - The filter is case-insensitive via `.toLowerCase()` to handle both "Salt" and "salt" variants
 - When tests reference ingredients by name that become pantry items (like "Salt"), update the test data to use non-pantry names
+
+---
+
+## 2026-02-22 19:00 — US-004: Remove Add Recipe button from Recipes tab
+
+### What was implemented
+- Removed the "Add Recipe" button from the personal sub-tab in RecipeHub.tsx
+- Removed `showAddPersonal` state variable (dead code after button removal)
+- Removed `AddPersonalRecipeDialog` import and JSX (dead code after button removal)
+- Removed `Plus` from lucide-react import (dead code)
+- Updated empty state message from "Add one using the button above!" to "Add recipes from events or meal plans."
+- Removed 4 tests: "shows Add Recipe button in personal tab", "does not show Add Recipe button without userId", "opens add personal recipe dialog", "triggers onRecipeAdded callback"
+- Updated 4 test assertions referencing old empty state text
+
+### Files changed
+- src/components/recipes/RecipeHub.tsx (removed button, state, dialog, imports)
+- tests/unit/components/recipes/RecipeHub.test.tsx (removed 4 tests, updated 4 assertions)
+
+### Quality checks
+- Build: pass
+- Tests: pass (RecipeHub 100% coverage, all suites passing)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- When removing a UI element, trace all related state variables, imports, and JSX to find dead code — `showAddPersonal`, `AddPersonalRecipeDialog`, `Plus` all became dead
+- Empty state messages that reference removed UI ("button above") must be updated
+- `replace_all` in the Edit tool is effective for updating repeated test patterns
 
 ---

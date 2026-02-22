@@ -30,11 +30,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Plus, Loader2 } from "lucide-react";
+import { Search, BookOpen, Loader2 } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
-import AddPersonalRecipeDialog from "./AddPersonalRecipeDialog";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
 
@@ -79,7 +78,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [subTab, setSubTab] = useState<RecipeSubTab>("club");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
-  const [showAddPersonal, setShowAddPersonal] = useState(false);
   const [clubCount, setClubCount] = useState<number | null>(null);
   const [personalCount, setPersonalCount] = useState<number | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<RecipeWithNotes | null>(null);
@@ -707,17 +705,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
             )}
           </div>
 
-          {/* Add Personal Recipe button */}
-          {subTab === "personal" && userId && (
-            <Button
-              onClick={() => setShowAddPersonal(true)}
-              className="bg-purple hover:bg-purple-dark"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Recipe
-            </Button>
-          )}
         </div>
 
         {/* Recipe Grid */}
@@ -729,7 +716,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 {searchTerm || ingredientFilter !== "all"
                   ? "No recipes found matching your search."
                   : subTab === "personal"
-                  ? "No personal recipes yet. Add one using the button above!"
+                  ? "No personal recipes yet. Add recipes from events or meal plans."
                   : "No recipes yet. Recipes are added through events."}
               </p>
             </CardContent>
@@ -753,18 +740,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         )}
       </>
 
-      {/* Add Personal Recipe Dialog */}
-      {userId && (
-        <AddPersonalRecipeDialog
-          open={showAddPersonal}
-          onOpenChange={setShowAddPersonal}
-          userId={userId}
-          onRecipeAdded={() => {
-            setIsLoading(true);
-            loadRecipes();
-          }}
-        />
-      )}
 
       {/* Edit Personal Recipe Dialog */}
       <Dialog

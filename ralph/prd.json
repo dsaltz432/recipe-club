@@ -69,7 +69,7 @@
         "Tests pass"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "activeForm": "Removing Add Recipe button",
       "notes": "File: src/components/recipes/RecipeHub.tsx. Line 718: 'Add Recipe' button. Remove the button and its onClick handler. Check if any state variables (e.g., showAddRecipeDialog, addRecipeName, addRecipeUrl) become dead code after removal — if so, remove them too. Check if there's an add recipe dialog JSX that also becomes dead — remove it. Tests: tests/unit/components/recipes/RecipeHub.test.tsx — remove tests that click 'Add Recipe' or verify its presence."
     },
