@@ -164,7 +164,7 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "activeForm": "Fixing Dashboard badges",
       "notes": "File: src/pages/Dashboard.tsx. Four text instances to fix: Line 216: change 'Club Events' to `Club Event${completedEventsCount !== 1 ? 's' : ''}`. Line 220: change 'Club Recipes' to `Total Recipe${userRecipesCount !== 1 ? 's' : ''}`. Line 248: same fix for mobile 'Club Events'. Line 249: same fix for mobile 'Club Recipes' → 'Total Recipes'. The userRecipesCount already includes all recipes (club + personal) based on the query at loadStats — so the label is the only thing wrong. Tests: tests/unit/pages/Dashboard.test.tsx — add test cases where completedEventsCount=1 and assert 'Club Event' (not 'Club Events'), and where count=2 and assert 'Club Events'. For recipes: assert 'Total Recipe' when count=1, 'Total Recipes' when count=2."
     },

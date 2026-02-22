@@ -34,9 +34,10 @@ const mockFromResult = {
   maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
 };
 
+const mockFrom = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => mockFromResult,
+    from: (...args: unknown[]) => mockFrom(...args),
   },
 }));
 
@@ -104,6 +105,7 @@ describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTabParam = undefined;
+    mockFrom.mockReturnValue(mockFromResult);
     capturedTabsProps = {};
     capturedHomeSectionProps = {};
     capturedEventsProps = {};
@@ -879,6 +881,118 @@ describe("Dashboard", () => {
 
     // loadStats should NOT be called when user has no id
     expect(mockFromResult.in).not.toHaveBeenCalled();
+  });
+
+  // --- Pluralization of badge labels ---
+
+  it("shows singular 'Club Event' and 'Total Recipe' when counts are 1", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    // Events count = 1
+    mockFromResult.in.mockResolvedValue({ count: 1, error: null });
+
+    // Recipes count = 1: override from() to return a mock that resolves .select() for the recipes table
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockResolvedValue({ count: 1, error: null }),
+        };
+      }
+      return mockFromResult;
+    });
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    // Desktop + mobile: "Club Event" (singular) appears twice
+    const eventLabels = screen.getAllByText("Club Event");
+    expect(eventLabels).toHaveLength(2);
+
+    // Desktop + mobile: "Total Recipe" (singular) appears twice
+    const recipeLabels = screen.getAllByText("Total Recipe");
+    expect(recipeLabels).toHaveLength(2);
+  });
+
+  it("shows plural 'Club Events' and 'Total Recipes' when counts are 2+", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    // Events count = 3
+    mockFromResult.in.mockResolvedValue({ count: 3, error: null });
+
+    // Recipes count = 5
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockResolvedValue({ count: 5, error: null }),
+        };
+      }
+      return mockFromResult;
+    });
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    // Desktop + mobile: "Club Events" (plural) appears twice
+    const eventLabels = screen.getAllByText("Club Events");
+    expect(eventLabels).toHaveLength(2);
+
+    // Desktop + mobile: "Total Recipes" (plural) appears twice
+    const recipeLabels = screen.getAllByText("Total Recipes");
+    expect(recipeLabels).toHaveLength(2);
+  });
+
+  it("shows plural labels when counts are 0", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    // Events count = 0
+    mockFromResult.in.mockResolvedValue({ count: 0, error: null });
+
+    // Recipes count = 0
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        };
+      }
+      return mockFromResult;
+    });
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    // 0 is plural
+    const eventLabels = screen.getAllByText("Club Events");
+    expect(eventLabels).toHaveLength(2);
+
+    const recipeLabels = screen.getAllByText("Total Recipes");
+    expect(recipeLabels).toHaveLength(2);
   });
 
   // --- loadStats count || 0 fallback branches (lines 150-151) ---

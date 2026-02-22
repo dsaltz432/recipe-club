@@ -213,11 +213,11 @@ const Dashboard = () => {
             <div className="hidden md:flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5 bg-purple/5 px-3 py-1 rounded-full">
                 <span className="font-bold text-purple">{completedEventsCount}</span>
-                <span className="text-muted-foreground">Club Events</span>
+                <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-orange/5 px-3 py-1 rounded-full">
                 <span className="font-bold text-orange">{userRecipesCount}</span>
-                <span className="text-muted-foreground">Club Recipes</span>
+                <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
               </div>
             </div>
           </div>
@@ -242,11 +242,11 @@ const Dashboard = () => {
                 <div className="flex justify-around text-xs">
                   <div className="text-center">
                     <div className="font-bold text-purple">{completedEventsCount}</div>
-                    <div className="text-muted-foreground">Club Events</div>
+                    <div className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</div>
                   </div>
                   <div className="text-center">
                     <div className="font-bold text-orange">{userRecipesCount}</div>
-                    <div className="text-muted-foreground">Club Recipes</div>
+                    <div className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</div>
                   </div>
                 </div>
               </div>

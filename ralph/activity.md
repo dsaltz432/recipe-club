@@ -21,8 +21,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 7
-**Current Task:** US-007 complete
+**Tasks Completed:** 8
+**Current Task:** US-008 complete
 
 ---
 
@@ -224,5 +224,33 @@
 - Exporting a new constant from a module that's mocked in 5+ test files requires updating ALL those mocks — vitest will throw "No export defined on mock" if any mock is missing it.
 - Tests that exercise deletion flows must use non-protected items now. Mock data should always include at least one non-protected item (e.g., "olive oil") alongside the defaults.
 - The `DEFAULT_PANTRY_ITEMS.includes(item.name.toLowerCase())` check is case-insensitive because the array contains lowercase values and we lowercase the item name.
+
+---
+
+## 2026-02-22 14:00 — US-008: Dashboard — fix 'Club Events' pluralization and rename 'Club Recipes' to 'Total Recipes'
+
+### What was implemented
+- Fixed desktop badge: "Club Events" → `Club Event${count !== 1 ? 's' : ''}` (singular when count=1)
+- Fixed desktop badge: "Club Recipes" → `Total Recipe${count !== 1 ? 's' : ''}` (renamed + pluralized)
+- Fixed mobile dropdown: same two fixes for mobile stats section
+- Refactored Dashboard.test.tsx `supabase.from` mock to use `vi.fn()` (`mockFrom`) for per-table routing
+- Added test for singular labels (count=1): asserts "Club Event" and "Total Recipe" appear twice (desktop + mobile)
+- Added test for plural labels (count=2+): asserts "Club Events" and "Total Recipes" appear twice
+- Added test for zero count (count=0): asserts plural labels (0 is plural)
+
+### Files changed
+- src/pages/Dashboard.tsx
+- tests/unit/pages/Dashboard.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1580 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- Dashboard.test.tsx uses a shared `mockFromResult` for all Supabase queries. To control individual query results (e.g., events vs recipes count), use `mockFrom.mockImplementation()` to return different mock chains per table name.
+- `Promise.all` treats non-thenable values as immediately resolved. When `select()` returns a plain object (not a promise), the recipes count defaults to `undefined || 0 = 0`. To test specific recipe counts, override `from("recipes")` to return `{ select: vi.fn().mockResolvedValue({ count: N }) }`.
+- Both desktop and mobile badge labels render in the DOM simultaneously (dropdown-menu mock renders children directly), so `getAllByText()` finds 2 matches for each label.
 
 ---
