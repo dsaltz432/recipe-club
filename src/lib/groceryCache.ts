@@ -17,7 +17,7 @@ export async function loadGroceryCache(
   try {
     const { data, error } = await supabase
       .from("combined_grocery_items")
-      .select("items, source_recipe_ids")
+      .select("items, recipe_ids")
       .eq("context_type", contextType)
       .eq("context_id", contextId)
       .eq("user_id", userId)
@@ -28,7 +28,7 @@ export async function loadGroceryCache(
 
     return {
       items: data.items as unknown as SmartGroceryItem[],
-      recipeIds: data.source_recipe_ids,
+      recipeIds: data.recipe_ids,
     };
   } catch (error) {
     console.error("Error loading grocery cache:", error);
@@ -53,7 +53,7 @@ export async function saveGroceryCache(
           context_id: contextId,
           user_id: userId,
           items: items as unknown as Json,
-          source_recipe_ids: sortedIds,
+          recipe_ids: sortedIds,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "context_type,context_id,user_id" }

@@ -201,7 +201,7 @@ describe("CountdownCard", () => {
     render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
     fireEvent.click(screen.getByText("Cancel"));
     expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
-    expect(screen.getByText(/This will cancel the Chicken event/)).toBeInTheDocument();
+    expect(screen.getByText(/This will permanently delete the Chicken event/)).toBeInTheDocument();
   });
 
   it("handles saving event edit successfully with calendar event", async () => {

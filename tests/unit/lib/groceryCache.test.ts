@@ -43,7 +43,7 @@ describe("groceryCache", () => {
     it("returns cached data when found", async () => {
       const cachedData = {
         items: [{ name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"] }],
-        source_recipe_ids: ["r1", "r2"],
+        recipe_ids: ["r1", "r2"],
       };
       mockMaybeSingle.mockResolvedValue({ data: cachedData, error: null });
 
@@ -53,7 +53,7 @@ describe("groceryCache", () => {
         items: cachedData.items,
         recipeIds: ["r1", "r2"],
       });
-      expect(mockSelect).toHaveBeenCalledWith("items, source_recipe_ids");
+      expect(mockSelect).toHaveBeenCalledWith("items, recipe_ids");
       expect(mockEq).toHaveBeenCalledWith("context_type", "event");
     });
 
@@ -91,7 +91,7 @@ describe("groceryCache", () => {
           context_id: "event-1",
           user_id: "user-1",
           items: items as unknown as Record<string, unknown>[],
-          source_recipe_ids: ["r1", "r2"],
+          recipe_ids: ["r1", "r2"],
         }),
         { onConflict: "context_type,context_id,user_id" }
       );
@@ -145,7 +145,7 @@ describe("groceryCache", () => {
     it("loadGroceryCache works with meal_plan context", async () => {
       const cachedData = {
         items: [{ name: "rice", totalQuantity: 1, category: "grains", sourceRecipes: ["Stir Fry"] }],
-        source_recipe_ids: ["r3"],
+        recipe_ids: ["r3"],
       };
       mockMaybeSingle.mockResolvedValue({ data: cachedData, error: null });
 

@@ -386,39 +386,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      combined_grocery_items: {
-        Row: {
-          id: string;
-          context_type: string;
-          context_id: string;
-          user_id: string;
-          items: Json;
-          source_recipe_ids: string[];
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          context_type: string;
-          context_id: string;
-          user_id: string;
-          items?: Json;
-          source_recipe_ids?: string[];
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          context_type?: string;
-          context_id?: string;
-          user_id?: string;
-          items?: Json;
-          source_recipe_ids?: string[];
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       meal_plans: {
         Row: {
           id: string;

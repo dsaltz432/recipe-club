@@ -36,6 +36,7 @@ const mockStorageGetPublicUrl = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
+    rpc: vi.fn().mockResolvedValue({ error: null }),
     functions: {
       invoke: (...args: unknown[]) => mockFunctionsInvoke(...args),
     },
@@ -50,7 +51,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 // Sonner mock
 vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 import { toast } from "sonner";
 
@@ -1016,11 +1017,13 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
-    // Fill name but use invalid URL
+    // Fill name and set an invalid URL
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
     fireEvent.change(nameInput, { target: { value: "Test Recipe" } });
+    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    fireEvent.change(urlInput, { target: { value: "not-a-valid-url" } });
 
-    // Button should be disabled since URL is empty/invalid
+    // Button should be disabled since URL is invalid
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     expect(addBtn).toBeDisabled();
   });
@@ -1047,7 +1050,7 @@ describe("EventDetailPage", () => {
     fireEvent.change(nameInput, { target: { value: "Updated Chicken Parm" } });
 
     // Set a valid URL
-    const urlInput = screen.getByPlaceholderText("https://...");
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
     fireEvent.change(urlInput, { target: { value: "https://example.com/updated" } });
 
     // Click Save
@@ -2398,13 +2401,13 @@ describe("EventDetailPage", () => {
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(addBtn);
 
-    // Wait for parse failure dialog
+    // Wait for parse failure - shows "Your recipe has been saved!" message
     await waitFor(() => {
-      expect(screen.getByText("Recipe parsing failed")).toBeInTheDocument();
+      expect(screen.getByText("Your recipe has been saved!")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    // Click "Keep Recipe Anyway"
-    fireEvent.click(screen.getByText("Keep Recipe Anyway"));
+    // Click "Continue without ingredients"
+    fireEvent.click(screen.getByText("Continue without ingredients"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe added (parsing skipped)");
@@ -2438,16 +2441,17 @@ describe("EventDetailPage", () => {
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(addBtn);
 
+    // Wait for parse failure - shows "Your recipe has been saved!" message
     await waitFor(() => {
-      expect(screen.getByText("Recipe parsing failed")).toBeInTheDocument();
+      expect(screen.getByText("Your recipe has been saved!")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    // Click "Try Different URL"
-    fireEvent.click(screen.getByText("Try Different URL"));
+    // Click "Try parsing again"
+    fireEvent.click(screen.getByText("Try parsing again"));
 
-    // Should reset parse status to idle, showing the form again
+    // Should go back to parsing state
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Enter recipe name")).toBeInTheDocument();
+      expect(screen.queryByText("Your recipe has been saved!")).not.toBeInTheDocument();
     });
 
     consoleSpy.mockRestore();
@@ -2592,7 +2596,7 @@ describe("EventDetailPage", () => {
     });
 
     // Change URL (different from original)
-    const urlInput = screen.getByPlaceholderText("https://...");
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
     fireEvent.change(urlInput, { target: { value: "https://example.com/new-url" } });
 
     // Keep name
@@ -2657,7 +2661,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
     });
 
-    const urlInput = screen.getByPlaceholderText("https://...");
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
     fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
 
     const saveBtn = screen.getByRole("button", { name: /save changes/i });
@@ -2869,7 +2873,7 @@ describe("EventDetailPage", () => {
     });
 
     // Set invalid URL
-    const urlInput = screen.getByPlaceholderText("https://...");
+    const urlInput = screen.getByPlaceholderText("https:// (optional)");
     fireEvent.change(urlInput, { target: { value: "not-a-url" } });
 
     // Should show URL validation error
@@ -3350,11 +3354,11 @@ describe("EventDetailPage", () => {
 
     // The parse should fail and show options
     await waitFor(() => {
-      expect(screen.getByText("Keep Recipe Anyway")).toBeInTheDocument();
+      expect(screen.getByText("Continue without ingredients")).toBeInTheDocument();
     });
 
     // Test keep anyway
-    fireEvent.click(screen.getByText("Keep Recipe Anyway"));
+    fireEvent.click(screen.getByText("Continue without ingredients"));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe added (parsing skipped)");
@@ -3362,6 +3366,7 @@ describe("EventDetailPage", () => {
   });
 
   it("handles recipe submit parse failure then remove and retry", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockFunctionsInvoke.mockResolvedValue({ data: null, error: { message: "Parse error" } });
 
     render(<EventDetailPage />);
@@ -3385,15 +3390,18 @@ describe("EventDetailPage", () => {
     fireEvent.click(addBtn);
 
     await waitFor(() => {
-      expect(screen.getByText("Try Different URL")).toBeInTheDocument();
+      expect(screen.getByText("Try parsing again")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Try Different URL"));
+    // Click retry - it will parse again (and fail again since mock still returns error)
+    fireEvent.click(screen.getByText("Try parsing again"));
 
-    // Should reset form but keep URL
+    // Should show failure state again after retry fails
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Enter recipe name")).toBeInTheDocument();
+      expect(screen.getByText("Your recipe has been saved!")).toBeInTheDocument();
     });
+
+    consoleSpy.mockRestore();
   });
 
   it("disables add recipe button when name is empty", async () => {
@@ -3498,7 +3506,7 @@ describe("EventDetailPage", () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it("disables edit recipe save button when URL is invalid", async () => {
+  it("shows error toast when editing recipe with invalid URL", async () => {
     render(<EventDetailPage />);
 
     await waitFor(() => {
@@ -3514,8 +3522,16 @@ describe("EventDetailPage", () => {
     const urlInput = screen.getByDisplayValue("https://example.com/chicken");
     fireEvent.change(urlInput, { target: { value: "bad-url" } });
 
+    // URL validation error should be shown inline
+    expect(screen.getByText("URL must start with http:// or https://")).toBeInTheDocument();
+
+    // Click save - should show error toast for invalid URL
     const saveBtn = screen.getByRole("button", { name: /save/i });
-    expect(saveBtn).toBeDisabled();
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Please enter a valid URL starting with http:// or https://");
+    });
   });
 
   // ---- HANDLE SAVE EVENT EDIT WITH CALENDAR ----

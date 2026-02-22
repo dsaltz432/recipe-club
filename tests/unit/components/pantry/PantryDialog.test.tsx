@@ -141,7 +141,7 @@ describe("PantryDialog", () => {
     fireEvent.keyDown(input, { key: "Enter" });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to add item. It may already exist.");
+      expect(toast.error).toHaveBeenCalledWith("Failed to add item");
     });
   });
 
@@ -157,6 +157,12 @@ describe("PantryDialog", () => {
       (btn) => !btn.textContent?.includes("Add") && btn.closest("li")
     );
     fireEvent.click(deleteButtons[0]);
+
+    // Confirmation dialog appears - click Remove to confirm
+    await waitFor(() => {
+      expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Remove"));
 
     await waitFor(() => {
       expect(mockRemovePantryItem).toHaveBeenCalledWith("user-1", "1");
@@ -176,6 +182,12 @@ describe("PantryDialog", () => {
       (btn) => !btn.textContent?.includes("Add") && btn.closest("li")
     );
     fireEvent.click(deleteButtons[0]);
+
+    // Confirmation dialog appears - click Remove to confirm
+    await waitFor(() => {
+      expect(screen.getByText("Remove from pantry?")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Remove"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to remove item");
