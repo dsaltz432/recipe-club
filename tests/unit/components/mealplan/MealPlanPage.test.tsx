@@ -306,7 +306,7 @@ describe("MealPlanPage", () => {
     fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalled();
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("meal_plan_items");
     });
   });
 
@@ -365,7 +365,7 @@ describe("MealPlanPage", () => {
     fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalled();
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("meal_plan_items");
     });
   });
 
@@ -440,7 +440,7 @@ describe("MealPlanPage", () => {
     fireEvent.click(screen.getByText("Add 1 to Meal"));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalled();
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("meal_plan_items");
     });
   });
 
@@ -525,14 +525,12 @@ describe("MealPlanPage", () => {
     });
     fireEvent.click(screen.getByText("Add to Meal"));
 
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalled();
-    });
-
     // Verify the insert was called with sort_order: 2 (max of 0,1 = 1, plus 1 = 2)
-    expect(insertMock).toHaveBeenCalledWith(
-      expect.objectContaining({ sort_order: 2 })
-    );
+    await waitFor(() => {
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({ sort_order: 2 })
+      );
+    });
   });
 
   it("clears pending slot when dialog closes", async () => {
@@ -2691,10 +2689,6 @@ describe("MealPlanPage", () => {
         target: { value: "https://example.com/tacos" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
-
-      await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Added"));
-      });
 
       // parse-recipe should be called since any URL now triggers parsing
       await waitFor(() => {

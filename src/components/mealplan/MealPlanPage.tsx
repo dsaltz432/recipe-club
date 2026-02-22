@@ -500,7 +500,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       };
 
       setItems((prev) => [...prev, newItem]);
-      toast.success(`Added "${name}" to plan`);
       return linkedRecipeId;
     } catch (error) {
       console.error("Error adding meal:", error);
