@@ -18,6 +18,18 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// Mock PhotoUpload to allow testing photo addition
+vi.mock("@/components/recipes/PhotoUpload", () => ({
+  default: ({ photos, onPhotosChange }: { photos: string[]; onPhotosChange: (p: string[]) => void }) => (
+    <div data-testid="photo-upload">
+      <span>Files ({photos.length}/5)</span>
+      <button onClick={() => onPhotosChange([...photos, "https://example.com/photo.jpg"])}>
+        Add Test Photo
+      </button>
+    </div>
+  ),
+}));
+
 // Helper to create a complete mock query builder
 const createMockQueryBuilder = (data: unknown[] = [], error: unknown = null) => ({
   select: vi.fn().mockReturnThis(),
@@ -3309,5 +3321,326 @@ describe("RecipeHub - Personal Event Filtering (US-007)", () => {
     await waitFor(() => {
       expect(screen.getByText("My Personal Meal")).toBeInTheDocument();
     });
+  });
+});
+
+describe("RecipeHub - Add Note", () => {
+  const clubRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  const mockNotesData = [
+    {
+      id: "note-1",
+      recipe_id: "recipe-1",
+      user_id: "user-123",
+      notes: "Test notes",
+      photos: null,
+      created_at: "2025-01-15T10:00:00Z",
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows Add Note button on recipe cards when userId is provided", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show Add Note button when no userId", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+  });
+
+  it("opens note dialog when Add Note button is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Add notes and photos for "Grilled Salmon"/)).toBeInTheDocument();
+      expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+    });
+  });
+
+  it("closes note dialog when cancel is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Add notes and photos for/)).toBeInTheDocument();
+    });
+
+    // Click cancel
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Add notes and photos for/)).not.toBeInTheDocument();
+    });
+  });
+
+  it("disables Save Note button when note text is empty and no photos", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save note/i })).toBeDisabled();
+    });
+  });
+
+  it("enables Save Note button when note text is entered", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Great recipe!" },
+    });
+
+    expect(screen.getByRole("button", { name: /save note/i })).not.toBeDisabled();
+  });
+
+  it("saves note successfully", async () => {
+    const { toast } = await import("sonner");
+    const mockInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") {
+        const builder = createMockQueryBuilder(mockNotesData);
+        builder.insert = mockInsert;
+        return builder;
+      }
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Delicious recipe!" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith({
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "Delicious recipe!",
+        photos: null,
+      });
+      expect(toast.success).toHaveBeenCalledWith("Note added!");
+    });
+  });
+
+  it("shows error toast when save note fails", async () => {
+    const { toast } = await import("sonner");
+    const mockInsert = vi.fn().mockResolvedValue({ error: { message: "Insert failed" } });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") {
+        const builder = createMockQueryBuilder(mockNotesData);
+        builder.insert = mockInsert;
+        return builder;
+      }
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Note text" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to save note");
+    });
+  });
+
+  it("closes note dialog via Escape key", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Add notes and photos for/)).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Add notes and photos for/)).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not save note when userId is missing", async () => {
+    const mockInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") {
+        const builder = createMockQueryBuilder(mockNotesData);
+        builder.insert = mockInsert;
+        return builder;
+      }
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    // Render without userId — note buttons won't appear
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // No Add Note button should appear
+    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+  });
+
+  it("saves note with photos and empty text", async () => {
+    const { toast } = await import("sonner");
+    const mockInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") {
+        const builder = createMockQueryBuilder(mockNotesData);
+        builder.insert = mockInsert;
+        return builder;
+      }
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+    });
+
+    // Add a photo via the mocked PhotoUpload
+    fireEvent.click(screen.getByText("Add Test Photo"));
+
+    // Save Note button should now be enabled (photos present even though text is empty)
+    expect(screen.getByRole("button", { name: /save note/i })).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith({
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: null,
+        photos: ["https://example.com/photo.jpg"],
+      });
+      expect(toast.success).toHaveBeenCalledWith("Note added!");
+    });
+  });
+
+  it("disables Save Note when text is whitespace only and no photos", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "   " },
+    });
+
+    expect(screen.getByRole("button", { name: /save note/i })).toBeDisabled();
   });
 });

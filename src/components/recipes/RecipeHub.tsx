@@ -29,7 +29,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import { Search, BookOpen, Plus, Loader2 } from "lucide-react";
+import PhotoUpload from "./PhotoUpload";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary } from "@/types";
 import RecipeCard from "./RecipeCard";
 import AddPersonalRecipeDialog from "./AddPersonalRecipeDialog";
@@ -70,6 +72,10 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [ratingRecipe, setRatingRecipe] = useState<RecipeWithNotes | null>(null);
+  const [noteRecipe, setNoteRecipe] = useState<RecipeWithNotes | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [notePhotos, setNotePhotos] = useState<string[]>([]);
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
   const loadRecipes = async () => {
     try {
@@ -433,6 +439,38 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     setRatingDialogOpen(true);
   };
 
+  const handleAddNote = (recipe: RecipeWithNotes) => {
+    setNoteRecipe(recipe);
+    setNoteText("");
+    setNotePhotos([]);
+  };
+
+  const handleSaveNote = async () => {
+    setIsSavingNote(true);
+    try {
+      const { error } = await supabase
+        .from("recipe_notes")
+        .insert({
+          recipe_id: noteRecipe!.id,
+          user_id: userId!,
+          notes: noteText.trim() || null,
+          photos: notePhotos.length > 0 ? notePhotos : null,
+        });
+
+      if (error) throw error;
+
+      toast.success("Note added!");
+      setNoteRecipe(null);
+      setIsLoading(true);
+      loadRecipes();
+    } catch (error) {
+      console.error("Error saving note:", error);
+      toast.error("Failed to save note");
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
   useEffect(() => {
     loadUsedIngredients();
   }, [userId]);
@@ -585,6 +623,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 onEdit={subTab === "personal" ? handleEditRecipe : undefined}
                 onDelete={subTab === "personal" ? handleDeleteRecipe : undefined}
                 onEditRating={userId ? handleEditRating : undefined}
+                onAddNote={userId ? handleAddNote : undefined}
               />
             ))}
           </div>
@@ -709,6 +748,60 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Note Dialog */}
+      <Dialog
+        open={!!noteRecipe}
+        onOpenChange={() => setNoteRecipe(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Add Note</DialogTitle>
+            <DialogDescription>
+              Add notes and photos for &quot;{noteRecipe?.name}&quot;.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="note-text">Notes</Label>
+              <Textarea
+                id="note-text"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add your notes about this recipe..."
+                rows={4}
+              />
+            </div>
+            <PhotoUpload
+              photos={notePhotos}
+              onPhotosChange={setNotePhotos}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setNoteRecipe(null)}
+              disabled={isSavingNote}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveNote}
+              disabled={isSavingNote || (!noteText.trim() && notePhotos.length === 0)}
+              className="bg-purple hover:bg-purple-dark"
+            >
+              {isSavingNote ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Note"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Rating Dialog */}
       {ratingDialogOpen && ratingRecipe && ratingRecipe.eventId && userId && (

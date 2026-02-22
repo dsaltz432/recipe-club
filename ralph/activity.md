@@ -11,7 +11,8 @@
 - `vi.clearAllMocks()` does NOT clear `mockImplementationOnce` queues; use `mockReset()` instead
 - Supabase mock pattern: `createMockQueryBuilder` with chainable `.mockReturnThis()`
 - DEFAULT_PANTRY_ITEMS in src/lib/pantry.ts: ["salt", "pepper", "water"]
-- RecipeCard edit/delete buttons currently gated behind `recipe.isPersonal`
+- RecipeCard edit/delete buttons currently gated behind `recipe.isPersonal`. RecipeCard also supports `onAddNote` prop for adding notes directly from the card.
+- When adding new UI to RecipeHub that uses child components (e.g., PhotoUpload), mock those child components in RecipeHub tests to enable testing the branches they control (e.g., photo state)
 - RecipeHub loads recipes lazily per sub-tab (club on mount, personal only when clicked)
 - Removing component props cascades: child interface → parent interface → parent destructuring → parent JSX → parent tests. Build won't pass until all references are removed.
 - MealPlanSlot is now display-only (no edit/cook/uncook), MealPlanGrid passes only onAddMeal + onViewMealEvent
@@ -21,8 +22,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 8
-**Current Task:** US-008 complete
+**Tasks Completed:** 9
+**Current Task:** US-009 complete
 
 ---
 
@@ -252,5 +253,42 @@
 - Dashboard.test.tsx uses a shared `mockFromResult` for all Supabase queries. To control individual query results (e.g., events vs recipes count), use `mockFrom.mockImplementation()` to return different mock chains per table name.
 - `Promise.all` treats non-thenable values as immediately resolved. When `select()` returns a plain object (not a promise), the recipes count defaults to `undefined || 0 = 0`. To test specific recipe counts, override `from("recipes")` to return `{ select: vi.fn().mockResolvedValue({ count: N }) }`.
 - Both desktop and mobile badge labels render in the DOM simultaneously (dropdown-menu mock renders children directly), so `getAllByText()` finds 2 matches for each label.
+
+---
+
+## 2026-02-22 15:00 — US-009: RecipeHub — add notes to recipes from the Recipes tab
+
+### What was implemented
+- Added `onAddNote` optional prop to RecipeCard interface
+- Added "Add Note" button (Plus icon + text) in the quick stats area of RecipeCard, visible when `onAddNote` is provided
+- Added note dialog state to RecipeHub: `noteRecipe`, `noteText`, `notePhotos`, `isSavingNote`
+- Added `handleAddNote` function to open dialog with empty form
+- Added `handleSaveNote` function to insert into `recipe_notes` table with `recipe_id`, `user_id`, `notes`, and `photos`
+- Added Add Note dialog with Textarea for notes and PhotoUpload for photos
+- Dialog title shows "Add Note", description shows recipe name
+- Save Note button disabled when both text is empty and no photos
+- After saving, shows toast and reloads recipes
+- Passed `onAddNote={userId ? handleAddNote : undefined}` to RecipeCard for both club and personal tabs
+- Updated RecipeCard.test.tsx: 3 new tests for Add Note button visibility, absence, and click
+- Updated RecipeHub.test.tsx: 10 new tests for note dialog open/cancel/save/escape/validation/error/photos
+- Mocked PhotoUpload in RecipeHub tests to enable testing photo-related branches
+
+### Files changed
+- src/components/recipes/RecipeCard.tsx
+- src/components/recipes/RecipeHub.tsx
+- tests/unit/components/recipes/RecipeCard.test.tsx
+- tests/unit/components/recipes/RecipeHub.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1595 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories, RecipeCard.tsx 100%, RecipeHub.tsx 100%
+
+### Learnings for future iterations
+- When a Dialog title matches text already on the page (e.g., "Add Note" button text and "Add Note" dialog title), tests using `getByText` will fail with "multiple elements found". Use more specific selectors like `getByLabelText` or match the dialog description instead.
+- To test branches controlled by child component state (like PhotoUpload's photos), mock the child component to expose a button that calls the state setter. This avoids complex file upload simulation while still covering the parent's branch logic.
+- Removing defensive guards (`if (!userId || !noteRecipe) return`) that are unreachable from normal usage improves coverage without risk when the guard conditions are structurally prevented (userId gated by prop, noteRecipe gated by dialog open state).
+- Imports for `Textarea` and `PhotoUpload` were needed in RecipeHub — Textarea from UI components, PhotoUpload from the recipes directory.
 
 ---

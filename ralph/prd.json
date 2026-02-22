@@ -184,7 +184,7 @@
         "Tests pass"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "activeForm": "Adding notes from Recipes tab",
       "notes": "Files: src/components/recipes/RecipeCard.tsx, src/components/recipes/RecipeHub.tsx. Current state: RecipeCard has no 'Add Note' callback. Notes display inline if they exist (lines 186-240) but there's no way to add one. PersonalMealDetailPage has the full add-note dialog (lines 831-886) with textarea + PhotoUpload. Approach: (1) Add an optional `onAddNote?: (recipe: RecipeWithNotes) => void` prop to RecipeCard. (2) In RecipeCard, add a small 'Add Note' button (similar to the edit rating button) visible when onAddNote is provided. (3) In RecipeHub, add state for the note dialog (noteRecipe, noteText, notePhotos) and a dialog with Textarea + PhotoUpload (reuse the pattern from PersonalMealDetailPage lines 831-886). (4) handleSaveNote: insert into recipe_notes with recipe_id, user_id, notes text, photos array. Then reload recipes. (5) Pass onAddNote={handleAddNote} to RecipeCard for both club and personal tabs. Import PhotoUpload from @/components/recipes/PhotoUpload. Import uploadRecipeFile from @/lib/upload if needed for photo URLs. Tests: Add tests in RecipeCard.test.tsx for the Add Note button visibility and click. Add tests in RecipeHub.test.tsx for the note dialog open/save/cancel flow."
     },

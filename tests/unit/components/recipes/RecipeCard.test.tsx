@@ -543,6 +543,41 @@ describe("RecipeCard - Ratings Display", () => {
   });
 });
 
+describe("RecipeCard - Add Note Button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows Add Note button when onAddNote is provided", () => {
+    const onAddNote = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
+
+    expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    expect(screen.getByText("Add Note")).toBeInTheDocument();
+  });
+
+  it("does not show Add Note button when onAddNote is not provided", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+  });
+
+  it("calls onAddNote with recipe when Add Note button is clicked", () => {
+    const onAddNote = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    expect(onAddNote).toHaveBeenCalledWith(recipe);
+  });
+});
+
 describe("RecipeCard - Edit Rating Button", () => {
   beforeEach(() => {
     vi.clearAllMocks();

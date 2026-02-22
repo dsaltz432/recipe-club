@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 
@@ -45,9 +45,10 @@ interface RecipeCardProps {
   onEdit?: (recipe: RecipeWithNotes) => void;
   onDelete?: (recipeId: string) => void;
   onEditRating?: (recipe: RecipeWithNotes) => void;
+  onAddNote?: (recipe: RecipeWithNotes) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const hasDetails = recipe.url || recipe.notes.length > 0;
@@ -182,7 +183,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating }: RecipeCardProps)
         )}
 
         {/* Quick stats */}
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-3">
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-3 items-center">
           <span className="flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
             {recipe.notes.length} {recipe.notes.length !== 1 ? "notes" : "note"}
@@ -192,6 +193,18 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating }: RecipeCardProps)
               <Camera className="h-3 w-3" />
               {recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0)} photos
             </span>
+          )}
+          {onAddNote && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => onAddNote(recipe)}
+              aria-label="Add note"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add Note
+            </Button>
           )}
         </div>
 
