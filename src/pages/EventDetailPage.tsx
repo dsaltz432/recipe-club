@@ -444,7 +444,7 @@ const EventDetailPage = () => {
       const eid = forEventId || eventId;
       if (result && eid) {
         const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
-        saveGroceryCache(eid, result, sortedRecipeIds);
+        saveGroceryCache("event", eid, user?.id || "", result, sortedRecipeIds);
       }
     } catch {
       setSmartGroceryItems(null);
@@ -525,7 +525,7 @@ const EventDetailPage = () => {
         if (!groceryData) return;
         // Check cache before running AI combine
         if (eventId) {
-          const cached = await loadGroceryCache(eventId);
+          const cached = await loadGroceryCache("event", eventId, user?.id || "");
           if (cached) {
             const currentParsedIds = event.recipesWithNotes
               .filter((r) => groceryData.contentMap[r.recipe.id]?.status === "completed")
@@ -904,7 +904,7 @@ const EventDetailPage = () => {
       setRecipeToDelete(null);
       toast.success("Recipe removed");
       if (eventId) {
-        deleteGroceryCache(eventId);
+        deleteGroceryCache("event", eventId, user?.id || "");
       }
       loadEventData();
     } catch (error) {

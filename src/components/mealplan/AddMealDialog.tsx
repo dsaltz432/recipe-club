@@ -57,7 +57,6 @@ const AddMealDialog = ({
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [fileUploaded, setFileUploaded] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +70,6 @@ const AddMealDialog = ({
     setIsSearching(false);
     setSelectedRecipes([]);
     setIsUploadingFile(false);
-    setFileUploaded(false);
   };
 
   useEffect(() => {
@@ -90,7 +88,6 @@ const AddMealDialog = ({
     try {
       const publicUrl = await uploadRecipeFile(file);
       setUrl(publicUrl);
-      setFileUploaded(true);
       if (!name.trim()) {
         const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
         setName(baseName);
@@ -156,7 +153,7 @@ const AddMealDialog = ({
   }, [searchQuery]);
 
   const handleCustomSubmit = () => {
-    onAddCustomMeal(name.trim(), url.trim() || undefined, fileUploaded);
+    onAddCustomMeal(name.trim(), url.trim() || undefined, !!url.trim());
     handleClose();
   };
 
@@ -235,7 +232,7 @@ const AddMealDialog = ({
                   id="meal-url"
                   type="url"
                   value={url}
-                  onChange={(e) => { setUrl(e.target.value); setFileUploaded(false); }}
+                  onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://..."
                   className={url.trim() && !isValidUrl(url) ? "border-red-500" : ""}
                 />

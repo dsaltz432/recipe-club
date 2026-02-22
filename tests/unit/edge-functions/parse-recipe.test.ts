@@ -77,6 +77,10 @@ const parsedRecipe = {
 function setupDefaultSupabaseMock() {
   mockSupabase.from.mockReturnValue(createBuilder(null, null));
   mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+  // Default storage mock for storage URL tests
+  mockSupabase.storage.from.mockReturnValue({
+    download: vi.fn().mockResolvedValue({ data: null, error: { message: "not configured" } }),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -148,14 +152,19 @@ describe("parse-recipe edge function", () => {
   });
 
   // BUG-001: Media type detection
+  // BUG-009: Storage URLs use supabase.storage.from().download() instead of raw fetch
   it("fetches binary and sends base64 to AI for supabase storage URLs with correct media type", async () => {
     const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.jpg";
     const binaryData = new Uint8Array([0x89, 0x50, 0x4e, 0x47]); // PNG header bytes
 
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        data: { arrayBuffer: () => Promise.resolve(binaryData.buffer), type: "image/jpeg" },
+        error: null,
+      }),
+    });
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(
-        new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "4" } }),
-      )
       .mockResolvedValueOnce(
         createAnthropicResponse(JSON.stringify(parsedRecipe)),
       );
@@ -167,8 +176,11 @@ describe("parse-recipe edge function", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true });
 
-    // Second call should be to Anthropic with image content and correct media_type
-    const anthropicCall = mockFetch.mock.calls[1];
+    // Verify storage client was used with correct bucket and path
+    expect(mockSupabase.storage.from).toHaveBeenCalledWith("recipes");
+
+    // First fetch call should be to Anthropic with image content and correct media_type
+    const anthropicCall = mockFetch.mock.calls[0];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     const imageBlock = anthropicBody.messages[0].content.find(
       (c: Record<string, unknown>) => c.type === "image",
@@ -205,8 +217,14 @@ describe("parse-recipe edge function", () => {
     const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.png";
     const binaryData = new Uint8Array([0x89, 0x50]);
 
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        data: { arrayBuffer: () => Promise.resolve(binaryData.buffer), type: "image/png" },
+        error: null,
+      }),
+    });
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "2" } }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
@@ -214,7 +232,7 @@ describe("parse-recipe edge function", () => {
     const { status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicCall = mockFetch.mock.calls[0];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     const imageBlock = anthropicBody.messages[0].content.find(
       (c: Record<string, unknown>) => c.type === "image",
@@ -226,8 +244,14 @@ describe("parse-recipe edge function", () => {
     const pdfUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/recipe.pdf";
     const binaryData = new Uint8Array([0x25, 0x50, 0x44, 0x46]); // %PDF header
 
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        data: { arrayBuffer: () => Promise.resolve(binaryData.buffer), type: "application/pdf" },
+        error: null,
+      }),
+    });
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(binaryData.buffer, { status: 200, headers: { "Content-Length": "4" } }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
@@ -235,7 +259,7 @@ describe("parse-recipe edge function", () => {
     const { status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicCall = mockFetch.mock.calls[0];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     const docBlock = anthropicBody.messages[0].content.find(
       (c: Record<string, unknown>) => c.type === "document",
@@ -248,11 +272,14 @@ describe("parse-recipe edge function", () => {
     const storageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/noext";
     const binaryData = new Uint8Array([0x89, 0x50]);
 
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        data: { arrayBuffer: () => Promise.resolve(binaryData.buffer), type: "image/webp" },
+        error: null,
+      }),
+    });
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(binaryData.buffer, {
-        status: 200,
-        headers: { "Content-Length": "2", "Content-Type": "image/webp" },
-      }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
@@ -260,7 +287,7 @@ describe("parse-recipe edge function", () => {
     const { status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicCall = mockFetch.mock.calls[0];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     const imageBlock = anthropicBody.messages[0].content.find(
       (c: Record<string, unknown>) => c.type === "image",
@@ -272,11 +299,15 @@ describe("parse-recipe edge function", () => {
     const storageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/noext";
     const binaryData = new Uint8Array([0xFF, 0xD8]);
 
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        // application/octet-stream does not match image/* or application/pdf
+        data: { arrayBuffer: () => Promise.resolve(binaryData.buffer), type: "application/octet-stream" },
+        error: null,
+      }),
+    });
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(binaryData.buffer, {
-        status: 200,
-        headers: { "Content-Length": "2", "Content-Type": "application/octet-stream" },
-      }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
@@ -284,7 +315,7 @@ describe("parse-recipe edge function", () => {
     const { status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicCall = mockFetch.mock.calls[0];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     const imageBlock = anthropicBody.messages[0].content.find(
       (c: Record<string, unknown>) => c.type === "image",
@@ -296,11 +327,15 @@ describe("parse-recipe edge function", () => {
     const storageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/noext";
     const binaryData = new Uint8Array([0xFF, 0xD8]);
 
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        // Empty type simulates no Content-Type
+        data: { arrayBuffer: () => Promise.resolve(binaryData.buffer), type: "" },
+        error: null,
+      }),
+    });
+
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(binaryData.buffer, {
-        status: 200,
-        headers: { "Content-Length": "2" },
-      }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
     globalThis.fetch = mockFetch;
 
@@ -308,7 +343,7 @@ describe("parse-recipe edge function", () => {
     const { status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    const anthropicCall = mockFetch.mock.calls[1];
+    const anthropicCall = mockFetch.mock.calls[0];
     const anthropicBody = JSON.parse(anthropicCall[1].body);
     const imageBlock = anthropicBody.messages[0].content.find(
       (c: Record<string, unknown>) => c.type === "image",
@@ -318,7 +353,8 @@ describe("parse-recipe edge function", () => {
 
   // BUG-010: File size validation
   it("returns 413 when file exceeds 10MB via Content-Length header", async () => {
-    const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/huge.jpg";
+    // Use a non-storage URL so the Content-Length header check path is exercised
+    const imageUrl = "https://example.com/recipes/huge.jpg";
 
     const mockFetch = vi.fn().mockResolvedValueOnce(
       new Response("", {
@@ -337,14 +373,17 @@ describe("parse-recipe edge function", () => {
   });
 
   it("returns 413 when file exceeds 10MB via actual buffer size", async () => {
+    // Use a storage URL so the buffer size check is exercised via storage download
     const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/huge.jpg";
-    // Create a buffer just over 10MB — but don't set Content-Length
+    // Create a buffer just over 10MB
     const bigBuffer = new ArrayBuffer(10 * 1024 * 1024 + 1);
 
-    const mockFetch = vi.fn().mockResolvedValueOnce(
-      new Response(bigBuffer, { status: 200 }),
-    );
-    globalThis.fetch = mockFetch;
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({
+        data: { arrayBuffer: () => Promise.resolve(bigBuffer), type: "image/jpeg" },
+        error: null,
+      }),
+    });
 
     const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
     const { data, status } = await parseResponse(await handler(req));
@@ -719,8 +758,50 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("AI network error");
   });
 
-  it("returns 500 when image fetch returns non-ok status", async () => {
+  it("returns 500 when storage download fails", async () => {
     const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.jpg";
+
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({ data: null, error: { message: "Object not found" } }),
+    });
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Failed to download from storage");
+  });
+
+  it("returns 500 when storage download returns no data and no error", async () => {
+    const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.jpg";
+
+    mockSupabase.storage.from.mockReturnValue({
+      download: vi.fn().mockResolvedValue({ data: null, error: null }),
+    });
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("No data returned");
+  });
+
+  it("returns 500 when storage URL format is invalid", async () => {
+    // URL contains "supabase" and "storage" but doesn't match the expected path pattern
+    const badUrl = "https://myproject.supabase.co/storage/invalid-path";
+
+    const req = createEdgeRequest({ ...baseBody, recipeUrl: badUrl });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Invalid storage URL format");
+  });
+
+  it("returns 500 when non-storage image fetch returns non-ok status", async () => {
+    const imageUrl = "https://example.com/recipes/photo.jpg";
     globalThis.fetch = vi.fn().mockResolvedValueOnce(
       new Response("Not Found", { status: 404 }),
     );

@@ -53,6 +53,7 @@ describe("RecipeHub", () => {
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
       ingredients: { name: "Salmon" },
+      scheduled_events: { type: "club" },
     },
     {
       id: "recipe-2",
@@ -63,6 +64,7 @@ describe("RecipeHub", () => {
       created_by: "user-456",
       created_at: "2025-01-14T10:00:00Z",
       ingredients: { name: "Chicken" },
+      scheduled_events: { type: "club" },
     },
   ];
 
@@ -253,6 +255,7 @@ describe("RecipeHub - Ingredient Filtering", () => {
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
       ingredients: { name: "Salmon" },
+      scheduled_events: { type: "club" },
     },
     {
       id: "recipe-2",
@@ -263,6 +266,7 @@ describe("RecipeHub - Ingredient Filtering", () => {
       created_by: "user-456",
       created_at: "2025-01-14T10:00:00Z",
       ingredients: { name: "Chicken" },
+      scheduled_events: { type: "club" },
     },
   ];
 
@@ -383,6 +387,7 @@ describe("RecipeHub - Error Handling Extended", () => {
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
       ingredients: { name: "Salmon" },
+      scheduled_events: { type: "club" },
     },
   ];
 
@@ -497,6 +502,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: null,
         created_at: null,
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -544,6 +550,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: null, // No ingredient data
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -612,6 +619,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: null,
         created_at: null,
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -668,6 +676,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: null,
         created_at: null,
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -714,6 +723,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: null,
         created_at: null,
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -789,6 +799,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: null,
         created_at: null,
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -836,6 +847,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
       {
         id: "recipe-2",
@@ -846,6 +858,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Chicken" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -896,6 +909,7 @@ describe("RecipeHub - Branch Coverage for Optional Chaining", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
+        scheduled_events: null,
       },
     ];
 
@@ -950,6 +964,7 @@ describe("RecipeHub - Rating Calculations", () => {
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1014,6 +1029,7 @@ describe("RecipeHub - Rating Calculations", () => {
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1065,6 +1081,7 @@ describe("RecipeHub - Rating Calculations", () => {
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1120,6 +1137,7 @@ describe("RecipeHub - Rating Calculations", () => {
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        scheduled_events: { type: "club" },
       },
       {
         id: "recipe-2",
@@ -1131,6 +1149,7 @@ describe("RecipeHub - Rating Calculations", () => {
         created_at: "2025-01-14T10:00:00Z",
         ingredients: { name: "Chicken" },
         profiles: { name: "Another User", avatar_url: "avatar2.jpg" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1195,6 +1214,7 @@ describe("RecipeHub - Rating Calculations", () => {
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1274,6 +1294,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1405,6 +1426,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: "avatar.jpg" },
         ingredients: { name: "Chicken", color: null },
+        scheduled_events: null,
       },
     ];
 
@@ -1442,6 +1464,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
       },
     ];
 
@@ -1618,6 +1641,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: null,
         created_at: "2025-01-15T10:00:00Z",
         profiles: null,
+        scheduled_events: null,
       },
     ];
 
@@ -1654,6 +1678,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
       },
     ];
 
@@ -1695,6 +1720,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
       },
     ];
 
@@ -1755,6 +1781,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: null,
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -1796,6 +1823,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
       },
       {
         id: "personal-2",
@@ -1806,6 +1834,7 @@ describe("RecipeHub - Sub-tabs", () => {
         created_by: "user-123",
         created_at: "2025-01-14T10:00:00Z",
         profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
       },
     ];
 
@@ -1855,6 +1884,7 @@ describe("RecipeHub - Ingredient Name Search", () => {
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
       ingredients: { name: "Salmon" },
+      scheduled_events: { type: "club" },
     },
     {
       id: "recipe-2",
@@ -1865,6 +1895,7 @@ describe("RecipeHub - Ingredient Name Search", () => {
       created_by: "user-456",
       created_at: "2025-01-14T10:00:00Z",
       ingredients: { name: "Chicken" },
+      scheduled_events: { type: "club" },
     },
   ];
 
@@ -1940,6 +1971,7 @@ describe("RecipeHub - Ingredient Name Search", () => {
             created_by: "user-123",
             created_at: "2025-01-15T10:00:00Z",
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
         ]);
       }
@@ -1976,6 +2008,7 @@ describe("RecipeHub - Sort Options", () => {
       created_at: "2025-01-15T10:00:00Z",
       ingredients: { name: "Salmon" },
       profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      scheduled_events: { type: "club" },
     },
     {
       id: "recipe-2",
@@ -1987,6 +2020,7 @@ describe("RecipeHub - Sort Options", () => {
       created_at: "2025-01-20T10:00:00Z",
       ingredients: { name: "Apple" },
       profiles: { name: "Another User", avatar_url: "avatar2.jpg" },
+      scheduled_events: { type: "club" },
     },
     {
       id: "recipe-3",
@@ -1998,6 +2032,7 @@ describe("RecipeHub - Sort Options", () => {
       created_at: "2025-01-10T10:00:00Z",
       ingredients: { name: "Mango" },
       profiles: { name: "Third User", avatar_url: "avatar3.jpg" },
+      scheduled_events: { type: "club" },
     },
   ];
 
@@ -2113,6 +2148,7 @@ describe("RecipeHub - Sort Options", () => {
             created_by: null,
             created_at: null,
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
           {
             id: "recipe-2",
@@ -2123,6 +2159,7 @@ describe("RecipeHub - Sort Options", () => {
             created_by: null,
             created_at: "2025-01-20T10:00:00Z",
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
         ]);
       }
@@ -2154,6 +2191,7 @@ describe("RecipeHub - Sort Options", () => {
             created_by: null,
             created_at: "2025-01-10T10:00:00Z",
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
           {
             id: "recipe-rated",
@@ -2164,6 +2202,7 @@ describe("RecipeHub - Sort Options", () => {
             created_by: null,
             created_at: "2025-01-15T10:00:00Z",
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
         ]);
       }
@@ -2209,6 +2248,7 @@ describe("RecipeHub - Sort Options", () => {
             created_by: null,
             created_at: null,
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
           {
             id: "recipe-2",
@@ -2219,6 +2259,7 @@ describe("RecipeHub - Sort Options", () => {
             created_by: null,
             created_at: null,
             ingredients: null,
+            scheduled_events: { type: "club" },
           },
         ]);
       }
@@ -2248,6 +2289,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
       profiles: { name: "Test User", avatar_url: null },
+      scheduled_events: null,
     },
   ];
 
@@ -2499,6 +2541,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         ingredients: null,
+        scheduled_events: { type: "club" },
       },
     ];
 
@@ -2531,6 +2574,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
         created_by: "user-123",
         created_at: "2025-01-15T10:00:00Z",
         profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
       },
     ];
 
@@ -2603,6 +2647,212 @@ describe("RecipeHub - Edit Personal Recipe", () => {
   });
 });
 
+describe("RecipeHub - Edit Rating", () => {
+  const ratingMockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Rated Club Recipe",
+      url: null,
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon", color: null },
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  const ratingMockNotesData = [
+    {
+      id: "note-1",
+      recipe_id: "recipe-1",
+      user_id: "user-123",
+      notes: "Test notes",
+      photos: null,
+      created_at: "2025-01-15T10:00:00Z",
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+    },
+  ];
+
+  const ratingMockRatingsData = [
+    { recipe_id: "recipe-1", overall_rating: 4, would_cook_again: true, profiles: { name: "Sarah" } },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(ratingMockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(ratingMockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder(ratingMockRatingsData);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows edit rating button on club recipes with ratings when userId is provided", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Rated Club Recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show edit rating button when no userId", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Rated Club Recipe")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("opens rating dialog when edit rating button is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Edit rating"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
+    });
+  });
+
+  it("closes rating dialog when cancel is triggered", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Edit rating"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Rate the Recipes")).not.toBeInTheDocument();
+    });
+  });
+
+  it("closes rating dialog and reloads recipes on complete", async () => {
+    const mockUpsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(ratingMockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(ratingMockNotesData);
+      if (table === "recipe_ratings") {
+        const builder = createMockQueryBuilder(ratingMockRatingsData);
+        builder.upsert = mockUpsert;
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Edit rating"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
+    });
+
+    const yesButton = screen.getByRole("button", { name: /yes/i });
+    fireEvent.click(yesButton);
+
+    const fiveStarButton = screen.getByLabelText("Rate 5 out of 5 stars");
+    fireEvent.click(fiveStarButton);
+
+    fireEvent.click(screen.getByRole("button", { name: /submit ratings/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Rate the Recipes")).not.toBeInTheDocument();
+    });
+  });
+
+  it("opens rating dialog for recipe with null createdAt (uses fallback)", async () => {
+    const nullDateRecipes = [
+      {
+        id: "recipe-1",
+        name: "No Date Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: null,
+        ingredients: { name: "Salmon", color: null },
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+        scheduled_events: { type: "club" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(nullDateRecipes);
+      if (table === "recipe_notes") return createMockQueryBuilder(ratingMockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder(ratingMockRatingsData);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Edit rating"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show edit rating button on personal recipes without eventId", async () => {
+    const personalRecipesNoEvent = [
+      {
+        id: "personal-1",
+        name: "Personal Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesNoEvent);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Personal Recipe")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+});
+
 describe("RecipeHub - Delete Personal Recipe", () => {
   const personalRecipesData = [
     {
@@ -2614,6 +2864,7 @@ describe("RecipeHub - Delete Personal Recipe", () => {
       created_by: "user-123",
       created_at: "2025-01-15T10:00:00Z",
       profiles: { name: "Test User", avatar_url: null },
+      scheduled_events: null,
     },
   ];
 
@@ -2749,6 +3000,187 @@ describe("RecipeHub - Delete Personal Recipe", () => {
 
     await waitFor(() => {
       expect(screen.queryByText("Delete Recipe")).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Personal Event Filtering (US-007)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("excludes personal-event recipes from Club tab", async () => {
+    const mixedRecipes = [
+      {
+        id: "recipe-club",
+        name: "Club Event Recipe",
+        url: null,
+        event_id: "event-club",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: { name: "Salmon" },
+        scheduled_events: { type: "club" },
+      },
+      {
+        id: "recipe-personal",
+        name: "Personal Meal Recipe",
+        url: null,
+        event_id: "event-personal",
+        ingredient_id: "ing-2",
+        created_by: "user-123",
+        created_at: "2025-01-14T10:00:00Z",
+        ingredients: { name: "Chicken" },
+        scheduled_events: { type: "personal" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mixedRecipes);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      // Club recipe should appear
+      expect(screen.getByText("Club Event Recipe")).toBeInTheDocument();
+      // Personal meal recipe should NOT appear in Club tab
+      expect(screen.queryByText("Personal Meal Recipe")).not.toBeInTheDocument();
+      // Count should only include club recipes
+      expect(screen.getByRole("button", { name: "Club (1)" })).toBeInTheDocument();
+    });
+  });
+
+  it("includes personal-event recipes in My Recipes tab", async () => {
+    const userRecipes = [
+      {
+        id: "recipe-no-event",
+        name: "No Event Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+      {
+        id: "recipe-personal-meal",
+        name: "Personal Meal Recipe",
+        url: null,
+        event_id: "event-personal",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-14T10:00:00Z",
+        ingredients: { name: "Chicken", color: null },
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: { type: "personal" },
+      },
+      {
+        id: "recipe-club-event",
+        name: "Club Event Recipe",
+        url: null,
+        event_id: "event-club",
+        ingredient_id: "ing-2",
+        created_by: "user-123",
+        created_at: "2025-01-13T10:00:00Z",
+        ingredients: { name: "Salmon", color: null },
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: { type: "club" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(userRecipes);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      // No-event recipe should appear (personal)
+      expect(screen.getByText("No Event Recipe")).toBeInTheDocument();
+      // Personal-event recipe should appear
+      expect(screen.getByText("Personal Meal Recipe")).toBeInTheDocument();
+      // Club-event recipe should NOT appear in personal tab
+      expect(screen.queryByText("Club Event Recipe")).not.toBeInTheDocument();
+      // Count should only include personal recipes
+      expect(screen.getByRole("button", { name: "My Recipes (2)" })).toBeInTheDocument();
+    });
+  });
+
+  it("handles club recipe with null scheduled_events in Club tab", async () => {
+    const recipesWithNullEvents = [
+      {
+        id: "recipe-1",
+        name: "Recipe With Null Events",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+        scheduled_events: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(recipesWithNullEvents);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      // Recipe with null scheduled_events should still appear (not personal)
+      expect(screen.getByText("Recipe With Null Events")).toBeInTheDocument();
+    });
+  });
+
+  it("marks personal-event recipes as isPersonal in My Recipes tab", async () => {
+    const personalEventRecipes = [
+      {
+        id: "recipe-personal-meal",
+        name: "My Personal Meal",
+        url: null,
+        event_id: "event-personal",
+        ingredient_id: "ing-1",
+        created_by: "user-123",
+        created_at: "2025-01-14T10:00:00Z",
+        ingredients: { name: "Chicken", color: null },
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: { type: "personal" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalEventRecipes);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("My Personal Meal")).toBeInTheDocument();
     });
   });
 });

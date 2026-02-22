@@ -63,6 +63,24 @@ vi.mock("@/lib/pantry", () => ({
   ensureDefaultPantryItems: (...args: unknown[]) => mockEnsureDefaultPantryItems(...args),
 }));
 
+// Mock grocery list smart combine (preserve other exports like combineIngredients)
+const mockSmartCombineIngredients = vi.fn();
+vi.mock("@/lib/groceryList", async () => {
+  const actual = await vi.importActual("@/lib/groceryList");
+  return {
+    ...actual,
+    smartCombineIngredients: (...args: unknown[]) => mockSmartCombineIngredients(...args),
+  };
+});
+
+// Mock grocery cache
+const mockLoadGroceryCache = vi.fn();
+const mockSaveGroceryCache = vi.fn();
+vi.mock("@/lib/groceryCache", () => ({
+  loadGroceryCache: (...args: unknown[]) => mockLoadGroceryCache(...args),
+  saveGroceryCache: (...args: unknown[]) => mockSaveGroceryCache(...args),
+}));
+
 // Mock constants to show parse buttons in tests
 vi.mock("@/lib/constants", async () => {
   const actual = await vi.importActual("@/lib/constants");
@@ -124,6 +142,9 @@ describe("MealPlanPage", () => {
     mockGetPantryItems.mockResolvedValue([]);
     mockEnsureDefaultPantryItems.mockResolvedValue(undefined);
     mockInvoke.mockResolvedValue({ data: {}, error: null });
+    mockSmartCombineIngredients.mockResolvedValue(null);
+    mockLoadGroceryCache.mockResolvedValue(null);
+    mockSaveGroceryCache.mockResolvedValue(undefined);
     mockStorageUpload.mockResolvedValue({ error: null });
     mockStorageGetPublicUrl.mockReturnValue({
       data: { publicUrl: "https://storage.example.com/recipe-images/mock-uuid-456.jpg" },
@@ -1347,8 +1368,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Click the "View meal details" button
-    fireEvent.click(screen.getByTitle("View meal details"));
+    // Click the card (whole card is now clickable)
+    fireEvent.click(screen.getByLabelText("View meal details"));
 
     expect(mockNavigate).toHaveBeenCalledWith("/meals/event-existing-123");
   });
@@ -1396,8 +1417,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Click the "View meal details" button
-    fireEvent.click(screen.getByTitle("View meal details"));
+    // Click the card (whole card is now clickable)
+    fireEvent.click(screen.getByLabelText("View meal details"));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-456");
@@ -1636,9 +1657,9 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pasta")).toBeInTheDocument();
     });
 
-    // Click "View meal details" on the breakfast slot (day 0)
-    const viewButtons = screen.getAllByTitle("View meal details");
-    fireEvent.click(viewButtons[0]);
+    // Click the card on the breakfast slot (day 0) — whole card is now clickable
+    const viewCards = screen.getAllByLabelText("View meal details");
+    fireEvent.click(viewCards[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-789");
@@ -1772,8 +1793,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Click the "View meal details" button
-    fireEvent.click(screen.getByTitle("View meal details"));
+    // Click the card (whole card is now clickable)
+    fireEvent.click(screen.getByLabelText("View meal details"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to open meal details");
@@ -2680,6 +2701,592 @@ describe("MealPlanPage", () => {
         ).toBeInTheDocument();
       });
     });
+
+    it("runs smart combine when 2+ parsed recipes are present", async () => {
+      const smartItems = [
+        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
+      ];
+      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Chicken Stir Fry", url: "https://example.com/stir-fry" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Fried Rice", url: "https://example.com/rice" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "chicken", quantity: 2, unit: "lbs", category: "meat_seafood", raw_text: "2 lbs chicken", sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "rice", quantity: 1, unit: "cup", category: "grains", raw_text: "1 cup rice", sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Chicken Stir Fry", url: "https://example.com/stir-fry" },
+                { id: "recipe-2", name: "Fried Rice", url: "https://example.com/rice" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      });
+
+      // Verify save cache was called
+      await waitFor(() => {
+        expect(mockSaveGroceryCache).toHaveBeenCalledWith(
+          "meal_plan",
+          expect.any(String),
+          "user-123",
+          smartItems,
+          expect.any(Array)
+        );
+      });
+    });
+
+    it("skips re-combine when same recipe IDs already combined", async () => {
+      const smartItems = [
+        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
+      ];
+      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+      // Cache always returns null so runSmartCombine is invoked on every tab switch
+      mockLoadGroceryCache.mockResolvedValue(null);
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Chicken Stir Fry", url: "https://example.com/stir-fry" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Fried Rice", url: "https://example.com/rice" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "chicken", quantity: 2, unit: "lbs", category: "meat_seafood", raw_text: "2 lbs chicken", sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "rice", quantity: 1, unit: "cup", category: "grains", raw_text: "1 cup rice", sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Chicken Stir Fry", url: "https://example.com/stir-fry" },
+                { id: "recipe-2", name: "Fried Rice", url: "https://example.com/rice" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      });
+
+      // First visit to Groceries tab — smartCombine runs
+      fireEvent.click(screen.getByText("Groceries"));
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalledTimes(1);
+      });
+
+      // Switch back to Meal Plan
+      fireEvent.click(screen.getByText("Meal Plan"));
+
+      // Switch to Groceries again — same recipe IDs, should skip re-combine
+      fireEvent.click(screen.getByText("Groceries"));
+
+      // Wait for grocery data to load
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Smart combine should still only have been called once (skipped on second visit)
+      expect(mockSmartCombineIngredients).toHaveBeenCalledTimes(1);
+    });
+
+    it("uses cached smart combine results when recipe IDs match", async () => {
+      const cachedItems = [
+        { name: "onion", totalQuantity: 1, category: "produce", sourceRecipes: ["Soup"] },
+      ];
+      mockLoadGroceryCache.mockResolvedValue({
+        items: cachedItems,
+        recipeIds: ["recipe-1"],
+      });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Soup", url: "https://example.com/soup" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "onion", quantity: 1, unit: null, category: "produce", raw_text: "1 onion", sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Soup", url: "https://example.com/soup" }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Soup")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(mockLoadGroceryCache).toHaveBeenCalledWith(
+          "meal_plan",
+          expect.any(String),
+          "user-123"
+        );
+      });
+
+      // Smart combine should NOT have been called because cache was hit
+      expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
+    });
+
+    it("skips smart combine when fewer than 2 parsed recipes", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Solo Recipe", url: "https://example.com/solo" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "garlic", quantity: 3, unit: "cloves", category: "produce", raw_text: "3 cloves garlic", sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Solo Recipe", url: "https://example.com/solo" }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Solo Recipe")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Smart combine should NOT have been called (only 1 parsed recipe)
+      expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
+    });
+
+    it("handles smart combine error gracefully", async () => {
+      mockSmartCombineIngredients.mockRejectedValue(new Error("AI service down"));
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe A", url: "https://example.com/a" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe B", url: "https://example.com/b" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "flour", quantity: 2, unit: "cups", category: "grains", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "sugar", quantity: 1, unit: "cup", category: "grains", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Recipe A", url: "https://example.com/a" },
+                { id: "recipe-2", name: "Recipe B", url: "https://example.com/b" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab — should not crash even though smart combine fails
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      });
+
+      // Page should still render grocery list
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+    });
+
+    it("does not cache when smartCombineIngredients returns null", async () => {
+      mockSmartCombineIngredients.mockResolvedValue(null);
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe A", url: "https://example.com/a" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe B", url: "https://example.com/b" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "chicken", quantity: 2, unit: "lbs", category: "meat_seafood", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "rice", quantity: 1, unit: "cup", category: "grains", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Recipe A", url: "https://example.com/a" },
+                { id: "recipe-2", name: "Recipe B", url: "https://example.com/b" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      });
+
+      // saveGroceryCache should NOT have been called because result was null
+      expect(mockSaveGroceryCache).not.toHaveBeenCalled();
+    });
+
+    it("re-runs smart combine when cache exists but recipe IDs are stale", async () => {
+      const smartItems = [
+        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Recipe A"] },
+      ];
+      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+
+      // Cache has recipe IDs that don't match current parsed recipes
+      mockLoadGroceryCache.mockResolvedValue({
+        items: [{ name: "old item", totalQuantity: 1, category: "produce", sourceRecipes: ["Old Recipe"] }],
+        recipeIds: ["old-recipe-id"],
+      });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe A", url: "https://example.com/a" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe B", url: "https://example.com/b" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "chicken", quantity: 2, unit: "lbs", category: "meat_seafood", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "rice", quantity: 1, unit: "cup", category: "grains", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Recipe A", url: "https://example.com/a" },
+                { id: "recipe-2", name: "Recipe B", url: "https://example.com/b" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Groceries"));
+
+      // Cache was loaded but IDs don't match, so smart combine should run
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      });
+    });
   });
 
   describe("cooked state and rating", () => {
@@ -3558,7 +4165,7 @@ describe("MealPlanPage", () => {
       });
     });
 
-    it("does not invoke parse-recipe when URL is typed manually", async () => {
+    it("invokes parse-recipe when URL is typed manually", async () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
@@ -3582,8 +4189,10 @@ describe("MealPlanPage", () => {
         expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Added"));
       });
 
-      // parse-recipe should NOT have been called
-      expect(mockInvoke).not.toHaveBeenCalledWith("parse-recipe", expect.anything());
+      // parse-recipe should be called since any URL now triggers parsing
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
+      });
     });
 
     it("invokes parse-recipe when editing a custom meal with a file upload", async () => {
@@ -3755,8 +4364,15 @@ describe("MealPlanPage", () => {
       // Submit the edit form
       fireEvent.click(screen.getByText("Save Changes"));
 
+      // Parse error now shows a dialog instead of a toast
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
+        expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
+      });
+
+      // "Keep Recipe Anyway" dismisses dialog
+      fireEvent.click(screen.getByText("Keep Recipe Anyway"));
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe saved without parsing");
       });
     });
 
@@ -3819,8 +4435,365 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByText("Add to Meal"));
 
+      // Parse error now shows a dialog instead of a toast
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
+        expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
+      });
+
+      // Click "Try Again" to retry
+      fireEvent.click(screen.getByText("Try Again"));
+      await waitFor(() => {
+        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+      });
+    });
+
+    it("dismisses parse failure dialog via overlay close (calls handleParseKeep)", async () => {
+      mockInvoke.mockResolvedValueOnce({ data: null, error: new Error("Parse failed") });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-dismiss-test" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-dismiss",
+                plan_id: "plan-new",
+                recipe_id: "recipe-dismiss-test",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Test Recipe", url: "https://example.com/test" },
+              },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Test Recipe" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/test" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      // Wait for the parse failure dialog
+      await waitFor(() => {
+        expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
+      });
+
+      // Close button (X) on the dialog triggers onOpenChange which calls handleParseKeep
+      const closeButton = screen.getByRole("button", { name: /close/i });
+      fireEvent.click(closeButton);
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe saved without parsing");
+      });
+    });
+
+    it("does not dismiss parse dialog via overlay close while still parsing", async () => {
+      // Use a delayed parse mock so dialog stays open in "parsing" state
+      let resolveInvoke: (value: { data: unknown; error: null }) => void;
+      mockInvoke.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveInvoke = resolve;
+      }));
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-parse-open" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-parse-open",
+                plan_id: "plan-new",
+                recipe_id: "recipe-parse-open",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Open Test", url: "https://example.com/open" },
+              },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Open Test" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/open" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      // Wait for the parsing dialog
+      await waitFor(() => {
+        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+      });
+
+      // Close button fires onOpenChange, but since parseStatus is "parsing" (not "failed"),
+      // handleParseKeep should NOT be called — dialog stays open
+      const closeButton = screen.getByRole("button", { name: /close/i });
+      fireEvent.click(closeButton);
+
+      // Dialog should still be showing "Parsing Recipe"
+      expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+      expect(toast.success).not.toHaveBeenCalledWith("Recipe saved without parsing");
+
+      // Clean up: resolve the invoke to avoid dangling promise
+      resolveInvoke!({ data: {}, error: null });
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+      });
+    });
+
+    it("handles loadGroceryData returning null after parse succeeds on groceries tab", async () => {
+      // Use a delayed parse mock so we can switch tabs while parse is in flight
+      let resolveInvoke: (value: { data: unknown; error: null }) => void;
+      mockInvoke.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveInvoke = resolve;
+      }));
+
+      let parseResolved = false;
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-null-grocery" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-null-grocery",
+                plan_id: "plan-new",
+                recipe_id: "recipe-null-grocery",
+                day_of_week: 1,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "New Meal", url: "https://example.com/new" },
+              },
+              error: null,
+            }),
+          });
+        }
+        // After parse resolves, make recipe_ingredients throw so loadGroceryData returns null
+        if (table === "recipe_ingredients" && parseResolved) {
+          return createMockQueryBuilder({
+            in: vi.fn().mockRejectedValue(new Error("DB error")),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      // Add a new meal with URL to trigger parse
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "New Meal" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/new" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      // Wait for parsing dialog
+      await waitFor(() => {
+        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab while parse is in flight
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Mark that parse is about to resolve so loadGroceryData will fail
+      parseResolved = true;
+
+      // Resolve parse — loadGroceryData will return null because recipe_ingredients throws
+      resolveInvoke!({ data: {}, error: null });
+
+      // Parse succeeds but smartCombine should NOT be called since groceryData is null
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+      });
+    });
+
+    it("reloads grocery data after successful parse while on groceries tab", async () => {
+      // Use a delayed parse mock so we can switch tabs while parse is in flight
+      let resolveInvoke: (value: { data: unknown; error: null }) => void;
+      mockInvoke.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveInvoke = resolve;
+      }));
+      mockSmartCombineIngredients.mockResolvedValue([
+        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Tacos"] },
+      ]);
+
+      // Start with a plan that has 2 recipes with URLs (needed for smart combine to trigger)
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Tacos", url: "https://example.com/tacos" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Burritos", url: "https://example.com/burritos" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "chicken", quantity: 2, unit: "lbs", category: "meat_seafood", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "beans", quantity: 1, unit: "can", category: "canned", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Tacos", url: "https://example.com/tacos" },
+                { id: "recipe-2", name: "Burritos", url: "https://example.com/burritos" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Tacos")).toBeInTheDocument();
+      });
+
+      // Click the meal to edit and add a URL to trigger parse
+      fireEvent.click(screen.getByText("Tacos"));
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/tacos-v2" },
+      });
+      fireEvent.click(screen.getByText("Save Changes"));
+
+      // Wait for the parsing dialog to appear
+      await waitFor(() => {
+        expect(screen.getByText("Parsing Recipe")).toBeInTheDocument();
+      });
+
+      // Switch to Groceries tab while parse is still in flight
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Now resolve the parse — since viewTab is "groceries", it should reload grocery data
+      resolveInvoke!({ data: {}, error: null });
+
+      // Parse succeeds and reloads grocery data + runs smart combine
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
       });
     });
   });

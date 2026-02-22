@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Info } from "lucide-react";
+import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +46,7 @@ const GroceryListSection = ({
   isCombining,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
+  const [showExcluded, setShowExcluded] = useState(false);
 
   const recipeNameMap: Record<string, string> = {};
   for (const recipe of recipes) {
@@ -56,7 +57,10 @@ const GroceryListSection = ({
   const filteredItems = pantryItems.length > 0
     ? filterPantryItems(combinedItems, pantryItems)
     : combinedItems;
-  const pantryExcludedCount = combinedItems.length - filteredItems.length;
+  const excludedItems = combinedItems.filter(
+    (item) => !filteredItems.includes(item)
+  );
+  const pantryExcludedCount = excludedItems.length;
   const groupedItems = groupByCategory(filteredItems);
 
   // Smart grocery grouping (with pantry filtering)
@@ -248,11 +252,30 @@ const GroceryListSection = ({
         )}
 
         {!isLoading && pantryExcludedCount > 0 && (
-          <div className="flex items-center gap-2 mt-3 p-2 bg-purple-50 rounded-md border border-purple-100">
-            <Info className="h-4 w-4 text-purple shrink-0" />
-            <p className="text-sm text-purple-700">
-              {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded from this list
-            </p>
+          <div className="mt-3 bg-purple-50 rounded-md border border-purple-100">
+            <button
+              type="button"
+              className="flex items-center gap-2 w-full p-2 text-left"
+              onClick={() => setShowExcluded((prev) => !prev)}
+              aria-expanded={showExcluded}
+            >
+              <Info className="h-4 w-4 text-purple shrink-0" />
+              <p className="text-sm text-purple-700 flex-1">
+                {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded from this list
+              </p>
+              {showExcluded ? (
+                <ChevronUp className="h-4 w-4 text-purple shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-purple shrink-0" />
+              )}
+            </button>
+            {showExcluded && (
+              <ul className="px-8 pb-2 text-sm text-purple-700 list-disc">
+                {excludedItems.map((item) => (
+                  <li key={item.name}>{item.name}</li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </CardContent>

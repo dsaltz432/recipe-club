@@ -142,7 +142,7 @@ describe("AddMealDialog", () => {
     });
     fireEvent.click(screen.getByText("Add to Meal"));
 
-    expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", "https://example.com/tacos", false);
+    expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", "https://example.com/tacos", true);
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -697,7 +697,7 @@ describe("AddMealDialog", () => {
       );
     });
 
-    it("resets fileUploaded when URL is manually typed", async () => {
+    it("passes shouldParse=true when URL is manually typed", async () => {
       render(<AddMealDialog {...defaultProps} />);
 
       // Upload a file
@@ -709,18 +709,18 @@ describe("AddMealDialog", () => {
         expect(mockUploadRecipeFile).toHaveBeenCalled();
       });
 
-      // Manually change URL — should reset fileUploaded
+      // Manually change URL — shouldParse still true since URL is present
       fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
         target: { value: "https://example.com/other" },
       });
 
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      // shouldParse should be false since URL was manually changed
+      // shouldParse should be true since URL is present (any URL triggers parse)
       expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith(
         "recipe",
         "https://example.com/other",
-        false
+        true
       );
     });
 

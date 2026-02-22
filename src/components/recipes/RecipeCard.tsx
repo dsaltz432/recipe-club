@@ -38,13 +38,16 @@ interface RecipeWithNotes extends Recipe {
   isPersonal?: boolean;
 }
 
+export type RecipeCardRecipe = RecipeWithNotes;
+
 interface RecipeCardProps {
   recipe: RecipeWithNotes;
   onEdit?: (recipe: RecipeWithNotes) => void;
   onDelete?: (recipeId: string) => void;
+  onEditRating?: (recipe: RecipeWithNotes) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const hasDetails = recipe.url || recipe.notes.length > 0;
@@ -152,6 +155,17 @@ const RecipeCard = ({ recipe, onEdit, onDelete }: RecipeCardProps) => {
                   ? recipe.ratingSummary.averageRating
                   : recipe.ratingSummary.averageRating.toFixed(1)}/5
               </span>
+              {recipe.eventId && onEditRating && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 ml-1"
+                  aria-label="Edit rating"
+                  onClick={() => onEditRating(recipe)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
             </div>
             {recipe.ratingSummary.memberRatings.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">

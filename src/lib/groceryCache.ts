@@ -2,19 +2,25 @@ import type { SmartGroceryItem } from "@/types";
 import type { Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 
+export type GroceryCacheContextType = "event" | "meal_plan";
+
 export interface GroceryCacheResult {
   items: SmartGroceryItem[];
   recipeIds: string[];
 }
 
 export async function loadGroceryCache(
-  eventId: string
+  contextType: GroceryCacheContextType,
+  contextId: string,
+  userId: string
 ): Promise<GroceryCacheResult | null> {
   try {
     const { data, error } = await supabase
-      .from("event_grocery_cache")
-      .select("items, recipe_ids")
-      .eq("event_id", eventId)
+      .from("combined_grocery_items")
+      .select("items, source_recipe_ids")
+      .eq("context_type", contextType)
+      .eq("context_id", contextId)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (error) throw error;
@@ -22,7 +28,7 @@ export async function loadGroceryCache(
 
     return {
       items: data.items as unknown as SmartGroceryItem[],
-      recipeIds: data.recipe_ids,
+      recipeIds: data.source_recipe_ids,
     };
   } catch (error) {
     console.error("Error loading grocery cache:", error);
@@ -31,22 +37,26 @@ export async function loadGroceryCache(
 }
 
 export async function saveGroceryCache(
-  eventId: string,
+  contextType: GroceryCacheContextType,
+  contextId: string,
+  userId: string,
   items: SmartGroceryItem[],
   recipeIds: string[]
 ): Promise<void> {
   try {
     const sortedIds = [...recipeIds].sort();
     const { error } = await supabase
-      .from("event_grocery_cache")
+      .from("combined_grocery_items")
       .upsert(
         {
-          event_id: eventId,
+          context_type: contextType,
+          context_id: contextId,
+          user_id: userId,
           items: items as unknown as Json,
-          recipe_ids: sortedIds,
+          source_recipe_ids: sortedIds,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "event_id" }
+        { onConflict: "context_type,context_id,user_id" }
       );
 
     if (error) throw error;
@@ -55,12 +65,18 @@ export async function saveGroceryCache(
   }
 }
 
-export async function deleteGroceryCache(eventId: string): Promise<void> {
+export async function deleteGroceryCache(
+  contextType: GroceryCacheContextType,
+  contextId: string,
+  userId: string
+): Promise<void> {
   try {
     const { error } = await supabase
-      .from("event_grocery_cache")
+      .from("combined_grocery_items")
       .delete()
-      .eq("event_id", eventId);
+      .eq("context_type", contextType)
+      .eq("context_id", contextId)
+      .eq("user_id", userId);
 
     if (error) throw error;
   } catch (error) {

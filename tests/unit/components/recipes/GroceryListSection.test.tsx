@@ -395,6 +395,68 @@ describe("GroceryListSection", () => {
     expect(screen.getByText("1 pantry item excluded from this list")).toBeInTheDocument();
   });
 
+  it("shows excluded pantry items when toggle is expanded", () => {
+    const ingredientsWithSalt: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "pepper", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithSalt}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        pantryItems={["salt", "pepper"]}
+      />
+    );
+
+    // Collapsed by default - excluded item names not visible
+    expect(screen.queryByText("salt")).not.toBeInTheDocument();
+    expect(screen.queryByText("pepper")).not.toBeInTheDocument();
+
+    // Click to expand
+    const toggleButton = screen.getByRole("button", { name: /2 pantry items excluded/i });
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggleButton);
+
+    // Expanded - excluded item names visible
+    expect(toggleButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("salt")).toBeInTheDocument();
+    expect(screen.getByText("pepper")).toBeInTheDocument();
+  });
+
+  it("collapses excluded pantry items when toggle is clicked again", () => {
+    const ingredientsWithSalt: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithSalt}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        pantryItems={["salt"]}
+      />
+    );
+
+    const toggleButton = screen.getByRole("button", { name: /1 pantry item excluded/i });
+
+    // Expand
+    fireEvent.click(toggleButton);
+    expect(screen.getByText("salt")).toBeInTheDocument();
+
+    // Collapse
+    fireEvent.click(toggleButton);
+    expect(screen.queryByText("salt")).not.toBeInTheDocument();
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("does not show excluded message when no pantry items match", () => {
     render(
       <GroceryListSection

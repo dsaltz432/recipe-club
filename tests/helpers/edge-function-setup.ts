@@ -102,9 +102,16 @@ export function createMockQueryBuilder<T = unknown>(
 // Supabase client mock
 // ---------------------------------------------------------------------------
 
+export interface MockStorageBucket {
+  download: ReturnType<typeof vi.fn>;
+}
+
 export interface MockSupabaseClient {
   from: ReturnType<typeof vi.fn>;
   rpc: ReturnType<typeof vi.fn>;
+  storage: {
+    from: ReturnType<typeof vi.fn>;
+  };
   auth: {
     admin: {
       getUserById: ReturnType<typeof vi.fn>;
@@ -134,9 +141,16 @@ export function createMockSupabaseClient(): MockSupabaseClient {
     return tableBuilders.get(table)!;
   });
 
+  const defaultBucket: MockStorageBucket = {
+    download: vi.fn().mockResolvedValue({ data: null, error: { message: "not configured" } }),
+  };
+
   return {
     from: fromFn,
     rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    storage: {
+      from: vi.fn().mockReturnValue(defaultBucket),
+    },
     auth: {
       admin: {
         getUserById: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),

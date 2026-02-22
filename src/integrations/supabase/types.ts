@@ -386,40 +386,38 @@ export type Database = {
         };
         Relationships: [];
       };
-      event_grocery_cache: {
+      combined_grocery_items: {
         Row: {
           id: string;
-          event_id: string;
+          context_type: string;
+          context_id: string;
+          user_id: string;
           items: Json;
-          recipe_ids: string[];
+          source_recipe_ids: string[];
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          event_id: string;
-          items: Json;
-          recipe_ids: string[];
+          context_type: string;
+          context_id: string;
+          user_id: string;
+          items?: Json;
+          source_recipe_ids?: string[];
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          event_id?: string;
+          context_type?: string;
+          context_id?: string;
+          user_id?: string;
           items?: Json;
-          recipe_ids?: string[];
+          source_recipe_ids?: string[];
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "event_grocery_cache_event_id_fkey";
-            columns: ["event_id"];
-            isOneToOne: true;
-            referencedRelation: "scheduled_events";
-            referencedColumns: ["id"];
-          }
-        ];
+        Relationships: [];
       };
       meal_plans: {
         Row: {
@@ -492,38 +490,6 @@ export type Database = {
             columns: ["recipe_id"];
             isOneToOne: false;
             referencedRelation: "recipes";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      meal_plan_grocery_cache: {
-        Row: {
-          id: string;
-          plan_id: string;
-          items: Json;
-          recipe_ids: string[];
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          plan_id: string;
-          items: Json;
-          recipe_ids: string[];
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          plan_id?: string;
-          items?: Json;
-          recipe_ids?: string[];
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "meal_plan_grocery_cache_plan_id_fkey";
-            columns: ["plan_id"];
-            isOneToOne: true;
-            referencedRelation: "meal_plans";
             referencedColumns: ["id"];
           }
         ];

@@ -542,3 +542,94 @@ describe("RecipeCard - Ratings Display", () => {
     expect(screen.queryByText("Make again:")).not.toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - Edit Rating Button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit rating button when recipe has eventId and onEditRating is provided", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+  });
+
+  it("does not show edit rating button when onEditRating is not provided", () => {
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("does not show edit rating button when recipe has no eventId", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: undefined,
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("does not show edit rating button when there are no ratings", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: undefined,
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("calls onEditRating with recipe when edit rating button is clicked", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    fireEvent.click(screen.getByLabelText("Edit rating"));
+
+    expect(onEditRating).toHaveBeenCalledWith(recipe);
+  });
+});

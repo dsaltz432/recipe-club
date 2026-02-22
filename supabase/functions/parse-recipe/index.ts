@@ -156,26 +156,52 @@ serve(async (req) => {
 
     if (isStorageUrl || isPdfOrImage) {
       // Download file and send as base64
-      const response = await fetch(recipeUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch recipe file: ${response.status}`);
-      }
+      let arrayBuffer: ArrayBuffer;
+      let responseContentType: string | null = null;
 
-      // BUG-010: File size validation via Content-Length header
-      const contentLength = response.headers.get("content-length");
-      if (contentLength && parseInt(contentLength, 10) > MAX_FILE_SIZE) {
-        await supabase.from("recipe_content").upsert({
-          recipe_id: recipeId,
-          status: "failed",
-          error_message: "File exceeds 10MB size limit",
-        }, { onConflict: "recipe_id" });
-        return new Response(
-          JSON.stringify({ success: false, error: "File exceeds 10MB size limit" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
-        );
-      }
+      if (isStorageUrl) {
+        // BUG-009: Use Supabase storage client instead of raw fetch for storage URLs.
+        // The public URL points to localhost which is unreachable from inside Docker.
+        // The Supabase client uses SUPABASE_URL which resolves correctly via kong gateway.
+        const url = new URL(recipeUrl);
+        const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+        if (!pathMatch) {
+          throw new Error(`Invalid storage URL format: ${recipeUrl}`);
+        }
+        const bucket = pathMatch[1];
+        const filePath = decodeURIComponent(pathMatch[2]);
 
-      const arrayBuffer = await response.arrayBuffer();
+        const { data, error: downloadError } = await supabase.storage.from(bucket).download(filePath);
+        if (downloadError || !data) {
+          throw new Error(`Failed to download from storage: ${downloadError?.message ?? "No data returned"}`);
+        }
+
+        arrayBuffer = await data.arrayBuffer();
+        responseContentType = data.type || null;
+      } else {
+        // Non-storage file URL (e.g. direct link to a .jpg on the web)
+        const response = await fetch(recipeUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recipe file: ${response.status}`);
+        }
+
+        // BUG-010: File size validation via Content-Length header
+        const contentLength = response.headers.get("content-length");
+        if (contentLength && parseInt(contentLength, 10) > MAX_FILE_SIZE) {
+          await supabase.from("recipe_content").upsert({
+            recipe_id: recipeId,
+            status: "failed",
+            error_message: "File exceeds 10MB size limit",
+          }, { onConflict: "recipe_id" });
+          return new Response(
+            JSON.stringify({ success: false, error: "File exceeds 10MB size limit" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
+          );
+        }
+
+        arrayBuffer = await response.arrayBuffer();
+        responseContentType = response.headers.get("content-type");
+      }
 
       // BUG-010: Also check actual buffer size (Content-Length may be absent)
       if (arrayBuffer.byteLength > MAX_FILE_SIZE) {
@@ -191,7 +217,7 @@ serve(async (req) => {
       }
 
       // BUG-001: Detect media type from URL extension or Content-Type header
-      detectedMediaType = detectMediaType(recipeUrl, response.headers.get("content-type"));
+      detectedMediaType = detectMediaType(recipeUrl, responseContentType);
 
       // More memory-efficient base64 encoding using chunking
       const uint8Array = new Uint8Array(arrayBuffer);

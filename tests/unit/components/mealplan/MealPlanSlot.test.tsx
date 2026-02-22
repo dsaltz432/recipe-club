@@ -100,7 +100,7 @@ describe("MealPlanSlot", () => {
     expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-1");
   });
 
-  it("shows external link when item has recipe URL", () => {
+  it("does not show external link icons in populated cards", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -115,63 +115,26 @@ describe("MealPlanSlot", () => {
 
     render(<MealPlanSlot {...defaultProps} items={items} />);
 
-    const link = document.querySelector('a[href="https://example.com/salmon"]');
-    expect(link).toBeInTheDocument();
-  });
-
-  it("shows external link when item has custom URL", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        customName: "External Recipe",
-        customUrl: "https://example.com/recipe",
-      },
-    ];
-
-    render(<MealPlanSlot {...defaultProps} items={items} />);
-
-    const link = document.querySelector('a[href="https://example.com/recipe"]');
-    expect(link).toBeInTheDocument();
-  });
-
-  it("does not show external link when no URL", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "No URL Recipe",
-      },
-    ];
-
-    render(<MealPlanSlot {...defaultProps} items={items} />);
-
     const links = document.querySelectorAll("a[target='_blank']");
     expect(links.length).toBe(0);
   });
 
-  it("renders correct meal type labels", () => {
+  it("renders correct meal type labels for empty slots", () => {
     render(<MealPlanSlot {...defaultProps} mealType="breakfast" />);
     expect(screen.getByText("Breakfast")).toBeInTheDocument();
   });
 
-  it("renders lunch label", () => {
+  it("renders lunch label for empty slot", () => {
     render(<MealPlanSlot {...defaultProps} mealType="lunch" />);
     expect(screen.getByText("Lunch")).toBeInTheDocument();
   });
 
-  it("renders snack label", () => {
+  it("renders snack label for empty slot", () => {
     render(<MealPlanSlot {...defaultProps} mealType="snack" />);
     expect(screen.getByText("Snack")).toBeInTheDocument();
   });
 
-  it("shows meal type label for filled slot", () => {
+  it("does not show meal type label in populated cards", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -185,7 +148,7 @@ describe("MealPlanSlot", () => {
 
     render(<MealPlanSlot {...defaultProps} items={items} mealType="lunch" />);
 
-    expect(screen.getByText("Lunch")).toBeInTheDocument();
+    expect(screen.queryByText("Lunch")).not.toBeInTheDocument();
   });
 
   it("renders multiple items in the same slot", () => {
@@ -280,7 +243,7 @@ describe("MealPlanSlot", () => {
     expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-2");
   });
 
-  it("shows View meal details button when onViewMealEvent is provided", () => {
+  it("navigates on card click when onViewMealEvent is provided", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -295,12 +258,12 @@ describe("MealPlanSlot", () => {
     const onViewMealEvent = vi.fn();
     render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
 
-    fireEvent.click(screen.getByTitle("View meal details"));
+    fireEvent.click(screen.getByRole("button", { name: "View meal details" }));
 
     expect(onViewMealEvent).toHaveBeenCalledWith(1, "dinner");
   });
 
-  it("does not show View meal details button when onViewMealEvent is not provided", () => {
+  it("does not have card-level click handler when onViewMealEvent is not provided", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -314,7 +277,62 @@ describe("MealPlanSlot", () => {
 
     render(<MealPlanSlot {...defaultProps} items={items} />);
 
-    expect(screen.queryByTitle("View meal details")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "View meal details" })).not.toBeInTheDocument();
+  });
+
+  it("has cursor-pointer class when onViewMealEvent is provided", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+
+    const card = screen.getByRole("button", { name: "View meal details" });
+    expect(card.className).toContain("cursor-pointer");
+  });
+
+  it("does not have cursor-pointer class when onViewMealEvent is not provided", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
+
+    const outerDiv = container.firstChild as HTMLElement;
+    expect(outerDiv.className).not.toContain("cursor-pointer");
+  });
+
+  it("does not show standalone View button", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+
+    expect(screen.queryByText("View")).not.toBeInTheDocument();
   });
 
   it("has aria-labels on action buttons", () => {
@@ -326,7 +344,6 @@ describe("MealPlanSlot", () => {
         mealType: "dinner",
         sortOrder: 0,
         recipeName: "Grilled Salmon",
-        recipeUrl: "https://example.com/salmon",
       },
     ];
 
@@ -343,7 +360,6 @@ describe("MealPlanSlot", () => {
 
     expect(screen.getByLabelText("Edit Grilled Salmon")).toBeInTheDocument();
     expect(screen.getByLabelText("Remove Grilled Salmon")).toBeInTheDocument();
-    expect(screen.getByLabelText("Open Grilled Salmon recipe link")).toBeInTheDocument();
     expect(screen.getByLabelText("View meal details")).toBeInTheDocument();
     expect(screen.getByLabelText("Mark as cooked")).toBeInTheDocument();
     expect(screen.getByLabelText("Add another meal")).toBeInTheDocument();
@@ -361,18 +377,15 @@ describe("MealPlanSlot", () => {
       },
     ];
 
-    const onViewMealEvent = vi.fn();
     const onMarkCooked = vi.fn();
     render(
       <MealPlanSlot
         {...defaultProps}
         items={items}
-        onViewMealEvent={onViewMealEvent}
         onMarkCooked={onMarkCooked}
       />
     );
 
-    expect(screen.getByText("View")).toBeInTheDocument();
     expect(screen.getByText("Done")).toBeInTheDocument();
   });
 
@@ -393,6 +406,130 @@ describe("MealPlanSlot", () => {
     render(<MealPlanSlot {...defaultProps} items={items} onUncook={onUncook} />);
 
     expect(screen.getByText("Undo")).toBeInTheDocument();
+  });
+
+  describe("stopPropagation on child buttons", () => {
+    it("edit button stops propagation", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const onViewMealEvent = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+
+      fireEvent.click(screen.getByLabelText("Edit Grilled Salmon"));
+
+      expect(defaultProps.onEditMeal).toHaveBeenCalledWith(items[0]);
+      expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
+
+    it("remove button stops propagation", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const onViewMealEvent = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+
+      fireEvent.click(screen.getByTitle("Remove meal"));
+
+      expect(defaultProps.onRemoveMeal).toHaveBeenCalledWith("item-1");
+      expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
+
+    it("add-more button stops propagation", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const onViewMealEvent = vi.fn();
+      render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+
+      fireEvent.click(screen.getByTitle("Add another meal"));
+
+      expect(defaultProps.onAddMeal).toHaveBeenCalledWith(1, "dinner");
+      expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
+
+    it("cook button stops propagation", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+        },
+      ];
+
+      const onViewMealEvent = vi.fn();
+      const onMarkCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={items}
+          onViewMealEvent={onViewMealEvent}
+          onMarkCooked={onMarkCooked}
+        />
+      );
+
+      fireEvent.click(screen.getByTitle("Mark as cooked"));
+
+      expect(onMarkCooked).toHaveBeenCalledWith(1, "dinner");
+      expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
+
+    it("uncook button stops propagation", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Grilled Salmon",
+          cookedAt: "2026-02-19T12:00:00Z",
+        },
+      ];
+
+      const onViewMealEvent = vi.fn();
+      const onUncook = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={items}
+          onViewMealEvent={onViewMealEvent}
+          onUncook={onUncook}
+        />
+      );
+
+      fireEvent.click(screen.getByTitle("Undo cook"));
+
+      expect(onUncook).toHaveBeenCalledWith(1, "dinner");
+      expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
   });
 
   describe("cooked state", () => {

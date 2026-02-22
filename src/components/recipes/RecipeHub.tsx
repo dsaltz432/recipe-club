@@ -33,6 +33,7 @@ import { Search, BookOpen, Plus, Loader2 } from "lucide-react";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary } from "@/types";
 import RecipeCard from "./RecipeCard";
 import AddPersonalRecipeDialog from "./AddPersonalRecipeDialog";
+import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
 
 export interface RecipeWithNotes extends Recipe {
@@ -67,6 +68,8 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [deletingRecipeId, setDeletingRecipeId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [ratingRecipe, setRatingRecipe] = useState<RecipeWithNotes | null>(null);
 
   const loadRecipes = async () => {
     try {
@@ -84,21 +87,27 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   };
 
   const loadClubRecipes = async () => {
-    // Load all recipes with their ingredient info (recipes now have event_id and ingredient_id directly)
+    // Load all recipes with their ingredient info, joining scheduled_events to filter out personal meals
     const { data: recipesData, error: recipesError } = await supabase
       .from("recipes")
       .select(`
         *,
         ingredients (name, color),
-        profiles:created_by (name, avatar_url)
+        profiles:created_by (name, avatar_url),
+        scheduled_events!event_id (type)
       `)
       .not("event_id", "is", null)
       .order("created_at", { ascending: false });
 
     if (recipesError) throw recipesError;
 
+    // Filter out personal meal recipes (those linked to personal events)
+    const clubRecipesData = (recipesData || []).filter(
+      (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
+    );
+
     // Load notes and ratings in parallel (both depend on recipe IDs)
-    const recipeIds = recipesData?.map((r) => r.id) || [];
+    const recipeIds = clubRecipesData.map((r) => r.id);
 
     const [notesResult, ratingsResult] = await Promise.all([
       supabase
@@ -145,7 +154,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     const ratingsByRecipe = buildRatingSummaries(ratingsData || []);
 
     // Build recipe list with notes and ratings
-    const recipesWithNotes: RecipeWithNotes[] = (recipesData || []).map((r) => {
+    const recipesWithNotes: RecipeWithNotes[] = clubRecipesData.map((r) => {
       const notes = notesByRecipe.get(r.id) || [];
       const ingredientName = r.ingredients?.name;
       const ingredientColor = r.ingredients?.color || (ingredientName ? getIngredientColor(ingredientName) : undefined);
@@ -183,21 +192,26 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
       return;
     }
 
-    // Load personal recipes (no event_id) created by user
+    // Load personal recipes created by user, joining scheduled_events to identify personal meals
     const { data: personalData, error: personalError } = await supabase
       .from("recipes")
       .select(`
         *,
         ingredients (name, color),
-        profiles:created_by (name, avatar_url)
+        profiles:created_by (name, avatar_url),
+        scheduled_events!event_id (type)
       `)
       .eq("created_by", userId)
-      .is("event_id", null)
       .order("created_at", { ascending: false });
 
     if (personalError) throw personalError;
 
-    const personalRecipes: RecipeWithNotes[] = (personalData || []).map((r) => {
+    // Filter to include only recipes with no event_id OR recipes linked to personal events
+    const filteredPersonalData = (personalData || []).filter(
+      (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+    );
+
+    const personalRecipes: RecipeWithNotes[] = filteredPersonalData.map((r) => {
       const creatorProfile = r.profiles as { name: string | null; avatar_url: string | null } | null;
       const ingredientData = r.ingredients as { name: string; color: string | null } | null;
       const ingredientName = ingredientData?.name;
@@ -215,7 +229,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         notes: [],
         ingredientName,
         ingredientColor,
-        isPersonal: !r.event_id,
+        isPersonal: !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal",
       };
     });
 
@@ -396,6 +410,11 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     }
   };
 
+  const handleEditRating = (recipe: RecipeWithNotes) => {
+    setRatingRecipe(recipe);
+    setRatingDialogOpen(true);
+  };
+
   useEffect(() => {
     loadUsedIngredients();
   }, [userId]);
@@ -547,6 +566,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 recipe={recipe}
                 onEdit={subTab === "personal" ? handleEditRecipe : undefined}
                 onDelete={subTab === "personal" ? handleDeleteRecipe : undefined}
+                onEditRating={userId ? handleEditRating : undefined}
               />
             ))}
           </div>
@@ -653,6 +673,30 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Rating Dialog */}
+      {ratingDialogOpen && ratingRecipe && ratingRecipe.eventId && userId && (
+        <EventRatingDialog
+          event={{
+            eventId: ratingRecipe.eventId,
+            eventDate: ratingRecipe.createdAt || "",
+            ingredientName: ratingRecipe.ingredientName,
+          }}
+          recipes={[{ recipe: ratingRecipe, notes: ratingRecipe.notes }]}
+          userId={userId}
+          mode="rating"
+          onComplete={() => {
+            setRatingDialogOpen(false);
+            setRatingRecipe(null);
+            setIsLoading(true);
+            loadRecipes();
+          }}
+          onCancel={() => {
+            setRatingDialogOpen(false);
+            setRatingRecipe(null);
+          }}
+        />
+      )}
     </div>
   );
 };
