@@ -29,8 +29,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 13
-**Current Task:** US-013 complete
+**Tasks Completed:** 14
+**Current Task:** US-014 complete
 
 ---
 
@@ -422,5 +422,41 @@
 - `RecipeIngredient` fields like `quantity`, `unit`, `raw_text`, `sort_order`, `created_at` can be null in the DB. The mapping uses `?? undefined` to convert nulls to undefined for the TypeScript interface. Tests must include both null and non-null values to cover both branches.
 - Defensive guards in functions that are only callable from UI elements with their own guards create uncoverable branches. Remove such guards or use non-null assertions (`!`) when the caller guarantees the value.
 - `GroceryCategory` type import is only needed in files that use it directly — RecipeCard uses `GROCERY_CATEGORIES` record and `CATEGORY_ORDER` array without directly referencing the type.
+- `event_id` column on `meal_plan_items` is not in generated Supabase types — use two-step insert+update pattern: first `.insert()` the standard columns, then `.update({ event_id: ... } as Record<string, unknown>)` on the new row. This avoids the overload mismatch error from spreading `Record<string, unknown>` into the insert payload.
+- PersonalMealDetailPage now uses AddMealDialog (shared with MealPlanPage) and RecipeParseProgress for the add-recipe flow. `dayOfWeek`, `mealType`, and `plan_id` are extracted from the first meal_plan_item loaded for the event.
+
+---
+
+## 2026-02-22 20:00 — US-014: PersonalMealDetailPage — replace Add Recipe with full Add Meal flow + parse progress
+
+### What was implemented
+- Replaced the custom inline "Add a Recipe" dialog (name input + URL input + file upload) with the shared `AddMealDialog` component
+- AddMealDialog receives `dayOfWeek`, `mealType` derived from the first meal_plan_item linked to this event
+- Both "Custom Meal" (with file upload) and "From Recipes" (search existing) tabs work from the detail page
+- Added `handleAddCustomMeal` — creates recipe linked to event, creates meal_plan_item, triggers parse if URL present
+- Added `handleAddRecipeMeal` — links existing recipes to event, creates meal_plan_items for each
+- Added RecipeParseProgress stepper dialog (saving → parsing → loading → done) matching MealPlanPage pattern
+- Added `handleParseRetry` and `handleParseKeep` for failed parse handling
+- After parse completes, recipe list refreshes via `loadEventData()`
+- Removed old state: `recipeName`, `recipeUrl`, `isSubmitting`, `isUploadingRecipeImage`, `uploadingFileName`, `recipeImageInputRef`
+- Removed old handlers: `handleSubmitRecipe`, `handleRecipeImageUpload`, `isValidUrl`
+- Removed unused imports: `useRef`, `Upload`, `Loader2` (from lucide), `uploadRecipeFile`, `FileValidationError`
+- Extended `mealItems` state to include `day_of_week`, `meal_type`, `plan_id` from meal_plan_items query (already using `select("*")`)
+- Used two-step insert+update pattern for meal_plan_items to bypass generated types missing `event_id` column
+
+### Files changed
+- src/pages/PersonalMealDetailPage.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1629 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- The `event_id` column on `meal_plan_items` is not in generated Supabase types. For inserts, use a two-step pattern: first insert with standard columns, then update the new row to set `event_id`. The MealPlanPage `handleViewMealEvent` already uses this pattern (insert, then update with event_id).
+- PersonalMealDetailPage doesn't have the grocery combine/smart-combine infrastructure — the parse progress uses 3 steps (saving, parsing, loading) instead of 4 (no combining step). This is correct since the page doesn't have a grocery tab.
+- The `dayOfWeek` and `mealType` are derived from the first meal_plan_item. All items in a given event share the same slot since they're all created for the same meal.
+- File upload still works through AddMealDialog's built-in upload flow (same component used by MealPlanPage).
 
 ---

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser } from "@/lib/auth";
 import type { User, Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
@@ -40,8 +40,6 @@ import {
   ChefHat,
   Calendar as CalendarIcon,
   Star,
-  Upload,
-  Loader2,
   Menu,
   LogOut,
   BookOpen,
@@ -53,7 +51,8 @@ import { signOut } from "@/lib/auth";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
-import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
+import AddMealDialog from "@/components/mealplan/AddMealDialog";
+import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 
 interface PersonalEventData {
   eventId: string;
@@ -73,14 +72,14 @@ const PersonalMealDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Add Recipe form state
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [recipeName, setRecipeName] = useState("");
-  const [recipeUrl, setRecipeUrl] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploadingRecipeImage, setIsUploadingRecipeImage] = useState(false);
-  const [uploadingFileName, setUploadingFileName] = useState("");
-  const recipeImageInputRef = useRef<HTMLInputElement>(null);
+  // Add Meal dialog state
+  const [showAddMealDialog, setShowAddMealDialog] = useState(false);
+
+  // Parse progress state
+  const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
+  const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
+  const [pendingParseName, setPendingParseName] = useState<string>("");
+  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "done">("saving");
 
   // Edit Recipe state
   const [recipeToEdit, setRecipeToEdit] = useState<Recipe | null>(null);
@@ -106,7 +105,7 @@ const PersonalMealDetailPage = () => {
   const [showRatingDialog, setShowRatingDialog] = useState(false);
 
   // Cooked state
-  const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null }>>([]);
+  const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
   const [uncookConfirmOpen, setUncookConfirmOpen] = useState(false);
 
   // Notes expansion state
@@ -192,6 +191,9 @@ const PersonalMealDetailPage = () => {
           id: row.id as string,
           recipe_id: row.recipe_id as string,
           cooked_at: row.cooked_at as string | null,
+          day_of_week: row.day_of_week as number,
+          meal_type: row.meal_type as string,
+          plan_id: row.plan_id as string,
         };
       });
       setMealItems(mealItemsList);
@@ -351,90 +353,161 @@ const PersonalMealDetailPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
-  const isValidUrl = (url: string) => {
-    return url.trim().startsWith("http://") || url.trim().startsWith("https://");
-  };
+  // Derive dayOfWeek and mealType from the first meal_plan_item (all items in this event share the same slot)
+  const slotDayOfWeek = mealItems.length > 0 ? mealItems[0].day_of_week : 0;
+  const slotMealType = mealItems.length > 0 ? mealItems[0].meal_type : "dinner";
+  const slotPlanId = mealItems.length > 0 ? mealItems[0].plan_id : null;
 
-  const handleRecipeImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploadingRecipeImage(true);
-    setUploadingFileName(file.name);
-
-    try {
-      const publicUrl = await uploadRecipeFile(file);
-      setRecipeUrl(publicUrl);
-      if (!recipeName.trim()) {
-        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        setRecipeName(baseName);
-      }
-      toast.success("File uploaded!");
-    } catch (error) {
-      if (error instanceof FileValidationError) {
-        toast.error(error.message);
-      } else {
-        console.error("Error uploading file:", error);
-        toast.error("Failed to upload file");
-      }
-    } finally {
-      setIsUploadingRecipeImage(false);
-      setUploadingFileName("");
-      if (recipeImageInputRef.current) {
-        recipeImageInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleSubmitRecipe = async () => {
-    if (!recipeName.trim()) {
-      toast.error("Please enter a recipe name");
-      return;
-    }
+  const handleAddCustomMeal = async (name: string, url?: string, shouldParse?: boolean) => {
     if (!user?.id || !event) return;
 
-    setIsSubmitting(true);
     try {
+      // Create recipe linked to this event
       const { data: insertedRecipe, error: recipeError } = await supabase
         .from("recipes")
         .insert({
-          name: recipeName.trim(),
-          url: recipeUrl.trim() || null,
+          name,
+          url: url || null,
           event_id: event.eventId,
           created_by: user.id,
         })
-        .select()
+        .select("id")
         .single();
 
       if (recipeError) throw recipeError;
 
-      const savedName = recipeName.trim();
-      const savedUrl = recipeUrl.trim();
+      // Create a meal_plan_item linking to this event
+      if (slotPlanId) {
+        const { data: newItem } = await supabase
+          .from("meal_plan_items")
+          .insert({
+            plan_id: slotPlanId,
+            day_of_week: slotDayOfWeek,
+            meal_type: slotMealType,
+            recipe_id: insertedRecipe.id,
+            sort_order: mealItems.length,
+          })
+          .select("id")
+          .single();
 
-      toast.success("Recipe added!");
-      setRecipeName("");
-      setRecipeUrl("");
-      setShowAddForm(false);
-      loadEventData();
-
-      // Trigger parse-recipe in background if URL is present
-      if (savedUrl && insertedRecipe) {
-        supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: insertedRecipe.id, recipeUrl: savedUrl, recipeName: savedName },
-        }).then(({ error: parseError }) => {
-          if (parseError) {
-            console.error("Error parsing recipe:", parseError);
-          } else {
-            loadEventData();
-          }
-        });
+        // Link item to event (event_id column not in generated types)
+        if (newItem) {
+          await supabase
+            .from("meal_plan_items")
+            .update({ event_id: event.eventId } as Record<string, unknown>)
+            .eq("id", newItem.id);
+        }
       }
+
+      if (shouldParse && url) {
+        setPendingParseRecipeId(insertedRecipe.id);
+        setPendingParseName(name);
+        setParseStatus("parsing");
+      } else {
+        toast.success("Recipe added!");
+      }
+
+      loadEventData();
     } catch (error) {
-      console.error("Error saving recipe:", error);
-      toast.error("Failed to save recipe");
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error adding custom meal:", error);
+      toast.error("Failed to add meal");
     }
+  };
+
+  const handleAddRecipeMeal = async (recipes: Array<{ id: string; name: string; url?: string }>) => {
+    if (!user?.id || !event) return;
+
+    try {
+      for (const recipe of recipes) {
+        // Link existing recipe to this event
+        await supabase
+          .from("recipes")
+          .update({ event_id: event.eventId })
+          .eq("id", recipe.id);
+
+        // Create a meal_plan_item linking to this event
+        if (slotPlanId) {
+          const { data: newItem } = await supabase
+            .from("meal_plan_items")
+            .insert({
+              plan_id: slotPlanId,
+              day_of_week: slotDayOfWeek,
+              meal_type: slotMealType,
+              recipe_id: recipe.id,
+              sort_order: mealItems.length,
+            })
+            .select("id")
+            .single();
+
+          // Link item to event (event_id column not in generated types)
+          if (newItem) {
+            await supabase
+              .from("meal_plan_items")
+              .update({ event_id: event.eventId } as Record<string, unknown>)
+              .eq("id", newItem.id);
+          }
+        }
+      }
+
+      toast.success(`Added ${recipes.length} recipe${recipes.length !== 1 ? "s" : ""} to meal`);
+      loadEventData();
+    } catch (error) {
+      console.error("Error adding recipes to meal:", error);
+      toast.error("Failed to add recipes");
+    }
+  };
+
+  // Execute parse when parseStatus transitions to "parsing"
+  useEffect(() => {
+    if (parseStatus !== "parsing" || !pendingParseRecipeId) return;
+
+    const doParse = async () => {
+      try {
+        setParseStep("saving");
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        setParseStep("parsing");
+        const { error } = await supabase.functions.invoke("parse-recipe", {
+          body: {
+            recipeId: pendingParseRecipeId,
+            recipeUrl: event?.recipesWithNotes.find(r => r.recipe.id === pendingParseRecipeId)?.recipe.url,
+            recipeName: pendingParseName,
+          },
+        });
+        if (error) throw error;
+
+        setParseStep("loading");
+        loadEventData();
+
+        setParseStep("done");
+        await new Promise(resolve => setTimeout(resolve, 2500));
+
+        setParseStatus("idle");
+        setPendingParseRecipeId(null);
+        setPendingParseName("");
+        setParseStep("saving");
+        toast.success("Recipe parsed successfully!");
+      } catch (error) {
+        console.error("Error parsing recipe:", error);
+        setParseStatus("failed");
+      }
+    };
+
+    doParse();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parseStatus, pendingParseRecipeId]);
+
+  const handleParseRetry = () => {
+    setParseStep("saving");
+    setParseStatus("parsing");
+  };
+
+  const handleParseKeep = () => {
+    setParseStatus("idle");
+    setPendingParseRecipeId(null);
+    setPendingParseName("");
+    setParseStep("saving");
+    toast.success("Recipe saved without parsing");
   };
 
   const handleEditRecipeClick = (recipe: Recipe) => {
@@ -773,7 +846,7 @@ const PersonalMealDetailPage = () => {
           expandedRecipeNotes={expandedRecipeNotes}
           deletingNoteId={deletingNoteId}
           onToggleRecipeNotes={toggleRecipeNotes}
-          onAddRecipeClick={() => setShowAddForm(true)}
+          onAddRecipeClick={() => setShowAddMealDialog(true)}
           onEditRecipeClick={handleEditRecipeClick}
           onAddNotesClick={handleAddNotesClick}
           onEditNoteClick={handleEditNoteClick}
@@ -782,99 +855,53 @@ const PersonalMealDetailPage = () => {
         />
       </main>
 
-      {/* Add Recipe Dialog */}
-      <Dialog
-        open={showAddForm}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowAddForm(false);
-            setRecipeName("");
-            setRecipeUrl("");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg">
+      {/* Add Meal Dialog */}
+      <AddMealDialog
+        open={showAddMealDialog}
+        onOpenChange={(open) => { if (!open) setShowAddMealDialog(false); }}
+        dayOfWeek={slotDayOfWeek}
+        mealType={slotMealType}
+        onAddCustomMeal={handleAddCustomMeal}
+        onAddRecipeMeal={handleAddRecipeMeal}
+      />
+
+      {/* Parse progress dialog */}
+      <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {
+        if (parseStatus === "failed") {
+          handleParseKeep();
+        }
+      }}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Add a Recipe</DialogTitle>
-            <DialogDescription>Add a recipe for this meal.</DialogDescription>
+            <DialogTitle>
+              {parseStatus === "failed" ? "Parsing Failed" : "Adding Recipe"}
+            </DialogTitle>
+            <DialogDescription>
+              {parseStatus === "failed"
+                ? `Failed to parse ingredients for "${pendingParseName}".`
+                : `Extracting ingredients from "${pendingParseName}"...`}
+            </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="recipe-name">Recipe Name *</Label>
-              <Input
-                id="recipe-name"
-                value={recipeName}
-                onChange={(e) => setRecipeName(e.target.value)}
-                placeholder="Enter recipe name"
-              />
+          {parseStatus === "parsing" && (
+            <RecipeParseProgress
+              steps={[
+                { key: "saving", label: "Adding recipe" },
+                { key: "parsing", label: "Parsing ingredients & instructions" },
+                { key: "loading", label: "Loading recipe data" },
+              ]}
+              currentStep={parseStep}
+            />
+          )}
+          {parseStatus === "failed" && (
+            <div className="flex gap-2 justify-end pt-2">
+              <Button variant="outline" onClick={handleParseKeep}>
+                Keep Recipe Anyway
+              </Button>
+              <Button onClick={handleParseRetry}>
+                Try Again
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="recipe-url">Recipe URL (optional)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="recipe-url"
-                  type="url"
-                  value={recipeUrl}
-                  onChange={(e) => setRecipeUrl(e.target.value)}
-                  placeholder="https://... or upload a file"
-                  className={`flex-1 ${recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}`}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => recipeImageInputRef.current?.click()}
-                  disabled={isUploadingRecipeImage}
-                  className="shrink-0"
-                  aria-label="Upload photo or PDF"
-                >
-                  {isUploadingRecipeImage ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                      <span className="text-xs truncate max-w-[100px]">{uploadingFileName || "Uploading..."}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-1" />
-                      Upload
-                    </>
-                  )}
-                </Button>
-                <input
-                  ref={recipeImageInputRef}
-                  type="file"
-                  accept="image/*,.pdf,application/pdf"
-                  onChange={handleRecipeImageUpload}
-                  className="hidden"
-                />
-              </div>
-              {recipeUrl.trim() && !isValidUrl(recipeUrl) && (
-                <p className="text-sm text-red-500">URL must start with http:// or https://</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAddForm(false);
-                setRecipeName("");
-                setRecipeUrl("");
-              }}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitRecipe}
-              disabled={isSubmitting || !recipeName.trim()}
-              className="bg-purple hover:bg-purple-dark"
-            >
-              {isSubmitting ? "Adding..." : "Add Recipe"}
-            </Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 
