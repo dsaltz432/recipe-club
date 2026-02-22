@@ -63,7 +63,7 @@
         "Tests pass"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "activeForm": "Removing dead code from MealPlanPage",
       "notes": "File: src/components/mealplan/MealPlanPage.tsx (~1050 lines). This is a large deletion story — expect to remove ~200 lines. Key state to remove: editingItem (line 72), ratingDialogOpen (line 79), selectedSlotForRating (line 80), uncookConfirmSlot (line 81), RatingSlotData interface (lines 57-63). Functions to remove: handleEditMeal (lines 448-452), markSlotAsCooked (lines 703-727), handleMarkCooked (lines 729-805), handleRatingComplete (lines 807-817), handleRatingCancel (lines 819-822), handleUncook (lines 824-826), handleConfirmUncook (lines 828-852). Edit branches: remove if(editingItem) block from handleAddCustomMeal (lines 455-514) and handleAddRecipeMeal (lines 529-561). In closeAddMealDialog (line 572): remove setEditingItem(null). JSX: remove onEditMeal/onMarkCooked/onUncook from <MealPlanGrid> (lines 908-911), remove editingItemName/editingItemUrl from <AddMealDialog> (lines 922-923), remove EventRatingDialog block (lines 979-992), remove uncook AlertDialog (lines 994-1007). Imports: remove EventRatingDialog (line 20), remove EventRecipeWithNotes from types (line 34). Check if AlertDialog imports are still used elsewhere in the file — if not, remove those imports too. Tests: tests/unit/components/mealplan/MealPlanPage.test.tsx — remove tests that click 'Mark as cooked'/'Done', rating dialog tests, uncook confirmation tests, edit meal dialog tests. Remove editingItem-related mocks. Keep tests for: add meal flow, parse flow, grocery list, navigation, view meal event, combine groceries. Run npm run test:coverage to check for any new uncovered lines."
     },

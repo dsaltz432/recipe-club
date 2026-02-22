@@ -19,8 +19,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 2
-**Current Task:** US-002 complete
+**Tasks Completed:** 3
+**Current Task:** US-003 complete
 
 ---
 
@@ -79,5 +79,27 @@
 
 ### Learnings for future iterations
 - When cascading cleanup in US-001 is thorough, downstream stories may already be complete. Always verify before writing code.
+
+---
+
+## 2026-02-22 10:15 — US-003: Remove dead code from MealPlanPage — editing and cooked handlers
+
+### What was implemented
+- No source code changes needed — all US-003 ACs were already satisfied by US-001's cascading cleanup
+- Removed unused `EventRatingDialog` mock from MealPlanPage.test.tsx (was defined but never referenced in any test)
+- Verified all 13 acceptance criteria: functions removed, state removed, interface removed, edit branches removed, imports removed, JSX props removed, AlertDialog removed
+
+### Files changed
+- tests/unit/components/mealplan/MealPlanPage.test.tsx (removed unused EventRatingDialog mock)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1576 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: MealPlanPage.tsx 100% Stmts/Branch/Funcs/Lines
+
+### Learnings for future iterations
+- When a large cascading cleanup happens in an earlier story, verify downstream stories before writing code. US-001 cleaned up MealPlanPage so thoroughly that US-002 and US-003 were both already complete.
+- Unused test mocks for removed components should be cleaned up even if they don't cause test failures — they add confusion for future developers.
 
 ---

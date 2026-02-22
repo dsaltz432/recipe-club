@@ -13,16 +13,6 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-// Mock EventRatingDialog
-vi.mock("@/components/events/EventRatingDialog", () => ({
-  default: ({ onComplete, onCancel }: { onComplete: () => void; onCancel: () => void }) => (
-    <div data-testid="rating-dialog">
-      <button onClick={onComplete}>Complete Rating</button>
-      <button onClick={onCancel}>Cancel Rating</button>
-    </div>
-  ),
-}));
-
 // Mock PantryDialog
 vi.mock("@/components/pantry/PantryDialog", () => ({
   default: ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) =>
