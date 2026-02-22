@@ -13,15 +13,24 @@ describe("supabase client", () => {
       createClient: mockCreateClient,
     }));
 
-    // Env vars are set by default in vite test environment
-    // (VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY come from .env files)
-    const mod = await import("@/integrations/supabase/client");
+    const savedUrl = import.meta.env.VITE_SUPABASE_URL;
+    const savedKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-    expect(mod.supabase).toBe(mockClient);
-    expect(mockCreateClient).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(String)
-    );
+    import.meta.env.VITE_SUPABASE_URL = savedUrl || "https://test.supabase.co";
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY = savedKey || "test-key";
+
+    try {
+      const mod = await import("@/integrations/supabase/client");
+
+      expect(mod.supabase).toBe(mockClient);
+      expect(mockCreateClient).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String)
+      );
+    } finally {
+      import.meta.env.VITE_SUPABASE_URL = savedUrl;
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY = savedKey;
+    }
   });
 
   it("throws when VITE_SUPABASE_URL is missing", async () => {

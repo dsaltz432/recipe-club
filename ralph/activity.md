@@ -29,8 +29,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 15
-**Current Task:** US-015 complete
+**Tasks Completed:** 16
+**Current Task:** US-016 complete — ALL STORIES DONE
 
 ---
 
@@ -426,6 +426,7 @@
 - PersonalMealDetailPage now uses AddMealDialog (shared with MealPlanPage) and RecipeParseProgress for the add-recipe flow. `dayOfWeek`, `mealType`, and `plan_id` are extracted from the first meal_plan_item loaded for the event.
 - EventRatingDialog accepts `recipes: EventRecipeWithNotes[]` — passing a single-element array works for inline single-recipe rating. Both PersonalMealDetailPage and EventDetailPage use `ratingRecipes` state (null = all, array = specific) to share one dialog for "Rate all" (hamburger menu) and "Rate one" (inline button) flows.
 - EventRecipesTab has optional `onRateRecipe` prop. When provided: rated recipes show pencil edit button, unrated recipes show "Rate" button with star icon.
+- Any test file for a component that imports `@/lib/groceryList` (or any module transitively importing the Supabase client) MUST include `vi.mock("@/integrations/supabase/client")` — otherwise the test suite fails with "Missing Supabase environment variables".
 
 ---
 
@@ -491,5 +492,32 @@
 - EventRatingDialog already accepts a `recipes: EventRecipeWithNotes[]` prop — passing a single-element array "just works" for inline rating of individual recipes.
 - The `ratingRecipes` state pattern (null = all recipes, array = specific recipes) avoids duplicating the dialog component and keeps the hamburger menu "Rate all" and inline "Rate one" flows sharing the same dialog.
 - The `onRateRecipe` prop is optional so existing usages of EventRecipesTab (before this change) don't need updating — the buttons simply don't render.
+
+---
+
+## 2026-02-22 22:00 — US-016: Final verification — coverage, build, lint
+
+### What was implemented
+- Fixed RecipeCard.test.tsx: added missing `vi.mock("@/integrations/supabase/client")` — the file imports `groceryList.ts` which transitively imports the Supabase client. Without the mock, the test suite failed with "Missing Supabase environment variables"
+- Fixed client.test.ts: the "creates a supabase client when env vars are set" test assumed env vars were available from `.env` files but they weren't set in the test environment. Added fallback env var assignment (`savedUrl || "https://test.supabase.co"`) so the test works in any environment
+- Verified all required directories show 100% coverage across Stmts, Branch, Funcs, and Lines
+- IngredientWheel.tsx confirmed at ~57% (exempt)
+- Build compiles cleanly, lint has 0 errors (14 pre-existing warnings)
+- No orphaned imports or unused variables
+
+### Files changed
+- tests/unit/components/recipes/RecipeCard.test.tsx (added Supabase client mock)
+- tests/unit/integrations/supabase/client.test.ts (fixed env var handling for portability)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1636 tests, 55 files, 0 failures)
+- Lint: pass (0 errors, 14 pre-existing warnings)
+- Coverage: 100% on all required directories (events, ingredients, mealplan, recipes, lib, pantry)
+
+### Learnings for future iterations
+- Any component that imports from `@/lib/groceryList` (or any module that transitively imports the Supabase client) needs `vi.mock("@/integrations/supabase/client")` in its test file. RecipeCard gained this import in US-013 (ingredients display) but the mock wasn't added to RecipeCard.test.tsx at that time.
+- Test files that use `vi.resetModules()` + `vi.doMock()` + dynamic `import()` for module isolation (like client.test.ts) should not assume env vars are available — always provide fallback values for portability across dev machines and CI.
+- The 1 pre-existing client.test.ts failure was masking the coverage table output — vitest doesn't print the coverage table when any test suite fails.
 
 ---

@@ -328,7 +328,7 @@
         "No orphaned imports or unused variables"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "activeForm": "Running final verification",
       "notes": "Run npm run test:coverage and check every row in the coverage report. All files in the required directories must show 100%. If any file has gaps (Uncovered Line #s column), read the source lines, understand what branch is missed, and add targeted tests. Common fixes: add a test that exercises an uncovered branch, or remove dead code that creates an unreachable branch. Then run npm run build and npm run lint. Fix any TypeScript errors or lint issues. Key files to watch: MealPlanSlot.tsx, MealPlanGrid.tsx, MealPlanPage.tsx, AddMealDialog.tsx, PantryContent.tsx, RecipeCard.tsx, RecipeHub.tsx, pantry.ts. PersonalMealDetailPage.tsx, EventDetailPage.tsx, and Dashboard.tsx are in src/pages/ which is NOT in the required 100% coverage list, but their existing tests must still pass."
     }

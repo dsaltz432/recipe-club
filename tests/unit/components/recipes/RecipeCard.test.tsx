@@ -1,7 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
-import RecipeCard from "@/components/recipes/RecipeCard";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient } from "@/types";
+
+// Mock supabase client (imported transitively by groceryList)
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    functions: {
+      invoke: vi.fn().mockResolvedValue({ error: null }),
+    },
+  },
+}));
 
 // Mock sonner toast
 vi.mock("sonner", () => ({
@@ -10,6 +18,8 @@ vi.mock("sonner", () => ({
     success: vi.fn(),
   },
 }));
+
+import RecipeCard from "@/components/recipes/RecipeCard";
 
 interface RecipeWithNotes extends Recipe {
   notes: RecipeNote[];
