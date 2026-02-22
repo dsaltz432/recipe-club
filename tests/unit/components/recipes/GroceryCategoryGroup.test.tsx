@@ -1,7 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@tests/utils";
 import GroceryCategoryGroup from "@/components/recipes/GroceryCategoryGroup";
 import type { CombinedGroceryItem, SmartGroceryItem } from "@/types";
+
+// Mock supabase client (required by @/lib/groceryList)
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    functions: {
+      invoke: vi.fn().mockResolvedValue({ error: null }),
+    },
+  },
+}));
 
 describe("GroceryCategoryGroup", () => {
   const items: CombinedGroceryItem[] = [
