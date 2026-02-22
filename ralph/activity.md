@@ -22,11 +22,15 @@
 - RecipeHub eagerly loads both club and personal recipe counts on mount. Club count comes from the default tab load (loadClubRecipes). Personal count is loaded via an inline async IIFE in the userId useEffect to avoid lint warnings about missing deps.
 - When changing behavior that affects text content of buttons used in tests (e.g., adding counts), update test selectors from `getByText("exact text")` to `getByRole("button", { name: /regex/ })` for robustness
 - `mockFunctionsInvoke` (supabase.functions.invoke mock) returns `undefined` by default after `vi.clearAllMocks()`. Any code that calls `.then()` on the result will throw. Tests that trigger code paths calling `functions.invoke().then()` MUST set `mockFunctionsInvoke.mockResolvedValue({ data: null, error: null })` first.
+- RecipeHub loads `recipe_ingredients` and `recipe_content` alongside recipe metadata via `loadRecipeDetails()`. Maps are keyed by `recipe_id` and stored as `recipeIngredientsMap` and `recipeContentMap` state.
+- RecipeCard accepts optional `ingredients`, `contentStatus`, and `onParseRecipe` props for inline ingredient display and parse triggers. Ingredients are grouped by CATEGORY_ORDER from groceryList.ts.
+- When mocking sonner's `toast` in tests where `toast()` is called as a function (not just `.error`/`.success`), the mock must be a callable fn with `.error`/`.success` properties. Use `Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() })` inside the `vi.mock` factory.
+- Supabase query chains ending with `.in()` (no `.order()`) resolve via the builder's `.then()` method — `createMockQueryBuilder`'s `then` property handles this.
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 12
-**Current Task:** US-012 complete
+**Tasks Completed:** 13
+**Current Task:** US-013 complete
 
 ---
 
@@ -379,5 +383,44 @@
 - EventDetailPage already had `urlChanged` detection for notification purposes — reusing this for the parse trigger was straightforward.
 - PersonalMealDetailPage didn't have `urlChanged` — needed to add it before the try block (same pattern as EventDetailPage).
 - The fire-and-forget `.then()` pattern (not awaited, with `loadEventData()` on success) is the standard approach for background parse in this codebase.
+
+---
+
+## 2026-02-22 19:00 — US-013: RecipeCard — show parsed ingredients in expandable section
+
+### What was implemented
+- Added `loadRecipeDetails()` function to RecipeHub that loads `recipe_ingredients` and `recipe_content` for all loaded recipe IDs in parallel
+- Called `loadRecipeDetails()` at the end of both `loadClubRecipes()` and `loadPersonalRecipes()`
+- Added `recipeIngredientsMap` and `recipeContentMap` state to RecipeHub, keyed by recipe_id
+- Added `handleParseRecipe()` function to RecipeHub — calls `supabase.functions.invoke("parse-recipe", ...)` with fire-and-forget pattern, shows toast on success/error
+- Added `ingredients`, `contentStatus`, and `onParseRecipe` optional props to RecipeCard interface
+- Added expandable ingredients section to RecipeCard with:
+  - Collapsed: shows ingredient count (e.g., "2 ingredients") with expand/collapse toggle
+  - Expanded: lists ingredients grouped by CATEGORY_ORDER from groceryList.ts with category headers
+  - Parsing state: shows spinner with "Parsing ingredients..." text
+  - Failed state: shows "Parsing failed" with Retry button (when URL and onParseRecipe available)
+  - No ingredients + URL: shows "Parse Ingredients" button (when contentStatus not completed)
+- Added `functions.invoke` mock to RecipeHub test supabase mock
+- Changed RecipeHub toast mock from plain object to callable function with `.error`/`.success` methods (sonner's `toast` is both a function and has methods)
+- Added helper types `RecipeIngredientRow` and `RecipeContentRow` for Supabase row mapping in RecipeHub
+
+### Files changed
+- src/components/recipes/RecipeCard.tsx
+- src/components/recipes/RecipeHub.tsx
+- tests/unit/components/recipes/RecipeCard.test.tsx
+- tests/unit/components/recipes/RecipeHub.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1629 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories, RecipeCard.tsx 100%, RecipeHub.tsx 100%
+
+### Learnings for future iterations
+- When `toast()` is used as a callable function (not just `.error`/`.success`), the mock must define it as a callable fn. Using `Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() })` inside the `vi.mock` factory avoids the hoisting issue (since `vi.mock` factories are hoisted before variable declarations).
+- Supabase query chains ending with `.in()` (without `.order()`) still resolve via `createMockQueryBuilder`'s `.then()` method — no special handling needed in tests.
+- `RecipeIngredient` fields like `quantity`, `unit`, `raw_text`, `sort_order`, `created_at` can be null in the DB. The mapping uses `?? undefined` to convert nulls to undefined for the TypeScript interface. Tests must include both null and non-null values to cover both branches.
+- Defensive guards in functions that are only callable from UI elements with their own guards create uncoverable branches. Remove such guards or use non-null assertions (`!`) when the caller guarantees the value.
+- `GroceryCategory` type import is only needed in files that use it directly — RecipeCard uses `GROCERY_CATEGORIES` record and `CATEGORY_ORDER` array without directly referencing the type.
 
 ---

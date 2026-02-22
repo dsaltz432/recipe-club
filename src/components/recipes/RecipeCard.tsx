@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus } from "lucide-react";
-import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
+import { GROCERY_CATEGORIES, CATEGORY_ORDER } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 
 // Helper to render stars with half-star support
@@ -46,11 +47,16 @@ interface RecipeCardProps {
   onDelete?: (recipeId: string) => void;
   onEditRating?: (recipe: RecipeWithNotes) => void;
   onAddNote?: (recipe: RecipeWithNotes) => void;
+  ingredients?: RecipeIngredient[];
+  contentStatus?: RecipeContent["status"];
+  onParseRecipe?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, contentStatus, onParseRecipe }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
+  const hasIngredients = ingredients && ingredients.length > 0;
   const hasDetails = recipe.url || recipe.notes.length > 0;
 
   // Get colors from ingredient
@@ -211,6 +217,76 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote }: Recip
             </Button>
           )}
         </div>
+
+        {/* Ingredients Section */}
+        {contentStatus === "parsing" ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Parsing ingredients...
+          </div>
+        ) : contentStatus === "failed" ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <span>Parsing failed</span>
+            {recipe.url && onParseRecipe && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => onParseRecipe(recipe.id)}
+              >
+                Retry
+              </Button>
+            )}
+          </div>
+        ) : hasIngredients ? (
+          <div className="mb-3">
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              onClick={() => setIngredientsExpanded(!ingredientsExpanded)}
+              aria-label={ingredientsExpanded ? "Collapse ingredients" : "Expand ingredients"}
+            >
+              {ingredientsExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              <span>{ingredients!.length} ingredient{ingredients!.length !== 1 ? "s" : ""}</span>
+            </button>
+            {ingredientsExpanded && (
+              <div className="mt-2 space-y-2 pl-1">
+                {CATEGORY_ORDER.filter((cat) =>
+                  ingredients!.some((ing) => ing.category === cat)
+                ).map((cat) => (
+                  <div key={cat}>
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      {GROCERY_CATEGORIES[cat]}
+                    </div>
+                    <ul className="space-y-0.5">
+                      {ingredients!
+                        .filter((ing) => ing.category === cat)
+                        .map((ing) => (
+                          <li key={ing.id} className="text-sm">
+                            {ing.quantity ? `${ing.quantity} ` : ""}{ing.unit ? `${ing.unit} ` : ""}{ing.name}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : recipe.url && contentStatus !== "completed" && onParseRecipe ? (
+          <div className="mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-3 text-xs"
+              onClick={() => onParseRecipe(recipe.id)}
+            >
+              Parse Ingredients
+            </Button>
+          </div>
+        ) : null}
 
         {/* Expandable Details */}
         {hasDetails && (

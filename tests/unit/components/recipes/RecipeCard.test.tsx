@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
 import RecipeCard from "@/components/recipes/RecipeCard";
-import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
+import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient } from "@/types";
 
 // Mock sonner toast
 vi.mock("sonner", () => ({
@@ -688,5 +688,203 @@ describe("RecipeCard - Edit Rating Button", () => {
     fireEvent.click(screen.getByLabelText("Edit rating"));
 
     expect(onEditRating).toHaveBeenCalledWith(recipe);
+  });
+});
+
+const createMockIngredient = (overrides: Partial<RecipeIngredient> = {}): RecipeIngredient => ({
+  id: "ing-1",
+  recipeId: "recipe-1",
+  name: "Salmon fillet",
+  quantity: 2,
+  unit: "lb",
+  category: "meat_seafood",
+  rawText: "2 lb salmon fillet",
+  sortOrder: 0,
+  createdAt: "2025-01-15T10:00:00Z",
+  ...overrides,
+});
+
+describe("RecipeCard - Ingredients Section", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows ingredient count when ingredients are provided", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon" }),
+      createMockIngredient({ id: "ing-2", name: "Lemon", category: "produce" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.getByText("2 ingredients")).toBeInTheDocument();
+  });
+
+  it("shows singular ingredient text for one ingredient", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+  });
+
+  it("expands to show grouped ingredients when clicked", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
+      createMockIngredient({ id: "ing-2", name: "Lemon", quantity: 1, unit: undefined, category: "produce" }),
+      createMockIngredient({ id: "ing-3", name: "Salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+
+    // Category headings
+    expect(screen.getByText("Produce")).toBeInTheDocument();
+    expect(screen.getByText("Protein")).toBeInTheDocument();
+    expect(screen.getByText("Spices")).toBeInTheDocument();
+
+    // Ingredients
+    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
+    expect(screen.getByText("1 Lemon")).toBeInTheDocument();
+    expect(screen.getByText("Salt")).toBeInTheDocument();
+  });
+
+  it("collapses ingredients when clicked again", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    // Expand
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    expect(screen.getByLabelText("Collapse ingredients")).toBeInTheDocument();
+
+    // Collapse
+    fireEvent.click(screen.getByLabelText("Collapse ingredients"));
+    expect(screen.getByLabelText("Expand ingredients")).toBeInTheDocument();
+  });
+
+  it("shows parsing spinner when contentStatus is parsing", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} contentStatus="parsing" />);
+
+    expect(screen.getByText("Parsing ingredients...")).toBeInTheDocument();
+  });
+
+  it("shows parsing failed text when contentStatus is failed", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" />);
+
+    expect(screen.getByText("Parsing failed")).toBeInTheDocument();
+  });
+
+  it("shows retry button when parsing failed and recipe has URL and onParseRecipe", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" onParseRecipe={onParseRecipe} />);
+
+    const retryBtn = screen.getByRole("button", { name: /retry/i });
+    expect(retryBtn).toBeInTheDocument();
+    fireEvent.click(retryBtn);
+    expect(onParseRecipe).toHaveBeenCalledWith("recipe-1");
+  });
+
+  it("does not show retry button when parsing failed but no URL", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" onParseRecipe={onParseRecipe} />);
+
+    expect(screen.getByText("Parsing failed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show retry button when parsing failed but no onParseRecipe", () => {
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" />);
+
+    expect(screen.getByText("Parsing failed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("shows Parse Ingredients button when recipe has URL and no ingredients and not completed", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} onParseRecipe={onParseRecipe} />);
+
+    const parseBtn = screen.getByRole("button", { name: /parse ingredients/i });
+    expect(parseBtn).toBeInTheDocument();
+    fireEvent.click(parseBtn);
+    expect(onParseRecipe).toHaveBeenCalledWith("recipe-1");
+  });
+
+  it("does not show Parse Ingredients button when contentStatus is completed", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="completed" onParseRecipe={onParseRecipe} />);
+
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show Parse Ingredients button when recipe has no URL", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} onParseRecipe={onParseRecipe} />);
+
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show Parse Ingredients button when onParseRecipe is not provided", () => {
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show ingredients section when no ingredients and no URL", () => {
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByText(/ingredient/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Parsing")).not.toBeInTheDocument();
+  });
+
+  it("does not show ingredients section when empty ingredients array is provided", () => {
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} ingredients={[]} />);
+
+    expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
+  });
+
+  it("does not show Parse Ingredients when content status is pending", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="pending" onParseRecipe={onParseRecipe} />);
+
+    expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
+  });
+
+  it("renders ingredients section with ingredient color theming", () => {
+    const recipe = createMockRecipe({ ingredientColor: "#ff6b6b" });
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
   });
 });

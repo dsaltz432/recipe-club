@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, BookOpen, Plus, Loader2 } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
-import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary } from "@/types";
+import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
 import AddPersonalRecipeDialog from "./AddPersonalRecipeDialog";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
@@ -44,6 +44,24 @@ export interface RecipeWithNotes extends Recipe {
   ingredientColor?: string;
   ratingSummary?: RecipeRatingsSummary;
   isPersonal?: boolean;
+}
+
+interface RecipeIngredientRow {
+  id: string;
+  recipe_id: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  category: string;
+  raw_text: string | null;
+  sort_order: number | null;
+  created_at: string | null;
+}
+
+interface RecipeContentRow {
+  id: string;
+  recipe_id: string;
+  status: string;
 }
 
 type RecipeSubTab = "club" | "personal";
@@ -76,6 +94,8 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [noteText, setNoteText] = useState("");
   const [notePhotos, setNotePhotos] = useState<string[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [recipeIngredientsMap, setRecipeIngredientsMap] = useState<Record<string, RecipeIngredient[]>>({});
+  const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
 
   const loadRecipes = async () => {
     try {
@@ -189,6 +209,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
 
     setRecipes(recipesWithNotes);
     setClubCount(recipesWithNotes.length);
+    await loadRecipeDetails(recipeIds);
   };
 
   const loadPersonalRecipes = async () => {
@@ -275,6 +296,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
 
     setRecipes(personalRecipes);
     setPersonalCount(personalRecipes.length);
+    await loadRecipeDetails(allRecipeIds);
   };
 
   const buildRatingSummaries = (
@@ -323,6 +345,61 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     });
 
     return ratingsByRecipe;
+  };
+
+  const loadRecipeDetails = async (recipeIds: string[]) => {
+    if (recipeIds.length === 0) {
+      setRecipeIngredientsMap({});
+      setRecipeContentMap({});
+      return;
+    }
+
+    const [ingredientsResult, contentResult] = await Promise.all([
+      supabase
+        .from("recipe_ingredients")
+        .select("*")
+        .in("recipe_id", recipeIds),
+      supabase
+        .from("recipe_content")
+        .select("id, recipe_id, status")
+        .in("recipe_id", recipeIds),
+    ]);
+
+    // Map ingredients by recipe
+    const ingredientsMap: Record<string, RecipeIngredient[]> = {};
+    if (ingredientsResult.data) {
+      (ingredientsResult.data as RecipeIngredientRow[]).forEach((row) => {
+        const mapped: RecipeIngredient = {
+          id: row.id,
+          recipeId: row.recipe_id,
+          name: row.name,
+          quantity: row.quantity ?? undefined,
+          unit: row.unit ?? undefined,
+          category: row.category as GroceryCategory,
+          rawText: row.raw_text ?? undefined,
+          sortOrder: row.sort_order ?? undefined,
+          createdAt: row.created_at ?? undefined,
+        };
+        if (!ingredientsMap[row.recipe_id]) {
+          ingredientsMap[row.recipe_id] = [];
+        }
+        ingredientsMap[row.recipe_id].push(mapped);
+      });
+    }
+    setRecipeIngredientsMap(ingredientsMap);
+
+    // Map content by recipe
+    const contentMap: Record<string, RecipeContent> = {};
+    if (contentResult.data) {
+      (contentResult.data as RecipeContentRow[]).forEach((row) => {
+        contentMap[row.recipe_id] = {
+          id: row.id,
+          recipeId: row.recipe_id,
+          status: row.status as RecipeContent["status"],
+        };
+      });
+    }
+    setRecipeContentMap(contentMap);
   };
 
   const loadUsedIngredients = async () => {
@@ -469,6 +546,26 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
     } finally {
       setIsSavingNote(false);
     }
+  };
+
+  const handleParseRecipe = (recipeId: string) => {
+    const recipe = recipes.find((r) => r.id === recipeId)!;
+
+    toast("Parsing recipe ingredients...");
+
+    supabase.functions
+      .invoke("parse-recipe", {
+        body: { recipeId, recipeUrl: recipe.url, recipeName: recipe.name },
+      })
+      .then((result) => {
+        if (result?.error) {
+          toast.error("Failed to parse recipe");
+        } else {
+          toast.success("Recipe parsed!");
+          setIsLoading(true);
+          loadRecipes();
+        }
+      });
   };
 
   useEffect(() => {
@@ -647,6 +744,9 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 onDelete={handleDeleteRecipe}
                 onEditRating={userId ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
+                ingredients={recipeIngredientsMap[recipe.id]}
+                contentStatus={recipeContentMap[recipe.id]?.status}
+                onParseRecipe={handleParseRecipe}
               />
             ))}
           </div>

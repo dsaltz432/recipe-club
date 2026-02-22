@@ -4,19 +4,21 @@ import RecipeHub from "@/components/recipes/RecipeHub";
 
 // Mock Supabase
 const mockSupabaseFrom = vi.fn();
+const mockFunctionsInvoke = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
+    functions: { invoke: (...args: unknown[]) => mockFunctionsInvoke(...args) },
   },
 }));
 
-// Mock sonner toast
-vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
-}));
+// Mock sonner toast — toast is both a callable function and has .error/.success methods
+vi.mock("sonner", () => {
+  const fn = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
+  fn.error = vi.fn();
+  fn.success = vi.fn();
+  return { toast: fn };
+});
 
 // Mock PhotoUpload to allow testing photo addition
 vi.mock("@/components/recipes/PhotoUpload", () => ({
@@ -3854,5 +3856,289 @@ describe("RecipeHub - Add Note", () => {
     });
 
     expect(screen.getByRole("button", { name: /save note/i })).toBeDisabled();
+  });
+});
+
+describe("RecipeHub - Recipe Ingredients & Content", () => {
+  const clubRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  const mockIngredientsResult = [
+    {
+      id: "ri-1",
+      recipe_id: "recipe-1",
+      name: "Salmon fillet",
+      quantity: 2,
+      unit: "lb",
+      category: "meat_seafood",
+      raw_text: "2 lb salmon fillet",
+      sort_order: 0,
+      created_at: "2025-01-15T10:00:00Z",
+    },
+    {
+      id: "ri-2",
+      recipe_id: "recipe-1",
+      name: "Lemon",
+      quantity: 1,
+      unit: null,
+      category: "produce",
+      raw_text: "1 lemon",
+      sort_order: 1,
+      created_at: "2025-01-15T10:00:00Z",
+    },
+  ];
+
+  const mockContentResult = [
+    {
+      id: "rc-1",
+      recipe_id: "recipe-1",
+      status: "completed",
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("loads and displays ingredient count on recipe cards", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder(mockIngredientsResult);
+      if (table === "recipe_content") return createMockQueryBuilder(mockContentResult);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("2 ingredients")).toBeInTheDocument();
+    });
+  });
+
+  it("handles ingredients with null optional fields", async () => {
+    const nullFieldIngredients = [
+      {
+        id: "ri-1",
+        recipe_id: "recipe-1",
+        name: "Garlic",
+        quantity: null,
+        unit: null,
+        category: "produce",
+        raw_text: null,
+        sort_order: null,
+        created_at: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder(nullFieldIngredients);
+      if (table === "recipe_content") return createMockQueryBuilder(mockContentResult);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+    });
+  });
+
+  it("loads recipe content status alongside ingredients", async () => {
+    const parsingContent = [{ id: "rc-1", recipe_id: "recipe-1", status: "parsing" }];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder(parsingContent);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Parsing ingredients...")).toBeInTheDocument();
+    });
+  });
+
+  it("shows Parse Ingredients button when recipe has URL but no parsed ingredients", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
+    });
+  });
+
+  it("handles null data from recipe_ingredients and recipe_content queries", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") {
+        const builder = createMockQueryBuilder([]);
+        builder.in = vi.fn().mockResolvedValue({ data: null, error: null });
+        return builder;
+      }
+      if (table === "recipe_content") {
+        const builder = createMockQueryBuilder([]);
+        builder.in = vi.fn().mockResolvedValue({ data: null, error: null });
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+  });
+
+  it("clears ingredient maps when loading recipes with empty IDs", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/no recipes yet/i)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("RecipeHub - Parse Recipe", () => {
+  const clubRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
+  });
+
+  it("triggers parse-recipe when Parse Ingredients button is clicked", async () => {
+    const { toast } = await import("sonner");
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /parse ingredients/i }));
+
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", {
+        body: {
+          recipeId: "recipe-1",
+          recipeUrl: "https://example.com/salmon",
+          recipeName: "Grilled Salmon",
+        },
+      });
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed!");
+    });
+  });
+
+  it("shows error toast when parse-recipe fails", async () => {
+    const { toast } = await import("sonner");
+    mockFunctionsInvoke.mockResolvedValue({ data: null, error: { message: "Parse failed" } });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /parse ingredients/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
+    });
+  });
+
+  it("does not call parse-recipe when recipe has no URL", async () => {
+    const noUrlRecipes = [
+      { ...clubRecipesData[0], url: null },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(noUrlRecipes);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // No parse button should appear for recipe without URL
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+    expect(mockFunctionsInvoke).not.toHaveBeenCalled();
   });
 });
