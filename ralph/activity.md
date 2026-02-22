@@ -11,7 +11,7 @@
 - `vi.clearAllMocks()` does NOT clear `mockImplementationOnce` queues; use `mockReset()` instead
 - Supabase mock pattern: `createMockQueryBuilder` with chainable `.mockReturnThis()`
 - DEFAULT_PANTRY_ITEMS in src/lib/pantry.ts: ["salt", "pepper", "water"]
-- RecipeCard edit/delete buttons currently gated behind `recipe.isPersonal`. RecipeCard also supports `onAddNote` prop for adding notes directly from the card.
+- RecipeCard edit button gated behind `recipe.isPersonal && onEdit`. Delete button shows for ANY recipe when `onDelete` is provided (club and personal). RecipeCard also supports `onAddNote` prop for adding notes directly from the card.
 - When adding new UI to RecipeHub that uses child components (e.g., PhotoUpload), mock those child components in RecipeHub tests to enable testing the branches they control (e.g., photo state)
 - RecipeHub loads recipes lazily per sub-tab (club on mount, personal only when clicked)
 - Removing component props cascades: child interface → parent interface → parent destructuring → parent JSX → parent tests. Build won't pass until all references are removed.
@@ -22,8 +22,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 9
-**Current Task:** US-009 complete
+**Tasks Completed:** 10
+**Current Task:** US-010 complete
 
 ---
 
@@ -290,5 +290,34 @@
 - To test branches controlled by child component state (like PhotoUpload's photos), mock the child component to expose a button that calls the state setter. This avoids complex file upload simulation while still covering the parent's branch logic.
 - Removing defensive guards (`if (!userId || !noteRecipe) return`) that are unreachable from normal usage improves coverage without risk when the guard conditions are structurally prevented (userId gated by prop, noteRecipe gated by dialog open state).
 - Imports for `Textarea` and `PhotoUpload` were needed in RecipeHub — Textarea from UI components, PhotoUpload from the recipes directory.
+
+---
+
+## 2026-02-22 16:00 — US-010: RecipeHub — allow deletion of club recipes not linked to meal plans
+
+### What was implemented
+- Split RecipeCard edit/delete button gating: edit remains gated behind `recipe.isPersonal && onEdit`, delete shows for ANY recipe when `onDelete` is provided
+- Changed RecipeHub to pass `onDelete={handleDeleteRecipe}` for both club and personal tabs (removed `subTab === "personal"` conditional)
+- Removed `|| recipe?.eventId` from `handleDeleteRecipe` guard — only meal_plan_items linkage blocks deletion
+- Updated guard message from "meal plan or event" to "meal plan"
+- Club recipes not linked to meal plans can now be deleted directly from the Recipes tab
+- Club recipes linked to meal_plan_items still show the guard message
+
+### Files changed
+- src/components/recipes/RecipeCard.tsx
+- src/components/recipes/RecipeHub.tsx
+- tests/unit/components/recipes/RecipeCard.test.tsx
+- tests/unit/components/recipes/RecipeHub.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (all tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories, RecipeCard.tsx 100%, RecipeHub.tsx 100%
+
+### Learnings for future iterations
+- When splitting a combined condition (`recipe.isPersonal && onEdit && onDelete`) into separate conditions, both the outer wrapper and individual button conditions need updating. The outer wrapper becomes `(onDelete || (recipe.isPersonal && onEdit))`.
+- Removing a guard condition (eventId check) requires updating or replacing the test that exercised that guard path, plus ensuring the guard dialog's dismiss path is still tested elsewhere.
+- Adding tests for club recipe deletion from the club tab doesn't require switching to "My Recipes" — club tab is the default.
 
 ---

@@ -2542,7 +2542,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     });
   });
 
-  it("does not show edit/delete buttons on club tab", async () => {
+  it("shows delete but not edit button on club tab", async () => {
     const clubRecipesData = [
       {
         id: "recipe-1",
@@ -2570,9 +2570,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
       expect(screen.getByText("Club Recipe")).toBeInTheDocument();
     });
 
-    // Club tab should not show edit/delete buttons
+    // Club tab should show delete but not edit
     expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
   });
 
   it("opens edit dialog with empty URL for recipe without URL", async () => {
@@ -3047,9 +3047,16 @@ describe("RecipeHub - Delete Personal Recipe", () => {
         screen.getByText(/remove it from those first before deleting/i)
       ).toBeInTheDocument();
     });
+
+    // Dismiss the guard dialog via OK button (covers onOpenChange handler)
+    fireEvent.click(screen.getByRole("button", { name: /OK/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Cannot Delete Recipe")).not.toBeInTheDocument();
+    });
   });
 
-  it("shows guard dialog when recipe has an eventId", async () => {
+  it("allows deletion of recipe with eventId when not linked to meal plan", async () => {
     const recipesWithEvent = [
       {
         id: "personal-event",
@@ -3083,14 +3090,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     });
     fireEvent.click(screen.getByLabelText("Delete recipe"));
 
+    // Should show delete confirmation, not guard dialog (eventId no longer blocks deletion)
     await waitFor(() => {
-      expect(screen.getByText("Cannot Delete Recipe")).toBeInTheDocument();
-    });
-
-    // Dismiss the guard dialog via OK button (covers onOpenChange handler)
-    fireEvent.click(screen.getByRole("button", { name: /OK/i }));
-
-    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
       expect(screen.queryByText("Cannot Delete Recipe")).not.toBeInTheDocument();
     });
   });
@@ -3139,6 +3141,109 @@ describe("RecipeHub - Delete Personal Recipe", () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe deleted!");
+    });
+  });
+
+  it("deletes club recipe from club tab when not linked to meal plan", async () => {
+    const { toast } = await import("sonner");
+    const clubRecipesData = [
+      {
+        id: "club-recipe-1",
+        name: "Club Recipe To Delete",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-456",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+        scheduled_events: { type: "club" },
+      },
+    ];
+
+    const mockDelete = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(clubRecipesData);
+        builder.delete = mockDelete;
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "meal_plan_items") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Club tab is default — wait for recipe to load
+    await waitFor(() => {
+      expect(screen.getByText("Club Recipe To Delete")).toBeInTheDocument();
+    });
+
+    // Delete button should be visible on club tab
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    // Edit button should NOT be visible on club tab
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() => {
+      expect(mockDelete).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith("Recipe deleted!");
+    });
+  });
+
+  it("shows guard dialog when club recipe is linked to a meal plan", async () => {
+    const clubRecipesData = [
+      {
+        id: "club-recipe-linked",
+        name: "Linked Club Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-456",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+        scheduled_events: { type: "club" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "meal_plan_items") {
+        const builder = createMockQueryBuilder([]);
+        builder.then = vi.fn((resolve) =>
+          Promise.resolve({ data: null, error: null, count: 1 }).then(resolve)
+        );
+        return builder;
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Linked Club Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cannot Delete Recipe")).toBeInTheDocument();
+      expect(
+        screen.getByText(/remove it from those first before deleting/i)
+      ).toBeInTheDocument();
     });
   });
 });

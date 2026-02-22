@@ -107,26 +107,30 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote }: Recip
             </Badge>
           )}
 
-          {recipe.isPersonal && onEdit && onDelete && (
+          {(onDelete || (recipe.isPersonal && onEdit)) && (
             <div className="flex items-center gap-1 ml-auto">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                aria-label="Edit recipe"
-                onClick={() => onEdit(recipe)}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                aria-label="Delete recipe"
-                onClick={() => onDelete(recipe.id)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {recipe.isPersonal && onEdit && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  aria-label="Edit recipe"
+                  onClick={() => onEdit(recipe)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  aria-label="Delete recipe"
+                  onClick={() => onDelete(recipe.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
           )}
 

@@ -400,9 +400,8 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         .select("*", { count: "exact", head: true })
         .eq("recipe_id", recipeId);
 
-      const recipe = recipes.find(r => r.id === recipeId);
-      if ((mealCount && mealCount > 0) || recipe?.eventId) {
-        setDeleteGuardMessage("This recipe is used in a meal plan or event. Remove it from those first before deleting.");
+      if (mealCount && mealCount > 0) {
+        setDeleteGuardMessage("This recipe is used in a meal plan. Remove it from those first before deleting.");
         return;
       }
     } catch {
@@ -621,7 +620,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 key={recipe.id}
                 recipe={recipe}
                 onEdit={subTab === "personal" ? handleEditRecipe : undefined}
-                onDelete={subTab === "personal" ? handleDeleteRecipe : undefined}
+                onDelete={handleDeleteRecipe}
                 onEditRating={userId ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
               />

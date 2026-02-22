@@ -205,7 +205,7 @@
         "Tests pass"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "activeForm": "Enabling club recipe deletion",
       "notes": "Files: src/components/recipes/RecipeHub.tsx, src/components/recipes/RecipeCard.tsx. Current state: RecipeCard line 109 gates edit/delete buttons behind `recipe.isPersonal && onEdit && onDelete`. RecipeHub line 586 only passes onDelete for personal tab: `onDelete={subTab === 'personal' ? handleDeleteRecipe : undefined}`. Guard at line 398 blocks deletion if `(mealCount > 0) || recipe?.eventId`. Changes needed: (1) RecipeCard.tsx line 109: Change `{recipe.isPersonal && onEdit && onDelete && (` to show delete button for any recipe when onDelete is provided. Keep edit button gated behind recipe.isPersonal since editing club recipes should go through the event page. So split the conditions: edit button shows if `recipe.isPersonal && onEdit`, delete button shows if `onDelete`. (2) RecipeHub.tsx line 586: Pass `onDelete={handleDeleteRecipe}` for both tabs (remove the subTab conditional). (3) RecipeHub.tsx line 398: Remove `|| recipe?.eventId` from the guard — only check `mealCount && mealCount > 0`. Tests: Update RecipeCard tests to verify delete button appears for club recipes when onDelete is provided. Update RecipeHub tests to verify club recipe deletion works when not linked to meal plans."
     },
