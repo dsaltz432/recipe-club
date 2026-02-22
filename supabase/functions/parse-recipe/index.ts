@@ -151,7 +151,10 @@ serve(async (req) => {
     let base64Content = "";
     let detectedMediaType = "image/jpeg";
 
-    const isStorageUrl = recipeUrl.includes("supabase") && recipeUrl.includes("storage");
+    // BUG-009: Detect storage URLs including local dev (localhost/127.0.0.1) which
+    // don't contain "supabase" in the hostname but still use the storage path pattern
+    const isStorageUrl = (recipeUrl.includes("supabase") && recipeUrl.includes("storage")) ||
+      /\/storage\/v1\/object\/public\//.test(recipeUrl);
     const isPdfOrImage = /\.(pdf|jpg|jpeg|png|webp|heic)(\?|$)/i.test(recipeUrl);
 
     if (isStorageUrl || isPdfOrImage) {

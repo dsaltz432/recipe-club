@@ -105,7 +105,7 @@
         "Tests pass"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "activeForm": "Fixing recipe image upload URLs",
       "notes": "File: supabase/functions/parse-recipe/index.ts, around line 154-176. There's already a BUG-009 comment at line 163 about this exact issue. The edge function runs in Docker and can't reach localhost. Fix: Before fetching the URL, check if it contains '127.0.0.1' or 'localhost'. If so, replace the base URL with `Deno.env.get('SUPABASE_URL')` which resolves correctly inside Docker. Example:\n```\nlet fetchUrl = recipeUrl;\nif (fetchUrl.includes('127.0.0.1') || fetchUrl.includes('localhost')) {\n  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';\n  fetchUrl = fetchUrl.replace(/https?:\\/\\/(127\\.0\\.0\\.1|localhost)(:\\d+)?/, supabaseUrl);\n}\n```\nAlternatively, use the Supabase storage client (as BUG-009 suggests) instead of raw fetch for storage URLs. The Supabase client is already available in the edge function via createClient. Note: Edge functions are Deno-based. No test file changes needed (edge functions aren't in required coverage directories)."
     },

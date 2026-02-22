@@ -14,11 +14,12 @@
 - Edge functions are Deno-based in supabase/functions/
 - Grocery cache: combined_grocery_items table with context_type (meal_plan/event), context_id, recipe_ids for cache validation
 - Google Calendar calls are in src/lib/googleCalendar.ts — currently client-side direct API calls
+- Edge function storage URL detection: match on path `/storage/v1/object/public/` not hostname (local dev uses 127.0.0.1, not supabase hostname)
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 5
-**Current Task:** US-005 complete
+**Tasks Completed:** 6
+**Current Task:** US-006 complete
 
 ---
 
@@ -145,5 +146,28 @@
 - `recipe.isPersonal` distinguishes personal meal recipes (which have eventId from personal events) from club event recipes — checking just `recipe.eventId` would break personal meal recipe deletion
 - Option A approach (pass `undefined` for onDelete) is cleaner than adding guard logic in the handler — the delete button simply doesn't render
 - RecipeCard didn't need changes — the conditional was entirely in RecipeHub's mapping over recipes
+
+---
+
+## 2026-02-22 19:30 — US-006: Fix recipe image upload URL — use production Supabase URL in parse-recipe
+
+### What was implemented
+- Updated `isStorageUrl` detection in parse-recipe edge function to also match URLs containing `/storage/v1/object/public/` path pattern (not just URLs with "supabase" in hostname)
+- Local dev URLs like `http://127.0.0.1:54321/storage/v1/object/public/recipe-images/...` now correctly route through the Supabase storage client (`supabase.storage.from(bucket).download(filePath)`) instead of attempting a raw `fetch()` to localhost
+- Production URLs continue to work unchanged (they match both the original and new conditions)
+
+### Files changed
+- supabase/functions/parse-recipe/index.ts (line 154-157 — expanded isStorageUrl detection)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1633/1633, all suites passing)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: not affected (edge functions not in required coverage directories)
+
+### Learnings for future iterations
+- Local dev Supabase URLs use `127.0.0.1:54321` or `localhost:54321` — they do NOT contain "supabase" in the hostname, so hostname-based detection misses them
+- The Supabase storage path pattern `/storage/v1/object/public/` is the same across local and production — matching on path is more reliable than matching on hostname
+- Edge functions run in Docker where localhost refers to the container itself, not the host machine — always use Supabase client (which uses SUPABASE_URL env var) for storage access
 
 ---
