@@ -1,2 +1,3 @@
 // Re-export from sonner for convenience
-export { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
+export const toast = sonnerToast;
