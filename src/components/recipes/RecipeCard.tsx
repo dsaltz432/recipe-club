@@ -7,6 +7,7 @@ import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Penc
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
 import { GROCERY_CATEGORIES, CATEGORY_ORDER } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
+import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -56,7 +57,10 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
-  const hasIngredients = ingredients && ingredients.length > 0;
+  const filteredIngredients = ingredients?.filter(
+    (ing) => !DEFAULT_PANTRY_ITEMS.includes(ing.name.toLowerCase())
+  );
+  const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
   const hasDetails = recipe.url || recipe.notes.length > 0;
 
   // Get colors from ingredient
@@ -250,19 +254,19 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
               ) : (
                 <ChevronDown className="h-3.5 w-3.5" />
               )}
-              <span>{ingredients!.length} ingredient{ingredients!.length !== 1 ? "s" : ""}</span>
+              <span>{filteredIngredients!.length} ingredient{filteredIngredients!.length !== 1 ? "s" : ""}</span>
             </button>
             {ingredientsExpanded && (
               <div className="mt-2 space-y-2 pl-1">
                 {CATEGORY_ORDER.filter((cat) =>
-                  ingredients!.some((ing) => ing.category === cat)
+                  filteredIngredients!.some((ing) => ing.category === cat)
                 ).map((cat) => (
                   <div key={cat}>
                     <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                       {GROCERY_CATEGORIES[cat]}
                     </div>
                     <ul className="space-y-0.5">
-                      {ingredients!
+                      {filteredIngredients!
                         .filter((ing) => ing.category === cat)
                         .map((ing) => (
                           <li key={ing.id} className="text-sm">

@@ -17,8 +17,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 2
-**Current Task:** US-002 complete
+**Tasks Completed:** 3
+**Current Task:** US-003 complete
 
 ---
 
@@ -65,5 +65,32 @@
 ### Learnings for future iterations
 - Simple inline string transform is sufficient for capitalization — no utility function needed
 - When changing display format, search all test files for the old format string to find all assertions that need updating
+
+---
+
+## 2026-02-22 18:40 — US-003: RecipeCard — exclude pantry items from ingredient display
+
+### What was implemented
+- Imported `DEFAULT_PANTRY_ITEMS` from `@/lib/pantry` in RecipeCard.tsx
+- Added `filteredIngredients` computed from `ingredients?.filter()` that excludes pantry items (case-insensitive)
+- Updated `hasIngredients` to use `filteredIngredients` instead of `ingredients`
+- Updated ingredient count display and expanded list to use `filteredIngredients`
+- Updated existing test that included "Salt" as an ingredient — changed to "Garlic" since Salt is now filtered
+- Added 2 new tests: one verifying pantry items are excluded from count/list, one verifying section hides when all ingredients are pantry items
+
+### Files changed
+- src/components/recipes/RecipeCard.tsx (import + filtering logic)
+- tests/unit/components/recipes/RecipeCard.test.tsx (updated 1 test, added 2 tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (67/67 RecipeCard tests, all suites passing)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- When filtering ingredients, use `filteredIngredients` everywhere the original `ingredients` was referenced — count, expanded list, and category filtering all need updating
+- The filter is case-insensitive via `.toLowerCase()` to handle both "Salt" and "salt" variants
+- When tests reference ingredients by name that become pantry items (like "Salt"), update the test data to use non-pantry names
 
 ---

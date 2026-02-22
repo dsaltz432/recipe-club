@@ -745,7 +745,7 @@ describe("RecipeCard - Ingredients Section", () => {
     const ingredients = [
       createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
       createMockIngredient({ id: "ing-2", name: "Lemon", quantity: 1, unit: undefined, category: "produce" }),
-      createMockIngredient({ id: "ing-3", name: "Salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockIngredient({ id: "ing-3", name: "Garlic", quantity: undefined, unit: undefined, category: "spices" }),
     ];
 
     render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
@@ -760,7 +760,7 @@ describe("RecipeCard - Ingredients Section", () => {
     // Ingredients
     expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
     expect(screen.getByText("1 Lemon")).toBeInTheDocument();
-    expect(screen.getByText("Salt")).toBeInTheDocument();
+    expect(screen.getByText("Garlic")).toBeInTheDocument();
   });
 
   it("collapses ingredients when clicked again", () => {
@@ -887,6 +887,41 @@ describe("RecipeCard - Ingredients Section", () => {
     render(<RecipeCard recipe={recipe} contentStatus="pending" onParseRecipe={onParseRecipe} />);
 
     expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
+  });
+
+  it("excludes pantry items (salt, pepper, water) from ingredient count and list", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
+      createMockIngredient({ id: "ing-2", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockIngredient({ id: "ing-3", name: "Pepper", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockIngredient({ id: "ing-4", name: "Water", quantity: 1, unit: "cup", category: "other" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    // Only non-pantry ingredient should be counted
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+
+    // Expand and verify pantry items are not shown
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
+    expect(screen.queryByText("salt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Water/)).not.toBeInTheDocument();
+  });
+
+  it("hides ingredients section when all ingredients are pantry items", () => {
+    const recipe = createMockRecipe({ url: undefined });
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "salt", category: "spices" }),
+      createMockIngredient({ id: "ing-2", name: "pepper", category: "spices" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    // No ingredient count should be shown since all are filtered out
+    expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
   });
 
   it("renders ingredients section with ingredient color theming", () => {

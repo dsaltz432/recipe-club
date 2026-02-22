@@ -52,7 +52,7 @@
         "Tests pass"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "activeForm": "Filtering pantry items from RecipeCard",
       "notes": "File: src/components/recipes/RecipeCard.tsx, lines 255-276. The ingredients display currently shows ALL ingredients with no pantry filtering. Import DEFAULT_PANTRY_ITEMS from @/lib/pantry (already exported after US-007 from previous PRD). Filter ingredients before display: `const filteredIngredients = ingredients?.filter(ing => !DEFAULT_PANTRY_ITEMS.includes(ing.name.toLowerCase()));`. Use filteredIngredients for both the count display ('N ingredients') and the expanded list. Also update the CATEGORY_ORDER filter to use filteredIngredients. Tests: Add a test that passes ingredients including 'salt' and 'pepper' and verifies they don't appear in the rendered output."
     },
