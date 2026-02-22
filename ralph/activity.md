@@ -14,12 +14,13 @@
 - Edge functions are Deno-based in supabase/functions/
 - Grocery cache: combined_grocery_items table with context_type (meal_plan/event), context_id, recipe_ids for cache validation
 - Google Calendar calls are in src/lib/googleCalendar.ts — currently client-side direct API calls
+- Grocery useEffect pattern: use a `groceryDirtyRef` (useRef) to gate re-fetching; set dirty=true when items change (add/remove/parse); reset to false at start of useEffect execution
 - Edge function storage URL detection: match on path `/storage/v1/object/public/` not hostname (local dev uses 127.0.0.1, not supabase hostname)
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 6
-**Current Task:** US-006 complete
+**Tasks Completed:** 7
+**Current Task:** US-007 complete
 
 ---
 
@@ -169,5 +170,37 @@
 - Local dev Supabase URLs use `127.0.0.1:54321` or `localhost:54321` — they do NOT contain "supabase" in the hostname, so hostname-based detection misses them
 - The Supabase storage path pattern `/storage/v1/object/public/` is the same across local and production — matching on path is more reliable than matching on hostname
 - Edge functions run in Docker where localhost refers to the container itself, not the host machine — always use Supabase client (which uses SUPABASE_URL env var) for storage access
+
+---
+
+## 2026-02-22 19:00 — US-007: Grocery combining — only re-combine when recipes change, not on tab visit
+
+### What was implemented
+- Added `groceryDirtyRef` (useRef<boolean>) initialized to `true` — gates the Groceries tab useEffect so it only loads grocery data + runs smart combine when the flag is set
+- The useEffect at line 300 now checks `groceryDirtyRef.current` before proceeding; if false, it returns early (no data fetching, no combining)
+- `groceryDirtyRef.current` is set to `true` in 5 places:
+  1. `loadPlan` → when existing plan items are loaded (covers week navigation)
+  2. `loadPlan` → when a new plan is created (covers first load)
+  3. `addItemToPlan` → when a meal is successfully added
+  4. `doParse` → after parse completes successfully
+  5. `handleParseRecipe` → after parse-from-grocery-tab completes
+- The flag is reset to `false` at the start of the useEffect execution, ensuring only one load per dirty cycle
+- Removed unnecessary `eslint-disable-next-line` directive that was no longer needed
+
+### Files changed
+- src/components/mealplan/MealPlanPage.tsx (added groceryDirtyRef, gated useEffect, set dirty in 5 locations, removed eslint-disable)
+- tests/unit/components/mealplan/MealPlanPage.test.tsx (added 1 new test for runSmartCombine skip after non-URL meal, enhanced "skips re-combine" test to verify loadGroceryData is NOT called on second tab visit)
+
+### Quality checks
+- Build: pass
+- Tests: pass (54/54 MealPlanPage tests, 1634 total)
+- Lint: pass (0 errors, 17 warnings — pre-existing, down from 18 after removing unused eslint-disable)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- Using `useRef` instead of `useState` for the dirty flag avoids extra re-renders — the flag only needs to be read inside the useEffect, not trigger rendering
+- The `loadGroceryData` callback depends on `items` state (via closure), making its reference unstable — adding it to a useEffect dependency array causes the effect to re-fire on every items change. The dirty ref pattern breaks this cycle
+- When adding a dirty flag, trace ALL paths that modify the underlying data (add, remove, parse, week change, initial load) to ensure they all set dirty=true
+- The `lastCombinedRecipeIds` ref in `runSmartCombine` provides a second layer of protection — even if the dirty flag triggers a reload, if the parsed recipe IDs haven't changed, the AI combine call is skipped
 
 ---

@@ -2146,15 +2146,151 @@ describe("MealPlanPage", () => {
       // Switch back to Meal Plan
       fireEvent.click(screen.getByText("Meal Plan"));
 
-      // Switch to Groceries again — same recipe IDs, should skip re-combine
+      // Record how many times recipe_ingredients was queried (proxy for loadGroceryData calls)
+      const groceryCallsBefore = mockSupabaseFrom.mock.calls.filter(
+        (call: unknown[]) => call[0] === "recipe_ingredients"
+      ).length;
+
+      // Switch to Groceries again — grocery data is not dirty, so loadGroceryData should NOT be called
       fireEvent.click(screen.getByText("Groceries"));
 
-      // Wait for grocery data to load
+      // Wait for grocery list to render (from cached state)
       await waitFor(() => {
         expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Smart combine should still only have been called once (skipped on second visit)
+      expect(mockSmartCombineIngredients).toHaveBeenCalledTimes(1);
+
+      // loadGroceryData should NOT have been called again (no new recipe_ingredients queries)
+      const groceryCallsAfter = mockSupabaseFrom.mock.calls.filter(
+        (call: unknown[]) => call[0] === "recipe_ingredients"
+      ).length;
+      expect(groceryCallsAfter).toBe(groceryCallsBefore);
+    });
+
+    it("skips runSmartCombine when recipe IDs unchanged after adding non-URL meal", async () => {
+      const smartItems = [
+        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
+      ];
+      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+      mockLoadGroceryCache.mockResolvedValue(null);
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Chicken Stir Fry", url: "https://example.com/stir-fry" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Fried Rice", url: "https://example.com/rice" },
+                },
+              ],
+              error: null,
+            }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-new", plan_id: "plan-1", recipe_id: "recipe-snack",
+                day_of_week: 3, meal_type: "breakfast", custom_name: null,
+                custom_url: null, sort_order: 0,
+                recipes: { name: "Toast", url: null },
+              },
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "chicken", quantity: 2, unit: "lbs", category: "meat_seafood", raw_text: "2 lbs chicken", sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "rice", quantity: 1, unit: "cup", category: "grains", raw_text: "1 cup rice", sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Chicken Stir Fry", url: "https://example.com/stir-fry" },
+                { id: "recipe-2", name: "Fried Rice", url: "https://example.com/rice" },
+              ],
+              error: null,
+            }),
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-snack" },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      });
+
+      // First visit to Groceries tab — smartCombine runs
+      fireEvent.click(screen.getByText("Groceries"));
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalledTimes(1);
+      });
+
+      // Switch back to Meal Plan
+      fireEvent.click(screen.getByText("Meal Plan"));
+
+      // Add a non-URL meal (marks grocery dirty)
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Breakfast")
+      );
+      if (slotButtons.length > 0) {
+        fireEvent.click(slotButtons[0]);
+      }
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Toast" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      await waitFor(() => {
+        expect(mockSupabaseFrom).toHaveBeenCalledWith("meal_plan_items");
+      });
+
+      // Switch to Groceries tab again — dirty=true, loads data, but parsed recipe IDs unchanged
+      // runSmartCombine is called but hits the lastCombinedRecipeIds skip branch
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Smart combine should still only have been called once
+      // (second call to runSmartCombine returned early because same recipe IDs)
       expect(mockSmartCombineIngredients).toHaveBeenCalledTimes(1);
     });
 

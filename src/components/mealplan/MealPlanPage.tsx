@@ -62,6 +62,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const viewTabRef = useRef(viewTab);
   viewTabRef.current = viewTab;
+  const groceryDirtyRef = useRef(true);
 
   const navigate = useNavigate();
 
@@ -110,6 +111,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           };
         });
         setItems(mapped);
+        groceryDirtyRef.current = true;
       } else {
         // Create plan — use upsert to be idempotent under StrictMode double-execution
         const { data: newPlan, error } = await supabase
@@ -128,6 +130,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (error) throw error;
         setPlanId(newPlan.id);
         setItems([]);
+        groceryDirtyRef.current = true;
       }
     } catch (error) {
       console.error("Error loading meal plan:", error);
@@ -295,32 +298,33 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   }, [weekStart, userId]);
 
   useEffect(() => {
-    if (viewTab === "groceries") {
-      loadGroceryData().then(async (groceryData) => {
-        if (!groceryData) return;
-        // Check cache before running AI combine
-        const weekStartStr = weekStart.toISOString().split("T")[0];
-        const cached = await loadGroceryCache("meal_plan", weekStartStr, userId);
-        if (cached) {
-          const currentParsedIds = groceryData.recipes
-            .filter((r) => groceryData.contentMap[r.id]?.status === "completed")
-            .map((r) => r.id)
-            .sort();
-          const cachedIds = [...cached.recipeIds].sort();
-          if (
-            currentParsedIds.length === cachedIds.length &&
-            currentParsedIds.every((id, i) => id === cachedIds[i])
-          ) {
-            setSmartGroceryItems(cached.items);
-            lastCombinedRecipeIds.current = cachedIds;
-            return;
-          }
+    if (viewTab !== "groceries") return;
+    if (!groceryDirtyRef.current) return;
+    groceryDirtyRef.current = false;
+    loadGroceryData().then(async (groceryData) => {
+      if (!groceryData) return;
+      // Check cache before running AI combine
+      const weekStartStr = weekStart.toISOString().split("T")[0];
+      const cached = await loadGroceryCache("meal_plan", weekStartStr, userId);
+      if (cached) {
+        const currentParsedIds = groceryData.recipes
+          .filter((r) => groceryData.contentMap[r.id]?.status === "completed")
+          .map((r) => r.id)
+          .sort();
+        const cachedIds = [...cached.recipeIds].sort();
+        if (
+          currentParsedIds.length === cachedIds.length &&
+          currentParsedIds.every((id, i) => id === cachedIds[i])
+        ) {
+          setSmartGroceryItems(cached.items);
+          lastCombinedRecipeIds.current = cachedIds;
+          return;
         }
-        // Cache miss or stale — run smart combine
-        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
-      });
-      loadPantryItems();
-    }
+      }
+      // Cache miss or stale — run smart combine
+      runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
+    });
+    loadPantryItems();
   }, [viewTab, loadGroceryData, loadPantryItems, weekStart, userId, runSmartCombine]);
 
   // Execute parse when parseStatus transitions to "parsing"
@@ -368,6 +372,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         setPendingParseRecipeId(null);
         setPendingParseName("");
         setParseStep("saving");
+        groceryDirtyRef.current = true;
         toast.success("Recipe parsed successfully!");
       } catch (error) {
         console.error("Error parsing recipe:", error);
@@ -401,6 +406,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       if (error) throw error;
       toast.success("Recipe parsed successfully!");
+      groceryDirtyRef.current = true;
       await loadGroceryData();
     } catch (error) {
       console.error("Error parsing recipe:", error);
@@ -500,6 +506,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       };
 
       setItems((prev) => [...prev, newItem]);
+      groceryDirtyRef.current = true;
       return linkedRecipeId;
     } catch (error) {
       console.error("Error adding meal:", error);
