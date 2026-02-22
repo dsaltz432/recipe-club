@@ -508,4 +508,277 @@ describe("GroceryListSection", () => {
     // Should show regular combined view
     expect(screen.getByText("Produce")).toBeInTheDocument();
   });
+
+  // ---- Editable mode tests ----
+
+  it("shows Add item button when editable is true and has ingredients", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    expect(screen.getByText("Add item")).toBeInTheDocument();
+  });
+
+  it("does not show Add item button when editable is false", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+      />
+    );
+
+    expect(screen.queryByText("Add item")).not.toBeInTheDocument();
+  });
+
+  it("does not show Add item button when loading", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        isLoading
+      />
+    );
+
+    expect(screen.queryByText("Add item")).not.toBeInTheDocument();
+  });
+
+  it("does not show Add item button when no ingredients", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={[]}
+        recipeContentMap={{}}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    expect(screen.queryByText("Add item")).not.toBeInTheDocument();
+  });
+
+  it("shows add item form when Add item button is clicked", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+
+    expect(screen.getByLabelText("New item name")).toBeInTheDocument();
+    expect(screen.getByLabelText("New item quantity")).toBeInTheDocument();
+    expect(screen.getByLabelText("New item unit")).toBeInTheDocument();
+    expect(screen.getByText("Add")).toBeInTheDocument();
+    expect(screen.getByText("Cancel")).toBeInTheDocument();
+  });
+
+  it("calls onAddItem with item data when Add button is clicked", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+
+    fireEvent.change(screen.getByLabelText("New item name"), { target: { value: "paper towels" } });
+    fireEvent.change(screen.getByLabelText("New item quantity"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("New item unit"), { target: { value: "roll" } });
+
+    fireEvent.click(screen.getByText("Add"));
+
+    expect(onAddItem).toHaveBeenCalledWith({
+      name: "paper towels",
+      totalQuantity: 2,
+      unit: "roll",
+    });
+  });
+
+  it("calls onAddItem on Enter key in add form", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.change(screen.getByLabelText("New item name"), { target: { value: "napkins" } });
+    fireEvent.keyDown(screen.getByLabelText("New item name"), { key: "Enter" });
+
+    expect(onAddItem).toHaveBeenCalledWith({
+      name: "napkins",
+      totalQuantity: undefined,
+      unit: undefined,
+    });
+  });
+
+  it("hides add form on Cancel button click", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    expect(screen.getByLabelText("New item name")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByLabelText("New item name")).not.toBeInTheDocument();
+    expect(screen.getByText("Add item")).toBeInTheDocument();
+  });
+
+  it("hides add form on Escape key", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.keyDown(screen.getByLabelText("New item name"), { key: "Escape" });
+
+    expect(screen.queryByLabelText("New item name")).not.toBeInTheDocument();
+  });
+
+  it("does not call onAddItem when name is empty", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.click(screen.getByText("Add"));
+
+    expect(onAddItem).not.toHaveBeenCalled();
+  });
+
+  it("resets form fields after successful add", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.change(screen.getByLabelText("New item name"), { target: { value: "napkins" } });
+    fireEvent.change(screen.getByLabelText("New item quantity"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("New item unit"), { target: { value: "pack" } });
+    fireEvent.click(screen.getByText("Add"));
+
+    // Form should disappear, showing the Add item button again
+    expect(screen.queryByLabelText("New item name")).not.toBeInTheDocument();
+    expect(screen.getByText("Add item")).toBeInTheDocument();
+  });
+
+  it("passes editable props to GroceryCategoryGroup for smart items", () => {
+    const onEditItem = vi.fn();
+    const onRemoveItem = vi.fn();
+    const smartItems: SmartGroceryItem[] = [
+      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onEditItem={onEditItem}
+        onRemoveItem={onRemoveItem}
+        smartGroceryItems={smartItems}
+      />
+    );
+
+    // Verify edit buttons are visible (these come from GroceryItemRow via GroceryCategoryGroup)
+    expect(screen.getAllByLabelText("Edit item").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Remove item").length).toBeGreaterThan(0);
+  });
+
+  it("handles non-Enter/Escape key presses in add form without action", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.keyDown(screen.getByLabelText("New item name"), { key: "Tab" });
+
+    // Should still be in add mode
+    expect(screen.getByLabelText("New item name")).toBeInTheDocument();
+    expect(onAddItem).not.toHaveBeenCalled();
+  });
 });

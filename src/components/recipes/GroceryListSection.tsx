@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { ShoppingCart, Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { RecipeIngredient, RecipeContent, CombinedGroceryItem, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
 import { combineIngredients, groupByCategory, filterPantryItems, filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
 import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
+import type { GroceryItemEdit } from "./GroceryItemRow";
 
 interface GroceryListSectionProps {
   recipes: Recipe[];
@@ -19,6 +21,10 @@ interface GroceryListSectionProps {
   pantryItems?: string[];
   smartGroceryItems?: SmartGroceryItem[] | null;
   isCombining?: boolean;
+  editable?: boolean;
+  onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
+  onRemoveItem?: (itemName: string) => void;
+  onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
 }
 
 function groupSmartByCategory(
@@ -44,8 +50,16 @@ const GroceryListSection = ({
   pantryItems = [],
   smartGroceryItems,
   isCombining,
+  editable,
+  onEditItem,
+  onRemoveItem,
+  onAddItem,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemQuantity, setNewItemQuantity] = useState("");
+  const [newItemUnit, setNewItemUnit] = useState("");
 
   const recipeNameMap: Record<string, string> = {};
   for (const recipe of recipes) {
@@ -71,6 +85,26 @@ const GroceryListSection = ({
       await onParseRecipe(recipeId);
     } finally {
       setParsingRecipeId(null);
+    }
+  };
+
+  const handleAddItem = () => {
+    const trimmedName = newItemName.trim();
+    if (!trimmedName) return;
+    const parsedQty = newItemQuantity.trim() ? Number(newItemQuantity.trim()) : undefined;
+    const trimmedUnit = newItemUnit.trim() || undefined;
+    onAddItem?.({ name: trimmedName, totalQuantity: parsedQty, unit: trimmedUnit });
+    setNewItemName("");
+    setNewItemQuantity("");
+    setNewItemUnit("");
+    setIsAddingItem(false);
+  };
+
+  const handleAddItemKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleAddItem();
+    } else if (e.key === "Escape") {
+      setIsAddingItem(false);
     }
   };
 
@@ -200,6 +234,9 @@ const GroceryListSection = ({
                       key={category}
                       category={category}
                       items={items}
+                      editable={editable}
+                      onEditItem={onEditItem}
+                      onRemoveItem={onRemoveItem}
                     />
                   ))}
                 </>
@@ -212,6 +249,9 @@ const GroceryListSection = ({
                       key={category}
                       category={category}
                       items={items}
+                      editable={editable}
+                      onEditItem={onEditItem}
+                      onRemoveItem={onRemoveItem}
                     />
                   ))}
                 </>
@@ -236,12 +276,74 @@ const GroceryListSection = ({
                       key={`${recipe.id}-${category}`}
                       category={category}
                       items={items}
+                      editable={editable}
+                      onEditItem={onEditItem}
+                      onRemoveItem={onRemoveItem}
                     />
                   ))}
                 </TabsContent>
               );
             })}
           </Tabs>
+        )}
+
+        {editable && !isLoading && hasAnyIngredients && (
+          <div className="mt-3 border-t pt-3">
+            {!isAddingItem ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAddingItem(true)}
+                className="text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add item
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  placeholder="Qty"
+                  className="w-16 h-7 text-sm"
+                  onKeyDown={handleAddItemKeyDown}
+                  aria-label="New item quantity"
+                />
+                <Input
+                  value={newItemUnit}
+                  onChange={(e) => setNewItemUnit(e.target.value)}
+                  placeholder="Unit"
+                  className="w-20 h-7 text-sm"
+                  onKeyDown={handleAddItemKeyDown}
+                  aria-label="New item unit"
+                />
+                <Input
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Item name"
+                  className="flex-1 h-7 text-sm"
+                  onKeyDown={handleAddItemKeyDown}
+                  aria-label="New item name"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleAddItem}
+                  className="h-7 text-xs"
+                >
+                  Add
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingItem(false)}
+                  className="h-7 text-xs"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
         )}
 
         {!isLoading && pantryExcludedCount > 0 && (

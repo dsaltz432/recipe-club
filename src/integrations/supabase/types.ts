@@ -421,6 +421,39 @@ export type Database = {
           }
         ];
       };
+      combined_grocery_items: {
+        Row: {
+          id: string;
+          context_type: string;
+          context_id: string;
+          user_id: string;
+          items: Json;
+          recipe_ids: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          context_type: string;
+          context_id: string;
+          user_id: string;
+          items: Json;
+          recipe_ids?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          context_type?: string;
+          context_id?: string;
+          user_id?: string;
+          items?: Json;
+          recipe_ids?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       scheduled_events: {
         Row: {
           id: string;
