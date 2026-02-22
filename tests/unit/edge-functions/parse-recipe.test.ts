@@ -758,6 +758,28 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("AI network error");
   });
 
+  it("catch block skips upsert when recipeId was never extracted (error before body parse)", async () => {
+    // Throw from Deno.env.get("SUPABASE_URL") at line 104, BEFORE recipeId is
+    // assigned at line 129.  This leaves recipeId as undefined so the catch
+    // block's `if (recipeId)` takes the false branch — no cleanup upsert.
+    mockEnvGet.mockImplementation((key: string) => {
+      if (key === "SUPABASE_URL") throw new Error("env not available");
+      return createMockEnvGet()(key);
+    });
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(500);
+    expect(data).toMatchObject({ success: false, error: "env not available" });
+
+    // Verify the catch block did NOT call supabase (recipeId was never set)
+    const recipeContentCalls = mockSupabase.from.mock.calls.filter(
+      (c: string[]) => c[0] === "recipe_content",
+    );
+    expect(recipeContentCalls).toHaveLength(0);
+  });
+
   it("returns 500 when storage download fails", async () => {
     const imageUrl = "https://myproject.supabase.co/storage/v1/object/public/recipes/photo.jpg";
 
