@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Check, RotateCcw } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import type { MealPlanItem } from "@/types";
 
 interface MealPlanSlotProps {
@@ -7,10 +7,7 @@ interface MealPlanSlotProps {
   dayOfWeek: number;
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
-  onEditMeal: (item: MealPlanItem) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
-  onMarkCooked?: (dayOfWeek: number, mealType: string) => void;
-  onUncook?: (dayOfWeek: number, mealType: string) => void;
 }
 
 const mealTypeLabels: Record<string, string> = {
@@ -25,10 +22,7 @@ const MealPlanSlot = ({
   dayOfWeek,
   mealType,
   onAddMeal,
-  onEditMeal,
   onViewMealEvent,
-  onMarkCooked,
-  onUncook,
 }: MealPlanSlotProps) => {
   const isCooked = items.length > 0 && items.every((i) => i.cookedAt);
 
@@ -63,45 +57,18 @@ const MealPlanSlot = ({
 
           return (
             <div key={item.id} className="flex items-start justify-between gap-1">
-              <button
-                className="flex-1 min-w-0 text-left cursor-pointer hover:text-purple transition-colors"
-                onClick={(e) => { e.stopPropagation(); onEditMeal(item); }}
-                title="Edit meal"
-                aria-label={`Edit ${name}`}
-              >
+              <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs font-medium truncate flex items-center gap-1">
                   {isCooked && <Check className="h-3 w-3 text-green-600 flex-shrink-0" data-testid="cooked-check" />}
                   {name}
                 </p>
-              </button>
+              </div>
             </div>
           );
         })}
       </div>
       <div className="flex items-center justify-end mt-1">
         <div className="flex items-center gap-1">
-          {isCooked && onUncook && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onUncook(dayOfWeek, mealType); }}
-              className="text-green-600 hover:text-orange-500 transition-colors p-1 flex items-center gap-0.5"
-              title="Undo cook"
-              aria-label="Undo cook"
-            >
-              <RotateCcw className="h-3 w-3" />
-              <span className="text-[10px]">Undo</span>
-            </button>
-          )}
-          {!isCooked && onMarkCooked && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onMarkCooked(dayOfWeek, mealType); }}
-              className="text-muted-foreground hover:text-green-600 transition-colors p-1 flex items-center gap-0.5"
-              title="Mark as cooked"
-              aria-label="Mark as cooked"
-            >
-              <Check className="h-3 w-3" />
-              <span className="text-[10px]">Done</span>
-            </button>
-          )}
           <button
             onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
             className="text-muted-foreground hover:text-purple transition-colors p-1"

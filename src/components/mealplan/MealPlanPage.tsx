@@ -17,34 +17,14 @@ import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
-import EventRatingDialog from "@/components/events/EventRatingDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache } from "@/lib/groceryCache";
-import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, EventRecipeWithNotes, SmartGroceryItem } from "@/types";
+import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
 
 interface MealPlanPageProps {
   userId: string;
 }
-
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const mealTypeLabels: Record<string, string> = {
-  breakfast: "Breakfast",
-  lunch: "Lunch",
-  dinner: "Dinner",
-  snack: "Snack",
-};
 
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date);
@@ -54,14 +34,6 @@ const getWeekStart = (date: Date): Date => {
   return d;
 };
 
-interface RatingSlotData {
-  dayOfWeek: number;
-  mealType: string;
-  eventId: string;
-  eventDate: string;
-  recipes: EventRecipeWithNotes[];
-}
-
 const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [planId, setPlanId] = useState<string | null>(null);
@@ -69,16 +41,12 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pendingSlot, setPendingSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
-  const [editingItem, setEditingItem] = useState<MealPlanItem | null>(null);
   const [viewTab, setViewTab] = useState<"plan" | "groceries">("plan");
   const [groceryRecipes, setGroceryRecipes] = useState<Recipe[]>([]);
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItems, setPantryItems] = useState<string[]>([]);
   const [isLoadingGroceries, setIsLoadingGroceries] = useState(false);
-  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
-  const [selectedSlotForRating, setSelectedSlotForRating] = useState<RatingSlotData | null>(null);
-  const [uncookConfirmSlot, setUncookConfirmSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
   const [showPantryDialog, setShowPantryDialog] = useState(false);
 
   // Parse progress state
@@ -445,76 +413,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setShowAddMealDialog(true);
   };
 
-  const handleEditMeal = (item: MealPlanItem) => {
-    setEditingItem(item);
-    setPendingSlot({ dayOfWeek: item.dayOfWeek, mealType: item.mealType });
-    setShowAddMealDialog(true);
-  };
-
   const handleAddCustomMeal = async (name: string, url?: string, shouldParse?: boolean) => {
-    if (editingItem) {
-      // Update the existing item in place instead of delete+insert to preserve cooked_at
-      try {
-        // If the existing item has a recipeId, update that recipe; otherwise create a new one
-        let linkedRecipeId = editingItem.recipeId;
-        if (linkedRecipeId) {
-          // Update the existing linked recipe
-          await supabase
-            .from("recipes")
-            .update({ name, url: url || null })
-            .eq("id", linkedRecipeId);
-        } else {
-          // Create a new recipe record
-          const { data: newRecipe, error: recipeError } = await supabase
-            .from("recipes")
-            .insert({
-              name,
-              url: url || null,
-              created_by: userId,
-              event_id: null,
-              ingredient_id: null,
-            })
-            .select("id")
-            .single();
-
-          if (recipeError) throw recipeError;
-          linkedRecipeId = newRecipe.id;
-        }
-
-        const updatePayload = {
-          recipe_id: linkedRecipeId,
-          custom_name: null as string | null,
-          custom_url: null as string | null,
-        };
-        const { error } = await supabase
-          .from("meal_plan_items")
-          .update(updatePayload as typeof updatePayload & { plan_id?: string })
-          .eq("id", editingItem.id);
-
-        if (error) throw error;
-
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === editingItem.id
-              ? { ...item, recipeId: linkedRecipeId, recipeName: name, recipeUrl: url, customName: undefined, customUrl: undefined }
-              : item
-          )
-        );
-        toast.success(`Updated meal to "${name}"`);
-
-        if (shouldParse && linkedRecipeId && url) {
-          setPendingParseRecipeId(linkedRecipeId);
-          setPendingParseName(name);
-          setParseStatus("parsing");
-        }
-      } catch (error) {
-        console.error("Error updating meal:", error);
-        toast.error("Failed to update meal");
-      }
-      setEditingItem(null);
-      setPendingSlot(null);
-      return;
-    }
     // pendingSlot is always set when the dialog is mounted
     const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, url);
     if (shouldParse && recipeId && url) {
@@ -526,39 +425,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   };
 
   const handleAddRecipeMeal = async (recipes: Array<{ id: string; name: string; url?: string }>) => {
-    if (editingItem) {
-      // When editing, update the existing item in place instead of delete+insert
-      // AddMealDialog always validates at least one recipe is selected
-      const firstRecipe = recipes[0]!;
-      try {
-        const updatePayload = {
-          recipe_id: firstRecipe.id,
-          custom_name: null as string | null,
-          custom_url: null as string | null,
-        };
-        const { error } = await supabase
-          .from("meal_plan_items")
-          .update(updatePayload as typeof updatePayload & { plan_id?: string })
-          .eq("id", editingItem.id);
-
-        if (error) throw error;
-
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === editingItem.id
-              ? { ...item, recipeId: firstRecipe.id, recipeName: firstRecipe.name, recipeUrl: firstRecipe.url, customName: undefined, customUrl: undefined }
-              : item
-          )
-        );
-        toast.success(`Updated meal to "${firstRecipe.name}"`);
-      } catch (error) {
-        console.error("Error updating meal:", error);
-        toast.error("Failed to update meal");
-      }
-      setEditingItem(null);
-      setPendingSlot(null);
-      return;
-    }
     // pendingSlot is always set when the dialog is mounted
     for (const recipe of recipes) {
       await addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
@@ -569,7 +435,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const closeAddMealDialog = () => {
     setShowAddMealDialog(false);
     setPendingSlot(null);
-    setEditingItem(null);
   };
 
   const addItemToPlan = async (name: string, dayOfWeek: number, mealType: string, url?: string, recipeId?: string): Promise<string | undefined> => {
@@ -700,161 +565,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   };
 
-  const markSlotAsCooked = async (slotItems: MealPlanItem[], silent = false) => {
-    try {
-      const itemIds = slotItems.map((i) => i.id);
-      const updatePayload = { cooked_at: new Date().toISOString() };
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .update(updatePayload as typeof updatePayload & { plan_id?: string })
-        .in("id", itemIds);
-
-      if (error) throw error;
-
-      const now = new Date().toISOString();
-      setItems((prev) =>
-        prev.map((item) =>
-          itemIds.includes(item.id) ? { ...item, cookedAt: now } : item
-        )
-      );
-      if (!silent) {
-        toast.success("Marked as cooked!");
-      }
-    } catch (error) {
-      console.error("Error marking as cooked:", error);
-      toast.error("Failed to mark as cooked");
-    }
-  };
-
-  const handleMarkCooked = async (dayOfWeek: number, mealType: string) => {
-    const slotItems = items.filter(
-      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
-    );
-    const recipesWithUrls = slotItems.filter((i) => i.recipeId && (i.recipeUrl || i.customUrl));
-
-    if (recipesWithUrls.length === 0) {
-      // No recipes with URLs to rate, just mark as cooked directly
-      await markSlotAsCooked(slotItems);
-      return;
-    }
-
-    // Need an event for the rating dialog
-    let eventId = slotItems.find((i) => i.eventId)?.eventId;
-
-    if (!eventId) {
-      try {
-        const slotDate = new Date(weekStart);
-        slotDate.setDate(slotDate.getDate() + dayOfWeek);
-        const dateStr = slotDate.toISOString().split("T")[0];
-
-        const insertPayload = {
-          event_date: dateStr,
-          status: "scheduled",
-          type: "personal",
-          created_by: userId,
-        };
-        const { data: newEvent, error } = await supabase
-          .from("scheduled_events")
-          .insert(insertPayload as typeof insertPayload & { event_date: string })
-          .select("id")
-          .single();
-
-        if (error) throw error;
-
-        eventId = newEvent.id;
-
-        // Link items to event
-        const itemIds = slotItems.map((i) => i.id);
-        const updatePayload = { event_id: eventId };
-        await supabase
-          .from("meal_plan_items")
-          .update(updatePayload as typeof updatePayload & { plan_id?: string })
-          .in("id", itemIds);
-
-        // Update local state
-        setItems((prev) =>
-          prev.map((item) =>
-            itemIds.includes(item.id) ? { ...item, eventId } : item
-          )
-        );
-      } catch (error) {
-        console.error("Error creating event for ratings:", error);
-        toast.error("Failed to mark as cooked");
-        return;
-      }
-    }
-
-    const slotDate = new Date(weekStart);
-    slotDate.setDate(slotDate.getDate() + dayOfWeek);
-
-    setSelectedSlotForRating({
-      dayOfWeek,
-      mealType,
-      eventId,
-      eventDate: slotDate.toISOString().split("T")[0],
-      recipes: recipesWithUrls.map((item) => ({
-        recipe: {
-          id: item.recipeId!,
-          name: item.recipeName || item.customName || "Unnamed",
-          url: item.recipeUrl || item.customUrl,
-        },
-        notes: [],
-      })),
-    });
-    setRatingDialogOpen(true);
-  };
-
-  const handleRatingComplete = async () => {
-    const slotItems = items.filter(
-      (i) =>
-        i.dayOfWeek === selectedSlotForRating!.dayOfWeek &&
-        i.mealType === selectedSlotForRating!.mealType
-    );
-
-    await markSlotAsCooked(slotItems, true);
-    setRatingDialogOpen(false);
-    setSelectedSlotForRating(null);
-  };
-
-  const handleRatingCancel = () => {
-    setRatingDialogOpen(false);
-    setSelectedSlotForRating(null);
-  };
-
-  const handleUncook = (dayOfWeek: number, mealType: string) => {
-    setUncookConfirmSlot({ dayOfWeek, mealType });
-  };
-
-  const handleConfirmUncook = async () => {
-    const slot = uncookConfirmSlot!;
-    setUncookConfirmSlot(null);
-
-    const slotItems = items.filter(
-      (i) => i.dayOfWeek === slot.dayOfWeek && i.mealType === slot.mealType
-    );
-
-    try {
-      const itemIds = slotItems.map((i) => i.id);
-      const updatePayload = { cooked_at: null as string | null };
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .update(updatePayload as typeof updatePayload & { plan_id?: string })
-        .in("id", itemIds);
-
-      if (error) throw error;
-
-      setItems((prev) =>
-        prev.map((item) =>
-          itemIds.includes(item.id) ? { ...item, cookedAt: undefined } : item
-        )
-      );
-      toast.success("Meal unmarked as cooked");
-    } catch (error) {
-      console.error("Error uncooking meal:", error);
-      toast.error("Failed to uncook meal");
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -905,10 +615,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             items={items}
             weekStart={weekStart}
             onAddMeal={handleAddMeal}
-            onEditMeal={handleEditMeal}
             onViewMealEvent={handleViewMealEvent}
-            onMarkCooked={handleMarkCooked}
-            onUncook={handleUncook}
           />
 
           {pendingSlot && (
@@ -919,8 +626,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               mealType={pendingSlot.mealType}
               onAddCustomMeal={handleAddCustomMeal}
               onAddRecipeMeal={handleAddRecipeMeal}
-              editingItemName={editingItem ? (editingItem.recipeName || editingItem.customName || "Unnamed meal") : undefined}
-              editingItemUrl={editingItem ? (editingItem.recipeUrl || editingItem.customUrl || "") : undefined}
             />
           )}
         </>
@@ -976,35 +681,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         </>
       )}
 
-      {ratingDialogOpen && selectedSlotForRating && (
-        <EventRatingDialog
-          event={{
-            eventId: selectedSlotForRating.eventId,
-            eventDate: selectedSlotForRating.eventDate,
-            ingredientName: `${DAY_NAMES[selectedSlotForRating.dayOfWeek]} ${mealTypeLabels[selectedSlotForRating.mealType]}`,
-          }}
-          recipes={selectedSlotForRating.recipes}
-          userId={userId}
-          onComplete={handleRatingComplete}
-          onCancel={handleRatingCancel}
-          mode="rating"
-        />
-      )}
-
-      <AlertDialog open={!!uncookConfirmSlot} onOpenChange={() => setUncookConfirmSlot(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Undo cook?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will mark the meal as uncooked. Ratings will be preserved.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmUncook}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Parse progress dialog */}
       <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {

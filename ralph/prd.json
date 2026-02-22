@@ -1,0 +1,336 @@
+{
+  "project": "Recipe Club Hub - UX Polish & Tile Simplification",
+  "branchName": "ralph/ux-polish-and-tile-simplification",
+  "description": "Move Done/Undo/Edit actions off meal plan tiles into PersonalMealDetailPage. Fix pluralization, pantry protection, recipe notes from RecipeHub, club recipe deletion, and My Recipes count loading.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Simplify MealPlanSlot — remove Done, Undo, and Edit from tiles",
+      "description": "As a user, I want meal plan tiles to be simple display-only cards so I can click them to navigate to the detail page for all actions.",
+      "acceptanceCriteria": [
+        "MealPlanSlot no longer accepts onEditMeal, onMarkCooked, or onUncook props",
+        "Meal name text is a plain <div> not a clickable <button>",
+        "No Done button or Undo button renders on filled tiles",
+        "The cooked check icon still shows next to meal names when isCooked is true",
+        "The Add button (+) still works on filled tiles",
+        "The tile click still navigates to the detail page via onViewMealEvent",
+        "Hover effects on filled tiles still work (green for cooked, purple for uncooked)",
+        "RotateCcw removed from lucide-react imports (keep Check for cooked icon)",
+        "MealPlanSlot.test.tsx updated: onEditMeal/onMarkCooked/onUncook removed from defaultProps, tests for Edit/Done/Undo clicks removed",
+        "MealPlanSlot.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "activeForm": "Simplifying MealPlanSlot",
+      "notes": "File: src/components/mealplan/MealPlanSlot.tsx (120 lines). Remove from interface (lines 10, 12-13): onEditMeal, onMarkCooked, onUncook. Remove from destructuring (lines 28, 30-31). Remove RotateCcw from lucide import (line 2) — keep Plus and Check (Check is still used for the cooked icon next to meal name on line 73). Replace the <button> wrapping meal name (lines 66-76) with a plain <div> keeping the same text/icon styling but no onClick, no cursor-pointer, no hover:text-purple. Remove Undo button block (lines 83-93). Remove Done button block (lines 94-104). Keep the isCooked check icon next to the name (line 73). Keep the Add button at the bottom (lines 105-112). Keep the sr-only 'Cooked' span (line 59). Tests: tests/unit/components/mealplan/MealPlanSlot.test.tsx — remove onEditMeal, onMarkCooked, onUncook from defaultProps. Remove tests that click 'Edit <name>' buttons, 'Mark as cooked' button, 'Undo cook' button, or assert Done/Undo visibility. Keep tests for: empty slot, filled slot display, Add button, View button click, cooked check icon, cooked styling, hover effects, sr-only 'Cooked' text."
+    },
+    {
+      "id": "US-002",
+      "title": "Simplify MealPlanGrid — remove pass-through props",
+      "description": "As a developer, I want MealPlanGrid to not pass onEditMeal, onMarkCooked, or onUncook to MealPlanSlot since those props no longer exist.",
+      "acceptanceCriteria": [
+        "MealPlanGrid no longer accepts onEditMeal, onMarkCooked, or onUncook in its interface",
+        "MealPlanGrid does not pass these props to MealPlanSlot",
+        "MealPlanGrid.test.tsx updated: removed props from defaultProps, removed pass-through tests",
+        "MealPlanGrid.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": false,
+      "activeForm": "Simplifying MealPlanGrid",
+      "notes": "File: src/components/mealplan/MealPlanGrid.tsx (70 lines). Remove from interface (lines 8, 10-11): onEditMeal, onMarkCooked, onUncook. Remove from destructuring (line 17). Remove from <MealPlanSlot> props (lines 55, 57-58). Tests: tests/unit/components/mealplan/MealPlanGrid.test.tsx — remove onEditMeal, onMarkCooked, onUncook from defaultProps. Remove any tests that verify these props are passed through."
+    },
+    {
+      "id": "US-003",
+      "title": "Remove dead code from MealPlanPage — editing and cooked handlers",
+      "description": "As a developer, I want all dead code related to editing and cooked actions removed from MealPlanPage now that tiles no longer trigger these actions.",
+      "acceptanceCriteria": [
+        "handleEditMeal, markSlotAsCooked, handleMarkCooked, handleRatingComplete, handleRatingCancel, handleUncook, handleConfirmUncook functions removed",
+        "editingItem, ratingDialogOpen, selectedSlotForRating, uncookConfirmSlot state removed",
+        "RatingSlotData interface removed",
+        "Edit branches in handleAddCustomMeal and handleAddRecipeMeal removed (keep only add path)",
+        "setEditingItem(null) removed from closeAddMealDialog",
+        "onEditMeal/onMarkCooked/onUncook props removed from <MealPlanGrid> JSX",
+        "editingItemName/editingItemUrl props removed from <AddMealDialog> JSX",
+        "EventRatingDialog JSX block and Uncook AlertDialog removed",
+        "EventRatingDialog import and EventRecipeWithNotes type import removed",
+        "MealPlanPage.test.tsx updated: edit/cooked/rating/uncook tests removed",
+        "MealPlanPage.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "activeForm": "Removing dead code from MealPlanPage",
+      "notes": "File: src/components/mealplan/MealPlanPage.tsx (~1050 lines). This is a large deletion story — expect to remove ~200 lines. Key state to remove: editingItem (line 72), ratingDialogOpen (line 79), selectedSlotForRating (line 80), uncookConfirmSlot (line 81), RatingSlotData interface (lines 57-63). Functions to remove: handleEditMeal (lines 448-452), markSlotAsCooked (lines 703-727), handleMarkCooked (lines 729-805), handleRatingComplete (lines 807-817), handleRatingCancel (lines 819-822), handleUncook (lines 824-826), handleConfirmUncook (lines 828-852). Edit branches: remove if(editingItem) block from handleAddCustomMeal (lines 455-514) and handleAddRecipeMeal (lines 529-561). In closeAddMealDialog (line 572): remove setEditingItem(null). JSX: remove onEditMeal/onMarkCooked/onUncook from <MealPlanGrid> (lines 908-911), remove editingItemName/editingItemUrl from <AddMealDialog> (lines 922-923), remove EventRatingDialog block (lines 979-992), remove uncook AlertDialog (lines 994-1007). Imports: remove EventRatingDialog (line 20), remove EventRecipeWithNotes from types (line 34). Check if AlertDialog imports are still used elsewhere in the file — if not, remove those imports too. Tests: tests/unit/components/mealplan/MealPlanPage.test.tsx — remove tests that click 'Mark as cooked'/'Done', rating dialog tests, uncook confirmation tests, edit meal dialog tests. Remove editingItem-related mocks. Keep tests for: add meal flow, parse flow, grocery list, navigation, view meal event, combine groceries. Run npm run test:coverage to check for any new uncovered lines."
+    },
+    {
+      "id": "US-004",
+      "title": "Clean up AddMealDialog — remove editing props and logic",
+      "description": "As a developer, I want AddMealDialog to only handle adding meals, not editing, since editing now happens on the detail page.",
+      "acceptanceCriteria": [
+        "editingItemName and editingItemUrl props removed from interface and destructuring",
+        "useEffect that pre-fills name/url on open removed",
+        "resetForm no longer references editingItemName/editingItemUrl",
+        "Dialog title is always 'Add Meal' (not conditional)",
+        "Dialog description is always the add text (not conditional)",
+        "Submit button text is always 'Add to Meal' (not conditional)",
+        "AddMealDialog.test.tsx updated: editing tests removed, editingItemName/editingItemUrl removed from test props",
+        "AddMealDialog.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 4,
+      "passes": false,
+      "activeForm": "Cleaning up AddMealDialog",
+      "notes": "File: src/components/mealplan/AddMealDialog.tsx (371 lines). Remove from interface (lines 32-33): editingItemName, editingItemUrl. Remove from destructuring (lines 49-50). In resetForm (lines 66-67): change `setName(editingItemName || '')` to `setName('')` and `setUrl(editingItemUrl || '')` to `setUrl('')`. Remove the useEffect at lines 75-80 that pre-fills name/url on open. Change title (line 186) from `{editingItemName ? 'Edit Meal' : 'Add Meal'}` to just `'Add Meal'`. Change description (lines 188-192) from conditional to just the add text. Change button text (line 286) from `{editingItemName ? 'Save Changes' : 'Add to Meal'}` to just `'Add to Meal'`. Tests: tests/unit/components/mealplan/AddMealDialog.test.tsx — remove editingItemName/editingItemUrl from test defaultProps. Remove tests for 'Edit Meal' title, 'Save Changes' button, pre-filled name/url values. Keep tests for: add custom meal, add from recipes, search, file upload, URL validation, cancel."
+    },
+    {
+      "id": "US-005",
+      "title": "Add Mark as Cooked / Undo Cook to PersonalMealDetailPage",
+      "description": "As a user, I want to mark a meal as cooked and undo it from the meal detail page so I can manage cooking status there instead of the tile grid.",
+      "acceptanceCriteria": [
+        "meal_plan_items query selects id, recipe_id, and cooked_at (not just recipe_id)",
+        "Event Info card shows a 'Mark as Cooked' button when meal has items and is not cooked",
+        "Clicking 'Mark as Cooked' updates cooked_at on all meal_plan_items for this event",
+        "After marking cooked, a green 'Cooked' badge appears with an 'Undo' button",
+        "Clicking 'Undo' shows a confirmation dialog",
+        "Confirming undo sets cooked_at to null on all meal_plan_items for this event",
+        "Toast messages show on success and error",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "activeForm": "Adding cooked actions to PersonalMealDetailPage",
+      "notes": "File: src/pages/PersonalMealDetailPage.tsx (~950 lines). Data loading: Change line 140 from `.select('recipe_id')` to `.select('id, recipe_id, cooked_at')`. Add state: `mealItems` array to store the meal_plan_items rows, `uncookConfirmOpen` boolean. Derive `isCooked = mealItems.length > 0 && mealItems.every(item => item.cooked_at)`. New imports: add Check and RotateCcw to the lucide-react import (lines 38-48). New functions: handleMarkCooked — `supabase.from('meal_plan_items').update({ cooked_at: new Date().toISOString() }).or('event_id.eq.${eventId}')`, update local mealItems state, toast.success('Marked as cooked!'). handleConfirmUncook — same pattern but `{ cooked_at: null }`, toast.success('Marked as uncooked'). UI: Inside the Event Info card (after line 662), add a div with: if isCooked — green 'Cooked' badge + RotateCcw 'Undo' button; if !isCooked && mealItems.length > 0 — Check 'Mark as Cooked' button. Add an AlertDialog for uncook confirmation. Note: PersonalMealDetailPage is in src/pages/ which is NOT in the required 100% coverage directories."
+    },
+    {
+      "id": "US-006",
+      "title": "EventDetailPage — hard delete recipe on removal from club event",
+      "description": "As a user, when I remove a recipe from a club event I want it fully deleted, not just unlinked. Club recipes should not drift into My Recipes after removal.",
+      "acceptanceCriteria": [
+        "handleConfirmDeleteRecipe in EventDetailPage changes from .update({ event_id: null, ingredient_id: null }) to .delete().eq('id', recipeToDelete.id)",
+        "Dialog text changes from 'The recipe will still be available in your personal recipes.' to 'This will permanently delete the recipe.'",
+        "Dialog title stays 'Remove from event?' or changes to 'Delete recipe?'",
+        "After deletion, the recipe no longer appears in Club tab or My Recipes tab",
+        "Toast message on success: 'Recipe deleted'",
+        "Grocery cache is still cleared after deletion",
+        "EventDetailPage.test.tsx updated: mock assertion changes from .update() to .delete(), dialog text assertion updated",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "activeForm": "Changing club recipe removal to hard delete",
+      "notes": "File: src/pages/EventDetailPage.tsx (~1700 lines). Current code at line 870-886: handleConfirmDeleteRecipe does `supabase.from('recipes').update({ event_id: null, ingredient_id: null }).eq('id', recipeToDelete!.id)`. Change to `supabase.from('recipes').delete().eq('id', recipeToDelete!.id)`. Dialog at lines 1620-1637: change AlertDialogDescription text from 'Remove \"{name}\" from this event? The recipe will still be available in your personal recipes.' to 'Permanently delete \"{name}\"? This cannot be undone.' Change AlertDialogTitle from 'Remove from event?' to 'Delete recipe from event?'. Change toast from 'Recipe removed from event' to 'Recipe deleted'. Keep the deleteGroceryCache and loadEventData calls. Note: This reverts the 'unlink' behavior from the previous PRD's Change 4 for club events specifically. Meal plans (PersonalMealDetailPage) still use the unlink pattern — that's a different flow. EventDetailPage is in src/pages/ which is NOT in required 100% coverage directories, but tests/unit/pages/EventDetailPage.test.tsx exists and must still pass."
+    },
+    {
+      "id": "US-007",
+      "title": "Pantry — protect salt, pepper, and water from removal",
+      "description": "As a user, I want salt, pepper, and water to be non-removable in my pantry so these essential staples are always present.",
+      "acceptanceCriteria": [
+        "The delete (Trash2) button is hidden for items named 'salt', 'pepper', or 'water' (case-insensitive)",
+        "A subtle label like 'Default' or a lock icon appears next to protected items instead of the delete button",
+        "Protected items still display in the pantry list with the same styling",
+        "Non-protected items still have the delete button and confirmation dialog",
+        "DEFAULT_PANTRY_ITEMS from src/lib/pantry.ts is reused for the check (not hardcoded separately)",
+        "PantryContent.test.tsx updated with tests verifying protected items have no delete button",
+        "PantryContent.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 7,
+      "passes": false,
+      "activeForm": "Protecting pantry default items",
+      "notes": "Files: src/components/pantry/PantryContent.tsx (180 lines), src/lib/pantry.ts. PantryContent renders each item with a Trash2 delete button (lines 142-155). To protect defaults: import DEFAULT_PANTRY_ITEMS from @/lib/pantry (currently not exported — need to export it). In PantryContent, check if `DEFAULT_PANTRY_ITEMS.includes(item.name.toLowerCase())`. If true: hide the delete button, optionally show a muted 'Default' badge or lock icon. If false: show the normal delete button. The DEFAULT_PANTRY_ITEMS constant in pantry.ts (line 3) is currently not exported — add `export` to it. Tests: tests/unit/components/pantry/PantryContent.test.tsx — add test rendering with items including 'salt', 'pepper', 'water' and verify those items do NOT have 'Remove salt'/'Remove pepper'/'Remove water' aria-label buttons. Verify non-default items still have delete buttons. Mock @/lib/pantry to include the exported DEFAULT_PANTRY_ITEMS."
+    },
+    {
+      "id": "US-008",
+      "title": "Dashboard — fix 'Club Events' pluralization and rename 'Club Recipes' to 'Total Recipes'",
+      "description": "As a user, I want the dashboard header badges to show correct singular/plural text (e.g., '1 Club Event' not '1 Club Events') and I want the recipes badge to say 'Total Recipes' since the count includes both club and personal recipes.",
+      "acceptanceCriteria": [
+        "When completedEventsCount is 1, displays '1 Club Event' (singular)",
+        "When completedEventsCount is 0 or 2+, displays 'N Club Events' (plural)",
+        "Recipes badge label changes from 'Club Recipes' to 'Total Recipe' (singular) or 'Total Recipes' (plural)",
+        "When userRecipesCount is 1, displays '1 Total Recipe' (singular)",
+        "When userRecipesCount is 0 or 2+, displays 'N Total Recipes' (plural)",
+        "Fix applies to both desktop badges (lines 214-222) and mobile dropdown (lines 241-251)",
+        "Dashboard.test.tsx updated with tests for singular and plural cases",
+        "Dashboard.tsx shows 100% coverage (src/pages/ not required but keep existing tests passing)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 8,
+      "passes": false,
+      "activeForm": "Fixing Dashboard badges",
+      "notes": "File: src/pages/Dashboard.tsx. Four text instances to fix: Line 216: change 'Club Events' to `Club Event${completedEventsCount !== 1 ? 's' : ''}`. Line 220: change 'Club Recipes' to `Total Recipe${userRecipesCount !== 1 ? 's' : ''}`. Line 248: same fix for mobile 'Club Events'. Line 249: same fix for mobile 'Club Recipes' → 'Total Recipes'. The userRecipesCount already includes all recipes (club + personal) based on the query at loadStats — so the label is the only thing wrong. Tests: tests/unit/pages/Dashboard.test.tsx — add test cases where completedEventsCount=1 and assert 'Club Event' (not 'Club Events'), and where count=2 and assert 'Club Events'. For recipes: assert 'Total Recipe' when count=1, 'Total Recipes' when count=2."
+    },
+    {
+      "id": "US-009",
+      "title": "RecipeHub — add notes to recipes from the Recipes tab",
+      "description": "As a user, I want to add notes and photos to recipes directly from the Recipes tab in RecipeHub, not just from the meal detail page.",
+      "acceptanceCriteria": [
+        "RecipeCard has an 'Add Note' button (or similar) that appears for all recipes (club and personal) when a userId is provided",
+        "Clicking 'Add Note' opens a dialog with a textarea for notes and PhotoUpload for photos",
+        "Saving a note creates a recipe_notes row linked to the recipe and current user",
+        "After saving, the note appears in the recipe card's notes section",
+        "The add note dialog follows the same pattern as PersonalMealDetailPage (textarea + PhotoUpload)",
+        "RecipeCard.tsx and RecipeHub.tsx tests updated",
+        "RecipeCard.tsx and RecipeHub.tsx show 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 9,
+      "passes": false,
+      "activeForm": "Adding notes from Recipes tab",
+      "notes": "Files: src/components/recipes/RecipeCard.tsx, src/components/recipes/RecipeHub.tsx. Current state: RecipeCard has no 'Add Note' callback. Notes display inline if they exist (lines 186-240) but there's no way to add one. PersonalMealDetailPage has the full add-note dialog (lines 831-886) with textarea + PhotoUpload. Approach: (1) Add an optional `onAddNote?: (recipe: RecipeWithNotes) => void` prop to RecipeCard. (2) In RecipeCard, add a small 'Add Note' button (similar to the edit rating button) visible when onAddNote is provided. (3) In RecipeHub, add state for the note dialog (noteRecipe, noteText, notePhotos) and a dialog with Textarea + PhotoUpload (reuse the pattern from PersonalMealDetailPage lines 831-886). (4) handleSaveNote: insert into recipe_notes with recipe_id, user_id, notes text, photos array. Then reload recipes. (5) Pass onAddNote={handleAddNote} to RecipeCard for both club and personal tabs. Import PhotoUpload from @/components/recipes/PhotoUpload. Import uploadRecipeFile from @/lib/upload if needed for photo URLs. Tests: Add tests in RecipeCard.test.tsx for the Add Note button visibility and click. Add tests in RecipeHub.test.tsx for the note dialog open/save/cancel flow."
+    },
+    {
+      "id": "US-010",
+      "title": "RecipeHub — allow deletion of club recipes not linked to meal plans",
+      "description": "As a user, I want to delete club recipes from the Recipes tab as long as they aren't linked to any meal plans.",
+      "acceptanceCriteria": [
+        "RecipeCard shows a delete button for club recipes (not just personal recipes)",
+        "RecipeCard delete button condition changes from `recipe.isPersonal && onDelete` to just `onDelete`",
+        "handleDeleteRecipe guard only checks meal_plan_items linkage (removes the `|| recipe?.eventId` condition)",
+        "Club recipes linked to meal_plan_items show the guard message when delete is attempted",
+        "Club recipes NOT linked to meal_plan_items can be deleted successfully",
+        "RecipeHub passes onDelete to RecipeCard for both club and personal tabs",
+        "RecipeCard.tsx and RecipeHub.tsx tests updated",
+        "RecipeCard.tsx and RecipeHub.tsx show 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 10,
+      "passes": false,
+      "activeForm": "Enabling club recipe deletion",
+      "notes": "Files: src/components/recipes/RecipeHub.tsx, src/components/recipes/RecipeCard.tsx. Current state: RecipeCard line 109 gates edit/delete buttons behind `recipe.isPersonal && onEdit && onDelete`. RecipeHub line 586 only passes onDelete for personal tab: `onDelete={subTab === 'personal' ? handleDeleteRecipe : undefined}`. Guard at line 398 blocks deletion if `(mealCount > 0) || recipe?.eventId`. Changes needed: (1) RecipeCard.tsx line 109: Change `{recipe.isPersonal && onEdit && onDelete && (` to show delete button for any recipe when onDelete is provided. Keep edit button gated behind recipe.isPersonal since editing club recipes should go through the event page. So split the conditions: edit button shows if `recipe.isPersonal && onEdit`, delete button shows if `onDelete`. (2) RecipeHub.tsx line 586: Pass `onDelete={handleDeleteRecipe}` for both tabs (remove the subTab conditional). (3) RecipeHub.tsx line 398: Remove `|| recipe?.eventId` from the guard — only check `mealCount && mealCount > 0`. Tests: Update RecipeCard tests to verify delete button appears for club recipes when onDelete is provided. Update RecipeHub tests to verify club recipe deletion works when not linked to meal plans."
+    },
+    {
+      "id": "US-011",
+      "title": "RecipeHub — eagerly load My Recipes count on mount",
+      "description": "As a user, I want to see the My Recipes count immediately when the Recipes tab loads, not only after clicking the My Recipes sub-tab.",
+      "acceptanceCriteria": [
+        "Both clubCount and personalCount are loaded on initial mount",
+        "My Recipes tab button shows the count immediately (e.g., 'My Recipes (5)') without needing to click it first",
+        "Switching between Club and My Recipes tabs still works correctly",
+        "RecipeHub.test.tsx updated to verify both counts load on mount",
+        "RecipeHub.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 11,
+      "passes": false,
+      "activeForm": "Eagerly loading recipe counts",
+      "notes": "File: src/components/recipes/RecipeHub.tsx. Current behavior: useEffect at line 440 fires loadRecipes() when subTab changes. On mount, subTab='club', so only loadClubRecipes() runs (sets clubCount). personalCount stays null until user clicks 'My Recipes' tab. Fix: Add a separate useEffect that runs on mount to load just the counts for both tabs. Create a new function `loadCounts()` that does two lightweight count queries: (1) `supabase.from('recipes').select('*', { count: 'exact', head: true }).not('event_id', 'is', null)` for club count, and (2) `supabase.from('recipes').select('*', { count: 'exact', head: true }).eq('created_by', userId).is('event_id', null)` for personal count. Call loadCounts() in a new useEffect with [userId] dependency, separate from the full data loading useEffect. Actually, simpler approach: in the existing useEffect at line 440, after loading the active tab's recipes, also load just the count for the other tab. OR add a second useEffect that fires on mount to call both loadClubRecipes and loadPersonalRecipes just for counts. Simplest: add a loadBothCounts() function and call it in useEffect on mount. Tests: Verify that when RecipeHub mounts on 'club' tab, personalCount is populated (button shows 'My Recipes (N)')."
+    },
+    {
+      "id": "US-012",
+      "title": "Smart re-parse on recipe edit — only when URL/file changes",
+      "description": "As a user, when I edit a recipe and only change the name, I don't want it to re-parse. It should only re-parse if the URL or file changes.",
+      "acceptanceCriteria": [
+        "EventDetailPage handleSaveRecipeEdit triggers parse-recipe when URL changes",
+        "EventDetailPage handleSaveRecipeEdit does NOT trigger parse-recipe when only name changes",
+        "PersonalMealDetailPage handleSaveRecipeEdit triggers parse-recipe when URL changes",
+        "PersonalMealDetailPage handleSaveRecipeEdit does NOT trigger parse-recipe when only name changes",
+        "Re-parse uses background invoke pattern (fire-and-forget with loadEventData on success)",
+        "Toast on successful re-parse: 'Recipe updated and re-parsed!'",
+        "Toast on name-only update: 'Recipe updated!' (no re-parse mention)",
+        "EventDetailPage.test.tsx updated to verify parse-recipe is/isn't called based on URL change",
+        "PersonalMealDetailPage.test.tsx updated similarly",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "activeForm": "Adding smart re-parse on edit",
+      "notes": "Files: src/pages/EventDetailPage.tsx, src/pages/PersonalMealDetailPage.tsx. Both files have handleSaveRecipeEdit that updates name/url via supabase.from('recipes').update(). Neither currently triggers re-parse on edit. EventDetailPage already has `const urlChanged = (recipeToEdit!.url || '') !== (editRecipeUrl.trim() || '')` at line 751, but only uses it for notifications. Reuse this check to also trigger parse. PersonalMealDetailPage needs the same urlChanged check added. For both: after the successful update, if urlChanged and the new URL is non-empty, call `supabase.functions.invoke('parse-recipe', { body: { recipeId: recipeToEdit.id, recipeUrl: newUrl, recipeName: newName } })` in background (.then pattern, same as PersonalMealDetailPage line 367). If urlChanged, toast 'Recipe updated and re-parsed!'. If !urlChanged, toast 'Recipe updated!'. EventDetailPage already has full parse infrastructure (parseStatus, RecipeParseProgress) — for the EDIT case, use the simpler background invoke pattern (not the full stepper) since the recipe already exists. Both pages are in src/pages/ (not in required 100% coverage), but existing tests must pass and new assertions should verify the invoke/no-invoke behavior."
+    },
+    {
+      "id": "US-013",
+      "title": "RecipeCard — show parsed ingredients in expandable section",
+      "description": "As a user, I want to see a recipe's parsed ingredients directly on its card in the Recipes tab, in an expandable section, so I can quickly check what's needed without navigating elsewhere.",
+      "acceptanceCriteria": [
+        "RecipeHub loads recipe_ingredients and recipe_content alongside recipe metadata",
+        "RecipeCard receives ingredient data and displays an expandable 'Ingredients' section",
+        "When collapsed, shows ingredient count (e.g., '8 ingredients')",
+        "When expanded, lists ingredients grouped by category with quantity/unit/name",
+        "If recipe has no parsed ingredients and has a URL, shows a 'Parse Ingredients' button",
+        "If recipe_content status is 'parsing', shows a spinner instead of ingredients",
+        "If recipe_content status is 'failed', shows 'Parsing failed' with option to retry",
+        "Adding a recipe through the Recipes tab (both club and personal) still triggers parse-recipe if URL is present",
+        "RecipeCard.tsx and RecipeHub.tsx tests updated",
+        "RecipeCard.tsx and RecipeHub.tsx show 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 13,
+      "passes": false,
+      "activeForm": "Adding ingredients display to RecipeCard",
+      "notes": "This is a larger story touching data loading, display, and interaction. Split into sub-tasks:\n\n**1. Data Loading (RecipeHub.tsx):**\nAfter loading recipes in loadClubRecipes/loadPersonalRecipes, also load recipe_ingredients and recipe_content for those recipe IDs. Add state: `recipeIngredientsMap: Record<string, RecipeIngredient[]>` and `recipeContentMap: Record<string, RecipeContent>`. Query pattern (same as EventDetailPage lines 359-413):\n- `supabase.from('recipe_ingredients').select('*').in('recipe_id', recipeIds)` → map to RecipeIngredient[], group by recipeId\n- `supabase.from('recipe_content').select('*').in('recipe_id', recipeIds)` → map to RecipeContent, key by recipeId\nImport RecipeIngredient, RecipeContent from @/types.\n\n**2. RecipeCard Props (RecipeCard.tsx):**\nAdd optional props: `ingredients?: RecipeIngredient[]`, `contentStatus?: RecipeContent['status']`, `onParseRecipe?: (recipeId: string) => void`. These are optional so existing usages (EventRecipesTab) don't break.\n\n**3. Expandable Ingredients UI (RecipeCard.tsx):**\nAdd below the existing details section (after notes). Use a collapsible pattern:\n- Header: clickable div with ChevronDown/ChevronUp icon + 'N ingredients' text\n- Collapsed by default\n- Expanded: list ingredients grouped by category. Use the category grouping pattern from GroceryListSection (groupByCategory in src/lib/groceryList.ts). Each ingredient: `{quantity} {unit} {name}` in a simple list.\n- If contentStatus === 'parsing': show Loader2 spinner + 'Parsing ingredients...'\n- If contentStatus === 'failed': show 'Parsing failed' text\n- If no ingredients and recipe has URL and contentStatus !== 'completed': show 'Parse Ingredients' button that calls onParseRecipe(recipe.id)\n\n**4. Parse trigger (RecipeHub.tsx):**\nAdd handleParseRecipe function: calls `supabase.functions.invoke('parse-recipe', { body: { recipeId, recipeUrl, recipeName } })`. On success, reload recipe data. Pass as onParseRecipe to RecipeCard. The existing add-recipe flows (handleAddPersonalRecipe in RecipeHub, handleSubmitRecipe in add forms) already trigger parsing when URL is present — verify this still works.\n\n**5. Category display helper:**\nReuse `CATEGORY_LABELS` and `CATEGORY_ORDER` from src/lib/groceryList.ts for consistent category naming. Import groupByCategory or create a simple local grouping.\n\nKey types from src/types/index.ts: RecipeIngredient (lines 106-116), RecipeContent (lines 90-104), GroceryCategory (lines 78-88).\nExisting loading pattern: EventDetailPage loadGroceryData (lines 359-413) — follow the same DB→type mapping."
+    },
+    {
+      "id": "US-014",
+      "title": "PersonalMealDetailPage — replace Add Recipe with full Add Meal flow + parse progress",
+      "description": "As a user, when I add a recipe from inside the meal detail page, I want the same experience as adding from the main meal plan — the full AddMealDialog (Custom Meal + From Recipes tabs, file upload) and the multi-step parse progress bar with combining.",
+      "acceptanceCriteria": [
+        "PersonalMealDetailPage replaces its custom 'Add a Recipe' dialog with the shared AddMealDialog component",
+        "AddMealDialog opens with the correct dayOfWeek and mealType for this meal's slot",
+        "Both 'Custom Meal' and 'From Recipes' tabs work from the detail page",
+        "When a recipe with a URL is added, the RecipeParseProgress stepper dialog appears (saving → parsing → loading → combining → done)",
+        "The combine step shows when 2+ recipes with URLs exist in this meal",
+        "After parse completes, the recipe list refreshes automatically",
+        "The old inline recipe form (name + url + file upload) and related state are removed from PersonalMealDetailPage",
+        "File upload still works through AddMealDialog's built-in upload button",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 14,
+      "passes": false,
+      "activeForm": "Replacing Add Recipe with Add Meal flow",
+      "notes": "File: src/pages/PersonalMealDetailPage.tsx (~950 lines). This is a significant refactor of the add-recipe flow.\n\n**What to remove from PersonalMealDetailPage:**\n- recipeName/setRecipeName state\n- recipeUrl/setRecipeUrl state\n- isSubmitting/setIsSubmitting state\n- isUploadingRecipeImage state + uploadingFileName\n- recipeImageInputRef\n- handleRecipeImageUpload function (lines ~300-332)\n- handleSubmitRecipe function (lines ~334-383) — this is the old fire-and-forget parse\n- The entire 'Add a Recipe' Dialog JSX (lines ~684-760) — name input, URL input, file upload button, submit button\n- isValidUrl helper (if only used here)\n\n**What to add:**\n- Import AddMealDialog from @/components/mealplan/AddMealDialog\n- Import RecipeParseProgress from @/components/recipes/RecipeParseProgress\n- Import Dialog, DialogContent, DialogHeader, DialogTitle from UI (if not already imported — they are already imported)\n- State: showAddMealDialog, parseStatus ('idle'|'parsing'|'failed'), pendingParseRecipeId, pendingParseName, parseStep ('saving'|'parsing'|'loading'|'combining'|'done'), showCombineStep\n- Derive dayOfWeek and mealType from the meal_plan_items data or the event. The meal page is loaded via /meals/{eventId} — it may not have dayOfWeek/mealType directly. Check how MealPlanPage navigates to the detail page (handleViewMealEvent). The meal_plan_items table has day_of_week and meal_type columns. Load these along with existing meal data.\n- handleAddCustomMeal: Similar to MealPlanPage's ADD branch — insert recipe, insert meal_plan_item linked to the event, trigger parse if URL present\n- handleAddRecipeMeal: Similar — insert meal_plan_items for selected existing recipes\n- Parse useEffect: Same pattern as MealPlanPage lines 358-408 — invoke parse-recipe, step through saving→parsing→loading→combining→done\n- Replace the old Dialog with: <AddMealDialog open={showAddMealDialog} onOpenChange={...} dayOfWeek={dayOfWeek} mealType={mealType} onAddCustomMeal={handleAddCustomMeal} onAddRecipeMeal={handleAddRecipeMeal} />\n- Add parse progress Dialog: same pattern as MealPlanPage lines 1009-1050\n\n**Key challenge:** PersonalMealDetailPage currently creates recipes linked to event_id but doesn't create meal_plan_items in handleSubmitRecipe. The MealPlanPage flow creates meal_plan_items (via addItemToPlan). The detail page will need to also create a meal_plan_item when adding a recipe, or just create the recipe and link it to the event (current pattern). Check which approach is correct for the data model.\n\n**The 'onAddRecipeClick' callback** currently passed to EventRecipesTab (line 675): `onAddRecipeClick={() => setShowAddForm(true)}` — change to `() => setShowAddMealDialog(true)`.\n\nNote: PersonalMealDetailPage is in src/pages/ (not required 100% coverage), but existing tests must pass."
+    },
+    {
+      "id": "US-015",
+      "title": "Inline rating editing on recipe cards in EventRecipesTab",
+      "description": "As a user, I want to rate or edit a recipe's rating directly on the recipe card in EventRecipesTab (inside meal/event detail pages), instead of having to open the hamburger menu and rate all recipes at once.",
+      "acceptanceCriteria": [
+        "EventRecipesTab shows a rate/edit-rating button next to each recipe's rating stars (or where stars would be)",
+        "Recipes with no rating yet show a 'Rate' button",
+        "Recipes with an existing rating show a pencil icon to edit the rating (same pattern as RecipeCard in RecipeHub)",
+        "Clicking the rate/edit button opens EventRatingDialog for that single recipe (not all recipes)",
+        "After rating, the rating display updates inline without a full page reload",
+        "The hamburger menu 'Rate Recipes' option can remain as a convenience for rating all at once",
+        "EventRecipesTab interface gains an onRateRecipe callback prop",
+        "PersonalMealDetailPage and EventDetailPage wire up onRateRecipe to open EventRatingDialog for the single recipe",
+        "EventRecipesTab.test.tsx updated with tests for rate button visibility and click",
+        "EventRecipesTab.tsx shows 100% coverage",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 15,
+      "passes": false,
+      "activeForm": "Adding inline rating to EventRecipesTab",
+      "notes": "Files: src/components/events/EventRecipesTab.tsx (~337 lines), src/pages/PersonalMealDetailPage.tsx, src/pages/EventDetailPage.tsx.\n\n**EventRecipesTab changes:**\n- Add `onRateRecipe?: (recipe: EventRecipeWithNotes) => void` to the interface (lines 43-56)\n- In the recipe card rendering, near the rating stars display (lines 145-182): add a button. If the recipe has ratings from the current user, show a pencil icon (Edit2/Pencil from lucide-react). If no user rating exists, show a 'Rate' text button or star outline icon.\n- Pattern to follow: RecipeCard.tsx lines 158-168 — the pencil icon button next to stars with `onEditRating` callback.\n- The rating stars in EventRecipesTab currently show when `ratingSummary.totalRatings > 0` (around line 145). For recipes with no ratings, no stars show at all. Add a 'Rate' button that shows even when there are no ratings yet, so users can rate any recipe.\n\n**PersonalMealDetailPage changes:**\n- Currently has ratingEvent/ratingRecipes/ratingMode state and opens EventRatingDialog from hamburger menu (line 624-627).\n- Add a handleRateRecipe callback: `(recipe) => { setRatingRecipes([recipe]); setRatingEvent(eventData); setRatingMode('rating'); setShowRatingDialog(true); }` — opens dialog for just that one recipe.\n- Pass `onRateRecipe={handleRateRecipe}` to EventRecipesTab (line ~675).\n- Keep the hamburger menu 'Rate Recipes' option as-is (it rates all).\n\n**EventDetailPage changes:**\n- Same pattern as PersonalMealDetailPage — add handleRateRecipe callback.\n- Pass to EventRecipesTab.\n- Keep hamburger menu option.\n\n**EventRatingDialog compatibility:**\n- Already supports receiving a single recipe in the recipes[] array — no changes needed to EventRatingDialog itself.\n- mode: 'rating' is correct for this use case.\n\n**Tests:**\n- EventRecipesTab.test.tsx: Add tests that render with onRateRecipe, verify rate/edit button appears, verify click calls onRateRecipe with correct recipe. Test both cases: recipe with existing rating (pencil icon) and recipe without rating ('Rate' button).\n- PersonalMealDetailPage and EventDetailPage are in src/pages/ (not required 100% coverage), but existing tests must pass."
+    },
+    {
+      "id": "US-016",
+      "title": "Final verification — coverage, build, lint",
+      "description": "As a developer, I want to verify that all required files maintain 100% test coverage, the build compiles cleanly, and lint passes.",
+      "acceptanceCriteria": [
+        "npm run test:coverage shows 100% Stmts, Branch, Funcs, Lines on all files in src/components/events/, src/components/ingredients/, src/components/mealplan/, src/components/recipes/, src/lib/",
+        "IngredientWheel.tsx is the only exception (~55% acceptable)",
+        "npm run build passes with no TypeScript errors",
+        "npm run lint passes",
+        "No orphaned imports or unused variables"
+      ],
+      "priority": 16,
+      "passes": false,
+      "activeForm": "Running final verification",
+      "notes": "Run npm run test:coverage and check every row in the coverage report. All files in the required directories must show 100%. If any file has gaps (Uncovered Line #s column), read the source lines, understand what branch is missed, and add targeted tests. Common fixes: add a test that exercises an uncovered branch, or remove dead code that creates an unreachable branch. Then run npm run build and npm run lint. Fix any TypeScript errors or lint issues. Key files to watch: MealPlanSlot.tsx, MealPlanGrid.tsx, MealPlanPage.tsx, AddMealDialog.tsx, PantryContent.tsx, RecipeCard.tsx, RecipeHub.tsx, pantry.ts. PersonalMealDetailPage.tsx, EventDetailPage.tsx, and Dashboard.tsx are in src/pages/ which is NOT in the required 100% coverage list, but their existing tests must still pass."
+    }
+  ]
+}
