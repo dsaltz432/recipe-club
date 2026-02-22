@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@tests/utils";
+import { render, screen, fireEvent } from "@tests/utils";
 import HomeSection from "@/components/home/HomeSection";
 import { createMockUser, createMockEvent, createMockIngredient } from "@tests/utils";
 import type { Ingredient } from "@/types";
+
+// Mock react-router-dom
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return { ...actual, useNavigate: () => mockNavigate };
+});
 
 // Mock supabase (needed by CountdownCard)
 vi.mock("@/integrations/supabase/client", () => ({
@@ -140,6 +147,12 @@ describe("HomeSection", () => {
       render(<HomeSection {...defaultProps} isAdmin={false} />);
       expect(screen.queryByTestId("ingredient-wheel")).not.toBeInTheDocument();
       expect(screen.queryByTestId("ingredient-bank")).not.toBeInTheDocument();
+    });
+
+    it("navigates to /dashboard/recipes when Browse Recipes is clicked", () => {
+      render(<HomeSection {...defaultProps} isAdmin={false} />);
+      fireEvent.click(screen.getByText("Browse Recipes"));
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard/recipes");
     });
   });
 });
