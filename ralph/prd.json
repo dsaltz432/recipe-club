@@ -123,7 +123,7 @@
         "Tests pass"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "activeForm": "Changing club recipe removal to hard delete",
       "notes": "File: src/pages/EventDetailPage.tsx (~1700 lines). Current code at line 870-886: handleConfirmDeleteRecipe does `supabase.from('recipes').update({ event_id: null, ingredient_id: null }).eq('id', recipeToDelete!.id)`. Change to `supabase.from('recipes').delete().eq('id', recipeToDelete!.id)`. Dialog at lines 1620-1637: change AlertDialogDescription text from 'Remove \"{name}\" from this event? The recipe will still be available in your personal recipes.' to 'Permanently delete \"{name}\"? This cannot be undone.' Change AlertDialogTitle from 'Remove from event?' to 'Delete recipe from event?'. Change toast from 'Recipe removed from event' to 'Recipe deleted'. Keep the deleteGroceryCache and loadEventData calls. Note: This reverts the 'unlink' behavior from the previous PRD's Change 4 for club events specifically. Meal plans (PersonalMealDetailPage) still use the unlink pattern — that's a different flow. EventDetailPage is in src/pages/ which is NOT in required 100% coverage directories, but tests/unit/pages/EventDetailPage.test.tsx exists and must still pass."
     },

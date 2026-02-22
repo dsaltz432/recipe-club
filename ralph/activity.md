@@ -20,8 +20,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 5
-**Current Task:** US-005 complete
+**Tasks Completed:** 6
+**Current Task:** US-006 complete
 
 ---
 
@@ -158,5 +158,35 @@
 - The `cooked_at` column on meal_plan_items is not in the generated Supabase types. Use `as Record<string, unknown>` for update payloads and row access, and `select("*")` instead of naming columns that don't exist in types.
 - PersonalMealDetailPage is in src/pages/ which does NOT require 100% coverage, so no new tests were needed for this story.
 - The mealItems state is populated from loadEventData and updated optimistically in handleMarkCooked/handleConfirmUncook for instant UI feedback.
+- Club recipe deletion in EventDetailPage uses `.delete()` (hard delete), not `.update()` (unlink). Meal plan recipes in PersonalMealDetailPage still use the unlink pattern.
+
+---
+
+## 2026-02-22 12:00 — US-006: EventDetailPage — hard delete recipe on removal from club event
+
+### What was implemented
+- Changed `handleConfirmDeleteRecipe` from `.update({ event_id: null, ingredient_id: null })` to `.delete()` — recipes are now permanently deleted, not unlinked
+- Changed dialog title from "Remove from event?" to "Delete recipe from event?"
+- Changed dialog description from "The recipe will still be available in your personal recipes." to "Permanently delete...? This cannot be undone."
+- Changed dialog action button text from "Remove" to "Delete"
+- Changed success toast from "Recipe removed from event" to "Recipe deleted"
+- Changed error toast from "Failed to remove recipe" to "Failed to delete recipe"
+- Kept `deleteGroceryCache` and `loadEventData` calls after deletion
+- Updated test assertions: mock changed from `.update()` to `.delete()`, dialog text assertions updated, toast message assertions updated
+
+### Files changed
+- src/pages/EventDetailPage.tsx
+- tests/unit/pages/EventDetailPage.test.tsx
+
+### Quality checks
+- Build: pass
+- Tests: pass (1575 tests, 55 files)
+- Lint: pass (0 errors, 17 pre-existing warnings)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- The test file has multiple tests verifying the same delete recipe flow (lines 829, 1335, 3914). All need updating when behavior changes.
+- The error test mock needed to change from `update:` to `delete:` in the mock return value, matching the new Supabase call pattern.
+- PersonalMealDetailPage still uses the unlink pattern for meal plan recipes — different from club event deletion.
 
 ---

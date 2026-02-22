@@ -836,7 +836,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
+      expect(screen.getByText("Delete recipe from event?")).toBeInTheDocument();
     });
   });
 
@@ -1342,17 +1342,17 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
+      expect(screen.getByText("Delete recipe from event?")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Remove"));
+    fireEvent.click(screen.getByText("Delete"));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe removed from event");
+      expect(toast.success).toHaveBeenCalledWith("Recipe deleted");
     });
   });
 
-  it("handles remove recipe from event error", async () => {
+  it("handles delete recipe from event error", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
         return {
@@ -1370,8 +1370,8 @@ describe("EventDetailPage", () => {
               order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
             }),
           }),
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: { message: "Update error" } }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: { message: "Delete error" } }),
           }),
         };
       }
@@ -1394,13 +1394,13 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
+      expect(screen.getByText("Delete recipe from event?")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Remove"));
+    fireEvent.click(screen.getByText("Delete"));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to remove recipe");
+      expect(toast.error).toHaveBeenCalledWith("Failed to delete recipe");
     });
 
     consoleSpy.mockRestore();
@@ -3922,14 +3922,14 @@ describe("EventDetailPage", () => {
     fireEvent.click(screen.getByText("Delete Chicken Parm"));
 
     await waitFor(() => {
-      expect(screen.getByText("Remove from event?")).toBeInTheDocument();
+      expect(screen.getByText("Delete recipe from event?")).toBeInTheDocument();
     });
 
-    const removeBtn = screen.getByRole("button", { name: /remove/i });
-    fireEvent.click(removeBtn);
+    const deleteBtn = screen.getByRole("button", { name: /^delete$/i });
+    fireEvent.click(deleteBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe removed from event");
+      expect(toast.success).toHaveBeenCalledWith("Recipe deleted");
     });
   });
 

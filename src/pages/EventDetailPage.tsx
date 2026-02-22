@@ -871,16 +871,16 @@ const EventDetailPage = () => {
     try {
       const { error } = await supabase
         .from("recipes")
-        .update({ event_id: null, ingredient_id: null })
+        .delete()
         .eq("id", recipeToDelete!.id);
       if (error) throw error;
       setRecipeToDelete(null);
-      toast.success("Recipe removed from event");
+      toast.success("Recipe deleted");
       deleteGroceryCache("event", eventId!, user!.id);
       loadEventData();
     } catch (error) {
-      console.error("Error removing recipe from event:", error);
-      toast.error("Failed to remove recipe");
+      console.error("Error deleting recipe:", error);
+      toast.error("Failed to delete recipe");
       setRecipeToDelete(null);
     }
   };
@@ -1619,9 +1619,9 @@ const EventDetailPage = () => {
       <AlertDialog open={!!recipeToDelete} onOpenChange={(open) => !open && setRecipeToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from event?</AlertDialogTitle>
+            <AlertDialogTitle>Delete recipe from event?</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove &quot;{recipeToDelete?.name}&quot; from this event? The recipe will still be available in your personal recipes.
+              Permanently delete &quot;{recipeToDelete?.name}&quot;? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1630,7 +1630,7 @@ const EventDetailPage = () => {
               onClick={handleConfirmDeleteRecipe}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
