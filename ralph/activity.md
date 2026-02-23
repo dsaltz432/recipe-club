@@ -20,11 +20,14 @@
 - EventDetailPage tabs mock: uses `<button role="tab">{children}</button>` — accessible name comes from all child text including hidden spans (JSDOM ignores CSS)
 - AuthGuard.tsx uses a module-level `refreshTokenListenerRegistered` flag to prevent duplicate onAuthStateChange listeners (multiple AuthGuard instances mount per-route)
 - user_tokens table type definition added to src/integrations/supabase/types.ts (migration created in US-009, types manually added)
+- Edge function auth pattern: use SUPABASE_ANON_KEY + user's Authorization header to get user identity, then SUPABASE_SERVICE_ROLE_KEY to read privileged data (user_tokens)
+- Google OAuth token refresh: POST to https://oauth2.googleapis.com/token with client_id, client_secret, refresh_token, grant_type=refresh_token
+- google-calendar edge function supports actions: create, update, delete — all via the same endpoint
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 10
-**Current Task:** US-010 complete
+**Tasks Completed:** 11
+**Current Task:** US-011 complete
 
 ---
 
@@ -302,5 +305,41 @@
 - Module-level flags in React components prevent duplicate side effects when multiple instances mount — useful for singleton listeners like onAuthStateChange
 - `prompt: 'consent'` forces Google to re-show consent screen, which is the only way to get a refresh_token after first OAuth — subsequent logins without this param don't return a refresh token
 - AuthGuard tests need to mock `@/integrations/supabase/client` after adding the import — use `vi.hoisted()` for mock factories and `vi.mock()` for the module
+
+---
+
+## 2026-02-22 19:30 — US-011: Edge function — google-calendar for create/update/delete with token refresh
+
+### What was implemented
+- Created new edge function `supabase/functions/google-calendar/index.ts` with `deno.json`
+- Accepts `{ action, calendarEventId?, date, time, ingredientName, attendeeEmails? }` request body
+- Reads user's refresh_token from `user_tokens` table using JWT user ID (extracted via SUPABASE_ANON_KEY + Authorization header, then service role for token lookup)
+- Exchanges refresh_token for fresh access_token via Google's `https://oauth2.googleapis.com/token` endpoint
+- Supports three actions:
+  - `create`: Creates calendar event with attendees, Google Meet conference, and reminders (24hr email, 1hr popup)
+  - `update`: PATCH event with new date/time/title
+  - `delete`: DELETE event (treats 404 as success — already deleted)
+- Returns `{ success, eventId?, error? }` for all actions
+- Uses GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from env (Supabase secrets)
+- Gracefully handles missing refresh token with clear error message
+- Gracefully handles missing Google credentials with console.warn and error response
+- verify_jwt enforced by checking Authorization header and validating user via supabase.auth.getUser()
+
+### Files changed
+- supabase/functions/google-calendar/index.ts (new — 284 lines)
+- supabase/functions/google-calendar/deno.json (new — 5 lines)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1638/1638, 55 test files)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: not affected (edge functions not in required coverage directories)
+
+### Learnings for future iterations
+- Edge function auth pattern: create a Supabase client with ANON_KEY + forwarded Authorization header to identify the user, then a separate admin client with SERVICE_ROLE_KEY to access privileged tables
+- Google OAuth token refresh endpoint returns `{ access_token, expires_in, token_type }` — only need the access_token
+- For calendar events, use `America/New_York` timezone server-side (consistent with the app's user base) rather than `Intl.DateTimeFormat().resolvedOptions().timeZone` which varies by runtime
+- The `conferenceDataVersion=1` query param on the Calendar API create endpoint is required to enable Google Meet link generation
+- Delete returning 404 should be treated as success (event already deleted) — same pattern as the client-side implementation
 
 ---
