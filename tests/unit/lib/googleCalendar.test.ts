@@ -331,7 +331,7 @@ describe("Google Calendar Functions", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.eventId).toMatch(/^dev-calendar-/);
+      expect(result.eventId).toBe("dev-mode-event-id");
       expect(mockInvoke).not.toHaveBeenCalled();
     });
 
