@@ -95,11 +95,7 @@ vi.mock("@/components/recipes/RecipeHub", () => ({
   default: () => <div data-testid="recipe-hub">RecipeHub</div>,
 }));
 
-vi.mock("@/components/pantry/PantryDialog", () => ({
-  default: ({ open }: { open: boolean }) => (
-    open ? <div data-testid="pantry-dialog">PantryDialog</div> : null
-  ),
-}));
+// PantryDialog removed — pantry is now a tab in MealPlanPage
 
 describe("Dashboard", () => {
   beforeEach(() => {
@@ -558,7 +554,7 @@ describe("Dashboard", () => {
     expect(menuBtn).toBeInTheDocument();
   });
 
-  it("renders pantry dialog when user id exists", async () => {
+  it("does not show My Pantry in hamburger menu (pantry moved to Meals tab)", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Test",
@@ -573,9 +569,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // PantryDialog is rendered when user.id exists (though not visible until opened)
-    // The mock renders null when open is false, which is the default
-    expect(screen.queryByTestId("pantry-dialog")).not.toBeInTheDocument();
+    // My Pantry should no longer appear in the dropdown
+    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
   });
 
   // --- loadStats error ---
@@ -634,9 +629,9 @@ describe("Dashboard", () => {
     consoleSpy.mockRestore();
   });
 
-  // --- PantryDialog not shown when user has no id ---
+  // --- No My Pantry when user has no id ---
 
-  it("does not show PantryDialog when user has no id", async () => {
+  it("does not show My Pantry menu item when user has no id", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: null,
       name: "Test",
@@ -651,7 +646,7 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    expect(screen.queryByTestId("pantry-dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
   });
 
   // --- onEventChange passed to RecipeClubEvents ---
@@ -797,7 +792,7 @@ describe("Dashboard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/users");
   });
 
-  it("clicks My Pantry opens pantry dialog", async () => {
+  it("hamburger menu does not contain My Pantry entry", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Test",
@@ -812,8 +807,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("My Pantry"));
-    expect(screen.getByTestId("pantry-dialog")).toBeInTheDocument();
+    // My Pantry has been removed from the hamburger menu
+    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
   });
 
   // --- handleTabChange (lines 31-33) ---

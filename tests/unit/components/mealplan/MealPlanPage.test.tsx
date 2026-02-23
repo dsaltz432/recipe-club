@@ -13,12 +13,13 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-// Mock PantryDialog
-vi.mock("@/components/pantry/PantryDialog", () => ({
-  default: ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) =>
-    open ? (
-      <div data-testid="pantry-dialog">
-        <button onClick={() => onOpenChange(false)}>Close Pantry</button>
+// Mock PantrySection
+vi.mock("@/components/pantry/PantrySection", () => ({
+  default: ({ userId, onPantryChange }: { userId?: string; onPantryChange?: () => void }) =>
+    userId ? (
+      <div data-testid="pantry-section">
+        <span>My Pantry</span>
+        <button onClick={onPantryChange}>Refresh Pantry</button>
       </div>
     ) : null,
 }));
@@ -1094,33 +1095,25 @@ describe("MealPlanPage", () => {
       ).toBeInTheDocument();
     });
 
-    it("shows Manage Pantry button and opens PantryDialog on click", async () => {
+    it("shows Pantry tab and renders PantrySection on click", async () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
         expect(screen.getByText("Meals")).toBeInTheDocument();
       });
 
-      // Switch to Groceries tab
-      fireEvent.click(screen.getByText("Groceries"));
+      // Pantry tab should be visible
+      expect(screen.getByText("Pantry")).toBeInTheDocument();
 
-      // Manage Pantry button should be visible
-      const manageButton = screen.getByRole("button", { name: /Manage Pantry/ });
-      expect(manageButton).toBeInTheDocument();
-
-      // Click to open PantryDialog
-      fireEvent.click(manageButton);
+      // Switch to Pantry tab
+      fireEvent.click(screen.getByText("Pantry"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("pantry-dialog")).toBeInTheDocument();
+        expect(screen.getByTestId("pantry-section")).toBeInTheDocument();
       });
 
-      // Close the dialog
-      fireEvent.click(screen.getByText("Close Pantry"));
-
-      await waitFor(() => {
-        expect(screen.queryByTestId("pantry-dialog")).not.toBeInTheDocument();
-      });
+      // PantrySection should display pantry content
+      expect(screen.getByText("My Pantry")).toBeInTheDocument();
     });
 
     it("loads grocery data when switching to Groceries tab with meals", async () => {
@@ -1615,7 +1608,7 @@ describe("MealPlanPage", () => {
       expect(mockInvoke).not.toHaveBeenCalled();
     });
 
-    it("switches between Meal Plan and Groceries tabs", async () => {
+    it("switches between Meal Plan, Groceries, and Pantry tabs", async () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
@@ -1630,6 +1623,14 @@ describe("MealPlanPage", () => {
 
       // Day headers should be hidden (grid is not shown)
       expect(screen.queryByText("Sun")).not.toBeInTheDocument();
+
+      // Switch to Pantry tab
+      fireEvent.click(screen.getByText("Pantry"));
+
+      // Should show pantry section
+      expect(screen.getByTestId("pantry-section")).toBeInTheDocument();
+      // Groceries empty state should be hidden
+      expect(screen.queryByText("No meals planned this week. Add meals to see a grocery list.")).not.toBeInTheDocument();
 
       // Switch back to Meal Plan tab
       fireEvent.click(screen.getByText("Meal Plan"));

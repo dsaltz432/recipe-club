@@ -1263,7 +1263,7 @@ const EventDetailPage = () => {
             </TabsTrigger>
             <TabsTrigger value="grocery" className="flex items-center gap-1.5">
               <ShoppingCart className="h-4 w-4" />
-              <span className="hidden sm:inline">Grocery</span>
+              <span className="hidden sm:inline">Groceries</span>
             </TabsTrigger>
             <TabsTrigger value="pantry" className="flex items-center gap-1.5">
               <UtensilsCrossed className="h-4 w-4" />

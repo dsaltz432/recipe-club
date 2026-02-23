@@ -148,7 +148,7 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "activeForm": "Standardizing pantry and grocery naming",
       "notes": "Multiple files:\n\n**MealPlanPage.tsx:**\n- Current tabs (lines 580-602): 'Meal Plan' and 'Groceries'\n- Add a third tab 'Pantry' with UtensilsCrossed icon, value='pantry'\n- Update viewTab type from `'plan' | 'groceries'` to `'plan' | 'groceries' | 'pantry'` (line 44)\n- Remove the 'Manage Pantry' button (lines 636-646)\n- Add Pantry tab content: render PantrySection (import from @/components/pantry/PantrySection) when viewTab === 'pantry'\n- Remove showPantryDialog state (line 50) and PantryDialog JSX if no longer used\n\n**EventDetailPage.tsx:**\n- Line 1266: Change tab text from 'Grocery' to 'Groceries'\n- Keep existing 'Pantry' tab as-is (already correct)\n\n**Dashboard.tsx:**\n- Lines 262-265: Remove 'My Pantry' menu item from hamburger dropdown\n- Remove showPantryDialog state (line 43) and PantryDialog JSX if present\n- Remove PantryDialog import if no longer used\n\nTests: Update MealPlanPage tests for the new three-tab structure. Verify 'Pantry' tab renders pantry content. Remove tests for 'Manage Pantry' button. Dashboard tests: remove tests for 'My Pantry' menu item if any."
     },

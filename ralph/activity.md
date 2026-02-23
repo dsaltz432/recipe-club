@@ -16,11 +16,13 @@
 - Google Calendar calls are in src/lib/googleCalendar.ts — currently client-side direct API calls
 - Grocery useEffect pattern: use a `groceryDirtyRef` (useRef) to gate re-fetching; set dirty=true when items change (add/remove/parse); reset to false at start of useEffect execution
 - Edge function storage URL detection: match on path `/storage/v1/object/public/` not hostname (local dev uses 127.0.0.1, not supabase hostname)
+- MealPlanPage viewTab type: `"plan" | "groceries" | "pantry"` — three-tab structure
+- EventDetailPage tabs mock: uses `<button role="tab">{children}</button>` — accessible name comes from all child text including hidden spans (JSDOM ignores CSS)
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 7
-**Current Task:** US-007 complete
+**Tasks Completed:** 8
+**Current Task:** US-008 complete
 
 ---
 
@@ -202,5 +204,44 @@
 - The `loadGroceryData` callback depends on `items` state (via closure), making its reference unstable — adding it to a useEffect dependency array causes the effect to re-fire on every items change. The dirty ref pattern breaks this cycle
 - When adding a dirty flag, trace ALL paths that modify the underlying data (add, remove, parse, week change, initial load) to ensure they all set dirty=true
 - The `lastCombinedRecipeIds` ref in `runSmartCombine` provides a second layer of protection — even if the dirty flag triggers a reload, if the parsed recipe IDs haven't changed, the AI combine call is skipped
+
+---
+
+## 2026-02-22 19:05 — US-008: Standardize pantry as tab and rename 'Grocery' to 'Groceries'
+
+### What was implemented
+- Added 'Pantry' tab to MealPlanPage (3-tab structure: Meal Plan, Groceries, Pantry)
+- Updated viewTab type from `"plan" | "groceries"` to `"plan" | "groceries" | "pantry"`
+- Removed 'Manage Pantry' button and PantryDialog from MealPlanPage Groceries tab
+- Added PantrySection component render when viewTab === 'pantry'
+- Replaced PantryDialog import with PantrySection import in MealPlanPage
+- Removed `showPantryDialog` state variable (dead code)
+- Renamed 'Grocery' tab text to 'Groceries' in EventDetailPage (line 1266)
+- Removed 'My Pantry' dropdown menu entry from Dashboard hamburger menu
+- Removed PantryDialog import and `showPantryDialog` state from Dashboard.tsx
+- Removed unused `UtensilsCrossed` import from Dashboard.tsx
+- Updated MealPlanPage tests: replaced PantryDialog mock with PantrySection mock, updated "Manage Pantry" test to "Pantry tab" test, updated tab switching test
+- Updated Dashboard tests: removed PantryDialog mock, changed 3 tests from PantryDialog assertions to "My Pantry not present" assertions
+- Updated EventDetailPage tests: changed `/grocery/i` to `/groceries/i` in 3 tab role assertions
+
+### Files changed
+- src/components/mealplan/MealPlanPage.tsx (Pantry tab, remove Manage Pantry button/dialog)
+- src/pages/EventDetailPage.tsx (rename Grocery → Groceries)
+- src/pages/Dashboard.tsx (remove My Pantry menu, PantryDialog)
+- tests/unit/components/mealplan/MealPlanPage.test.tsx (PantrySection mock, Pantry tab tests)
+- tests/unit/pages/Dashboard.test.tsx (remove PantryDialog mock, update 3 tests)
+- tests/unit/pages/EventDetailPage.test.tsx (update 3 tab name assertions)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1634/1634, 55 test files)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- `/grocery/i` regex does NOT match "groceries" — "grocery" ends with "y" while "groceries" has "ies". Use `/groceries/i` instead
+- When removing a dialog component, trace all related state (`showPantryDialog`), imports (`PantryDialog`), and icon imports (`UtensilsCrossed`) that become dead code
+- EventDetailPage tabs mock renders `<button role="tab">{children}</button>` — the accessible name includes text from hidden spans because JSDOM doesn't apply CSS `display:none`
+- PantrySection already exists as a standalone component (`src/components/pantry/PantrySection.tsx`) that renders PantryContent with a card wrapper — no need to create a new component
 
 ---

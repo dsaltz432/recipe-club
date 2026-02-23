@@ -630,7 +630,7 @@ describe("EventDetailPage", () => {
     });
 
     // Verify grocery tab exists
-    expect(screen.getByRole("tab", { name: /grocery/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /groceries/i })).toBeInTheDocument();
   });
 
   it("toggles recipe notes expansion", async () => {
@@ -770,7 +770,7 @@ describe("EventDetailPage", () => {
     });
 
     expect(screen.getByRole("tab", { name: /recipes/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /grocery/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /groceries/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /pantry/i })).toBeInTheDocument();
   });
 
@@ -2914,7 +2914,7 @@ describe("EventDetailPage", () => {
     });
 
     // Verify grocery tab is available (Radix tab switching doesn't work in jsdom)
-    const groceryTab = screen.getByRole("tab", { name: /grocery/i });
+    const groceryTab = screen.getByRole("tab", { name: /groceries/i });
     expect(groceryTab).toBeInTheDocument();
   });
 

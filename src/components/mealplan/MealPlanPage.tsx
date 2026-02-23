@@ -16,7 +16,7 @@ import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
-import PantryDialog from "@/components/pantry/PantryDialog";
+import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache } from "@/lib/groceryCache";
@@ -41,14 +41,12 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pendingSlot, setPendingSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
-  const [viewTab, setViewTab] = useState<"plan" | "groceries">("plan");
+  const [viewTab, setViewTab] = useState<"plan" | "groceries" | "pantry">("plan");
   const [groceryRecipes, setGroceryRecipes] = useState<Recipe[]>([]);
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItems, setPantryItems] = useState<string[]>([]);
   const [isLoadingGroceries, setIsLoadingGroceries] = useState(false);
-  const [showPantryDialog, setShowPantryDialog] = useState(false);
-
   // Parse progress state
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
@@ -605,6 +603,17 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             <ShoppingCart className="h-3.5 w-3.5" />
             Groceries
           </button>
+          <button
+            onClick={() => setViewTab("pantry")}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+              viewTab === "pantry"
+                ? "bg-white shadow-sm font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <UtensilsCrossed className="h-3.5 w-3.5" />
+            Pantry
+          </button>
         </div>
       </div>
 
@@ -639,17 +648,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       {viewTab === "groceries" && (
         <>
-          <div className="flex justify-end mb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPantryDialog(true)}
-              className="text-xs"
-            >
-              <UtensilsCrossed className="h-3.5 w-3.5 mr-1" />
-              Manage Pantry
-            </Button>
-          </div>
           {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) ? (
             <GroceryListSection
               recipes={groceryRecipes}
@@ -677,14 +675,11 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               </p>
             </div>
           )}
-
-          <PantryDialog
-            open={showPantryDialog}
-            onOpenChange={setShowPantryDialog}
-            userId={userId}
-            onPantryChange={loadPantryItems}
-          />
         </>
+      )}
+
+      {viewTab === "pantry" && (
+        <PantrySection userId={userId} onPantryChange={loadPantryItems} />
       )}
 
 
