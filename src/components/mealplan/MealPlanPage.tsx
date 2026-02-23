@@ -34,6 +34,13 @@ const getWeekStart = (date: Date): Date => {
   return d;
 };
 
+const getWeekLabel = (weekStart: Date): string => {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `Meal Plan ${fmt(weekStart)}-${fmt(weekEnd)}`;
+};
+
 const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [planId, setPlanId] = useState<string | null>(null);
@@ -351,11 +358,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (error) throw error;
 
         setParseStep("loading");
-        // Reload grocery data if on grocery tab (use ref for current tab value)
-        let groceryData: { ingredients: RecipeIngredient[]; contentMap: Record<string, RecipeContent>; recipes: Recipe[] } | null = null;
-        if (viewTabRef.current === "groceries") {
-          groceryData = await loadGroceryData();
-        }
+        // Always load grocery data after parse so we can combine
+        const groceryData = await loadGroceryData();
 
         if (shouldCombine && groceryData) {
           setParseStep("combining");
@@ -654,7 +658,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               recipeIngredients={recipeIngredients}
               recipeContentMap={recipeContentMap}
               onParseRecipe={handleParseRecipe}
-              eventName="Weekly Meal Plan"
+              eventName={getWeekLabel(weekStart)}
               isLoading={isLoadingGroceries}
               pantryItems={pantryItems}
               smartGroceryItems={smartGroceryItems}

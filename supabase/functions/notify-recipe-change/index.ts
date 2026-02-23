@@ -6,6 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const TEST_MODE_EMAIL = "dsaltz190@gmail.com";
+
+function isLocalMode(): boolean {
+  if (Deno.env.get("LOCAL_MODE") === "true") return true;
+  const url = Deno.env.get("SUPABASE_URL") || "";
+  return url.includes("127.0.0.1") || url.includes("localhost");
+}
+
 interface NotifyRequest {
   type: "added" | "updated";
   recipeName: string;
@@ -68,9 +76,15 @@ serve(async (req) => {
     }
 
     // Filter out the user who made the change
-    const recipientEmails = clubMembers
+    let recipientEmails = clubMembers
       .map((m) => m.email)
       .filter((email) => email !== excludeEmail);
+
+    // In local/test mode, only send to the test account
+    if (isLocalMode()) {
+      console.log(`[LOCAL MODE] Restricting notifications to ${TEST_MODE_EMAIL}`);
+      recipientEmails = [TEST_MODE_EMAIL];
+    }
 
     if (recipientEmails.length === 0) {
       return new Response(

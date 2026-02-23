@@ -14,10 +14,9 @@ export const createCalendarEvent = async ({
   ingredientName,
 }: CalendarEventParams): Promise<{ success: boolean; eventId?: string; error?: string }> => {
   if (isDevMode()) {
-    console.log("[DEV MODE] Skipping Google Calendar create for:", ingredientName);
-    return { success: true, eventId: `dev-calendar-${Date.now()}` };
+    console.log("[DEV MODE] Skipping Google Calendar create");
+    return { success: true, eventId: "dev-mode-event-id" };
   }
-
   try {
     const clubMemberEmails = await getClubMemberEmails();
 
@@ -59,10 +58,9 @@ export const updateCalendarEvent = async ({
   ingredientName,
 }: UpdateCalendarEventParams): Promise<{ success: boolean; error?: string }> => {
   if (isDevMode()) {
-    console.log("[DEV MODE] Skipping Google Calendar update for:", calendarEventId);
+    console.log("[DEV MODE] Skipping Google Calendar update");
     return { success: true };
   }
-
   try {
     const { data, error } = await supabase.functions.invoke("google-calendar", {
       body: {
@@ -92,10 +90,9 @@ export const deleteCalendarEvent = async (
   calendarEventId: string
 ): Promise<{ success: boolean; error?: string }> => {
   if (isDevMode()) {
-    console.log("[DEV MODE] Skipping Google Calendar delete for:", calendarEventId);
+    console.log("[DEV MODE] Skipping Google Calendar delete");
     return { success: true };
   }
-
   try {
     const { data, error } = await supabase.functions.invoke("google-calendar", {
       body: {

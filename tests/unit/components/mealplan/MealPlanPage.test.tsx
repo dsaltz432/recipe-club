@@ -3066,7 +3066,7 @@ describe("MealPlanPage", () => {
       }, { timeout: 5000 });
     });
 
-    it("handles loadGroceryData returning null after parse succeeds on groceries tab", async () => {
+    it("handles loadGroceryData returning null after parse succeeds", async () => {
       // Use a delayed parse mock so we can switch tabs while parse is in flight
       let resolveInvoke: (value: { data: unknown; error: null }) => void;
       mockInvoke.mockImplementationOnce(() => new Promise((resolve) => {
@@ -3077,7 +3077,7 @@ describe("MealPlanPage", () => {
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
-          return createPlanMock(null);
+          return createPlanMock("plan-null-grocery");
         }
         if (table === "recipes") {
           return createMockQueryBuilder({
@@ -3089,11 +3089,26 @@ describe("MealPlanPage", () => {
         }
         if (table === "meal_plan_items") {
           return createMockQueryBuilder({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-existing",
+                  plan_id: "plan-null-grocery",
+                  recipe_id: "recipe-existing",
+                  day_of_week: 0,
+                  meal_type: "breakfast",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Existing Meal", url: "https://example.com/existing" },
+                },
+              ],
+              error: null,
+            }),
             single: vi.fn().mockResolvedValue({
               data: {
                 id: "item-null-grocery",
-                plan_id: "plan-new",
+                plan_id: "plan-null-grocery",
                 recipe_id: "recipe-null-grocery",
                 day_of_week: 1,
                 meal_type: "dinner",
@@ -3145,17 +3160,11 @@ describe("MealPlanPage", () => {
         expect(mockInvoke).toHaveBeenCalled();
       });
 
-      // Switch to Groceries tab while parse is in flight
-      fireEvent.click(screen.getByText("Groceries"));
-
-      await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
-      });
-
       // Mark that parse is about to resolve so loadGroceryData will fail
       parseResolved = true;
 
       // Resolve parse — loadGroceryData will return null because recipe_ingredients throws
+      // shouldCombine is true (2 recipes with URLs) but groceryData is null
       resolveInvoke!({ data: {}, error: null });
 
       // Parse succeeds but smartCombine should NOT be called since groceryData is null

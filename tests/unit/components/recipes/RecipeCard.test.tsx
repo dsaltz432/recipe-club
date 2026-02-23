@@ -924,6 +924,24 @@ describe("RecipeCard - Ingredients Section", () => {
     expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
   });
 
+  it("filters custom pantryItems in addition to defaults", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
+      createMockIngredient({ id: "ing-2", name: "butter", quantity: 1, unit: "tbsp", category: "dairy" }),
+      createMockIngredient({ id: "ing-3", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    // Custom pantry includes "butter"; defaults (salt, pepper, water) are always included
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} pantryItems={["butter", "olive oil"]} />);
+
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
+    expect(screen.queryByText(/salt/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/butter/i)).not.toBeInTheDocument();
+  });
+
   it("renders ingredients section with ingredient color theming", () => {
     const recipe = createMockRecipe({ ingredientColor: "#ff6b6b" });
     const ingredients = [createMockIngredient()];

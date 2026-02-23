@@ -6,8 +6,15 @@ const ADMIN_EMAILS = [
   "dsaltz190@gmail.com",
 ];
 
+const TEST_MODE_EMAIL = "dsaltz190@gmail.com";
 const REMINDER_DAYS = [7, 3];
 const APP_BASE_URL = "https://therecipeclubhub.com";
+
+function isLocalMode(): boolean {
+  if (Deno.env.get("LOCAL_MODE") === "true") return true;
+  const url = Deno.env.get("SUPABASE_URL") || "";
+  return url.includes("127.0.0.1") || url.includes("localhost");
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,8 +127,13 @@ serve(async (req) => {
 
         const usersWithRecipes = new Set((recipes ?? []).map((r) => r.created_by).filter(Boolean));
 
-        // Send emails to ALL admin emails (not just those who have signed up)
-        for (const adminEmail of ADMIN_EMAILS) {
+        // In local/test mode, only send to the test account
+        const emailTargets = isLocalMode()
+          ? (console.log(`[LOCAL MODE] Restricting reminders to ${TEST_MODE_EMAIL}`), [TEST_MODE_EMAIL])
+          : ADMIN_EMAILS;
+
+        // Send emails to target recipients
+        for (const adminEmail of emailTargets) {
           const userId = adminEmailToUserId.get(adminEmail);
           const hasRecipe = userId ? usersWithRecipes.has(userId) : false;
 

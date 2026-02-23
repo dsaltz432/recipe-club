@@ -36,6 +36,7 @@ import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngred
 import RecipeCard from "./RecipeCard";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
+import { getPantryItems, DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 
 export interface RecipeWithNotes extends Recipe {
   notes: RecipeNote[];
@@ -94,6 +95,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [recipeIngredientsMap, setRecipeIngredientsMap] = useState<Record<string, RecipeIngredient[]>>({});
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
+  const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
 
   const loadRecipes = async () => {
     try {
@@ -569,6 +571,14 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   useEffect(() => {
     loadUsedIngredients();
 
+    // Load user's pantry items for filtering recipe card ingredients
+    if (userId) {
+      getPantryItems(userId).then((items) => {
+        const names = items.map((i) => i.name);
+        if (names.length > 0) setPantryItemNames(names);
+      }).catch(() => { /* fallback to defaults */ });
+    }
+
     // Eagerly load personal count so the tab button shows it on mount
     (async () => {
       if (!userId) {
@@ -732,6 +742,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 onEditRating={userId ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
                 ingredients={recipeIngredientsMap[recipe.id]}
+                pantryItems={pantryItemNames}
                 contentStatus={recipeContentMap[recipe.id]?.status}
                 onParseRecipe={handleParseRecipe}
               />

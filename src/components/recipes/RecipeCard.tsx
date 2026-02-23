@@ -49,16 +49,20 @@ interface RecipeCardProps {
   onEditRating?: (recipe: RecipeWithNotes) => void;
   onAddNote?: (recipe: RecipeWithNotes) => void;
   ingredients?: RecipeIngredient[];
+  pantryItems?: string[];
   contentStatus?: RecipeContent["status"];
   onParseRecipe?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, contentStatus, onParseRecipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
+  const allPantryItems = pantryItems && pantryItems.length > 0
+    ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
+    : DEFAULT_PANTRY_ITEMS;
   const filteredIngredients = ingredients?.filter(
-    (ing) => !DEFAULT_PANTRY_ITEMS.includes(ing.name.toLowerCase())
+    (ing) => !allPantryItems.includes(ing.name.toLowerCase())
   );
   const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
   const hasDetails = recipe.url || recipe.notes.length > 0;

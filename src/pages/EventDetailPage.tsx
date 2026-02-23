@@ -547,10 +547,9 @@ const EventDetailPage = () => {
     recipeUrlVal: string
   ) => {
     if (isDevMode()) {
-      console.log(`[DEV MODE] Skipping ${type} notification for: ${recipeNameVal}`);
+      console.log("[DEV MODE] Skipping email notification");
       return;
     }
-
     try {
       const { data, error } = await supabase.functions.invoke("notify-recipe-change", {
         body: {
