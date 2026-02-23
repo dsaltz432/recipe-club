@@ -165,7 +165,7 @@
         "Tests pass"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "activeForm": "Creating user_tokens migration",
       "notes": "Create a new migration file in supabase/migrations/. Follow the naming pattern of existing migrations (e.g., 20260223000001_create_user_tokens.sql). Schema:\n```sql\nCREATE TABLE IF NOT EXISTS public.user_tokens (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,\n  provider TEXT NOT NULL DEFAULT 'google',\n  refresh_token TEXT NOT NULL,\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n  UNIQUE (user_id, provider)\n);\n\nALTER TABLE public.user_tokens ENABLE ROW LEVEL SECURITY;\n\nCREATE POLICY \"Users can manage their own tokens\" ON public.user_tokens\n  FOR ALL USING (auth.uid() = user_id)\n  WITH CHECK (auth.uid() = user_id);\n```\nThis is a migration-only story — no TypeScript changes."
     },

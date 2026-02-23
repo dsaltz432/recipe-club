@@ -21,8 +21,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 8
-**Current Task:** US-008 complete
+**Tasks Completed:** 9
+**Current Task:** US-009 complete
 
 ---
 
@@ -243,5 +243,31 @@
 - When removing a dialog component, trace all related state (`showPantryDialog`), imports (`PantryDialog`), and icon imports (`UtensilsCrossed`) that become dead code
 - EventDetailPage tabs mock renders `<button role="tab">{children}</button>` — the accessible name includes text from hidden spans because JSDOM doesn't apply CSS `display:none`
 - PantrySection already exists as a standalone component (`src/components/pantry/PantrySection.tsx`) that renders PantryContent with a card wrapper — no need to create a new component
+
+---
+
+## 2026-02-22 19:15 — US-009: Migration — create user_tokens table for Google OAuth refresh tokens
+
+### What was implemented
+- Created migration `supabase/migrations/20260223000001_create_user_tokens.sql`
+- Table schema: `id` (UUID PK), `user_id` (FK to auth.users with CASCADE delete), `provider` (TEXT, default 'google'), `refresh_token` (TEXT), `updated_at` (TIMESTAMPTZ)
+- UNIQUE constraint on `(user_id, provider)` for upsert support
+- RLS enabled with `FOR ALL` policy scoped to `auth.uid() = user_id`
+- Service role access is implicit (Supabase service role bypasses RLS by default)
+
+### Files changed
+- supabase/migrations/20260223000001_create_user_tokens.sql (new file)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1634/1634, 55 test files)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: not affected (migration-only, no TypeScript changes)
+
+### Learnings for future iterations
+- Migration-only stories don't require TypeScript test changes — just verify build/test/lint still pass
+- Supabase service role bypasses RLS by default — no explicit policy needed for edge function access
+- The `FOR ALL` policy with both `USING` and `WITH CHECK` covers SELECT, INSERT, UPDATE, DELETE for the user's own rows
+- `UNIQUE (user_id, provider)` enables `ON CONFLICT` upserts from the auth flow (US-010)
 
 ---
