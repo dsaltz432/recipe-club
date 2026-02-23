@@ -23,11 +23,12 @@
 - Edge function auth pattern: use SUPABASE_ANON_KEY + user's Authorization header to get user identity, then SUPABASE_SERVICE_ROLE_KEY to read privileged data (user_tokens)
 - Google OAuth token refresh: POST to https://oauth2.googleapis.com/token with client_id, client_secret, refresh_token, grant_type=refresh_token
 - google-calendar edge function supports actions: create, update, delete — all via the same endpoint
+- Client-side calendar functions are thin wrappers around `supabase.functions.invoke('google-calendar', { body })` — no direct Google API calls from the client
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 11
-**Current Task:** US-011 complete
+**Tasks Completed:** 12
+**Current Task:** US-012 complete
 
 ---
 
@@ -341,5 +342,37 @@
 - For calendar events, use `America/New_York` timezone server-side (consistent with the app's user base) rather than `Intl.DateTimeFormat().resolvedOptions().timeZone` which varies by runtime
 - The `conferenceDataVersion=1` query param on the Calendar API create endpoint is required to enable Google Meet link generation
 - Delete returning 404 should be treated as success (event already deleted) — same pattern as the client-side implementation
+
+---
+
+## 2026-02-22 19:35 — US-012: Update googleCalendar.ts to call edge function instead of direct API
+
+### What was implemented
+- Rewrote `createCalendarEvent` to call `supabase.functions.invoke('google-calendar', { body: { action: 'create', ... } })` instead of direct Google Calendar API fetch
+- Rewrote `updateCalendarEvent` to call edge function with `action: 'update'`
+- Rewrote `deleteCalendarEvent` to call edge function with `action: 'delete'`
+- Removed all `supabase.auth.getSession()` / `provider_token` checks — tokens are now managed server-side by the edge function
+- Removed direct `fetch()` calls to `googleapis.com` — all Google API interaction is now through the edge function
+- `getClubMemberEmails()` is still called client-side and passed to the edge function for 'create' action
+- Dev mode guards (`isDevMode()`) preserved at top of each function
+- Return type signatures remain unchanged: `{ success, eventId?, error? }`
+- Completely rewrote test file to mock `supabase.functions.invoke` instead of `global.fetch` and `supabase.auth.getSession`
+- 21 tests covering: successful calls, edge function errors, data-level errors, network errors, non-Error exceptions, dev mode guards, default time values
+
+### Files changed
+- src/lib/googleCalendar.ts (complete rewrite — 266 lines → 113 lines)
+- tests/unit/lib/googleCalendar.test.ts (complete rewrite — 569 lines → 287 lines)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1630/1630, 55 test files)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- When replacing direct API calls with edge function calls, the functions become dramatically simpler — all auth, token refresh, and API logic moves server-side
+- The `supabase.functions.invoke` mock pattern: `const mockInvoke = vi.fn(); vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: (...args) => mockInvoke(...args) } } }))`
+- Callers (EventDetailPage, IngredientWheel, RecipeClubEvents, CountdownCard) don't need any changes because the function signatures and return types are preserved
+- The edge function invoke returns `{ data, error }` — check `error` first (transport-level failure), then inspect `data.success` and `data.error` for application-level results
 
 ---

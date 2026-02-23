@@ -227,7 +227,7 @@
         "Tests pass"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "activeForm": "Updating googleCalendar.ts to use edge function",
       "notes": "File: src/lib/googleCalendar.ts (266 lines). This is a significant simplification — most of the file becomes thin wrappers around the edge function.\n\n**createCalendarEvent (lines 11-123):**\nReplace the Google API fetch with:\n```typescript\nconst clubMemberEmails = await getClubMemberEmails();\nconst { data, error } = await supabase.functions.invoke('google-calendar', {\n  body: {\n    action: 'create',\n    date: date.toISOString(),\n    time: time || '19:00',\n    ingredientName,\n    attendeeEmails: clubMemberEmails,\n  },\n});\nif (error) return { success: false, error: error.message };\nreturn { success: data.success, eventId: data.eventId, error: data.error };\n```\n\n**updateCalendarEvent (lines 132-212):** Similar — pass action: 'update', calendarEventId, date, time, ingredientName.\n\n**deleteCalendarEvent (lines 214-265):** Similar — pass action: 'delete', calendarEventId.\n\nRemove: session/providerToken checks, direct Google API fetch calls, error handling for 401 status. Keep: isDevMode() guards, getClubMemberEmails() call for create, return type signatures.\n\nsrc/lib/ IS in required 100% coverage directories. Update or create tests in tests/unit/lib/googleCalendar.test.ts to mock supabase.functions.invoke and verify correct arguments."
     },

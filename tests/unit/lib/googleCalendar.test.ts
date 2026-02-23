@@ -1,35 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-// Mock supabase session
-const mockSession = {
-  provider_token: "mock-google-token",
-};
-
-const mockGetSession = vi.fn(() =>
-  Promise.resolve({
-    data: { session: mockSession },
-    error: null,
-  })
-);
+// Mock supabase functions.invoke
+const mockInvoke = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    auth: {
-      getSession: () => mockGetSession(),
+    functions: {
+      invoke: (...args: unknown[]) => mockInvoke(...args),
     },
   },
 }));
 
 // Mock auth module
+const mockGetClubMemberEmails = vi.fn().mockResolvedValue([
+  "member1@example.com",
+  "member2@example.com",
+]);
 vi.mock("@/lib/auth", () => ({
-  getClubMemberEmails: vi.fn().mockResolvedValue([
-    "member1@example.com",
-    "member2@example.com",
-  ]),
+  getClubMemberEmails: (...args: unknown[]) => mockGetClubMemberEmails(...args),
 }));
 
 // Mock devMode - default to false (production behavior)
@@ -47,15 +35,6 @@ import {
 describe("Google Calendar Functions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset to successful session
-    mockGetSession.mockResolvedValue({
-      data: {
-        session: {
-          provider_token: "mock-google-token",
-        },
-      },
-      error: null,
-    });
   });
 
   afterEach(() => {
@@ -63,14 +42,10 @@ describe("Google Calendar Functions", () => {
   });
 
   describe("createCalendarEvent", () => {
-    it("should create a calendar event successfully", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "calendar-event-123",
-            htmlLink: "https://calendar.google.com/event/123",
-          }),
+    it("should create a calendar event successfully via edge function", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true, eventId: "calendar-event-123" },
+        error: null,
       });
 
       const result = await createCalendarEvent({
@@ -81,118 +56,80 @@ describe("Google Calendar Functions", () => {
 
       expect(result.success).toBe(true);
       expect(result.eventId).toBe("calendar-event-123");
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all&conferenceDataVersion=1",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            Authorization: "Bearer mock-google-token",
-            "Content-Type": "application/json",
-          }),
-        })
-      );
-    });
-
-    it("should return error when no session exists", async () => {
-      mockGetSession.mockResolvedValueOnce({
-        data: { session: null },
-        error: null,
-      });
-
-      const result = await createCalendarEvent({
-        date: new Date("2025-01-20"),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("No active session");
-    });
-
-    it("should return error when no provider token", async () => {
-      mockGetSession.mockResolvedValueOnce({
-        data: {
-          session: {
-            provider_token: null,
-          },
+      expect(mockInvoke).toHaveBeenCalledWith("google-calendar", {
+        body: {
+          action: "create",
+          date: new Date("2025-01-20").toISOString(),
+          time: "19:00",
+          ingredientName: "Salmon",
+          attendeeEmails: ["member1@example.com", "member2@example.com"],
         },
+      });
+    });
+
+    it("should pass club member emails to the edge function", async () => {
+      mockGetClubMemberEmails.mockResolvedValueOnce(["a@b.com"]);
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true, eventId: "evt-1" },
         error: null,
       });
 
-      const result = await createCalendarEvent({
+      await createCalendarEvent({
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Google Calendar access not available");
-    });
-
-    it("should handle API error response", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: { message: "Invalid request" },
-          }),
-      });
-
-      const result = await createCalendarEvent({
-        date: new Date("2025-01-20"),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Invalid request");
-    });
-
-    it("should handle 401 unauthorized error", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: () =>
-          Promise.resolve({
-            error: { message: "Token expired" },
-          }),
-      });
-
-      const result = await createCalendarEvent({
-        date: new Date("2025-01-20"),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Calendar access expired");
+      const callBody = mockInvoke.mock.calls[0][1].body;
+      expect(callBody.attendeeEmails).toEqual(["a@b.com"]);
     });
 
     it("should use default time of 19:00 when not provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "calendar-event-123",
-          }),
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true, eventId: "evt-1" },
+        error: null,
       });
 
-      // Use a date without time component to let the function set 19:00
-      const testDate = new Date(2025, 0, 20); // January 20, 2025 in local time
-
       await createCalendarEvent({
-        date: testDate,
+        date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
+      const callBody = mockInvoke.mock.calls[0][1].body;
+      expect(callBody.time).toBe("19:00");
+    });
 
-      // The function should set hours to 19:00 local time
-      // Verify start time was set (the exact format depends on timezone)
-      expect(body.start.dateTime).toBeDefined();
-      expect(body.start.timeZone).toBeDefined();
+    it("should return error when edge function returns an error", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: null,
+        error: { message: "Edge function failed" },
+      });
+
+      const result = await createCalendarEvent({
+        date: new Date("2025-01-20"),
+        ingredientName: "Test",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Edge function failed");
+    });
+
+    it("should forward edge function data error", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: false, error: "No refresh token found" },
+        error: null,
+      });
+
+      const result = await createCalendarEvent({
+        date: new Date("2025-01-20"),
+        ingredientName: "Test",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("No refresh token found");
     });
 
     it("should handle network errors", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      mockInvoke.mockRejectedValueOnce(new Error("Network error"));
 
       const result = await createCalendarEvent({
         date: new Date("2025-01-20"),
@@ -203,35 +140,24 @@ describe("Google Calendar Functions", () => {
       expect(result.error).toBe("Network error");
     });
 
-    it("should include club member emails as attendees", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "calendar-event-123",
-          }),
-      });
+    it("should handle non-Error thrown exceptions in create", async () => {
+      mockInvoke.mockRejectedValueOnce("string exception");
 
-      await createCalendarEvent({
+      const result = await createCalendarEvent({
         date: new Date("2025-01-20"),
         ingredientName: "Test",
       });
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
-
-      expect(body.attendees).toEqual([
-        { email: "member1@example.com" },
-        { email: "member2@example.com" },
-      ]);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Unknown error");
     });
   });
 
   describe("updateCalendarEvent", () => {
-    it("should update a calendar event successfully", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
+    it("should update a calendar event successfully via edge function", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true },
+        error: null,
       });
 
       const result = await updateCalendarEvent({
@@ -242,20 +168,37 @@ describe("Google Calendar Functions", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events/event-123?sendUpdates=all",
-        expect.objectContaining({
-          method: "PATCH",
-        })
-      );
+      expect(mockInvoke).toHaveBeenCalledWith("google-calendar", {
+        body: {
+          action: "update",
+          calendarEventId: "event-123",
+          date: new Date("2025-01-25").toISOString(),
+          time: "20:00",
+          ingredientName: "Chicken",
+        },
+      });
     });
 
-    it("should return error when session is missing", async () => {
-      // Clear any previous mock values and set new one
-      mockGetSession.mockReset();
-      mockGetSession.mockResolvedValue({
-        data: { session: null },
+    it("should use default time when not provided for update", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true },
         error: null,
+      });
+
+      await updateCalendarEvent({
+        calendarEventId: "event-123",
+        date: new Date("2025-01-20"),
+        ingredientName: "Test",
+      });
+
+      const callBody = mockInvoke.mock.calls[0][1].body;
+      expect(callBody.time).toBe("19:00");
+    });
+
+    it("should return error when edge function returns an error", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: null,
+        error: { message: "Update failed" },
       });
 
       const result = await updateCalendarEvent({
@@ -265,26 +208,13 @@ describe("Google Calendar Functions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("No active session");
-
-      // Restore default mock
-      mockGetSession.mockResolvedValue({
-        data: {
-          session: {
-            provider_token: "mock-google-token",
-          },
-        },
-        error: null,
-      });
+      expect(result.error).toBe("Update failed");
     });
 
-    it("should handle update API errors", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        json: () =>
-          Promise.resolve({
-            error: { message: "Event not found" },
-          }),
+    it("should forward edge function data error for update", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: false, error: "Event not found" },
+        error: null,
       });
 
       const result = await updateCalendarEvent({
@@ -296,174 +226,9 @@ describe("Google Calendar Functions", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Event not found");
     });
-  });
-
-  describe("deleteCalendarEvent", () => {
-    it("should delete a calendar event successfully", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-      });
-
-      const result = await deleteCalendarEvent("event-123");
-
-      expect(result.success).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events/event-123?sendUpdates=all",
-        expect.objectContaining({
-          method: "DELETE",
-        })
-      );
-    });
-
-    it("should return success even when event is not found (404)", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      });
-
-      const result = await deleteCalendarEvent("nonexistent-123");
-
-      expect(result.success).toBe(true);
-    });
-
-    it("should return error for other API failures", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () =>
-          Promise.resolve({
-            error: { message: "Server error" },
-          }),
-      });
-
-      const result = await deleteCalendarEvent("event-123");
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Server error");
-    });
-
-    it("should return error when no provider token", async () => {
-      mockGetSession.mockResolvedValueOnce({
-        data: {
-          session: {
-            provider_token: null,
-          },
-        },
-        error: null,
-      });
-
-      const result = await deleteCalendarEvent("event-123");
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Google Calendar access not available");
-    });
-
-    it("should return error when session has error", async () => {
-      mockGetSession.mockResolvedValueOnce({
-        data: { session: null },
-        error: { message: "Auth error" },
-      });
-
-      const result = await deleteCalendarEvent("event-123");
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("No active session");
-    });
-
-    it("should handle network errors in delete", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Network failure"));
-
-      const result = await deleteCalendarEvent("event-123");
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Network failure");
-    });
-
-    it("should handle non-Error thrown exceptions", async () => {
-      mockFetch.mockRejectedValueOnce("string error");
-
-      const result = await deleteCalendarEvent("event-123");
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Unknown error");
-    });
-  });
-
-  describe("createCalendarEvent - additional error cases", () => {
-    it("should use fallback error message when API error has no message", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: {},  // No message property
-          }),
-      });
-
-      const result = await createCalendarEvent({
-        date: new Date("2025-01-20"),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to create calendar event");
-    });
-
-    it("should handle non-Error thrown exceptions in create", async () => {
-      mockFetch.mockRejectedValueOnce("string exception");
-
-      const result = await createCalendarEvent({
-        date: new Date("2025-01-20"),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Unknown error");
-    });
-  });
-
-  describe("updateCalendarEvent - additional error cases", () => {
-    it("should return error when no provider token for update", async () => {
-      mockGetSession.mockResolvedValueOnce({
-        data: {
-          session: {
-            provider_token: null,
-          },
-        },
-        error: null,
-      });
-
-      const result = await updateCalendarEvent({
-        calendarEventId: "event-123",
-        date: new Date(),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Google Calendar access not available");
-    });
-
-    it("should use fallback error message when update API error has no message", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        json: () =>
-          Promise.resolve({
-            error: {},
-          }),
-      });
-
-      const result = await updateCalendarEvent({
-        calendarEventId: "event-123",
-        date: new Date(),
-        ingredientName: "Test",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to update calendar event");
-    });
 
     it("should handle network errors in update", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Update network failure"));
+      mockInvoke.mockRejectedValueOnce(new Error("Update network failure"));
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
@@ -476,7 +241,7 @@ describe("Google Calendar Functions", () => {
     });
 
     it("should handle non-Error thrown exceptions in update", async () => {
-      mockFetch.mockRejectedValueOnce("string exception");
+      mockInvoke.mockRejectedValueOnce("string exception");
 
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
@@ -487,44 +252,66 @@ describe("Google Calendar Functions", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Unknown error");
     });
-
-    it("should use default time when not provided for update", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-
-      await updateCalendarEvent({
-        calendarEventId: "event-123",
-        date: new Date("2025-01-20"),
-        ingredientName: "Test",
-        // time not provided - should default to "19:00"
-      });
-
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
-
-      // Verify start time was set (the exact format depends on timezone)
-      expect(body.start.dateTime).toBeDefined();
-      expect(body.start.timeZone).toBeDefined();
-    });
   });
 
-  describe("deleteCalendarEvent - fallback error", () => {
-    it("should use fallback error message when delete API error has no message", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () =>
-          Promise.resolve({
-            error: {},
-          }),
+  describe("deleteCalendarEvent", () => {
+    it("should delete a calendar event successfully via edge function", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true },
+        error: null,
+      });
+
+      const result = await deleteCalendarEvent("event-123");
+
+      expect(result.success).toBe(true);
+      expect(mockInvoke).toHaveBeenCalledWith("google-calendar", {
+        body: {
+          action: "delete",
+          calendarEventId: "event-123",
+        },
+      });
+    });
+
+    it("should return error when edge function returns an error", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: null,
+        error: { message: "Delete failed" },
       });
 
       const result = await deleteCalendarEvent("event-123");
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to delete calendar event");
+      expect(result.error).toBe("Delete failed");
+    });
+
+    it("should forward edge function data error for delete", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: false, error: "Server error" },
+        error: null,
+      });
+
+      const result = await deleteCalendarEvent("event-123");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Server error");
+    });
+
+    it("should handle network errors in delete", async () => {
+      mockInvoke.mockRejectedValueOnce(new Error("Network failure"));
+
+      const result = await deleteCalendarEvent("event-123");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Network failure");
+    });
+
+    it("should handle non-Error thrown exceptions in delete", async () => {
+      mockInvoke.mockRejectedValueOnce("string error");
+
+      const result = await deleteCalendarEvent("event-123");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Unknown error");
     });
   });
 
@@ -537,7 +324,7 @@ describe("Google Calendar Functions", () => {
       mockIsDevMode.mockReturnValue(false);
     });
 
-    it("should skip Google Calendar API and return mock eventId for create in dev mode", async () => {
+    it("should skip edge function and return mock eventId for create in dev mode", async () => {
       const result = await createCalendarEvent({
         date: new Date("2025-01-20"),
         ingredientName: "Salmon",
@@ -545,10 +332,10 @@ describe("Google Calendar Functions", () => {
 
       expect(result.success).toBe(true);
       expect(result.eventId).toMatch(/^dev-calendar-/);
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
     });
 
-    it("should skip Google Calendar API for update in dev mode", async () => {
+    it("should skip edge function for update in dev mode", async () => {
       const result = await updateCalendarEvent({
         calendarEventId: "event-123",
         date: new Date("2025-01-25"),
@@ -556,14 +343,14 @@ describe("Google Calendar Functions", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
     });
 
-    it("should skip Google Calendar API for delete in dev mode", async () => {
+    it("should skip edge function for delete in dev mode", async () => {
       const result = await deleteCalendarEvent("event-123");
 
       expect(result.success).toBe(true);
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
     });
   });
 });
