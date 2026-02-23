@@ -27,8 +27,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 12
-**Current Task:** US-012 complete
+**Tasks Completed:** 13
+**Current Task:** US-013 complete
 
 ---
 
@@ -374,5 +374,34 @@
 - The `supabase.functions.invoke` mock pattern: `const mockInvoke = vi.fn(); vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: (...args) => mockInvoke(...args) } } }))`
 - Callers (EventDetailPage, IngredientWheel, RecipeClubEvents, CountdownCard) don't need any changes because the function signatures and return types are preserved
 - The edge function invoke returns `{ data, error }` — check `error` first (transport-level failure), then inspect `data.success` and `data.error` for application-level results
+
+---
+
+## 2026-02-22 20:00 — US-013: PersonalMealDetailPage — rename 'Mark as Cooked' to 'Rate Recipes' and trigger rating flow
+
+### What was implemented
+- Renamed 'Mark as Cooked' button to 'Rate Recipes' with Star icon and purple styling
+- Changed button onClick to open EventRatingDialog instead of directly marking as cooked
+- Updated `handleRatingsSubmitted` to auto-mark meal as cooked after rating completes (calls supabase update on meal_plan_items.cooked_at)
+- After rating + mark-cooked, UI shows green 'Cooked' badge with 'Undo' button (unchanged flow)
+- Removed 'Rate Recipes' dropdown menu item from hamburger menu (was redundant with new button)
+- Removed dead code: `handleRateRecipesClick` function, `handleMarkCooked` function, `DropdownMenuSeparator` import
+- Button hidden when meal has no recipes (`totalRecipes > 0` guard added to existing `mealItems.length > 0` condition)
+- Toast shows "Recipes rated and meal marked as cooked!" on success, falls back to "Recipes rated!" if mark-cooked fails or meal already cooked
+
+### Files changed
+- src/pages/PersonalMealDetailPage.tsx (button rename, handler changes, dead code removal)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1630/1630, 55 test files)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories (PersonalMealDetailPage is in src/pages/, not in required coverage directories)
+
+### Learnings for future iterations
+- When renaming a button and changing its onClick handler, trace all related code paths: the old handler (`handleMarkCooked`) becomes dead code, the dropdown menu item that served the same function becomes redundant
+- `handleRatingsSubmitted` is the natural place to add post-rating side effects — it's the onComplete callback from EventRatingDialog
+- The `isCooked` derived state (`mealItems.every(item => item.cooked_at)`) auto-updates when `setMealItems` updates cooked_at, triggering the UI to show the 'Cooked' badge
+- Removing a DropdownMenuSeparator requires checking if its import becomes unused too
 
 ---

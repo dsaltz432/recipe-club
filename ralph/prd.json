@@ -248,7 +248,7 @@
         "Tests pass"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "activeForm": "Combining rating and cooked flows",
       "notes": "File: src/pages/PersonalMealDetailPage.tsx.\n\n**Current state (from previous PRD US-005):**\n- 'Mark as Cooked' button in the Event Info card (after line ~662)\n- handleMarkCooked: updates meal_plan_items.cooked_at\n- 'Rate Recipes' in hamburger dropdown (line ~624-627): opens EventRatingDialog\n- ratingEvent/ratingRecipes/ratingMode state for the dialog\n\n**Changes:**\n1. Rename the button from 'Mark as Cooked' to 'Rate Recipes' (keep the Check icon or switch to Star)\n2. Change the button's onClick from handleMarkCooked to open the rating dialog instead:\n   - Set ratingRecipes to all recipes in this meal\n   - Set ratingEvent to eventData\n   - Set ratingMode to 'rating'\n   - Open the dialog\n3. In the EventRatingDialog onComplete callback: call handleMarkCooked (the existing function that sets cooked_at), then close the dialog, then show success toast\n4. Remove 'Rate Recipes' from the hamburger menu DropdownMenuItem (line ~624-627)\n5. Keep the 'Undo' button and uncook flow unchanged\n\n**Flow:** User clicks 'Rate Recipes' → EventRatingDialog opens → user rates each recipe → clicks submit → onComplete fires → cooked_at is set → dialog closes → green 'Cooked' badge appears\n\nNote: PersonalMealDetailPage is in src/pages/ (not in required 100% coverage directories)."
     },

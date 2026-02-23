@@ -30,7 +30,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -125,24 +124,6 @@ const PersonalMealDetailPage = () => {
   };
 
   const isCooked = mealItems.length > 0 && mealItems.every((item) => item.cooked_at);
-
-  const handleMarkCooked = async () => {
-    if (!eventId) return;
-    try {
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .update({ cooked_at: new Date().toISOString() } as Record<string, unknown>)
-        .or(`event_id.eq.${eventId}`);
-
-      if (error) throw error;
-
-      setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: new Date().toISOString() })));
-      toast.success("Marked as cooked!");
-    } catch (error) {
-      console.error("Error marking as cooked:", error);
-      toast.error("Failed to mark as cooked");
-    }
-  };
 
   const handleConfirmUncook = async () => {
     if (!eventId) return;
@@ -674,19 +655,32 @@ const PersonalMealDetailPage = () => {
     }
   };
 
-  const handleRateRecipesClick = () => {
-    setRatingRecipes(null);
-    setShowRatingDialog(true);
-  };
-
   const handleRateRecipe = (recipeWithRatings: EventRecipeWithRatings) => {
     setRatingRecipes([recipeWithRatings]);
     setShowRatingDialog(true);
   };
 
-  const handleRatingsSubmitted = () => {
+  const handleRatingsSubmitted = async () => {
     setShowRatingDialog(false);
     setRatingRecipes(null);
+    // Auto-mark meal as cooked after rating
+    if (!isCooked && mealItems.length > 0) {
+      try {
+        const { error } = await supabase
+          .from("meal_plan_items")
+          .update({ cooked_at: new Date().toISOString() } as Record<string, unknown>)
+          .or(`event_id.eq.${eventId}`);
+
+        if (error) throw error;
+        setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: new Date().toISOString() })));
+        toast.success("Recipes rated and meal marked as cooked!");
+      } catch (error) {
+        console.error("Error marking as cooked after rating:", error);
+        toast.success("Recipes rated!");
+      }
+    } else {
+      toast.success("Recipes rated!");
+    }
     loadEventData();
   };
 
@@ -772,15 +766,6 @@ const PersonalMealDetailPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {totalRecipes > 0 && (
-                <>
-                  <DropdownMenuItem onClick={handleRateRecipesClick} className="cursor-pointer">
-                    <Star className="h-4 w-4 mr-2" />
-                    Rate Recipes
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -829,16 +814,19 @@ const PersonalMealDetailPage = () => {
                     Undo
                   </Button>
                 </div>
-              ) : mealItems.length > 0 ? (
+              ) : mealItems.length > 0 && totalRecipes > 0 ? (
                 <div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleMarkCooked}
-                    className="text-green-700 border-green-300 hover:bg-green-50"
+                    onClick={() => {
+                      setRatingRecipes(null);
+                      setShowRatingDialog(true);
+                    }}
+                    className="text-purple border-purple/30 hover:bg-purple/5"
                   >
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                    Mark as Cooked
+                    <Star className="h-3.5 w-3.5 mr-1" />
+                    Rate Recipes
                   </Button>
                 </div>
               ) : null}
