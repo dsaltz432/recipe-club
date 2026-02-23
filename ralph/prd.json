@@ -264,7 +264,7 @@
         "No orphaned imports or unused variables"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "activeForm": "Running final verification",
       "notes": "Run npm run test:coverage and check every row in the coverage report. All files in the required directories must show 100%. If any file has gaps, read the source lines, understand what branch is missed, and add targeted tests. Then run npm run build and npm run lint. Key files to watch: MealPlanPage.tsx, RecipeCard.tsx, RecipeHub.tsx, GroceryListSection.tsx, googleCalendar.ts. Pages (EventDetailPage, PersonalMealDetailPage, Dashboard) are NOT in required coverage directories but existing tests must pass."
     }
