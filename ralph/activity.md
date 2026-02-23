@@ -18,11 +18,13 @@
 - Edge function storage URL detection: match on path `/storage/v1/object/public/` not hostname (local dev uses 127.0.0.1, not supabase hostname)
 - MealPlanPage viewTab type: `"plan" | "groceries" | "pantry"` — three-tab structure
 - EventDetailPage tabs mock: uses `<button role="tab">{children}</button>` — accessible name comes from all child text including hidden spans (JSDOM ignores CSS)
+- AuthGuard.tsx uses a module-level `refreshTokenListenerRegistered` flag to prevent duplicate onAuthStateChange listeners (multiple AuthGuard instances mount per-route)
+- user_tokens table type definition added to src/integrations/supabase/types.ts (migration created in US-009, types manually added)
 
 ## Current Status
 **Last Updated:** 2026-02-22
-**Tasks Completed:** 9
-**Current Task:** US-009 complete
+**Tasks Completed:** 10
+**Current Task:** US-010 complete
 
 ---
 
@@ -269,5 +271,36 @@
 - Supabase service role bypasses RLS by default — no explicit policy needed for edge function access
 - The `FOR ALL` policy with both `USING` and `WITH CHECK` covers SELECT, INSERT, UPDATE, DELETE for the user's own rows
 - `UNIQUE (user_id, provider)` enables `ON CONFLICT` upserts from the auth flow (US-010)
+
+---
+
+## 2026-02-22 19:20 — US-010: Auth flow — request offline access and store Google refresh token
+
+### What was implemented
+- Added `queryParams: { access_type: "offline", prompt: "consent" }` to signInWithOAuth options in auth.ts
+- Added onAuthStateChange listener in AuthGuard.tsx that captures `provider_refresh_token` on `SIGNED_IN` events
+- The listener upserts the refresh token into `user_tokens` table with `{ onConflict: "user_id,provider" }`
+- Used module-level `refreshTokenListenerRegistered` flag to prevent duplicate listeners (AuthGuard mounts per-route)
+- No upsert is attempted when `provider_refresh_token` is null/undefined (e.g., email login)
+- Added `user_tokens` table type definition to Supabase generated types file
+
+### Files changed
+- src/lib/auth.ts (added queryParams to signInWithGoogle)
+- src/components/auth/AuthGuard.tsx (added onAuthStateChange listener with refresh token capture)
+- src/integrations/supabase/types.ts (added user_tokens table type definition)
+- tests/unit/lib/auth.test.ts (updated signInWithGoogle test for new queryParams)
+- tests/unit/components/auth/AuthGuard.test.tsx (added supabase mock, 3 new tests for refresh token capture)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1638/1638, 55 test files)
+- Lint: pass (0 errors, 17 warnings — pre-existing)
+- Coverage: 100% on all required directories
+
+### Learnings for future iterations
+- When a migration creates a new table (US-009), the Supabase generated types file must be updated manually to include the new table definition — otherwise TypeScript compilation fails with "not assignable to parameter" errors
+- Module-level flags in React components prevent duplicate side effects when multiple instances mount — useful for singleton listeners like onAuthStateChange
+- `prompt: 'consent'` forces Google to re-show consent screen, which is the only way to get a refresh_token after first OAuth — subsequent logins without this param don't return a refresh token
+- AuthGuard tests need to mock `@/integrations/supabase/client` after adding the import — use `vi.hoisted()` for mock factories and `vi.mock()` for the module
 
 ---

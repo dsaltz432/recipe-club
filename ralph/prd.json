@@ -183,7 +183,7 @@
         "Tests pass"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "activeForm": "Capturing Google refresh tokens",
       "notes": "Files: src/lib/auth.ts, src/integrations/supabase/client.ts or src/components/auth/AuthGuard.tsx.\n\n**1. auth.ts (line 106-112):** Add queryParams to signInWithOAuth:\n```typescript\nconst { error } = await supabase.auth.signInWithOAuth({\n  provider: 'google',\n  options: {\n    redirectTo: siteUrl + '/dashboard',\n    scopes: 'https://www.googleapis.com/auth/calendar.events',\n    queryParams: { access_type: 'offline', prompt: 'consent' },\n  },\n});\n```\n\n**2. Token capture:** Add an onAuthStateChange listener (best placed in AuthGuard.tsx or a new useEffect in a top-level component):\n```typescript\nsupabase.auth.onAuthStateChange(async (event, session) => {\n  if (event === 'SIGNED_IN' && session?.provider_refresh_token) {\n    await supabase.from('user_tokens').upsert({\n      user_id: session.user.id,\n      provider: 'google',\n      refresh_token: session.provider_refresh_token,\n      updated_at: new Date().toISOString(),\n    }, { onConflict: 'user_id,provider' });\n  }\n});\n```\n\nNote: `prompt: 'consent'` forces Google to re-show the consent screen, which is needed to get a refresh token. After the first login, users won't see it again unless scopes change. Users will need to sign out and back in once to trigger the new consent flow. Auth files are NOT in required coverage directories."
     },

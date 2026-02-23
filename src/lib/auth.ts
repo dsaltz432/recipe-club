@@ -108,6 +108,7 @@ export const signInWithGoogle = async (): Promise<void> => {
     options: {
       redirectTo: siteUrl + "/dashboard",
       scopes: "https://www.googleapis.com/auth/calendar.events",
+      queryParams: { access_type: "offline", prompt: "consent" },
     },
   });
 
