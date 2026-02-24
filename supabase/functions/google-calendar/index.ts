@@ -73,20 +73,22 @@ async function createEvent(
   const eventTime = time || "19:00";
   const [hours, minutes] = eventTime.split(":").map(Number);
 
-  const startDateTime = new Date(date);
-  startDateTime.setHours(hours, minutes, 0, 0);
-
-  const endDateTime = new Date(startDateTime);
-  endDateTime.setHours(endDateTime.getHours() + 2);
+  // Build naive datetime strings (no Z suffix) so Google Calendar interprets
+  // them in the specified timeZone rather than as UTC.
+  const datePart = new Date(date).toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const endHour = String(hours + 2).padStart(2, "0");
+  const endMin = String(minutes).padStart(2, "0");
+  const startDateTimeStr = `${datePart}T${eventTime}:00`;
+  const endDateTimeStr = `${datePart}T${endHour}:${endMin}:00`;
 
   const event = {
     summary: `Recipe Club: ${ingredientName}`,
     start: {
-      dateTime: startDateTime.toISOString(),
+      dateTime: startDateTimeStr,
       timeZone: "America/New_York",
     },
     end: {
-      dateTime: endDateTime.toISOString(),
+      dateTime: endDateTimeStr,
       timeZone: "America/New_York",
     },
     attendees: (attendeeEmails || []).map((email: string) => ({ email })),
@@ -151,20 +153,22 @@ async function updateEvent(
   const eventTime = time || "19:00";
   const [hours, minutes] = eventTime.split(":").map(Number);
 
-  const startDateTime = new Date(date);
-  startDateTime.setHours(hours, minutes, 0, 0);
-
-  const endDateTime = new Date(startDateTime);
-  endDateTime.setHours(endDateTime.getHours() + 2);
+  // Build naive datetime strings (no Z suffix) so Google Calendar interprets
+  // them in the specified timeZone rather than as UTC.
+  const datePart = new Date(date).toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const endHour = String(hours + 2).padStart(2, "0");
+  const endMin = String(minutes).padStart(2, "0");
+  const startDateTimeStr = `${datePart}T${eventTime}:00`;
+  const endDateTimeStr = `${datePart}T${endHour}:${endMin}:00`;
 
   const event = {
     summary: `Recipe Club: ${ingredientName}`,
     start: {
-      dateTime: startDateTime.toISOString(),
+      dateTime: startDateTimeStr,
       timeZone: "America/New_York",
     },
     end: {
-      dateTime: endDateTime.toISOString(),
+      dateTime: endDateTimeStr,
       timeZone: "America/New_York",
     },
   };
