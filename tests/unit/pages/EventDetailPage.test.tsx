@@ -4354,7 +4354,7 @@ describe("EventDetailPage", () => {
   });
 
   it("handles parseRecipe with data.skipped (dev mode)", async () => {
-    mockFunctionsInvoke.mockResolvedValue({ data: { skipped: true }, error: null });
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true, skipped: true }, error: null });
 
     render(<EventDetailPage />);
 
@@ -6080,7 +6080,7 @@ describe("EventDetailPage", () => {
   // ---- HANDLE PARSE RECIPE SUCCESS (covers line 465/468 skipped branch) ----
 
   it("handles parse recipe success with skipped flag", async () => {
-    mockFunctionsInvoke.mockResolvedValue({ data: { skipped: true }, error: null });
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true, skipped: true }, error: null });
 
     render(<EventDetailPage />);
 

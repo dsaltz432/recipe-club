@@ -617,7 +617,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("AI API error");
   });
@@ -631,7 +631,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
@@ -675,7 +675,7 @@ describe("parse-recipe edge function", () => {
     const { data, status } = await parseResponse(await handler(req));
 
     // Both regex extraction and full text parse fail
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
@@ -690,7 +690,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Connection refused");
 
@@ -722,7 +722,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
   });
 
@@ -735,7 +735,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false, error: "Unknown error" });
   });
 
@@ -753,7 +753,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("AI network error");
   });
@@ -770,7 +770,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false, error: "env not available" });
 
     // Verify the catch block did NOT call supabase (recipeId was never set)
@@ -790,7 +790,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to download from storage");
   });
@@ -805,7 +805,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("No data returned");
   });
@@ -817,7 +817,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest({ ...baseBody, recipeUrl: badUrl });
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Invalid storage URL format");
   });
@@ -831,12 +831,12 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest({ ...baseBody, recipeUrl: imageUrl });
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to fetch recipe file");
   });
 
-  it("returns 500 when web page fetch returns non-ok status", async () => {
+  it("returns user-friendly message when web page fetch returns 403", async () => {
     globalThis.fetch = vi.fn().mockResolvedValueOnce(
       new Response("Forbidden", { status: 403 }),
     );
@@ -844,7 +844,20 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("blocking automated access");
+  });
+
+  it("returns error when web page fetch returns other non-ok status", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
+      new Response("Not Found", { status: 404 }),
+    );
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to fetch recipe page");
   });
@@ -1090,7 +1103,7 @@ describe("parse-recipe edge function", () => {
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
 
-    expect(status).toBe(500);
+    expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("Failed to parse");
   });

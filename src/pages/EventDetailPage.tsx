@@ -454,6 +454,11 @@ const EventDetailPage = () => {
 
       if (error) throw error;
 
+      if (!data?.success) {
+        toast.error(data?.error ?? "Failed to parse recipe. Please try again.");
+        return;
+      }
+
       if (data?.skipped) {
         toast.success("Recipe parsed (skipped in dev mode)");
       } else {
@@ -713,10 +718,15 @@ const EventDetailPage = () => {
     setParseStep("parsing");
 
     try {
-      const { error: retryError } = await supabase.functions.invoke("parse-recipe", {
+      const { data: retryData, error: retryError } = await supabase.functions.invoke("parse-recipe", {
         body: { recipeId: retryRecipeId, recipeUrl: recipeUrl.trim(), recipeName: recipeName.trim() },
       });
       if (retryError) throw retryError;
+      if (!retryData?.success) {
+        setParseStatus("failed");
+        setParseError(retryData?.error ?? "Failed to parse recipe");
+        return;
+      }
 
       // Success: close dialog and refresh
       setParseStatus("idle");
