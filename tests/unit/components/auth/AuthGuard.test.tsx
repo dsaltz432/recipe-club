@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@tests/utils";
 
-const { mockIsAuthenticated, mockNavigate, mockToast, mockOnAuthStateChange, mockUpsert, mockFrom } = vi.hoisted(() => {
+const { mockIsAuthenticated, mockNavigate, mockToast, mockOnAuthStateChange, mockUpsert, mockFrom, mockSignInWithGoogle } = vi.hoisted(() => {
   const mockUnsubscribe = vi.fn();
   return {
     mockIsAuthenticated: vi.fn(),
@@ -17,11 +17,13 @@ const { mockIsAuthenticated, mockNavigate, mockToast, mockOnAuthStateChange, moc
     }),
     mockUpsert: vi.fn().mockResolvedValue({ error: null }),
     mockFrom: vi.fn(),
+    mockSignInWithGoogle: vi.fn().mockResolvedValue(undefined),
   };
 });
 
 vi.mock("@/lib/auth", () => ({
   isAuthenticated: (...args: unknown[]) => mockIsAuthenticated(...args),
+  signInWithGoogle: (...args: unknown[]) => mockSignInWithGoogle(...args),
 }));
 
 vi.mock("sonner", () => ({
@@ -47,11 +49,18 @@ vi.mock("react-router-dom", async () => {
 
 import AuthGuard from "@/components/auth/AuthGuard";
 
+/** Build a mockFrom return value that supports the select().eq().eq().maybeSingle() chain. */
+function makeSelectChain(maybeSingleResult: { data: unknown }) {
+  const mockMaybySingle = vi.fn().mockResolvedValue(maybeSingleResult);
+  const mockEq = vi.fn();
+  mockEq.mockReturnValue({ eq: mockEq, maybeSingle: mockMaybySingle });
+  const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+  return { select: mockSelect, upsert: mockUpsert };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockFrom.mockReturnValue({ upsert: mockUpsert });
-  // Reset the module-level flag by re-importing — we need to use resetModules for this
-  // Instead, we rely on the cleanup function from the useEffect
 });
 
 describe("AuthGuard", () => {
@@ -188,7 +197,47 @@ describe("AuthGuard", () => {
     );
   });
 
-  it("does not upsert when SIGNED_IN event has no provider_refresh_token", async () => {
+  it("does not upsert or re-consent when SIGNED_IN without refresh token but token already stored", async () => {
+    mockIsAuthenticated.mockResolvedValue(true);
+    mockFrom.mockReturnValue(makeSelectChain({ data: { user_id: "user-123" } }));
+
+    render(
+      <AuthGuard>
+        <div>Protected Content</div>
+      </AuthGuard>
+    );
+
+    const callback = mockOnAuthStateChange.mock.calls[0][0];
+    await callback("SIGNED_IN", {
+      user: { id: "user-123" },
+      provider_refresh_token: null,
+    });
+
+    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockSignInWithGoogle).not.toHaveBeenCalled();
+  });
+
+  it("calls signInWithGoogle(true) when SIGNED_IN without refresh token and no stored token", async () => {
+    mockIsAuthenticated.mockResolvedValue(true);
+    mockFrom.mockReturnValue(makeSelectChain({ data: null }));
+
+    render(
+      <AuthGuard>
+        <div>Protected Content</div>
+      </AuthGuard>
+    );
+
+    const callback = mockOnAuthStateChange.mock.calls[0][0];
+    await callback("SIGNED_IN", {
+      user: { id: "user-123" },
+      provider_refresh_token: null,
+    });
+
+    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockSignInWithGoogle).toHaveBeenCalledWith(true);
+  });
+
+  it("does not check user_tokens when SIGNED_IN with null session", async () => {
     mockIsAuthenticated.mockResolvedValue(true);
 
     render(
@@ -197,16 +246,11 @@ describe("AuthGuard", () => {
       </AuthGuard>
     );
 
-    // Get the callback passed to onAuthStateChange
     const callback = mockOnAuthStateChange.mock.calls[0][0];
+    await callback("SIGNED_IN", null);
 
-    // Simulate SIGNED_IN event without provider_refresh_token (e.g., email login)
-    await callback("SIGNED_IN", {
-      user: { id: "user-123" },
-      provider_refresh_token: null,
-    });
-
-    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockFrom).not.toHaveBeenCalled();
+    expect(mockSignInWithGoogle).not.toHaveBeenCalled();
   });
 
   it("does not upsert on non-SIGNED_IN events", async () => {
