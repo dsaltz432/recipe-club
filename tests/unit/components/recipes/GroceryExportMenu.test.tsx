@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
 import GroceryExportMenu from "@/components/recipes/GroceryExportMenu";
 import type { CombinedGroceryItem } from "@/types";
+import { toast } from "sonner";
 
 // Mock supabase client
 vi.mock("@/integrations/supabase/client", () => ({
@@ -12,8 +13,13 @@ vi.mock("@/integrations/supabase/client", () => ({
 const mockDownloadCSV = vi.fn();
 vi.mock("@/lib/groceryList", () => ({
   generateCSV: () => "mock-csv-content",
+  generatePlainText: () => "PRODUCE\n  2 cup flour",
   downloadCSV: (...args: unknown[]) => mockDownloadCSV(...args),
   groupByCategory: () => new Map(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 const items: CombinedGroceryItem[] = [
@@ -25,12 +31,13 @@ describe("GroceryExportMenu", () => {
     vi.clearAllMocks();
   });
 
-  it("renders CSV button", () => {
+  it("renders CSV and Copy buttons", () => {
     render(
       <GroceryExportMenu items={items} eventName="Test Event" />
     );
 
     expect(screen.getByText("CSV")).toBeInTheDocument();
+    expect(screen.getByText("Copy")).toBeInTheDocument();
   });
 
   it("calls downloadCSV when CSV button is clicked", () => {
@@ -44,5 +51,40 @@ describe("GroceryExportMenu", () => {
       "mock-csv-content",
       "grocery-list-test-event.csv"
     );
+  });
+
+  it("copies plain text to clipboard when Copy button is clicked", async () => {
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: mockWriteText },
+    });
+
+    render(
+      <GroceryExportMenu items={items} eventName="Test Event" />
+    );
+
+    fireEvent.click(screen.getByText("Copy"));
+
+    await vi.waitFor(() => {
+      expect(mockWriteText).toHaveBeenCalledWith("PRODUCE\n  2 cup flour");
+      expect(toast.success).toHaveBeenCalledWith("Copied to clipboard!");
+    });
+  });
+
+  it("shows error toast when clipboard copy fails", async () => {
+    const mockWriteText = vi.fn().mockRejectedValue(new Error("Clipboard denied"));
+    Object.assign(navigator, {
+      clipboard: { writeText: mockWriteText },
+    });
+
+    render(
+      <GroceryExportMenu items={items} eventName="Test Event" />
+    );
+
+    fireEvent.click(screen.getByText("Copy"));
+
+    await vi.waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to copy to clipboard");
+    });
   });
 });

@@ -371,7 +371,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("2 pantry items excluded")).toBeInTheDocument();
+    expect(screen.getByText("2 pantry items excluded from this list")).toBeInTheDocument();
   });
 
   it("shows singular 'item' when one pantry item excluded", () => {
@@ -392,7 +392,69 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("1 pantry item excluded")).toBeInTheDocument();
+    expect(screen.getByText("1 pantry item excluded from this list")).toBeInTheDocument();
+  });
+
+  it("shows excluded pantry items when toggle is expanded", () => {
+    const ingredientsWithSalt: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "pepper", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithSalt}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        pantryItems={["salt", "pepper"]}
+      />
+    );
+
+    // Collapsed by default - excluded item names not visible
+    expect(screen.queryByText("Salt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
+
+    // Click to expand
+    const toggleButton = screen.getByRole("button", { name: /2 pantry items excluded/i });
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggleButton);
+
+    // Expanded - excluded item names visible (capitalized)
+    expect(toggleButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Salt")).toBeInTheDocument();
+    expect(screen.getByText("Pepper")).toBeInTheDocument();
+  });
+
+  it("collapses excluded pantry items when toggle is clicked again", () => {
+    const ingredientsWithSalt: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithSalt}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        pantryItems={["salt"]}
+      />
+    );
+
+    const toggleButton = screen.getByRole("button", { name: /1 pantry item excluded/i });
+
+    // Expand
+    fireEvent.click(toggleButton);
+    expect(screen.getByText("Salt")).toBeInTheDocument();
+
+    // Collapse
+    fireEvent.click(toggleButton);
+    expect(screen.queryByText("Salt")).not.toBeInTheDocument();
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
   });
 
   it("does not show excluded message when no pantry items match", () => {
@@ -492,6 +554,61 @@ describe("GroceryListSection", () => {
     expect(screen.getByText("Combining ingredients...")).toBeInTheDocument();
   });
 
+  it("filters pantry items from per-recipe tabs", async () => {
+    const ingredientsWithPantry: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "olive oil", quantity: 2, unit: "tbsp", category: "pantry" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithPantry}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        pantryItems={["salt", "olive oil"]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    await waitFor(() => {
+      // Tomato should still be visible
+      expect(screen.getByText("Produce")).toBeInTheDocument();
+    });
+
+    // Salt and olive oil (pantry items) should not appear in per-recipe tab
+    expect(screen.queryByText("Spices")).not.toBeInTheDocument();
+    // The Pantry category for olive oil should also be filtered
+    expect(screen.queryByText("Pantry")).not.toBeInTheDocument();
+  });
+
+  it("shows all per-recipe items when no pantry items provided", async () => {
+    const ingredientsWithSpices: RecipeIngredient[] = [
+      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
+      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredientsWithSpices}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Produce")).toBeInTheDocument();
+      expect(screen.getByText("Spices")).toBeInTheDocument();
+    });
+  });
+
   it("falls back to naive combine when smartGroceryItems is null", () => {
     render(
       <GroceryListSection
@@ -507,5 +624,278 @@ describe("GroceryListSection", () => {
 
     // Should show regular combined view
     expect(screen.getByText("Produce")).toBeInTheDocument();
+  });
+
+  // ---- Editable mode tests ----
+
+  it("shows Add item button when editable is true and has ingredients", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    expect(screen.getByText("Add item")).toBeInTheDocument();
+  });
+
+  it("does not show Add item button when editable is false", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+      />
+    );
+
+    expect(screen.queryByText("Add item")).not.toBeInTheDocument();
+  });
+
+  it("does not show Add item button when loading", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        isLoading
+      />
+    );
+
+    expect(screen.queryByText("Add item")).not.toBeInTheDocument();
+  });
+
+  it("does not show Add item button when no ingredients", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={[]}
+        recipeContentMap={{}}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    expect(screen.queryByText("Add item")).not.toBeInTheDocument();
+  });
+
+  it("shows add item form when Add item button is clicked", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+
+    expect(screen.getByLabelText("New item name")).toBeInTheDocument();
+    expect(screen.getByLabelText("New item quantity")).toBeInTheDocument();
+    expect(screen.getByLabelText("New item unit")).toBeInTheDocument();
+    expect(screen.getByText("Add")).toBeInTheDocument();
+    expect(screen.getByText("Cancel")).toBeInTheDocument();
+  });
+
+  it("calls onAddItem with item data when Add button is clicked", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+
+    fireEvent.change(screen.getByLabelText("New item name"), { target: { value: "paper towels" } });
+    fireEvent.change(screen.getByLabelText("New item quantity"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("New item unit"), { target: { value: "roll" } });
+
+    fireEvent.click(screen.getByText("Add"));
+
+    expect(onAddItem).toHaveBeenCalledWith({
+      name: "paper towels",
+      totalQuantity: 2,
+      unit: "roll",
+    });
+  });
+
+  it("calls onAddItem on Enter key in add form", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.change(screen.getByLabelText("New item name"), { target: { value: "napkins" } });
+    fireEvent.keyDown(screen.getByLabelText("New item name"), { key: "Enter" });
+
+    expect(onAddItem).toHaveBeenCalledWith({
+      name: "napkins",
+      totalQuantity: undefined,
+      unit: undefined,
+    });
+  });
+
+  it("hides add form on Cancel button click", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    expect(screen.getByLabelText("New item name")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByLabelText("New item name")).not.toBeInTheDocument();
+    expect(screen.getByText("Add item")).toBeInTheDocument();
+  });
+
+  it("hides add form on Escape key", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.keyDown(screen.getByLabelText("New item name"), { key: "Escape" });
+
+    expect(screen.queryByLabelText("New item name")).not.toBeInTheDocument();
+  });
+
+  it("does not call onAddItem when name is empty", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.click(screen.getByText("Add"));
+
+    expect(onAddItem).not.toHaveBeenCalled();
+  });
+
+  it("resets form fields after successful add", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.change(screen.getByLabelText("New item name"), { target: { value: "napkins" } });
+    fireEvent.change(screen.getByLabelText("New item quantity"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("New item unit"), { target: { value: "pack" } });
+    fireEvent.click(screen.getByText("Add"));
+
+    // Form should disappear, showing the Add item button again
+    expect(screen.queryByLabelText("New item name")).not.toBeInTheDocument();
+    expect(screen.getByText("Add item")).toBeInTheDocument();
+  });
+
+  it("passes editable props to GroceryCategoryGroup for smart items", () => {
+    const onEditItem = vi.fn();
+    const onRemoveItem = vi.fn();
+    const smartItems: SmartGroceryItem[] = [
+      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onEditItem={onEditItem}
+        onRemoveItem={onRemoveItem}
+        smartGroceryItems={smartItems}
+      />
+    );
+
+    // Verify edit buttons are visible (these come from GroceryItemRow via GroceryCategoryGroup)
+    expect(screen.getAllByLabelText("Edit item").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Remove item").length).toBeGreaterThan(0);
+  });
+
+  it("handles non-Enter/Escape key presses in add form without action", () => {
+    const onAddItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        editable
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Add item"));
+    fireEvent.keyDown(screen.getByLabelText("New item name"), { key: "Tab" });
+
+    // Should still be in add mode
+    expect(screen.getByLabelText("New item name")).toBeInTheDocument();
+    expect(onAddItem).not.toHaveBeenCalled();
   });
 });

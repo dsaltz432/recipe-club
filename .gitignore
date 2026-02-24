@@ -31,8 +31,13 @@ supabase/functions/.env
 # Test coverage reports
 coverage/
 
-# Ralph agent
-scripts/ralph/
+# Generated test/audit artifacts
+E2E_TEST_RESULTS_*.md
 
-# Test app env
-test-combine/.env
+# Claude Code
+.claude/
+
+# Ralph loop
+ralph/
+.vercel
+.env*.local

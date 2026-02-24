@@ -2,17 +2,21 @@ import type { CombinedGroceryItem, SmartGroceryItem, GroceryCategory } from "@/t
 import { GROCERY_CATEGORIES } from "@/lib/groceryList";
 import { Badge } from "@/components/ui/badge";
 import GroceryItemRow from "./GroceryItemRow";
+import type { GroceryItemEdit } from "./GroceryItemRow";
 
 interface GroceryCategoryGroupProps {
   category: GroceryCategory;
   items: (CombinedGroceryItem | SmartGroceryItem)[];
+  editable?: boolean;
+  onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
+  onRemoveItem?: (itemName: string) => void;
 }
 
 function getItemKey(item: CombinedGroceryItem | SmartGroceryItem, index: number): string {
   return `${item.name}-${item.unit ?? ""}-${index}`;
 }
 
-const GroceryCategoryGroup = ({ category, items }: GroceryCategoryGroupProps) => {
+const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onRemoveItem }: GroceryCategoryGroupProps) => {
   const displayName = GROCERY_CATEGORIES[category];
 
   return (
@@ -25,7 +29,13 @@ const GroceryCategoryGroup = ({ category, items }: GroceryCategoryGroupProps) =>
       </div>
       <div className="space-y-0.5">
         {items.map((item, index) => (
-          <GroceryItemRow key={getItemKey(item, index)} item={item} />
+          <GroceryItemRow
+            key={getItemKey(item, index)}
+            item={item}
+            editable={editable}
+            onEdit={onEditItem}
+            onRemove={onRemoveItem}
+          />
         ))}
       </div>
     </div>

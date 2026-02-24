@@ -7,6 +7,7 @@ export interface AllowedUser {
   email: string;
   role: "admin" | "viewer";
   is_club_member: boolean;
+  access_type: "club";
 }
 
 export const isAuthenticated = async (): Promise<boolean> => {
@@ -30,6 +31,7 @@ export const getAllowedUser = async (email: string): Promise<AllowedUser | null>
     email: data.email,
     role: data.role as "admin" | "viewer",
     is_club_member: data.is_club_member,
+    access_type: "club",
   };
 };
 
@@ -55,11 +57,15 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 
   // First try to get the user from the profiles table
-  const { data: profileData } = await supabase
+  const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", sessionData.session.user.id)
     .single();
+
+  if (profileError) {
+    console.error("Profile query failed:", profileError);
+  }
 
   if (profileData) {
     return {
@@ -93,15 +99,21 @@ export const isAdmin = (allowedUser: AllowedUser | null): boolean => {
   return allowedUser?.role === "admin";
 };
 
-export const signInWithGoogle = async (): Promise<void> => {
+export const signInWithGoogle = async (forceConsent = false): Promise<void> => {
   // Get the current site URL dynamically
   const siteUrl = window.location.origin;
+
+  const queryParams: Record<string, string> = { access_type: "offline" };
+  if (forceConsent) {
+    queryParams.prompt = "consent";
+  }
 
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: siteUrl + "/dashboard",
       scopes: "https://www.googleapis.com/auth/calendar.events",
+      queryParams,
     },
   });
 

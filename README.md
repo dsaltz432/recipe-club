@@ -147,6 +147,22 @@ npm run test            # Run in watch mode
 
 All files in `src/components/events/`, `src/components/ingredients/`, `src/components/recipes/`, and `src/lib/` must have **100% test coverage**. The only exception is `src/components/wheel/IngredientWheel.tsx` (~55% is acceptable).
 
+## Running Ralph (Autonomous Agent)
+
+Ralph (`ralph.sh`) runs Claude Code in a loop to autonomously implement tasks from `prd.json`. Run from the repo root.
+
+### Run
+
+```bash
+caffeinate -i ./ralph/ralph.sh 20
+```
+
+`caffeinate -i` prevents the Mac from sleeping while ralph runs. `20` is the max number of iterations.
+
+### Monitor progress
+
+Ralph logs to the terminal and appends to `ralph/activity.md` as it completes each task.
+
 ## Project Structure
 
 ```

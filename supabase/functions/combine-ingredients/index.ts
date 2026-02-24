@@ -49,22 +49,52 @@ serve(async (req) => {
 
 Your tasks:
 1. SEMANTIC MERGING: Combine items that are the same real ingredient but appear separately.
-   - "broccoli floret" + "broccoli" → one "broccoli" entry (sum quantities if compatible units)
+   - "broccoli floret" + "broccoli" → one "broccoli" entry
    - "garlic clove" + "garlic" → one "garlic" entry
    - "cold water" + "water" → one "water" entry
 2. KEEP SEPARATE: Items that are genuinely different products.
    - "sesame oil" ≠ "vegetable oil" (different products)
    - "rice vinegar" ≠ "white vinegar" (different products)
-   - "crushed tomatoes" ≠ "tomato" ≠ "tomato sauce" (different products)
+   - "crushed tomatoes" ≠ "tomato" ≠ "tomato sauce" (different forms/products)
+   - "chicken breast" ≠ "chicken broth" (different products)
+   - "fresh ginger" ≠ "ground ginger" (different forms — keep separate)
+   - "dried oregano" ≠ "fresh oregano" (different products — keep "dried" prefix)
+   - "canola oil" ≠ "vegetable oil" (different products)
+   - "black peppercorn" ≠ "black pepper" (whole peppercorns ≠ ground pepper - keep separate)
+   - "cinnamon stick" ≠ "cinnamon" / "ground cinnamon" (different forms - keep separate)
 3. If no merges are needed, return items unchanged.
 
-Rules:
+## MUST-MERGE ingredient variants (same grocery item):
+- ALL salt types → "salt": "kosher salt", "sea salt", "table salt", "flaky salt", "coarse salt"
+- ALL onion colors → "onion": "yellow onion", "white onion", "sweet onion" (but NOT "red onion", "green onion", "shallot")
+- ALL plain oil → "vegetable oil": "oil", "vegetable oil", "neutral oil" (but NOT "canola oil" — different product)
+- ALL olive oil → "olive oil": "olive oil", "extra virgin olive oil", "extra-virgin olive oil", "EVOO"
+- ALL butter → "butter": "butter", "unsalted butter", "salted butter"
+- Cheese + "cheese" suffix → base name: "parmesan cheese" → "parmesan", "mozzarella cheese" → "mozzarella"
+- Ground spice + spice → spice name: "ground turmeric" → "turmeric", "ground cumin" → "cumin", "ground cinnamon" → "cinnamon"
+- ALL sugar types → "sugar": "sugar", "white sugar", "granulated sugar", "caster sugar" (but NOT "brown sugar", "powdered sugar", "confectioner's sugar")
+- "green cardamom" + "cardamom" → "cardamom"
+- "flat-leaf parsley" + "parsley" → "parsley"
+- "cilantro" + "fresh cilantro" → "cilantro"
+- "black pepper" + "ground black pepper" → "black pepper"
+- "bay leaf" + "dried bay leaf" → "bay leaf"
+- KEEP "dried" prefix for herbs: "dried oregano" stays "dried oregano", "dried basil" stays "dried basil", "dried dill" stays "dried dill" — dried herbs are DIFFERENT products from fresh herbs
+- "green onion" + "scallion" + "spring onion" → "green onion"
+
+## Unit conversion rules (MUST convert before summing):
+- 1 tbsp = 3 tsp — CRITICAL: convert to same unit FIRST, then sum. Example: 0.5 tsp + 1 tbsp → convert 1 tbsp to 3 tsp → 0.5 + 3 = 3.5 tsp. Do NOT add 0.5 + 1 = 1.5!
+- 1 cup = 16 tbsp = 48 tsp
+- 1 lb = 16 oz
+- When BOTH items have convertible units (tsp/tbsp, cup/tbsp, oz/lb), convert to the smaller unit, sum, then express in the larger unit if the result is clean (e.g. 6 tsp → 2 tbsp)
+- When units are INCOMPATIBLE and cannot be converted (e.g. "clove" vs "tsp", "bunch" vs "cup", "piece" vs "tbsp"), keep BOTH entries as separate line items. NEVER drop an ingredient — it is better to have two entries for the same ingredient than to lose data.
+- When one item has a unit and another has null unit, keep the unit and add the quantities.
+
+## Rules:
+- NEVER drop ingredients. Every input item MUST appear in your output, either merged with a duplicate or returned unchanged. It is better to have duplicate entries than to lose an ingredient.
 - Preserve the most specific category assignment
 - Combine sourceRecipes arrays (deduplicated)
 - Return raw numeric quantities — do NOT format as fractions or strings
-- When merging items with the same unit, sum the quantities
-- When merging items with incompatible units, keep the larger quantity's unit and set the other to null
-- Items without any quantity: use null for totalQuantity
+- Items where ALL inputs have null quantity: use null for totalQuantity
 - Use clean base ingredient names (e.g. "broccoli" not "broccoli floret")
 - Never use metric units (g, kg, ml) — convert to imperial (oz, lb, tsp, tbsp, cup)
 
@@ -115,6 +145,25 @@ totalQuantity must be a number or null. unit must be a string or null.`;
       items = JSON.parse(jsonMatch[1].trim());
     } catch {
       throw new Error(`Failed to parse AI response as JSON: ${aiText.slice(0, 200)}`);
+    }
+
+    // Validate: AI must not drop ingredients. Compare unique names in vs out.
+    // Allow semantic merges where one name contains the other (e.g. "broccoli floret" → "broccoli").
+    const inputNames = new Set(preCombined.map((i) => i.name.toLowerCase()));
+    const outputNames = new Set(items.map((i) => i.name.toLowerCase()));
+    const droppedNames = [...inputNames].filter((inputName) => {
+      if (outputNames.has(inputName)) return false;
+      for (const outputName of outputNames) {
+        if (outputName.includes(inputName) || inputName.includes(outputName)) return false;
+      }
+      return true;
+    });
+    if (droppedNames.length > 0) {
+      console.warn(`AI dropped ingredients: ${droppedNames.join(", ")}. Falling back to naive combine.`);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, message: `AI dropped ingredients: ${droppedNames.join(", ")}` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(

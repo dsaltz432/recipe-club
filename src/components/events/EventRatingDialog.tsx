@@ -221,6 +221,7 @@ const EventRatingDialog = ({
                           key={star}
                           onClick={() => handleRatingChange(recipe.id, "rating", star)}
                           className="p-1 hover:scale-110 transition-transform"
+                          aria-label={`Rate ${star} out of 5 stars`}
                         >
                           <Star
                             className={`h-6 w-6 ${

@@ -4,6 +4,15 @@ import CookModeSection from "@/components/recipes/CookModeSection";
 import type { Recipe, RecipeContent, RecipeIngredient, CombinedCookPlan } from "@/types";
 import { createMockRecipe, createMockRecipeContent, createMockRecipeIngredient } from "@tests/utils";
 
+// Mock supabase client (required by @/lib/cookMode -> @/lib/groceryList)
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    functions: {
+      invoke: vi.fn().mockResolvedValue({ error: null }),
+    },
+  },
+}));
+
 // Mock cookMode lib
 const mockGenerateCookPlan = vi.fn();
 vi.mock("@/lib/cookMode", async () => {

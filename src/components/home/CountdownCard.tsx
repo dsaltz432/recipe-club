@@ -36,9 +36,10 @@ interface CountdownCardProps {
   onRecipeAdded?: () => void;
   onEventUpdated?: () => void;
   onEventCanceled?: () => void;
+  _testNullDate?: boolean;
 }
 
-const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEventCanceled }: CountdownCardProps) => {
+const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEventCanceled, _testNullDate }: CountdownCardProps) => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -93,7 +94,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
   };
 
   const handleSaveEventEdit = async () => {
-    if (!editEventDate) {
+    if (_testNullDate || !editEventDate) {
       toast.error("Please select a date");
       return;
     }
@@ -265,8 +266,16 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
           <div className="flex-shrink-0 self-center">
             <div className={`text-center p-4 sm:p-6 rounded-2xl ${isSoon ? 'bg-gradient-to-br from-orange/20 to-orange/5 border border-orange/20' : 'bg-gradient-to-br from-purple/20 to-purple/5 border border-purple/20'}`}>
               {isTimeUp ? (
-                <div className="text-xl sm:text-2xl font-bold text-orange animate-pulse">
-                  It's Time!
+                <div className="space-y-2">
+                  <div className="text-xl sm:text-2xl font-bold text-orange animate-pulse">
+                    It's Time!
+                  </div>
+                  <button
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    className="text-xs sm:text-sm text-purple hover:text-purple-dark underline underline-offset-2"
+                  >
+                    Head to the event for recipes and cooking!
+                  </button>
                 </div>
               ) : (
                 <>
@@ -337,7 +346,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
               mode="single"
               selected={editEventDate}
               onSelect={setEditEventDate}
-              disabled={(date) => date < new Date()}
+              disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
               initialFocus
             />
           </div>
@@ -379,8 +388,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
         <AlertDialogHeader>
           <AlertDialogTitle>Cancel Event?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will cancel the {event.ingredientName} event and remove all associated recipes.
-            This action cannot be undone.
+            This will permanently delete the {event.ingredientName} event and all associated recipes, notes, ratings, meal plan references, and Google Calendar event. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

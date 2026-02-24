@@ -12,6 +12,7 @@ All files in the following directories **MUST have 100% coverage** across ALL me
 |-----------|------------------|
 | `src/components/events/` | 100% |
 | `src/components/ingredients/` | 100% |
+| `src/components/mealplan/` | 100% |
 | `src/components/recipes/` | 100% |
 | `src/lib/` | 100% |
 
@@ -53,6 +54,7 @@ File               | % Stmts | % Branch | % Funcs | % Lines |
 -------------------|---------|----------|---------|---------|
 components/events  |     100 |      100 |     100 |     100 |
 components/ingredients |  100 |      100 |     100 |     100 |
+components/mealplan |    100 |      100 |     100 |     100 |
 components/recipes |     100 |      100 |     100 |     100 |
 lib                |     100 |      100 |     100 |     100 |
 components/wheel   |   ~55   |    ~60   |   ~46   |   ~57   | (EXEMPT)

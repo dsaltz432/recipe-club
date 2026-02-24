@@ -176,7 +176,8 @@ const PhotoUpload = ({
                 <button
                   type="button"
                   onClick={() => removePhoto(photo)}
-                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 p-2 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Remove photo ${index + 1}`}
                 >
                   <X className="h-4 w-4" />
                 </button>

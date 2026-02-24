@@ -192,12 +192,40 @@ describe("IngredientBank", () => {
     );
 
     await waitFor(() => {
-      const removeButtons = screen.getAllByRole("button", { name: "" });
-      // Filter for X buttons (remove buttons)
-      const xButtons = removeButtons.filter(
-        (btn) => btn.querySelector("svg")
-      );
-      expect(xButtons.length).toBeGreaterThan(0);
+      const removeButtons = screen.getAllByRole("button", { name: /Remove .+ from bank/ });
+      expect(removeButtons.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("has aria-label on add ingredient button", async () => {
+    render(
+      <IngredientBank
+        ingredients={mockIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add ingredient" })).toBeInTheDocument();
+    });
+  });
+
+  it("has aria-labels on remove ingredient buttons", async () => {
+    render(
+      <IngredientBank
+        ingredients={mockIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Remove Chicken from bank" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove Salmon from bank" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove Beef from bank" })).toBeInTheDocument();
     });
   });
 
@@ -776,6 +804,46 @@ describe("IngredientBank - Full Bank", () => {
 
     // Add ingredient input should be hidden when bank is full
     expect(screen.queryByPlaceholderText(/add a new ingredient/i)).not.toBeInTheDocument();
+  });
+
+  it("shows 'bank full' message when bank is at capacity for admin", async () => {
+    const fullBankIngredients: Ingredient[] = Array.from({ length: 10 }, (_, i) =>
+      createMockIngredient({ id: `${i}`, name: `Ingredient ${i}`, inBank: true })
+    );
+
+    render(
+      <IngredientBank
+        ingredients={fullBankIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Bank full — spin the wheel!")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show 'bank full' message for non-admin when bank is full", async () => {
+    const fullBankIngredients: Ingredient[] = Array.from({ length: 10 }, (_, i) =>
+      createMockIngredient({ id: `${i}`, name: `Ingredient ${i}`, inBank: true })
+    );
+
+    render(
+      <IngredientBank
+        ingredients={fullBankIngredients}
+        setIngredients={mockSetIngredients}
+        userId={mockUserId}
+        isAdmin={false}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/ready to spin/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Bank full — spin the wheel!")).not.toBeInTheDocument();
   });
 
   it("shows error when trying to add suggestion to full bank", async () => {

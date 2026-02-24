@@ -452,6 +452,21 @@ describe("EventRatingDialog - Star Ratings", () => {
     mockSelect.mockResolvedValue({ data: [], error: null });
   });
 
+  it("has aria-labels on star rating buttons", () => {
+    render(
+      <EventRatingDialog
+        event={mockEvent}
+        recipes={mockRecipes}
+        userId="user-123"
+        onComplete={mockOnComplete}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Rate 1 out of 5 stars" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rate 5 out of 5 stars" })).toBeInTheDocument();
+  });
+
   it("displays 5 stars for each recipe", () => {
     render(
       <EventRatingDialog

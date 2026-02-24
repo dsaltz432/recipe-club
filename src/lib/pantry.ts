@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const DEFAULT_PANTRY_ITEMS = ["salt", "pepper", "water"];
+export const DEFAULT_PANTRY_ITEMS = ["salt", "pepper", "water"];
 
 export async function getPantryItems(userId: string): Promise<{ id: string; name: string }[]> {
   const { data, error } = await supabase

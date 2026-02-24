@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Ingredient, ScheduledEvent } from "@/types";
 import { MIN_INGREDIENTS_TO_SPIN, WHEEL_COLORS } from "@/lib/constants";
-import { getContrastTextColor } from "@/lib/ingredientColors";
+
 import confetti from "canvas-confetti";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +50,7 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "pm" : "am";
+    const ampm = hour >= 12 ? "PM" : "AM";
     const displayHour = hour % 12 || 12;
     return minutes === "00" ? `${displayHour}${ampm}` : `${displayHour}:${minutes}${ampm}`;
   };
@@ -188,6 +188,17 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
     spinWheel();
   };
 
+  // Calculate font size for wheel segment labels to prevent text overflow.
+  // Only shrinks from 16px for long names (>12 chars), minimum 10px.
+  const getSegmentFontSize = (name: string): number => {
+    const defaultSize = 16;
+    const minSize = 10;
+    if (name.length <= 12) return defaultSize;
+    // Scale down gradually for longer names
+    const scale = 12 / name.length;
+    return Math.max(minSize, Math.round(defaultSize * scale * 10) / 10);
+  };
+
   // Generate wheel segments
   const renderWheel = () => {
     if (bankIngredients.length === 0) {
@@ -228,31 +239,29 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
           const mathAngle = segmentCenterAngle - 90;
           const radians = (mathAngle * Math.PI) / 180;
 
-          // Position label along the radius, closer to outer edge
-          const x = 50 + 36 * Math.cos(radians);
-          const y = 50 + 36 * Math.sin(radians);
+          // Position label along the radius
+          const x = 50 + 32 * Math.cos(radians);
+          const y = 50 + 32 * Math.sin(radians);
 
           // Text rotation: all text points radially toward the center
           const textRotation = segmentCenterAngle + 90;
 
-          // Get text color that contrasts well with the slice color
-          const sliceColor = sliceColors[i];
-          const textColor = getContrastTextColor(sliceColor);
-          // Use appropriate shadow based on text color
-          const textShadow = textColor === "#ffffff"
-            ? "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)"
-            : "1px 1px 2px rgba(255,255,255,0.7), -1px -1px 2px rgba(255,255,255,0.7), 0 0 4px rgba(255,255,255,0.5)";
+          // White text with dark shadow for readability on all slices
+          const textShadow = "1px 1px 2px rgba(0,0,0,0.7), -1px -1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5)";
+
+          const fontSize = getSegmentFontSize(ingredient.name);
 
           return (
             <div
               key={ingredient.id}
-              className="absolute text-[11px] font-bold"
+              className="absolute font-bold"
               style={{
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
-                color: textColor,
+                color: "#ffffff",
                 textShadow,
+                fontSize: `${fontSize}px`,
                 whiteSpace: "nowrap",
                 opacity: ingredient.usedCount > 2 ? 0.85 : 1,
               }}
@@ -342,7 +351,7 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
-              disabled={(date) => date < new Date()}
+              disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
               initialFocus
             />
           </div>

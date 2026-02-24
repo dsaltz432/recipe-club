@@ -152,13 +152,40 @@ export interface CombinedCookPlan {
   tips: string[];
 }
 
+
+export interface MealPlan {
+  id: string;
+  userId: string;
+  name: string;
+  weekStart: string;
+  status: "draft" | "active" | "completed" | "archived";
+  createdAt?: string;
+}
+
+export interface MealPlanItem {
+  id: string;
+  planId: string;
+  recipeId?: string;
+  dayOfWeek: number; // 0=Sunday..6=Saturday
+  mealType: "breakfast" | "lunch" | "dinner" | "snack";
+  customName?: string;
+  customUrl?: string;
+  sortOrder: number;
+  eventId?: string;
+  cookedAt?: string;
+  // Joined data
+  recipeName?: string;
+  recipeUrl?: string;
+}
+
 export interface ScheduledEvent {
   id: string;
-  ingredientId: string;
+  ingredientId?: string;
   eventDate: string;
   eventTime?: string;
   createdBy: string;
   status: "scheduled" | "completed" | "canceled";
+  type?: "club" | "personal";
   ingredientName?: string;
   ingredientColor?: string;
 }

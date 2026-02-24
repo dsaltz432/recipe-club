@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarClock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarClock, BookOpen } from "lucide-react";
 import CountdownCard from "./CountdownCard";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
@@ -26,6 +28,8 @@ const HomeSection = ({
   onRecipeAdded,
   onEventUpdated,
 }: HomeSectionProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-4">
       {/* Personalized Greeting */}
@@ -77,8 +81,15 @@ const HomeSection = ({
             <h3 className="font-display text-xl font-semibold">No Event Scheduled</h3>
             <p className="text-muted-foreground">
               There's no upcoming Recipe Club event at the moment.
-              Check back soon or browse past recipes in the Recipes tab!
+              Check back soon or browse past recipes!
             </p>
+            <Button
+              onClick={() => navigate("/dashboard/recipes")}
+              className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Browse Recipes
+            </Button>
           </CardContent>
         </Card>
       )}

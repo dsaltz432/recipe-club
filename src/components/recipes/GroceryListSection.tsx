@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { ShoppingCart, Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Info, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { RecipeIngredient, RecipeContent, CombinedGroceryItem, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
 import { combineIngredients, groupByCategory, filterPantryItems, filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
 import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
+import type { GroceryItemEdit } from "./GroceryItemRow";
 
 interface GroceryListSectionProps {
   recipes: Recipe[];
@@ -19,6 +21,10 @@ interface GroceryListSectionProps {
   pantryItems?: string[];
   smartGroceryItems?: SmartGroceryItem[] | null;
   isCombining?: boolean;
+  editable?: boolean;
+  onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
+  onRemoveItem?: (itemName: string) => void;
+  onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
 }
 
 function groupSmartByCategory(
@@ -44,8 +50,17 @@ const GroceryListSection = ({
   pantryItems = [],
   smartGroceryItems,
   isCombining,
+  editable,
+  onEditItem,
+  onRemoveItem,
+  onAddItem,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
+  const [showExcluded, setShowExcluded] = useState(false);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemQuantity, setNewItemQuantity] = useState("");
+  const [newItemUnit, setNewItemUnit] = useState("");
 
   const recipeNameMap: Record<string, string> = {};
   for (const recipe of recipes) {
@@ -56,7 +71,10 @@ const GroceryListSection = ({
   const filteredItems = pantryItems.length > 0
     ? filterPantryItems(combinedItems, pantryItems)
     : combinedItems;
-  const pantryExcludedCount = combinedItems.length - filteredItems.length;
+  const excludedItems = combinedItems.filter(
+    (item) => !filteredItems.includes(item)
+  );
+  const pantryExcludedCount = excludedItems.length;
   const groupedItems = groupByCategory(filteredItems);
 
   // Smart grocery grouping (with pantry filtering)
@@ -71,6 +89,26 @@ const GroceryListSection = ({
       await onParseRecipe(recipeId);
     } finally {
       setParsingRecipeId(null);
+    }
+  };
+
+  const handleAddItem = () => {
+    const trimmedName = newItemName.trim();
+    if (!trimmedName) return;
+    const parsedQty = newItemQuantity.trim() ? Number(newItemQuantity.trim()) : undefined;
+    const trimmedUnit = newItemUnit.trim() || undefined;
+    onAddItem?.({ name: trimmedName, totalQuantity: parsedQty, unit: trimmedUnit });
+    setNewItemName("");
+    setNewItemQuantity("");
+    setNewItemUnit("");
+    setIsAddingItem(false);
+  };
+
+  const handleAddItemKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleAddItem();
+    } else if (e.key === "Escape") {
+      setIsAddingItem(false);
     }
   };
 
@@ -200,6 +238,9 @@ const GroceryListSection = ({
                       key={category}
                       category={category}
                       items={items}
+                      editable={editable}
+                      onEditItem={onEditItem}
+                      onRemoveItem={onRemoveItem}
                     />
                   ))}
                 </>
@@ -212,6 +253,9 @@ const GroceryListSection = ({
                       key={category}
                       category={category}
                       items={items}
+                      editable={editable}
+                      onEditItem={onEditItem}
+                      onRemoveItem={onRemoveItem}
                     />
                   ))}
                 </>
@@ -227,7 +271,10 @@ const GroceryListSection = ({
                 category: ing.category,
                 sourceRecipes: [recipe.name],
               }));
-              const recipeGrouped = groupByCategory(recipeItems);
+              const filteredRecipeItems = pantryItems.length > 0
+                ? filterPantryItems(recipeItems, pantryItems)
+                : recipeItems;
+              const recipeGrouped = groupByCategory(filteredRecipeItems);
 
               return (
                 <TabsContent key={recipe.id} value={recipe.id}>
@@ -236,6 +283,9 @@ const GroceryListSection = ({
                       key={`${recipe.id}-${category}`}
                       category={category}
                       items={items}
+                      editable={editable}
+                      onEditItem={onEditItem}
+                      onRemoveItem={onRemoveItem}
                     />
                   ))}
                 </TabsContent>
@@ -244,10 +294,91 @@ const GroceryListSection = ({
           </Tabs>
         )}
 
+        {editable && !isLoading && hasAnyIngredients && (
+          <div className="mt-3 border-t pt-3">
+            {!isAddingItem ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAddingItem(true)}
+                className="text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add item
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  placeholder="Qty"
+                  className="w-16 h-7 text-sm"
+                  onKeyDown={handleAddItemKeyDown}
+                  aria-label="New item quantity"
+                />
+                <Input
+                  value={newItemUnit}
+                  onChange={(e) => setNewItemUnit(e.target.value)}
+                  placeholder="Unit"
+                  className="w-20 h-7 text-sm"
+                  onKeyDown={handleAddItemKeyDown}
+                  aria-label="New item unit"
+                />
+                <Input
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Item name"
+                  className="flex-1 h-7 text-sm"
+                  onKeyDown={handleAddItemKeyDown}
+                  aria-label="New item name"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleAddItem}
+                  className="h-7 text-xs"
+                >
+                  Add
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingItem(false)}
+                  className="h-7 text-xs"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {!isLoading && pantryExcludedCount > 0 && (
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded
-          </p>
+          <div className="mt-3 bg-purple-50 rounded-md border border-purple-100">
+            <button
+              type="button"
+              className="flex items-center gap-2 w-full p-2 text-left"
+              onClick={() => setShowExcluded((prev) => !prev)}
+              aria-expanded={showExcluded}
+            >
+              <Info className="h-4 w-4 text-purple shrink-0" />
+              <p className="text-sm text-purple-700 flex-1">
+                {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded from this list
+              </p>
+              {showExcluded ? (
+                <ChevronUp className="h-4 w-4 text-purple shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-purple shrink-0" />
+              )}
+            </button>
+            {showExcluded && (
+              <ul className="px-8 pb-2 text-sm text-purple-700 list-disc">
+                {excludedItems.map((item) => (
+                  <li key={item.name}>{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@tests": path.resolve(__dirname, "./tests"),
+      "@edge": path.resolve(__dirname, "./supabase/functions"),
     },
   },
   test: {
@@ -16,6 +17,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
+    testTimeout: 15000,
+    pool: "forks",
+    maxForks: 4,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

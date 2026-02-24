@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star } from "lucide-react";
-import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
+import { GROCERY_CATEGORIES, CATEGORY_ORDER } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
+import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -35,15 +37,34 @@ interface RecipeWithNotes extends Recipe {
   ingredientName?: string;
   ingredientColor?: string;
   ratingSummary?: RecipeRatingsSummary;
+  isPersonal?: boolean;
 }
+
+export type RecipeCardRecipe = RecipeWithNotes;
 
 interface RecipeCardProps {
   recipe: RecipeWithNotes;
+  onEdit?: (recipe: RecipeWithNotes) => void;
+  onDelete?: (recipeId: string) => void;
+  onEditRating?: (recipe: RecipeWithNotes) => void;
+  onAddNote?: (recipe: RecipeWithNotes) => void;
+  ingredients?: RecipeIngredient[];
+  pantryItems?: string[];
+  contentStatus?: RecipeContent["status"];
+  onParseRecipe?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
+  const allPantryItems = pantryItems && pantryItems.length > 0
+    ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
+    : DEFAULT_PANTRY_ITEMS;
+  const filteredIngredients = ingredients?.filter(
+    (ing) => !allPantryItems.includes(ing.name.toLowerCase())
+  );
+  const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
   const hasDetails = recipe.url || recipe.notes.length > 0;
 
   // Get colors from ingredient
@@ -92,20 +113,54 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
       </CardHeader>
 
       <CardContent className="pt-0">
+        {/* Badges row */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {recipe.isPersonal && (
+            <Badge variant="outline" className="border-purple text-purple bg-purple/5">
+              Personal
+            </Badge>
+          )}
 
-        {recipe.ingredientName && (
-          <Badge
-            variant="outline"
-            className="mb-3"
-            style={{
-              borderColor: themeColor,
-              color: themeColor,
-              backgroundColor: bgColor || undefined,
-            }}
-          >
-            {recipe.ingredientName}
-          </Badge>
-        )}
+          {(onDelete || (recipe.isPersonal && onEdit)) && (
+            <div className="flex items-center gap-1 ml-auto">
+              {recipe.isPersonal && onEdit && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  aria-label="Edit recipe"
+                  onClick={() => onEdit(recipe)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  aria-label="Delete recipe"
+                  onClick={() => onDelete(recipe.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {recipe.ingredientName && (
+            <Badge
+              variant="outline"
+              style={{
+                borderColor: themeColor,
+                color: themeColor,
+                backgroundColor: bgColor || undefined,
+              }}
+            >
+              {recipe.ingredientName}
+            </Badge>
+          )}
+        </div>
 
         {/* Rating display */}
         {recipe.ratingSummary && recipe.ratingSummary.totalRatings > 0 && (
@@ -119,6 +174,17 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                   ? recipe.ratingSummary.averageRating
                   : recipe.ratingSummary.averageRating.toFixed(1)}/5
               </span>
+              {recipe.eventId && onEditRating && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 ml-1"
+                  aria-label="Edit rating"
+                  onClick={() => onEditRating(recipe)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
             </div>
             {recipe.ratingSummary.memberRatings.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
@@ -135,7 +201,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
         )}
 
         {/* Quick stats */}
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-3">
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-3 items-center">
           <span className="flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
             {recipe.notes.length} {recipe.notes.length !== 1 ? "notes" : "note"}
@@ -146,7 +212,89 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
               {recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0)} photos
             </span>
           )}
+          {onAddNote && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => onAddNote(recipe)}
+              aria-label="Add note"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add Note
+            </Button>
+          )}
         </div>
+
+        {/* Ingredients Section */}
+        {contentStatus === "parsing" ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Parsing ingredients...
+          </div>
+        ) : contentStatus === "failed" ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <span>Parsing failed</span>
+            {recipe.url && onParseRecipe && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => onParseRecipe(recipe.id)}
+              >
+                Retry
+              </Button>
+            )}
+          </div>
+        ) : hasIngredients ? (
+          <div className="mb-3">
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              onClick={() => setIngredientsExpanded(!ingredientsExpanded)}
+              aria-label={ingredientsExpanded ? "Collapse ingredients" : "Expand ingredients"}
+            >
+              {ingredientsExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              <span>{filteredIngredients!.length} ingredient{filteredIngredients!.length !== 1 ? "s" : ""}</span>
+            </button>
+            {ingredientsExpanded && (
+              <div className="mt-2 space-y-2 pl-1">
+                {CATEGORY_ORDER.filter((cat) =>
+                  filteredIngredients!.some((ing) => ing.category === cat)
+                ).map((cat) => (
+                  <div key={cat}>
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      {GROCERY_CATEGORIES[cat]}
+                    </div>
+                    <ul className="space-y-0.5">
+                      {filteredIngredients!
+                        .filter((ing) => ing.category === cat)
+                        .map((ing) => (
+                          <li key={ing.id} className="text-sm">
+                            {ing.quantity ? `${ing.quantity} ` : ""}{ing.unit ? `${ing.unit} ` : ""}{ing.name}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : recipe.url && contentStatus !== "completed" && onParseRecipe ? (
+          <div className="mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-3 text-xs"
+              onClick={() => onParseRecipe(recipe.id)}
+            >
+              Parse Ingredients
+            </Button>
+          </div>
+        ) : null}
 
         {/* Expandable Details */}
         {hasDetails && (

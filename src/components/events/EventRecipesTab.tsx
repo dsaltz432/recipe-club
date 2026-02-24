@@ -53,6 +53,7 @@ interface EventRecipesTabProps {
   onEditNoteClick: (note: RecipeNote) => void;
   onDeleteNoteClick: (note: RecipeNote) => void;
   onDeleteRecipeClick: (recipe: Recipe) => void;
+  onRateRecipe?: (recipe: EventRecipeWithRatings) => void;
 }
 
 const EventRecipesTab = ({
@@ -68,6 +69,7 @@ const EventRecipesTab = ({
   onEditNoteClick,
   onDeleteNoteClick,
   onDeleteRecipeClick,
+  onRateRecipe,
 }: EventRecipesTabProps) => {
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -157,6 +159,17 @@ const EventRecipesTab = ({
                                   : ratingSummary.averageRating.toFixed(1)}
                                 /5
                               </span>
+                              {onRateRecipe && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 ml-1"
+                                  aria-label={`Edit rating for ${recipe.name}`}
+                                  onClick={() => onRateRecipe({ recipe, notes, ratingSummary })}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              )}
                             </div>
                             {ratingSummary.memberRatings &&
                               ratingSummary.memberRatings.length > 0 && (
@@ -180,6 +193,19 @@ const EventRecipesTab = ({
                               )}
                           </div>
                         )}
+                        {/* Rate button for unrated recipes */}
+                        {onRateRecipe && (!ratingSummary || ratingSummary.totalRatings === 0) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 mt-1 text-xs text-muted-foreground hover:text-purple"
+                            aria-label={`Rate ${recipe.name}`}
+                            onClick={() => onRateRecipe({ recipe, notes, ratingSummary })}
+                          >
+                            <Star className="h-3 w-3 mr-1" />
+                            Rate
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -194,6 +220,7 @@ const EventRecipesTab = ({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 sm:h-8 sm:w-8"
+                            aria-label={`Edit recipe ${recipe.name}`}
                             onClick={() => onEditRecipeClick(recipe)}
                           >
                             <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -202,6 +229,7 @@ const EventRecipesTab = ({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                            aria-label={`Delete recipe ${recipe.name}`}
                             onClick={() => onDeleteRecipeClick(recipe)}
                           >
                             <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -252,7 +280,7 @@ const EventRecipesTab = ({
                                         <img
                                           key={idx}
                                           src={photo}
-                                          alt=""
+                                          alt={`Photo for ${recipe.name}`}
                                           className="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-lg shadow-sm shrink-0"
                                         />
                                       ))}
@@ -265,6 +293,7 @@ const EventRecipesTab = ({
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7 sm:h-8 sm:w-8"
+                                      aria-label="Edit my notes"
                                       onClick={() => onEditNoteClick(note)}
                                     >
                                       <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -273,6 +302,7 @@ const EventRecipesTab = ({
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7 sm:h-8 sm:w-8"
+                                      aria-label="Delete my notes"
                                       disabled={deletingNoteId === note.id}
                                       onClick={() => onDeleteNoteClick(note)}
                                     >

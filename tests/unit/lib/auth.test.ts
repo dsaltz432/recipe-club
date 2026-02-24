@@ -28,6 +28,7 @@ describe("isAdmin", () => {
       email: "admin@example.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
     };
 
     expect(isAdmin(adminUser)).toBe(true);
@@ -39,6 +40,7 @@ describe("isAdmin", () => {
       email: "viewer@example.com",
       role: "viewer",
       is_club_member: true,
+      access_type: "club",
     };
 
     expect(isAdmin(viewerUser)).toBe(false);
@@ -56,12 +58,14 @@ describe("AllowedUser type", () => {
       email: "test@example.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
     };
 
     expect(user.id).toBeDefined();
     expect(user.email).toBeDefined();
     expect(user.role).toMatch(/^(admin|viewer)$/);
     expect(typeof user.is_club_member).toBe("boolean");
+    expect(user.access_type).toBe("club");
   });
 
   it("should enforce valid role values", () => {
@@ -70,6 +74,7 @@ describe("AllowedUser type", () => {
       email: "admin@test.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
     };
 
     const viewerUser: AllowedUser = {
@@ -77,6 +82,7 @@ describe("AllowedUser type", () => {
       email: "viewer@test.com",
       role: "viewer",
       is_club_member: false,
+      access_type: "club",
     };
 
     expect(["admin", "viewer"]).toContain(adminUser.role);
@@ -154,6 +160,7 @@ describe("Auth module integration", () => {
           email: "test@example.com",
           role: "admin",
           is_club_member: true,
+          access_type: "club",
         },
         error: null,
       }),
@@ -174,6 +181,37 @@ describe("Auth module integration", () => {
       email: "test@example.com",
       role: "admin",
       is_club_member: true,
+      access_type: "club",
+    });
+  });
+
+  it("should default access_type to club when not set", async () => {
+    const mockQueryBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: {
+          id: "allowed-user-456",
+          email: "legacy@example.com",
+          role: "viewer",
+          is_club_member: true,
+          access_type: null,
+        },
+        error: null,
+      }),
+    };
+
+    mockSupabase.from.mockReturnValue(mockQueryBuilder);
+
+    const { getAllowedUser } = await import("@/lib/auth");
+    const result = await getAllowedUser("legacy@example.com");
+
+    expect(result).toEqual({
+      id: "allowed-user-456",
+      email: "legacy@example.com",
+      role: "viewer",
+      is_club_member: true,
+      access_type: "club",
     });
   });
 
@@ -496,6 +534,52 @@ describe("getCurrentUser", () => {
     });
   });
 
+  it("should log error and fallback to session data when profile query fails", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockSupabase.auth.getSession.mockResolvedValue({
+      data: {
+        session: {
+          user: {
+            id: "user-123",
+            email: "test@example.com",
+            user_metadata: {
+              name: "Session Name",
+              avatar_url: "session-avatar.jpg",
+            },
+          },
+        },
+      },
+      error: null,
+    });
+
+    const profileError = { message: "Profile not found", code: "PGRST116" };
+    const mockProfileQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: profileError,
+      }),
+    };
+
+    mockSupabase.from.mockReturnValue(mockProfileQuery);
+
+    const { getCurrentUser } = await import("@/lib/auth");
+    const result = await getCurrentUser();
+
+    expect(consoleSpy).toHaveBeenCalledWith("Profile query failed:", profileError);
+    // Should fallback to session data since profileData is null
+    expect(result).toEqual({
+      id: "user-123",
+      name: "Session Name",
+      email: "test@example.com",
+      avatar_url: "session-avatar.jpg",
+    });
+
+    consoleSpy.mockRestore();
+  });
+
   it("should fallback to email username when no name available (no profile)", async () => {
     mockSupabase.auth.getSession.mockResolvedValue({
       data: {
@@ -621,6 +705,23 @@ describe("signInWithGoogle", () => {
       options: {
         redirectTo: expect.stringContaining("/dashboard"),
         scopes: "https://www.googleapis.com/auth/calendar.events",
+        queryParams: { access_type: "offline" },
+      },
+    });
+  });
+
+  it("should include prompt: consent when forceConsent is true", async () => {
+    mockSupabase.auth.signInWithOAuth.mockResolvedValue({ error: null });
+
+    const { signInWithGoogle } = await import("@/lib/auth");
+    await signInWithGoogle(true);
+
+    expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: expect.stringContaining("/dashboard"),
+        scopes: "https://www.googleapis.com/auth/calendar.events",
+        queryParams: { access_type: "offline", prompt: "consent" },
       },
     });
   });

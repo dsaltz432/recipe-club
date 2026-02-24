@@ -1,16 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
-import RecipeCard from "@/components/recipes/RecipeCard";
-import type { Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
+import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient } from "@/types";
 
-// Mock date-fns
-vi.mock("date-fns", () => ({
-  format: (date: Date) => {
-    const d = new Date(date);
-    return `${d.toLocaleString("en-US", { month: "short" })} ${d.getDate()}, ${d.getFullYear()}`;
+// Mock supabase client (imported transitively by groceryList)
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    functions: {
+      invoke: vi.fn().mockResolvedValue({ error: null }),
+    },
   },
-  parseISO: (str: string) => new Date(str),
 }));
+
+// Mock sonner toast
+vi.mock("sonner", () => ({
+  toast: {
+    error: vi.fn(),
+    success: vi.fn(),
+  },
+}));
+
+import RecipeCard from "@/components/recipes/RecipeCard";
 
 interface RecipeWithNotes extends Recipe {
   notes: RecipeNote[];
@@ -374,6 +383,110 @@ describe("RecipeCard - Edge Cases", () => {
   });
 });
 
+describe("RecipeCard - Personal Recipe Edit/Delete", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit and delete buttons for personal recipes with callbacks", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+  });
+
+  it("shows delete but not edit button when not personal", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: false });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+  });
+
+  it("does not show edit/delete buttons when callbacks are not provided", () => {
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+  });
+
+  it("calls onEdit with recipe when edit button is clicked", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByLabelText("Edit recipe"));
+
+    expect(onEdit).toHaveBeenCalledWith(recipe);
+  });
+
+  it("calls onDelete with recipe id when delete button is clicked", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true, id: "recipe-42" });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    expect(onDelete).toHaveBeenCalledWith("recipe-42");
+  });
+
+  it("shows delete but not edit when isPersonal is undefined", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: undefined });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+  });
+
+  it("shows delete button for club recipe when only onDelete provided", () => {
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: false, eventId: "event-1" });
+
+    render(<RecipeCard recipe={recipe} onDelete={onDelete} />);
+
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+  });
+
+  it("calls onDelete with club recipe id when delete button is clicked", () => {
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: false, id: "club-recipe-42", eventId: "event-1" });
+
+    render(<RecipeCard recipe={recipe} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByLabelText("Delete recipe"));
+
+    expect(onDelete).toHaveBeenCalledWith("club-recipe-42");
+  });
+
+  it("shows Personal badge alongside edit/delete buttons", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
+
+    expect(screen.getByText("Personal")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+  });
+});
+
 describe("RecipeCard - Ratings Display", () => {
   it("displays rating summary when available", () => {
     const recipe = createMockRecipe({
@@ -459,5 +572,382 @@ describe("RecipeCard - Ratings Display", () => {
     expect(screen.getByText("4/5")).toBeInTheDocument();
     // No "Make again:" section when memberRatings is empty
     expect(screen.queryByText("Make again:")).not.toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - Add Note Button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows Add Note button when onAddNote is provided", () => {
+    const onAddNote = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
+
+    expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    expect(screen.getByText("Add Note")).toBeInTheDocument();
+  });
+
+  it("does not show Add Note button when onAddNote is not provided", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+  });
+
+  it("calls onAddNote with recipe when Add Note button is clicked", () => {
+    const onAddNote = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
+
+    fireEvent.click(screen.getByLabelText("Add note"));
+
+    expect(onAddNote).toHaveBeenCalledWith(recipe);
+  });
+});
+
+describe("RecipeCard - Edit Rating Button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit rating button when recipe has eventId and onEditRating is provided", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+  });
+
+  it("does not show edit rating button when onEditRating is not provided", () => {
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("does not show edit rating button when recipe has no eventId", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: undefined,
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("does not show edit rating button when there are no ratings", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: undefined,
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+  });
+
+  it("calls onEditRating with recipe when edit rating button is clicked", () => {
+    const onEditRating = vi.fn();
+    const recipe = createMockRecipe({
+      eventId: "event-1",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.5,
+        wouldCookAgainPercent: 80,
+        totalRatings: 2,
+        memberRatings: [{ initial: "S", wouldCookAgain: true }],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
+
+    fireEvent.click(screen.getByLabelText("Edit rating"));
+
+    expect(onEditRating).toHaveBeenCalledWith(recipe);
+  });
+});
+
+const createMockIngredient = (overrides: Partial<RecipeIngredient> = {}): RecipeIngredient => ({
+  id: "ing-1",
+  recipeId: "recipe-1",
+  name: "Salmon fillet",
+  quantity: 2,
+  unit: "lb",
+  category: "meat_seafood",
+  rawText: "2 lb salmon fillet",
+  sortOrder: 0,
+  createdAt: "2025-01-15T10:00:00Z",
+  ...overrides,
+});
+
+describe("RecipeCard - Ingredients Section", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows ingredient count when ingredients are provided", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon" }),
+      createMockIngredient({ id: "ing-2", name: "Lemon", category: "produce" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.getByText("2 ingredients")).toBeInTheDocument();
+  });
+
+  it("shows singular ingredient text for one ingredient", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+  });
+
+  it("expands to show grouped ingredients when clicked", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
+      createMockIngredient({ id: "ing-2", name: "Lemon", quantity: 1, unit: undefined, category: "produce" }),
+      createMockIngredient({ id: "ing-3", name: "Garlic", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+
+    // Category headings
+    expect(screen.getByText("Produce")).toBeInTheDocument();
+    expect(screen.getByText("Protein")).toBeInTheDocument();
+    expect(screen.getByText("Spices")).toBeInTheDocument();
+
+    // Ingredients
+    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
+    expect(screen.getByText("1 Lemon")).toBeInTheDocument();
+    expect(screen.getByText("Garlic")).toBeInTheDocument();
+  });
+
+  it("collapses ingredients when clicked again", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    // Expand
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    expect(screen.getByLabelText("Collapse ingredients")).toBeInTheDocument();
+
+    // Collapse
+    fireEvent.click(screen.getByLabelText("Collapse ingredients"));
+    expect(screen.getByLabelText("Expand ingredients")).toBeInTheDocument();
+  });
+
+  it("shows parsing spinner when contentStatus is parsing", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} contentStatus="parsing" />);
+
+    expect(screen.getByText("Parsing ingredients...")).toBeInTheDocument();
+  });
+
+  it("shows parsing failed text when contentStatus is failed", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" />);
+
+    expect(screen.getByText("Parsing failed")).toBeInTheDocument();
+  });
+
+  it("shows retry button when parsing failed and recipe has URL and onParseRecipe", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" onParseRecipe={onParseRecipe} />);
+
+    const retryBtn = screen.getByRole("button", { name: /retry/i });
+    expect(retryBtn).toBeInTheDocument();
+    fireEvent.click(retryBtn);
+    expect(onParseRecipe).toHaveBeenCalledWith("recipe-1");
+  });
+
+  it("does not show retry button when parsing failed but no URL", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" onParseRecipe={onParseRecipe} />);
+
+    expect(screen.getByText("Parsing failed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show retry button when parsing failed but no onParseRecipe", () => {
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="failed" />);
+
+    expect(screen.getByText("Parsing failed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("shows Parse Ingredients button when recipe has URL and no ingredients and not completed", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} onParseRecipe={onParseRecipe} />);
+
+    const parseBtn = screen.getByRole("button", { name: /parse ingredients/i });
+    expect(parseBtn).toBeInTheDocument();
+    fireEvent.click(parseBtn);
+    expect(onParseRecipe).toHaveBeenCalledWith("recipe-1");
+  });
+
+  it("does not show Parse Ingredients button when contentStatus is completed", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="completed" onParseRecipe={onParseRecipe} />);
+
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show Parse Ingredients button when recipe has no URL", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} onParseRecipe={onParseRecipe} />);
+
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show Parse Ingredients button when onParseRecipe is not provided", () => {
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show ingredients section when no ingredients and no URL", () => {
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByText(/ingredient/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Parsing")).not.toBeInTheDocument();
+  });
+
+  it("does not show ingredients section when empty ingredients array is provided", () => {
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} ingredients={[]} />);
+
+    expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
+  });
+
+  it("does not show Parse Ingredients when content status is pending", () => {
+    const onParseRecipe = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} contentStatus="pending" onParseRecipe={onParseRecipe} />);
+
+    expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
+  });
+
+  it("excludes pantry items (salt, pepper, water) from ingredient count and list", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
+      createMockIngredient({ id: "ing-2", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockIngredient({ id: "ing-3", name: "Pepper", quantity: undefined, unit: undefined, category: "spices" }),
+      createMockIngredient({ id: "ing-4", name: "Water", quantity: 1, unit: "cup", category: "other" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    // Only non-pantry ingredient should be counted
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+
+    // Expand and verify pantry items are not shown
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
+    expect(screen.queryByText("salt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Water/)).not.toBeInTheDocument();
+  });
+
+  it("hides ingredients section when all ingredients are pantry items", () => {
+    const recipe = createMockRecipe({ url: undefined });
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "salt", category: "spices" }),
+      createMockIngredient({ id: "ing-2", name: "pepper", category: "spices" }),
+    ];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    // No ingredient count should be shown since all are filtered out
+    expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
+  });
+
+  it("filters custom pantryItems in addition to defaults", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [
+      createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
+      createMockIngredient({ id: "ing-2", name: "butter", quantity: 1, unit: "tbsp", category: "dairy" }),
+      createMockIngredient({ id: "ing-3", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
+    ];
+
+    // Custom pantry includes "butter"; defaults (salt, pepper, water) are always included
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} pantryItems={["butter", "olive oil"]} />);
+
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
+    expect(screen.queryByText(/salt/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/butter/i)).not.toBeInTheDocument();
+  });
+
+  it("renders ingredients section with ingredient color theming", () => {
+    const recipe = createMockRecipe({ ingredientColor: "#ff6b6b" });
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.getByText("1 ingredient")).toBeInTheDocument();
   });
 });

@@ -386,10 +386,87 @@ export type Database = {
         };
         Relationships: [];
       };
-      event_grocery_cache: {
+      meal_plans: {
         Row: {
           id: string;
-          event_id: string;
+          user_id: string;
+          name: string;
+          week_start: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name?: string;
+          week_start: string;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          week_start?: string;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      meal_plan_items: {
+        Row: {
+          id: string;
+          plan_id: string;
+          recipe_id: string | null;
+          day_of_week: number;
+          meal_type: string;
+          custom_name: string | null;
+          custom_url: string | null;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          recipe_id?: string | null;
+          day_of_week: number;
+          meal_type: string;
+          custom_name?: string | null;
+          custom_url?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          plan_id?: string;
+          recipe_id?: string | null;
+          day_of_week?: number;
+          meal_type?: string;
+          custom_name?: string | null;
+          custom_url?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_items_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "meal_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "meal_plan_items_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      combined_grocery_items: {
+        Row: {
+          id: string;
+          context_type: string;
+          context_id: string;
+          user_id: string;
           items: Json;
           recipe_ids: string[];
           created_at: string;
@@ -397,29 +474,25 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          event_id: string;
+          context_type: string;
+          context_id: string;
+          user_id: string;
           items: Json;
-          recipe_ids: string[];
+          recipe_ids?: string[];
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          event_id?: string;
+          context_type?: string;
+          context_id?: string;
+          user_id?: string;
           items?: Json;
           recipe_ids?: string[];
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "event_grocery_cache_event_id_fkey";
-            columns: ["event_id"];
-            isOneToOne: true;
-            referencedRelation: "scheduled_events";
-            referencedColumns: ["id"];
-          }
-        ];
+        Relationships: [];
       };
       scheduled_events: {
         Row: {
@@ -469,9 +542,48 @@ export type Database = {
           }
         ];
       };
+      user_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          provider: string;
+          refresh_token: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          provider?: string;
+          refresh_token: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          provider?: string;
+          refresh_token?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      increment_ingredient_used_count: {
+        Args: {
+          p_ingredient_id: string;
+          p_user_id?: string;
+        };
+        Returns: undefined;
+      };
+      replace_recipe_ingredients: {
+        Args: {
+          p_recipe_id: string;
+          p_ingredients: unknown;
+        };
+        Returns: undefined;
+      };
+    };
     Enums: {};
     CompositeTypes: {};
   };

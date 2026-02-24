@@ -5,6 +5,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import UserManagementPage from "./pages/UserManagementPage";
 import EventDetailPage from "./pages/EventDetailPage";
+import PersonalMealDetailPage from "./pages/PersonalMealDetailPage";
 import NotFound from "./pages/NotFound";
 import AuthGuard from "./components/auth/AuthGuard";
 
@@ -44,6 +45,14 @@ function App() {
             element={
               <AuthGuard>
                 <EventDetailPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/meals/:eventId"
+            element={
+              <AuthGuard>
+                <PersonalMealDetailPage />
               </AuthGuard>
             }
           />

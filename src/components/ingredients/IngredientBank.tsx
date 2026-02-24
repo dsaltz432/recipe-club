@@ -353,6 +353,13 @@ const IngredientBank = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
+        {/* Bank full message */}
+        {isAdmin && isFull && (
+          <div className="text-center py-2 px-3 bg-green/10 text-green rounded-lg text-sm font-medium">
+            Bank full — spin the wheel!
+          </div>
+        )}
+
         {/* Add Ingredient - Admin only */}
         {isAdmin && !isFull && (
           <div className="space-y-3">
@@ -372,6 +379,7 @@ const IngredientBank = ({
                   onClick={() => addIngredient()}
                   size="icon"
                   className="bg-purple hover:bg-purple-dark shrink-0"
+                  aria-label="Add ingredient"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -477,6 +485,7 @@ const IngredientBank = ({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove ${ingredient.name} from bank`}
                       onClick={() => removeFromBank(ingredient.id)}
                     >
                       <X className="h-4 w-4" />
