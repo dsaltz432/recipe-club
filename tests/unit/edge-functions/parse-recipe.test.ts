@@ -1004,7 +1004,7 @@ describe("parse-recipe edge function", () => {
     expect(anthropicBody.messages[0].content).toContain("STRUCTURED RECIPE DATA");
   });
 
-  it("returns success with no ingredients and uses delete instead of RPC", async () => {
+  it("returns error when AI extracts no ingredients from the page", async () => {
     const minimalParsed = { description: "A minimal recipe", servings: "2" };
 
     const mockFetch = vi.fn()
@@ -1016,9 +1016,8 @@ describe("parse-recipe edge function", () => {
     const { data, status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    expect(data).toMatchObject({ success: true, ingredientCount: 0 });
-
-    // Should NOT call RPC (no ingredients), should call from().delete() instead
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Could not extract any ingredients");
     expect(mockSupabase.rpc).not.toHaveBeenCalled();
   });
 
@@ -1071,16 +1070,8 @@ describe("parse-recipe edge function", () => {
     expect((data as { dbWarnings: string[] }).dbWarnings[0]).toContain("Replace ingredients");
   });
 
-  it("tracks dbWarning when delete fails for empty ingredients", async () => {
+  it("returns error (not dbWarning) when AI returns no ingredients", async () => {
     const minimalParsed = { description: "No ingredients" };
-
-    let callCount = 0;
-    mockSupabase.from.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return createBuilder(null, null); // parsing status upsert
-      if (callCount === 2) return createBuilder(null, { message: "delete failed" }); // delete
-      return createBuilder(null, null); // completed upsert
-    });
 
     const mockFetch = vi.fn()
       .mockResolvedValueOnce(new Response("<html><body>Recipe</body></html>", { status: 200 }))
@@ -1091,8 +1082,8 @@ describe("parse-recipe edge function", () => {
     const { data, status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    expect((data as { dbWarnings: string[] }).dbWarnings).toBeDefined();
-    expect((data as { dbWarnings: string[] }).dbWarnings[0]).toContain("Delete ingredients");
+    expect(data).toMatchObject({ success: false });
+    expect((data as { error: string }).error).toContain("Could not extract any ingredients");
   });
 
   it("falls back to empty text when AI returns empty content array", async () => {

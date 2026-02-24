@@ -432,33 +432,31 @@ For ingredient names:
       throw new Error(`Failed to parse AI response as JSON: ${aiText.slice(0, 200)}`);
     }
 
+    // If the AI returned no ingredients, the page content was unusable
+    // (e.g. JS-rendered page, bot challenge, or completely wrong page)
+    if (!parsed.ingredients || parsed.ingredients.length === 0) {
+      throw new Error("Could not extract any ingredients from this page. The site may require a browser to load. Try uploading a screenshot of the recipe instead.");
+    }
+
     // Save to DB — errors here don't prevent returning the parsed result
     const dbWarnings: string[] = [];
 
     // BUG-014: Use RPC for transactional ingredient replacement
-    if (parsed.ingredients && parsed.ingredients.length > 0) {
-      const ingredientRows = parsed.ingredients.map((ing, index) => ({
-        name: ing.name,
-        quantity: ing.quantity,
-        unit: ing.unit,
-        category: ing.category || "other",
-        raw_text: ing.raw_text,
-        sort_order: index,
-      }));
+    // (empty ingredients are rejected above, so this always has items)
+    const ingredientRows = parsed.ingredients.map((ing, index) => ({
+      name: ing.name,
+      quantity: ing.quantity,
+      unit: ing.unit,
+      category: ing.category || "other",
+      raw_text: ing.raw_text,
+      sort_order: index,
+    }));
 
-      const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
-        p_recipe_id: recipeId,
-        p_ingredients: ingredientRows,
-      });
-      if (rpcError) dbWarnings.push(`Replace ingredients: ${rpcError.message}`);
-    } else {
-      // No ingredients to insert — just delete any existing ones
-      const { error: deleteError } = await supabase
-        .from("recipe_ingredients")
-        .delete()
-        .eq("recipe_id", recipeId);
-      if (deleteError) dbWarnings.push(`Delete ingredients: ${deleteError.message}`);
-    }
+    const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+      p_recipe_id: recipeId,
+      p_ingredients: ingredientRows,
+    });
+    if (rpcError) dbWarnings.push(`Replace ingredients: ${rpcError.message}`);
 
     // Upsert recipe_content with parsed data
     const { error: contentError } = await supabase
