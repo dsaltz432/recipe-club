@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isAuthenticated, signInWithGoogle } from "@/lib/auth";
+import { isAuthenticated } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -53,18 +53,6 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
             },
             { onConflict: "user_id,provider" }
           );
-        } else if (session) {
-          // No refresh token returned (repeat login) — check if we already have one stored.
-          // If not, force re-consent so Google issues a new refresh token.
-          const { data } = await supabase
-            .from("user_tokens")
-            .select("user_id")
-            .eq("user_id", session.user.id)
-            .eq("provider", "google")
-            .maybeSingle();
-          if (!data) {
-            await signInWithGoogle(true);
-          }
         }
       }
     });
