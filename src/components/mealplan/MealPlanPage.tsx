@@ -348,7 +348,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
         setParseStep("parsing");
         const recipe = items.find((i) => i.recipeId === pendingParseRecipeId);
-        const { error } = await supabase.functions.invoke("parse-recipe", {
+        const { data: parseData, error } = await supabase.functions.invoke("parse-recipe", {
           body: {
             recipeId: pendingParseRecipeId,
             recipeUrl: recipe?.recipeUrl || recipe?.customUrl,
@@ -356,6 +356,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           },
         });
         if (error) throw error;
+        if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
 
         setParseStep("loading");
         // Always load grocery data after parse so we can combine
@@ -402,11 +403,15 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const handleParseRecipe = async (recipeId: string) => {
     const recipe = groceryRecipes.find((r) => r.id === recipeId);
     try {
-      const { error } = await supabase.functions.invoke("parse-recipe", {
+      const { data, error } = await supabase.functions.invoke("parse-recipe", {
         body: { recipeId, recipeUrl: recipe?.url, recipeName: recipe?.name },
       });
 
       if (error) throw error;
+      if (!data?.success) {
+        toast.error(data?.error ?? "Failed to parse recipe");
+        return;
+      }
       toast.success("Recipe parsed successfully!");
       groceryDirtyRef.current = true;
       await loadGroceryData();

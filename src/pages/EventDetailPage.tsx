@@ -647,11 +647,12 @@ const EventDetailPage = () => {
       const savedRecipeUrl = recipeUrl.trim();
 
       try {
-        const { error: parseError } = await supabase.functions.invoke("parse-recipe", {
+        const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
           body: { recipeId: newRecipeId, recipeUrl: savedRecipeUrl, recipeName: savedRecipeName },
         });
 
         if (parseError) throw parseError;
+        if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
 
         // Loading step: reload event and grocery data
         setParseStep("loading");
@@ -781,14 +782,14 @@ const EventDetailPage = () => {
       if (urlChanged && editRecipeUrl.trim()) {
         supabase.functions.invoke("parse-recipe", {
           body: { recipeId: recipeToEdit!.id, recipeUrl: editRecipeUrl.trim(), recipeName: editRecipeName.trim() },
-        }).then(({ error: parseError }) => {
-          if (parseError) {
-            console.error("Error re-parsing recipe:", parseError);
+        }).then(({ data: parseData, error: parseError }) => {
+          if (parseError || !parseData?.success) {
+            console.error("Error re-parsing recipe:", parseError ?? parseData?.error);
           } else {
             loadEventData();
           }
         });
-        toast.success("Recipe updated and re-parsed!");
+        toast.success("Recipe updated!");
       } else {
         toast.success("Recipe updated!");
       }

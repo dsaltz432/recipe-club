@@ -133,7 +133,7 @@ describe("MealPlanPage", () => {
     vi.clearAllMocks();
     mockGetPantryItems.mockResolvedValue([]);
     mockEnsureDefaultPantryItems.mockResolvedValue(undefined);
-    mockInvoke.mockResolvedValue({ data: {}, error: null });
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
     mockSmartCombineIngredients.mockResolvedValue(null);
     mockLoadGroceryCache.mockResolvedValue(null);
     mockSaveGroceryCache.mockResolvedValue(undefined);
@@ -3059,7 +3059,7 @@ describe("MealPlanPage", () => {
       expect(toast.success).not.toHaveBeenCalledWith("Recipe saved without parsing");
 
       // Clean up: resolve the invoke to avoid dangling promise
-      resolveInvoke!({ data: {}, error: null });
+      resolveInvoke!({ data: { success: true }, error: null });
       // (2500ms delay for "done" step animation before toast fires)
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
@@ -3165,7 +3165,7 @@ describe("MealPlanPage", () => {
 
       // Resolve parse — loadGroceryData will return null because recipe_ingredients throws
       // shouldCombine is true (2 recipes with URLs) but groceryData is null
-      resolveInvoke!({ data: {}, error: null });
+      resolveInvoke!({ data: { success: true }, error: null });
 
       // Parse succeeds but smartCombine should NOT be called since groceryData is null
       // (2500ms delay for "done" step animation before toast fires)
@@ -3288,7 +3288,7 @@ describe("MealPlanPage", () => {
       });
 
       // Resolve parse — groceryData will be non-null and shouldCombine is true
-      resolveInvoke!({ data: {}, error: null });
+      resolveInvoke!({ data: { success: true }, error: null });
 
       // Parse succeeds and smart combine should run
       await waitFor(() => {

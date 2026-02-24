@@ -1104,7 +1104,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
     });
 
     // parse-recipe should be called because URL changed
@@ -2701,7 +2701,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
     });
 
     // Both notification and parse-recipe should be called since URL changed
@@ -3997,7 +3997,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
     });
 
     // Both notification and parse-recipe should be called because URL changed
@@ -4477,7 +4477,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
     });
 
     // Should NOT have called functions.invoke for notification (skipped in dev mode)
@@ -4517,7 +4517,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe updated and re-parsed!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe updated!");
     });
 
     await waitFor(() => {
