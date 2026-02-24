@@ -151,25 +151,17 @@ All files in `src/components/events/`, `src/components/ingredients/`, `src/compo
 
 Ralph (`ralph.sh`) runs Claude Code in a loop to autonomously implement tasks from `prd.json`. Run from the repo root.
 
-### Schedule a delayed run
+### Run
 
 ```bash
-caffeinate -i bash -c "sleep 300 && ./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1" &
+caffeinate -i ./ralph/ralph.sh 20
 ```
 
-Replace `300` with the delay in seconds (e.g., 5 min = 300, 10 min = 600). `caffeinate -i` prevents the system from sleeping until ralph finishes.
-
-### Run immediately
-
-```bash
-caffeinate -i ./ralph/ralph.sh 20 > ./ralph/ralph.log 2>&1 &
-```
+`caffeinate -i` prevents the Mac from sleeping while ralph runs. `20` is the max number of iterations.
 
 ### Monitor progress
 
-```bash
-tail -f ./ralph/ralph.log
-```
+Ralph logs to the terminal and appends to `ralph/activity.md` as it completes each task.
 
 ## Project Structure
 
