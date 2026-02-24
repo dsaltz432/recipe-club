@@ -99,16 +99,21 @@ export const isAdmin = (allowedUser: AllowedUser | null): boolean => {
   return allowedUser?.role === "admin";
 };
 
-export const signInWithGoogle = async (): Promise<void> => {
+export const signInWithGoogle = async (forceConsent = false): Promise<void> => {
   // Get the current site URL dynamically
   const siteUrl = window.location.origin;
+
+  const queryParams: Record<string, string> = { access_type: "offline" };
+  if (forceConsent) {
+    queryParams.prompt = "consent";
+  }
 
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: siteUrl + "/dashboard",
       scopes: "https://www.googleapis.com/auth/calendar.events",
-      queryParams: { access_type: "offline", prompt: "consent" },
+      queryParams,
     },
   });
 

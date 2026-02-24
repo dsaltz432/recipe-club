@@ -705,6 +705,22 @@ describe("signInWithGoogle", () => {
       options: {
         redirectTo: expect.stringContaining("/dashboard"),
         scopes: "https://www.googleapis.com/auth/calendar.events",
+        queryParams: { access_type: "offline" },
+      },
+    });
+  });
+
+  it("should include prompt: consent when forceConsent is true", async () => {
+    mockSupabase.auth.signInWithOAuth.mockResolvedValue({ error: null });
+
+    const { signInWithGoogle } = await import("@/lib/auth");
+    await signInWithGoogle(true);
+
+    expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: expect.stringContaining("/dashboard"),
+        scopes: "https://www.googleapis.com/auth/calendar.events",
         queryParams: { access_type: "offline", prompt: "consent" },
       },
     });

@@ -69,7 +69,7 @@ const UserManagementPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl">
-        <UserManagement currentUserEmail={user!.email} />
+        <UserManagement currentUserEmail={user?.email || ""} />
       </main>
     </div>
   );
