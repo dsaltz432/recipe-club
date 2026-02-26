@@ -81,7 +81,7 @@
         "Admin can still promote viewers to admin via /users page"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Existing handle_new_user() is at baseline migration 20260117000000_baseline_schema.sql lines 114-132. It currently only inserts into profiles. Add an INSERT INTO public.allowed_users (email, role, is_club_member) VALUES (NEW.email, 'viewer', false) ON CONFLICT (email) DO NOTHING; after the profiles insert. The allowed_users table (baseline:20-27) has: id UUID PK, email TEXT UNIQUE, role TEXT ('admin'|'viewer'), is_club_member BOOLEAN, invited_by UUID FK, created_at TIMESTAMPTZ. The ON CONFLICT ensures pre-invited users (who already have rows with possibly admin role or club membership) are not overwritten. Apply via Supabase MCP tool."
     },
     {

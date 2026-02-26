@@ -7,11 +7,12 @@
 - **EventDetailPage location**: Lives at `src/pages/EventDetailPage.tsx`, NOT `src/components/events/`.
 - **Test pattern for smart combine**: Tests mock `smartCombineIngredients` from `@/lib/groceryList` and assert on `toHaveBeenCalled()` / `toHaveBeenCalledTimes()`. Use `waitFor` when asserting async calls.
 - **Supabase migrations**: Local migration files live in `supabase/migrations/`. To apply to production, use `execute_sql` MCP tool (project: `bluilkrggkspxsnehfez`). The `apply_migration` tool may require extra permissions — `execute_sql` is a reliable fallback for DDL.
+- **handle_new_user() trigger**: Lives in baseline migration (20260117000000). Production version uses `full_name` as fallback for name. When modifying, use `CREATE OR REPLACE FUNCTION` to update in place. The trigger `on_auth_user_created` fires this on `auth.users` insert.
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 4
-**Current Task:** US-004 completed
+**Tasks Completed:** 5
+**Current Task:** US-005 completed
 
 ---
 
@@ -89,6 +90,30 @@
 - The `display_name_map` column was already absent from the live `combined_grocery_items` table — the `per_recipe_items` migration may have implicitly replaced it, or it was never applied to production. `DROP COLUMN IF EXISTS` is the safe approach.
 - The `apply_migration` MCP tool may be permission-gated — `execute_sql` works as a fallback for applying DDL directly.
 - When dropping columns, always verify the live schema first with `information_schema.columns` to understand the actual state.
+
+---
+
+## 2026-02-26 10:15 — US-005: Auto-add new users as viewers on sign-up
+
+### What was implemented
+- Created migration `supabase/migrations/20260226130000_auto_add_allowed_users.sql` that replaces `handle_new_user()` function
+- Added `INSERT INTO public.allowed_users (email, role, is_club_member) VALUES (NEW.email, 'viewer', false) ON CONFLICT (email) DO NOTHING` after the existing profiles insert
+- `ON CONFLICT (email) DO NOTHING` ensures pre-invited users (who may have admin role or club membership) are not overwritten
+- Applied migration to production via `execute_sql` — verified function updated via `pg_proc`
+- Matched production's existing `full_name` fallback in COALESCE (baseline had only `name`, production also uses `full_name`)
+
+### Files changed
+- `supabase/migrations/20260226130000_auto_add_allowed_users.sql` (new file)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no code changes, only migration)
+- Lint: N/A (no changed source files)
+
+### Learnings for future iterations
+- Production `handle_new_user()` differed slightly from baseline — it used `full_name` as a COALESCE fallback and didn't have `ON CONFLICT (id) DO UPDATE` on profiles. Always check production state via `pg_proc` before writing replacement functions.
+- The `allowed_users.email` column has a UNIQUE constraint, making `ON CONFLICT (email)` work correctly for the DO NOTHING clause.
+- Migration-only stories (no `.ts`/`.tsx` changes) don't need test or lint runs — build verification is sufficient.
 
 ---
 
