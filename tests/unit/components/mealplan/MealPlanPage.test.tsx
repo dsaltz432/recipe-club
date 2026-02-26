@@ -2568,11 +2568,13 @@ describe("MealPlanPage", () => {
         );
       });
 
-      // Smart combine should NOT have been called because cache was hit
-      expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
+      // Smart combine IS called even with 1 parsed recipe (single-recipe grocery fix)
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      });
     });
 
-    it("skips smart combine when fewer than 2 parsed recipes", async () => {
+    it("runs smart combine even with a single parsed recipe", async () => {
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
           return createPlanMock("plan-1");
@@ -2636,8 +2638,10 @@ describe("MealPlanPage", () => {
         expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
-      // Smart combine should NOT have been called (only 1 parsed recipe)
-      expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
+      // Smart combine IS called even for a single parsed recipe (single-recipe grocery fix)
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalledTimes(1);
+      });
     });
 
     it("handles smart combine error gracefully", async () => {

@@ -1,301 +1,107 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/remove-naive-combine-pipeline",
-  "description": "Remove the naive grocery combine pipeline (~500 lines), delegate all combining to the AI edge function (returns both combined and per-recipe items in one call), remove unused cook mode, unify the duplicated Add Recipe/Add Meal dialogs into a shared RecipeInputForm component, delete dead code, and achieve 100% test coverage.",
+  "branchName": "ralph/bugfixes-cleanup-auto-users",
+  "description": "Fix single-recipe grocery list bug (ingredients don't display when only 1 recipe), clean up dead code (groceryEdits.ts, display_name_map column), auto-add new Google sign-in users as viewers, and maintain 100% test coverage.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Remove cook mode feature entirely",
-      "description": "As a developer, I want to remove the unused cook mode feature so that we eliminate dead code and simplify the codebase.",
+      "title": "Fix single-recipe grocery list not displaying",
+      "description": "As a user, I want the grocery list to display ingredients even when there's only 1 parsed recipe, so that I can see a shopping list for a single recipe in both Events and Meal Plans.",
       "acceptanceCriteria": [
-        "Delete src/lib/cookMode.ts",
-        "Delete src/components/recipes/CookModeSection.tsx",
-        "Delete tests/unit/lib/cookMode.test.ts",
-        "Delete tests/unit/components/recipes/CookModeSection.test.tsx",
-        "Delete supabase/functions/generate-cook-plan/index.ts",
-        "Delete tests/unit/edge-functions/generate-cook-plan.test.ts",
-        "Remove CookingStep and CombinedCookPlan interfaces from src/types/index.ts",
-        "Remove commented-out cook mode import and TabsContent block from src/pages/EventDetailPage.tsx",
-        "No remaining references to cookMode, CookModeSection, CookingStep, CombinedCookPlan, or generate-cook-plan in the codebase",
-        "npm run build passes",
+        "EventDetailPage.tsx: runSmartCombine runs for 1+ parsed recipes (change `parsedRecipes.length < 2` to `< 1`)",
+        "MealPlanPage.tsx: runSmartCombine runs for 1+ parsed recipes (same fix)",
+        "EventDetailPage.tsx parse flow: willCombine logic calls runSmartCombine even for the first recipe (change `existingParsedCount >= 1` to `>= 0`)",
+        "MealPlanPage.tsx parse flow: shouldCombine logic calls runSmartCombine even for 1 recipe (change `recipesWithUrls.length >= 2` to `>= 1`)",
+        "showCombineStep in parse progress still only shows 'Combining with other recipes' step when 2+ recipes (this is a UX label, not the logic gate)",
+        "Typecheck passes (npm run build)",
         "npm run test:coverage passes with 100% on required directories"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Cook mode is completely isolated — no other components depend on it. The UI in EventDetailPage is already commented out (line 69 for import, lines 1452-1472 for TabsContent). CookingStep type is at src/types/index.ts:142-148, CombinedCookPlan at :150-154. The generate-cook-plan edge function is at supabase/functions/generate-cook-plan/index.ts (119 lines). Use git rm for tracked files."
+      "notes": "Two-layer bug. Layer 1: `runSmartCombine` in both pages has `parsedRecipes.length < 2` at EventDetailPage.tsx:421 and MealPlanPage.tsx:272 — change to `< 1`. Layer 2: The parse flow guards also skip calling runSmartCombine for single recipes. EventDetailPage.tsx:598 has `willCombine = existingParsedCount >= 1` — change to `>= 0` so the first recipe gets combined. MealPlanPage.tsx:350 has `shouldCombine = recipesWithUrls.length >= 2` — change to `>= 1`. IMPORTANT: Keep the `showCombineStep` UI label gated on 2+ recipes — showing 'Combining with other recipes' for a single recipe would be confusing. So split the logic: always call runSmartCombine, but only show the progress step label when there are multiple recipes."
     },
     {
       "id": "US-002",
-      "title": "Remove CombinedGroceryItem type and update all consumers",
-      "description": "As a developer, I want to remove the CombinedGroceryItem type and update all union types to use SmartGroceryItem only, since the naive combine pipeline is being removed.",
+      "title": "Update tests for single-recipe grocery behavior",
+      "description": "As a developer, I want tests that verify single-recipe grocery display works correctly, so that the fix from US-001 is covered.",
       "acceptanceCriteria": [
-        "CombinedGroceryItem interface is removed from src/types/index.ts",
-        "GroceryItemRow.tsx props use SmartGroceryItem instead of CombinedGroceryItem | SmartGroceryItem",
-        "GroceryCategoryGroup.tsx props use SmartGroceryItem instead of the union type",
-        "GroceryExportMenu.tsx props use SmartGroceryItem instead of the union type",
-        "formatGroceryItem() in groceryList.ts accepts SmartGroceryItem only",
-        "generateCSV() and generatePlainText() accept SmartGroceryItem only",
-        "No remaining imports or references to CombinedGroceryItem in src/",
-        "All test files updated to remove CombinedGroceryItem fixtures and use SmartGroceryItem only",
-        "npm run build passes",
-        "npm run test:coverage passes with 100% on required directories"
+        "EventDetailPage.test.tsx: new test verifying smart combine IS called when 1 parsed recipe exists",
+        "EventDetailPage.test.tsx: existing test for 2+ recipes still passes",
+        "MealPlanPage.test.tsx: new test verifying smart combine IS called when 1 parsed recipe exists",
+        "MealPlanPage.test.tsx: update or remove test 'skips smart combine when fewer than 2 parsed recipes' — this behavior no longer applies",
+        "MealPlanPage.test.tsx: test that parse flow calls runSmartCombine for a single URL recipe",
+        "npm run test:coverage passes with 100% on required directories",
+        "npm run test:run passes (all tests green)"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "CombinedGroceryItem is at src/types/index.ts:118-124. It's identical to SmartGroceryItem except it lacks displayName. Consumers: GroceryItemRow.tsx (line 3, 16), GroceryCategoryGroup.tsx (line 1, 9, 15), GroceryExportMenu.tsx (line 3), formatGroceryItem (line 801), generateCSV/generatePlainText. cookMode.ts also used it but is deleted in US-001. Test files: GroceryItemRow.test.tsx, GroceryCategoryGroup.test.tsx, GroceryExportMenu.test.tsx, groceryList.test.ts. The formatGroceryItem tests currently test two paths (CombinedGroceryItem without displayName, SmartGroceryItem with displayName) — simplify to only the SmartGroceryItem path."
+      "passes": false,
+      "notes": "MealPlanPage.test.tsx line ~2575 has a test 'skips smart combine when fewer than 2 parsed recipes' that explicitly verifies the old (buggy) behavior — this test must be updated. EventDetailPage.test.tsx line ~5001 has 'runs smart combine on cache miss with 2+ parsed recipes' — add a companion test for 1 parsed recipe. For MealPlanPage, also check line ~3525 'runs combine step during parse when 2+ recipes with URLs on groceries tab' and add a test for 1 recipe. The showCombineStep progress label should still only appear for 2+ recipes — add assertions for that."
     },
     {
       "id": "US-003",
-      "title": "Delete naive combine pipeline from groceryList.ts",
-      "description": "As a developer, I want to remove the combineIngredients() function and all its supporting constants/helpers from groceryList.ts so that the codebase is simplified and we eliminate the source of bugs.",
+      "title": "Delete dead groceryEdits module",
+      "description": "As a developer, I want to commit the deletion of groceryEdits.ts and its tests since the module is dead code (never imported in production).",
       "acceptanceCriteria": [
-        "combineIngredients() function is deleted",
-        "All unit conversion constants are deleted: VOLUME_IN_TSP, WEIGHT_IN_OZ, DENSITY_OZ_PER_CUP, COUNT_TO_CUP, COUNT_TO_LB, CAN_TO_CUP, SLICE_TO_COUNT, FLUID_OZ_INGREDIENTS, BULK_CONVERSIONS, PREFERRED_COUNT_UNIT, UNIT_REMAP",
-        "ADJECTIVES_TO_STRIP and PRESERVED_COMPOUNDS are deleted",
-        "INGREDIENT_ALIASES constant is deleted",
-        "normalizeIngredientName() function is deleted",
-        "normalizeUnit() function is deleted",
-        "UNIT_MAP constant is deleted",
-        "filterPantryItems() (non-smart version) is deleted",
-        "ALWAYS_PLURAL and NO_STRIP_S constants are deleted (only used by normalizeIngredientName)",
-        "These functions/constants are kept: GROCERY_CATEGORIES, CATEGORY_ORDER, CATEGORY_OVERRIDES, decimalToFraction, parseFractionToDecimal, formatGroceryItem, UNIT_PLURAL_MAP, NAME_FIRST_UNITS, ABBREVIATION_UNITS, groupByCategory, filterSmartPantryItems, generateCSV, generatePlainText, downloadCSV, smartCombineIngredients, SmartCombineResult, detectCategory, FRACTION_MAP",
-        "detectCategory() simplified to use name.toLowerCase().trim() instead of normalizeIngredientName()",
-        "filterSmartPantryItems() simplified to use item.name.toLowerCase().trim() instead of normalizeIngredientName()",
-        "npm run build passes",
-        "npm run lint passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "This is a large deletion. combineIngredients is defined starting around line 476 and runs ~275 lines. The supporting constants (UNIT_MAP, INGREDIENT_ALIASES, ADJECTIVES_TO_STRIP, PRESERVED_COMPOUNDS, ALWAYS_PLURAL, NO_STRIP_S, normalizeIngredientName, normalizeUnit, all the conversion maps) span lines 36-475. filterPantryItems is at line 848. Keep CATEGORY_OVERRIDES (line 171) — it's used by detectCategory() which IngredientFormRows depends on. GroceryListSection.tsx imports combineIngredients, filterPantryItems, normalizeIngredientName, normalizeUnit — these imports must be removed (handled in US-004). Tests will break — those are fixed in US-006."
-    },
-    {
-      "id": "US-004",
-      "title": "Simplify GroceryListSection to use AI results for all tabs",
-      "description": "As a developer, I want GroceryListSection to render AI-provided items for both the combined tab and per-recipe tabs, removing all naive combine logic and the displayNameMap concept.",
-      "acceptanceCriteria": [
-        "combineIngredients, filterPantryItems, normalizeIngredientName, normalizeUnit imports are all removed",
-        "All naive combine variables are removed: combinedItems, filteredItems, excludedItems, pantryExcludedCount, groupedItems",
-        "The naive fallback rendering block (!smartGrouped && !combineError) is removed",
-        "New prop added: perRecipeItems?: Record<string, SmartGroceryItem[]> (AI-provided per-recipe combined items)",
-        "displayNameMap prop is removed — no longer needed",
-        "Per-recipe tabs render from perRecipeItems[recipe.name] instead of constructing items from raw RecipeIngredient[]",
-        "Per-recipe tabs apply pantry filtering via filterSmartPantryItems on their items",
-        "Combined tab renders from smartGroceryItems (unchanged)",
-        "Error state (combineError) still shows error message on combined tab",
-        "The pantry excluded items section is removed or reworked to use smart items only",
-        "recipeIngredients prop is still used for hasAnyIngredients check and ingredientsByRecipe (for tab visibility)",
-        "npm run build passes",
-        "npm run lint passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "GroceryListSection.tsx is 405 lines. The key change: per-recipe tabs no longer construct SmartGroceryItem[] from raw RecipeIngredient[] with displayNameMap lookups. Instead, they receive fully-formed SmartGroceryItem[] from the AI via perRecipeItems prop. This means combined and per-recipe tabs use the exact same quality of AI output. The recipeIngredients prop is still needed to determine which recipes have been parsed (for tab visibility) and hasAnyIngredients. The groupSmartByCategory helper at the top of the file (lines 32-43) is still used for both tabs. Remove the displayNameMap prop from GroceryListSectionProps. Add perRecipeItems?: Record<string, SmartGroceryItem[]> prop. For per-recipe tab rendering (lines 278-310), replace the manual mapping logic with: const recipeItems = perRecipeItems?.[recipe.name] ?? []; then filter and group as usual."
-    },
-    {
-      "id": "US-005",
-      "title": "Update SmartCombineResult and smartCombineIngredients for unified AI response",
-      "description": "As a developer, I want smartCombineIngredients() to send raw ingredients to the AI and receive both combined and per-recipe items in one call, eliminating the displayNameMap concept.",
-      "acceptanceCriteria": [
-        "SmartCombineResult type changed from { items, displayNameMap } to { items: SmartGroceryItem[], perRecipeItems: Record<string, SmartGroceryItem[]> }",
-        "smartCombineIngredients() no longer calls combineIngredients()",
-        "smartCombineIngredients() maps raw RecipeIngredient[] to format: { name, quantity, unit, category, recipeName }",
-        "The mapped ingredients are sent to the edge function as 'rawIngredients' (not 'preCombined')",
-        "perRecipeNames parameter is removed — no longer needed since AI returns perRecipeItems keyed by recipe name",
-        "Return type uses the updated SmartCombineResult",
-        "Function still throws on error or when AI returns skipped",
-        "npm run build passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "smartCombineIngredients is at src/lib/groceryList.ts around line 864. Currently it calls combineIngredients() at line 870, maps to preCombined format, and passes perRecipeNames. The new version: (1) map RecipeIngredient[] directly to { name, quantity, unit, category, recipeName } using recipeNameMap, (2) send as rawIngredients to edge function, (3) receive { items, perRecipeItems } back. The perRecipeNames parameter is no longer needed because the AI figures out per-recipe grouping from the recipeName field on each ingredient. The edge function is updated in US-007."
-    },
-    {
-      "id": "US-006",
-      "title": "Update groceryList.ts tests for pipeline removal",
-      "description": "As a developer, I want to update all groceryList.ts tests to reflect the removed naive combine pipeline and simplified functions, achieving 100% coverage.",
-      "acceptanceCriteria": [
-        "All combineIngredients tests are removed (~90+ test cases)",
-        "All normalizeIngredientName tests are removed",
-        "All normalizeUnit tests are removed",
-        "All filterPantryItems (non-smart version) tests are removed",
-        "formatGroceryItem tests only test SmartGroceryItem (remove CombinedGroceryItem path tests)",
-        "filterSmartPantryItems tests are updated for simplified toLowerCase matching",
-        "detectCategory tests are updated for simplified toLowerCase matching",
-        "smartCombineIngredients tests are updated: mock returns { items, perRecipeItems } instead of { items, displayNameMap }",
-        "generateCSV and generatePlainText tests use SmartGroceryItem fixtures only",
-        "npm run test:coverage passes with 100% on src/lib/",
-        "npm run test:run passes (all tests green)"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "tests/unit/lib/groceryList.test.ts is the largest test file. The combineIngredients describe block has ~90+ test cases spanning many hundreds of lines — delete the entire block. Keep tests for: decimalToFraction, parseFractionToDecimal, formatGroceryItem (SmartGroceryItem only), groupByCategory, filterSmartPantryItems, detectCategory, smartCombineIngredients, generateCSV, generatePlainText, downloadCSV, CATEGORY_ORDER/GROCERY_CATEGORIES. The smartCombineIngredients tests need to mock supabase.functions.invoke with the new rawIngredients format and { items, perRecipeItems } response. Remove any references to displayNameMap in these tests."
-    },
-    {
-      "id": "US-007",
-      "title": "Rewrite edge function for unified combined + per-recipe response",
-      "description": "As a developer, I want the combine-ingredients edge function to accept raw ingredients and return both combined items and per-recipe items in one response, so that all tabs get the same quality AI output.",
-      "acceptanceCriteria": [
-        "Edge function accepts 'rawIngredients' array with shape: { name, quantity, unit, category, recipeName }",
-        "Edge function no longer accepts 'perRecipeNames' — per-recipe grouping is derived from recipeName field",
-        "System prompt instructs AI to: (1) combine all ingredients across recipes into 'items', (2) combine ingredients within each recipe into 'perRecipeItems' keyed by recipe name",
-        "System prompt handles ALL combining: contextual unit handling (keep 19oz for cans), deduplication, name normalization, alias resolution (scallion=green onion), categorization, displayName generation",
-        "System prompt includes rules about keeping different products separate (sesame oil != vegetable oil, dried oregano != fresh oregano)",
-        "System prompt includes contextual unit conversion rules (don't convert can sizes, do convert tsp/tbsp)",
-        "Response format: { success, items: SmartGroceryItem[], perRecipeItems: Record<string, SmartGroceryItem[]> }",
-        "displayName on each item is quantity-aware (pluralized correctly for that item's quantity context)",
-        "Dropped-ingredients validation adapted for raw input (check unique ingredient names, not individual entries)",
-        "Edge function tests updated for new input/output format",
-        "npm run test:coverage passes with 100% on edge function tests"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "Edge function is at supabase/functions/combine-ingredients/index.ts (222 lines). Major rewrite needed. The PreCombinedInput interface changes to RawIngredientInput with recipeName field. The system prompt needs to explain two outputs: 'items' (combined across all recipes) and 'perRecipeItems' (combined within each recipe, keyed by recipe name). A single recipe can have duplicate ingredients (e.g., '1 cup flour' for cake + '2 tbsp flour' for dusting) — the AI must combine these in perRecipeItems. Both items and perRecipeItems entries get proper displayName with quantity-aware pluralization. Keep the must-merge rules, displayName rules, and contextual unit conversion rules from the current prompt. The validation at lines 178-195 needs to handle duplicates in raw input (multiple recipes may have 'garlic'). Edge function test file: tests/unit/edge-functions/combine-ingredients.test.ts."
-    },
-    {
-      "id": "US-008",
-      "title": "Update GroceryListSection and component tests",
-      "description": "As a developer, I want to update all grocery component tests to reflect the unified AI approach for both combined and per-recipe tabs, achieving 100% test coverage.",
-      "acceptanceCriteria": [
-        "GroceryListSection.test.tsx updated: remove naive fallback tests, remove displayNameMap references, test perRecipeItems prop for per-recipe tabs, test error state (combineError)",
-        "GroceryItemRow.test.tsx updated: fixtures use SmartGroceryItem only",
-        "GroceryCategoryGroup.test.tsx updated: fixtures use SmartGroceryItem only",
-        "GroceryExportMenu.test.tsx updated: fixtures use SmartGroceryItem only",
-        "npm run test:coverage passes with 100% on src/components/recipes/",
-        "npm run test:run passes (all tests green)"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "GroceryListSection.test.tsx is the most complex — it tests the combined tab, per-recipe tabs, pantry filtering, parse buttons, add item UI, and export. Remove tests that rely on combineIngredients or naive fallback. Per-recipe tab tests should now pass perRecipeItems prop (Record<string, SmartGroceryItem[]>) and verify items render correctly. Remove all displayNameMap prop references. The combineError prop should show an error message. All SmartGroceryItem fixtures must include the required displayName field."
-    },
-    {
-      "id": "US-009",
-      "title": "Update EventDetailPage and MealPlanPage for unified AI flow",
-      "description": "As a developer, I want EventDetailPage and MealPlanPage to use the unified SmartCombineResult with perRecipeItems instead of displayNameMap.",
-      "acceptanceCriteria": [
-        "EventDetailPage.tsx: state uses perRecipeItems (Record<string, SmartGroceryItem[]>) instead of displayNameMap",
-        "EventDetailPage.tsx: runSmartCombine stores result.perRecipeItems instead of result.displayNameMap",
-        "EventDetailPage.tsx: passes perRecipeItems prop to GroceryListSection instead of displayNameMap",
-        "EventDetailPage.tsx: combineError state and prop passing still works",
-        "MealPlanPage.tsx: same changes as EventDetailPage",
-        "Cache load/save stores perRecipeItems instead of displayNameMap",
-        "smartCombineIngredients call no longer passes perRecipeNames (parameter removed)",
-        "npm run build passes",
-        "npm run lint passes"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "EventDetailPage.tsx and MealPlanPage.tsx both have: (1) state for displayNameMap — rename to perRecipeItems with type Record<string, SmartGroceryItem[]>, (2) runSmartCombine that calls smartCombineIngredients — update to store result.perRecipeItems, remove perRecipeNames collection, (3) GroceryListSection props — change displayNameMap to perRecipeItems. Cache: saveGroceryCache currently stores displayNameMap as 6th param — change to perRecipeItems. loadGroceryCache returns displayNameMap — change to perRecipeItems. The groceryCache.ts file (US-010) needs to store per_recipe_items instead of display_name_map."
-    },
-    {
-      "id": "US-010",
-      "title": "Update cache, migration, and remaining tests for 100% coverage",
-      "description": "As a developer, I want to update the grocery cache to store perRecipeItems instead of displayNameMap, add a migration, and achieve 100% test coverage across all required directories.",
-      "acceptanceCriteria": [
-        "groceryCache.ts: GroceryCacheResult uses perRecipeItems?: Record<string, SmartGroceryItem[]> instead of displayNameMap",
-        "groceryCache.ts: saveGroceryCache accepts perRecipeItems instead of displayNameMap as 6th param",
-        "groceryCache.ts: loadGroceryCache returns perRecipeItems instead of displayNameMap",
-        "groceryCache.ts: stores data in per_recipe_items column (via cast, same pattern as display_name_map)",
-        "New migration added: ALTER TABLE combined_grocery_items ADD COLUMN per_recipe_items jsonb DEFAULT '{}' (display_name_map column can remain for backward compat)",
-        "groceryCache.test.ts: updated for perRecipeItems instead of displayNameMap",
-        "groceryEdits.test.ts: fixtures use SmartGroceryItem with displayName",
-        "EventDetailPage.test.tsx: mocks return SmartCombineResult with perRecipeItems, test perRecipeItems passed to GroceryListSection",
-        "MealPlanPage.test.tsx: same updates as EventDetailPage tests",
-        "npm run test:coverage passes with 100% on ALL required directories (events, ingredients, mealplan, recipes, lib)",
-        "npm run build passes",
-        "npm run lint passes",
-        "No remaining references to displayNameMap in codebase",
-        "No remaining references to deleted functions/types (combineIngredients, CombinedGroceryItem, normalizeIngredientName, etc.)",
-        "All 3 recipe entry flows verified: URL parsing, file/photo upload, manual entry — no imports of deleted functions"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "groceryCache.ts currently stores display_name_map. Change to per_recipe_items. Use same cast pattern (column not in generated Supabase types). Add migration at supabase/migrations/ with next timestamp. Keep display_name_map column in DB for backward compat (old cached rows) — loadGroceryCache should handle rows that have display_name_map but not per_recipe_items gracefully (return undefined for perRecipeItems). Required 100% directories: src/components/events/, src/components/ingredients/, src/components/mealplan/, src/components/recipes/, src/lib/. Exception: IngredientWheel.tsx (~55% acceptable). IMPORTANT: Verify all 3 recipe entry paths are unaffected: (1) URL parsing — parse-recipe edge function with url, (2) File/photo upload — PhotoUpload.tsx + parse-recipe with file content, (3) Manual entry — AddMealDialog, IngredientFormRows, EditRecipeIngredientsDialog. These produce RecipeIngredient[] and don't depend on removed functions. EditRecipeIngredientsDialog imports parseFractionToDecimal (kept) and deleteGroceryCache (kept). IngredientFormRows imports detectCategory (kept, simplified). Run final: npm run test:coverage && npm run build && npm run lint."
-    },
-    {
-      "id": "US-011",
-      "title": "Create shared RecipeInputForm component",
-      "description": "As a developer, I want to extract the duplicated recipe input UI (name, URL/upload/manual mode selector, file upload, ingredient rows) into a shared RecipeInputForm component so that the 3 duplicate implementations can be unified.",
-      "acceptanceCriteria": [
-        "New file src/components/recipes/RecipeInputForm.tsx created",
-        "Exports RecipeFormData interface: { name, url, inputMode: 'url' | 'upload' | 'manual', ingredientRows: IngredientRow[] }",
-        "Exports RecipeInputForm component with props: formData, onFormDataChange, isUploading?, nameLabel?, namePlaceholder?",
-        "Component renders: name input, mode selector button group (Enter URL / Upload File / Enter Manually), URL input (url mode), upload button + file input (upload mode), IngredientFormRows (manual mode)",
-        "Exports createInitialFormData() helper",
-        "Exports canSubmitRecipeForm(data, isSubmitting) helper that validates each mode",
-        "Exports buildIngredientPayload(rows) helper that filters empty rows, calls parseFractionToDecimal, builds payload array",
-        "File upload handler uses uploadRecipeFile() from src/lib/upload.ts and FileValidationError",
-        "Mode switching clears appropriate fields (switching away from manual clears rows, switching away from url/upload clears url)",
-        "New test file tests/unit/components/recipes/RecipeInputForm.test.tsx with 100% coverage",
-        "Tests cover: mode switching, file upload, URL validation styling, manual mode rendering, canSubmitRecipeForm logic, buildIngredientPayload logic",
-        "npm run build passes",
-        "npm run test:coverage passes with 100% on src/components/recipes/"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Extract from src/components/recipes/AddPersonalRecipeDialog.tsx (the cleanest standalone implementation, ~325 lines). The key patterns to extract: (1) mode selector button group with 3 buttons styled via cn() for active state, (2) URL input with isValidUrl check, (3) file upload with hidden input + Button trigger + uploadRecipeFile() call + FileValidationError handling + toast, (4) IngredientFormRows for manual mode. Reuses: IngredientFormRows from ./IngredientFormRows, uploadRecipeFile/FileValidationError from @/lib/upload, parseFractionToDecimal from @/lib/groceryList, cn from @/lib/utils. The component should NOT include any Dialog wrapper — callers provide their own. The Dialog width changes based on mode (manual is wider) — export a helper or let callers handle this via inputMode check."
-    },
-    {
-      "id": "US-012",
-      "title": "Rewrite AddMealDialog to use RecipeInputForm",
-      "description": "As a developer, I want AddMealDialog to use the shared RecipeInputForm in its 'Custom' tab instead of duplicating the form UI, reducing code and ensuring consistent behavior.",
-      "acceptanceCriteria": [
-        "AddMealDialog.tsx Custom tab uses <RecipeInputForm> instead of inline form JSX",
-        "Local state vars (name, url, customInputMode, ingredientRows) replaced with single formData state using createInitialFormData()",
-        "Duplicated handleFileUpload, isValidUrl, mode change handler removed — handled by RecipeInputForm",
-        "canSubmitCustom uses canSubmitRecipeForm() helper",
-        "Submit handlers (onAddCustomMeal, onAddRecipeMeal, onAddManualMeal) read from formData",
-        "buildIngredientPayload() used for manual mode submission",
-        "Two-tab structure (Custom Meal / From Recipes) preserved",
-        "Recipe search with debounce preserved",
-        "Multi-select recipe picker preserved",
-        "Dialog width still adjusts based on mode (manual is wider)",
-        "All existing AddMealDialog tests pass with updated selectors",
-        "npm run build passes",
-        "npm run test:coverage passes with 100% on src/components/mealplan/"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "AddMealDialog.tsx is at src/components/mealplan/AddMealDialog.tsx. The Custom tab currently has ~150 lines of form JSX that duplicates AddPersonalRecipeDialog. Replace with <RecipeInputForm formData={formData} onFormDataChange={setFormData} isUploading={isUploading} />. Keep everything unique to AddMealDialog: the Tabs wrapper, the 'From Recipes' tab with recipe search, the submit button in DialogFooter, the onAddCustomMeal/onAddRecipeMeal/onAddManualMeal callbacks. The submit handler needs to map formData fields to the existing callback signatures. Test file: tests/unit/components/mealplan/AddMealDialog.test.tsx — update any element queries that change (e.g., aria-labels, placeholder text). The user-visible behavior should be identical."
-    },
-    {
-      "id": "US-013",
-      "title": "Replace inline recipe form in EventDetailPage with RecipeInputForm",
-      "description": "As a developer, I want EventDetailPage to use the shared RecipeInputForm instead of its ~130 lines of inline form JSX, reducing duplication and ensuring consistent recipe input behavior.",
-      "acceptanceCriteria": [
-        "EventDetailPage.tsx add-recipe dialog uses <RecipeInputForm> instead of ~130 lines of inline form JSX",
-        "4 state vars (recipeName, recipeUrl, addRecipeInputMode, addRecipeIngredientRows) replaced with single recipeFormData state",
-        "handleAddRecipeInputModeChange removed — handled by RecipeInputForm",
-        "canSubmitRecipe uses canSubmitRecipeForm() helper",
-        "handleRecipeImageUpload removed — handled by RecipeInputForm",
-        "handleSubmitRecipe reads from recipeFormData instead of individual state vars",
-        "Dialog still wraps RecipeInputForm with its own header/footer/submit button",
-        "Parsing workflow, progress tracking, smart combine, email notifications all stay in EventDetailPage",
-        "Dialog width still adjusts based on mode",
-        "All existing EventDetailPage tests pass with updated selectors",
+        "src/lib/groceryEdits.ts is deleted (already staged via git rm)",
+        "tests/unit/lib/groceryEdits.test.ts is deleted (already staged via git rm)",
+        "No references to groceryEdits remain in src/",
         "npm run build passes",
         "npm run test:coverage passes with 100% on required directories"
       ],
-      "priority": 13,
-      "passes": true,
-      "notes": "EventDetailPage.tsx has an add-recipe dialog starting around the Dialog component with 'Add Recipe'. The inline form JSX includes: mode selector buttons (lines ~1560-1585), URL input (lines ~1590-1605), upload input (lines ~1608-1650), manual IngredientFormRows (lines ~1651-1655). Replace all of this with <RecipeInputForm formData={recipeFormData} onFormDataChange={setRecipeFormData} />. The submit button stays in EventDetailPage's DialogFooter. handleSubmitRecipe currently reads recipeName, recipeUrl, addRecipeInputMode, addRecipeIngredientRows — change to read recipeFormData.name, recipeFormData.url, recipeFormData.inputMode, recipeFormData.ingredientRows. Use buildIngredientPayload() for manual mode. Test file: tests/unit/pages/EventDetailPage.test.tsx — this is a large test file, update form interaction queries."
+      "priority": 3,
+      "passes": false,
+      "notes": "Both files are already staged for deletion via git rm. Just need to verify no remaining references and include in the commit. groceryEdits.ts (149 lines) contained loadCombinedGroceryItems, saveCombinedGroceryItems, updateGroceryItem, addCustomGroceryItem, removeGroceryItem — all duplicating groceryCache.ts functionality and never imported in production code."
     },
     {
-      "id": "US-014",
-      "title": "Delete dead AddPersonalRecipeDialog and verify all entry flows",
-      "description": "As a developer, I want to delete the dead AddPersonalRecipeDialog code and verify that all 3 recipe entry flows (URL, upload, manual) work correctly across events and meal plans.",
+      "id": "US-004",
+      "title": "Drop unused display_name_map column",
+      "description": "As a developer, I want to drop the unused display_name_map column from combined_grocery_items since it was superseded by per_recipe_items.",
       "acceptanceCriteria": [
-        "Delete src/components/recipes/AddPersonalRecipeDialog.tsx",
-        "Delete tests/unit/components/recipes/AddPersonalRecipeDialog.test.tsx",
-        "No remaining imports or references to AddPersonalRecipeDialog in the codebase",
-        "Grep confirms no remaining duplicated form patterns (mode selector, file upload handler) outside of RecipeInputForm",
-        "npm run test:coverage passes with 100% on ALL required directories",
-        "npm run build passes",
-        "npm run lint passes",
-        "All 3 entry flows verified working: URL input, file/photo upload, manual ingredient entry"
+        "New migration file created: supabase/migrations/YYYYMMDDHHMMSS_drop_display_name_map.sql",
+        "Migration drops display_name_map column from combined_grocery_items table",
+        "No references to display_name_map exist in any .ts/.tsx files",
+        "Migration applied to production Supabase project (bluilkrggkspxsnehfez)",
+        "npm run build passes"
       ],
-      "priority": 14,
-      "passes": true,
-      "notes": "AddPersonalRecipeDialog is confirmed dead code — grep shows it's never imported in src/. The component was at src/components/recipes/AddPersonalRecipeDialog.tsx (~325 lines) and its test at tests/unit/components/recipes/AddPersonalRecipeDialog.test.tsx. Use git rm. After deletion, run a final grep to ensure no references remain. Also verify the RecipeInputForm is correctly used in both AddMealDialog (Custom tab) and EventDetailPage (add recipe dialog). Run full test suite and coverage to confirm nothing broke. NOTE: PersonalMealDetailPage.tsx also has recipe entry functionality — verify it doesn't need RecipeInputForm (it uses EditRecipeIngredientsDialog for editing existing ingredients, not for adding new recipes)."
+      "priority": 4,
+      "passes": false,
+      "notes": "The display_name_map column was added by migration 20260225000001_add_display_name_map_to_grocery_cache.sql. It was replaced by per_recipe_items (migration 20260226100000). Grep confirms zero references to display_name_map or displayNameMap in any source files. Use: ALTER TABLE combined_grocery_items DROP COLUMN IF EXISTS display_name_map; Apply to production via Supabase MCP tool (project: bluilkrggkspxsnehfez)."
+    },
+    {
+      "id": "US-005",
+      "title": "Auto-add new users as viewers on sign-up",
+      "description": "As a new user, I want to automatically get viewer access when I sign in with Google, so that I don't see an 'Access Denied' screen and can immediately use the app.",
+      "acceptanceCriteria": [
+        "New migration: supabase/migrations/YYYYMMDDHHMMSS_auto_add_allowed_users.sql",
+        "handle_new_user() function updated to also INSERT INTO allowed_users with email=NEW.email, role='viewer', is_club_member=false, invited_by=NULL",
+        "Uses ON CONFLICT (email) DO NOTHING so pre-invited users keep their existing role/membership",
+        "Migration applied to production Supabase project (bluilkrggkspxsnehfez)",
+        "New Google sign-in user auto-appears as viewer, not club member",
+        "Pre-invited users keep their existing role and club membership unchanged",
+        "Admin can still promote viewers to admin via /users page"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Existing handle_new_user() is at baseline migration 20260117000000_baseline_schema.sql lines 114-132. It currently only inserts into profiles. Add an INSERT INTO public.allowed_users (email, role, is_club_member) VALUES (NEW.email, 'viewer', false) ON CONFLICT (email) DO NOTHING; after the profiles insert. The allowed_users table (baseline:20-27) has: id UUID PK, email TEXT UNIQUE, role TEXT ('admin'|'viewer'), is_club_member BOOLEAN, invited_by UUID FK, created_at TIMESTAMPTZ. The ON CONFLICT ensures pre-invited users (who already have rows with possibly admin role or club membership) are not overwritten. Apply via Supabase MCP tool."
+    },
+    {
+      "id": "US-006",
+      "title": "Verify and fix 100% test coverage on all required directories",
+      "description": "As a developer, I want to ensure 100% test coverage on all required directories after all prior stories are complete, fixing any gaps introduced by the changes.",
+      "acceptanceCriteria": [
+        "npm run test:coverage shows 100% statements, branches, functions, and lines for src/components/events/",
+        "npm run test:coverage shows 100% statements, branches, functions, and lines for src/components/ingredients/",
+        "npm run test:coverage shows 100% statements, branches, functions, and lines for src/components/mealplan/",
+        "npm run test:coverage shows 100% statements, branches, functions, and lines for src/components/recipes/",
+        "npm run test:coverage shows 100% statements, branches, functions, and lines for src/lib/",
+        "src/components/wheel/IngredientWheel.tsx is exempt (~55% acceptable)",
+        "npm run test:run passes (all tests green)",
+        "npm run build passes",
+        "npm run lint passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Run npm run test:coverage and inspect the output. Current state before this PRD: all required directories are at 100% statement coverage, with minor branch gaps in AddMealDialog.tsx (line 118), MealPlanPage.tsx (line 460), and RecipeHub.tsx (line 932). After the changes from US-001/US-002, new branches may be introduced that need coverage. If any file in the required directories is below 100%, add or update tests to close the gap. The pre-commit hook enforces this automatically, so this story is a final safety net. Also run npm run build and npm run lint to confirm everything is clean."
     }
   ]
 }

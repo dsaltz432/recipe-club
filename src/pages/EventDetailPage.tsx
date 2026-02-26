@@ -418,7 +418,7 @@ const EventDetailPage = () => {
   const runSmartCombine = async (currentIngredients: RecipeIngredient[], currentContentMap: Record<string, RecipeContent>, recipes: Recipe[], forEventId?: string) => {
     // Count parsed recipes
     const parsedRecipes = recipes.filter((r) => currentContentMap[r.id]?.status === "completed");
-    if (parsedRecipes.length < 2) {
+    if (parsedRecipes.length < 1) {
       setSmartGroceryItems(null);
       setCombineError(null);
       return;
@@ -591,12 +591,12 @@ const EventDetailPage = () => {
       return;
     }
 
-    // Determine if combining step will be needed (existing parsed recipes >= 1 means this new one makes 2+)
+    // Always combine groceries (even for a single recipe), but only show the "Combining" progress step for 2+
     const existingParsedCount = event.recipesWithNotes.filter(
       r => recipeContentMap[r.recipe.id]?.status === "completed"
     ).length;
-    const willCombine = existingParsedCount >= 1;
-    setShowCombineStep(willCombine);
+    const willCombine = existingParsedCount >= 0;
+    setShowCombineStep(existingParsedCount >= 1);
 
     setParseStep("saving");
     setParseStatus("parsing");

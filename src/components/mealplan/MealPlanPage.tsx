@@ -269,7 +269,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     currentRecipes: Recipe[]
   ) => {
     const parsedRecipes = currentRecipes.filter((r) => currentContentMap[r.id]?.status === "completed");
-    if (parsedRecipes.length < 2) {
+    if (parsedRecipes.length < 1) {
       setSmartGroceryItems(null);
       setCombineError(null);
       return;
@@ -345,10 +345,10 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
     const doParse = async () => {
       try {
-        // Calculate whether to show combine step using current items state
+        // Always combine groceries (even for a single recipe), but only show the "Combining" progress step for 2+
         const recipesWithUrls = items.filter(i => i.recipeId && (i.recipeUrl || i.customUrl));
-        const shouldCombine = recipesWithUrls.length >= 2;
-        setShowCombineStep(shouldCombine);
+        const shouldCombine = recipesWithUrls.length >= 1;
+        setShowCombineStep(recipesWithUrls.length >= 2);
 
         setParseStep("saving");
         await new Promise(resolve => setTimeout(resolve, 200));
