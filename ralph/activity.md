@@ -7,8 +7,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 2
-**Current Task:** US-002 complete
+**Tasks Completed:** 3
+**Current Task:** US-003 complete
 
 ---
 
@@ -84,5 +84,35 @@
 - `groceryEdits.ts` has functions named `loadCombinedGroceryItems`/`saveCombinedGroceryItems` — these are function names (not using the deleted type) and don't need renaming
 - The `groupByCategory` function uses a generic `<T extends { category: GroceryCategory }>` so it doesn't reference CombinedGroceryItem at all
 - Test fixtures in groceryList.test.ts that were typed as `CombinedGroceryItem` (no displayName) still pass at runtime because Vitest doesn't enforce TS types — but they were updated for correctness
+
+---
+
+## 2026-02-26 08:15 — US-003: Delete naive combine pipeline from groceryList.ts
+
+### What was implemented
+- Deleted ~440 lines from `src/lib/groceryList.ts`: all naive combine pipeline code
+- Deleted constants: `UNIT_MAP`, `NO_STRIP_S`, `ALWAYS_PLURAL`, `COOKING_ADJECTIVES`, `PRESERVED_COMPOUNDS`, `INGREDIENT_ALIASES`, `UNIT_REMAP`, `PREFERRED_COUNT_UNIT`, `BULK_CONVERSIONS`, `COUNT_TO_CUP`, `COUNT_TO_LB`, `FLUID_OZ_INGREDIENTS`, `SLICE_TO_COUNT`, `CAN_TO_CUP`, `VOLUME_IN_TSP`, `WEIGHT_IN_OZ`, `DENSITY_OZ_PER_CUP`, `METRIC_UNITS`
+- Deleted functions: `normalizeIngredientName()`, `normalizeUnit()`, `getConversionFamily()`, `convertToPreferredUnit()`, `combineIngredients()`, `filterPantryItems()`
+- Simplified `detectCategory()` to use `name.toLowerCase().trim()` instead of `normalizeIngredientName()`
+- Simplified `filterSmartPantryItems()` to use `.toLowerCase().trim()` instead of `normalizeIngredientName()`
+- Updated `smartCombineIngredients()` to no longer call `combineIngredients()` — now maps raw ingredients directly for the AI edge function, and throws on failure instead of falling back to naive combine
+- Updated `GroceryListSection.tsx`: removed imports of deleted functions (`combineIngredients`, `filterPantryItems`, `normalizeIngredientName`, `normalizeUnit`, `groupByCategory`), removed naive combine variables and fallback rendering block, removed pantry excluded items section, simplified per-recipe tab item construction to use `toLowerCase().trim()`
+- Removed unused lucide-react imports (`Info`, `ChevronDown`, `ChevronUp`) and unused state (`showExcluded`, `recipeNameMap`) from GroceryListSection
+
+### Files changed
+- `src/lib/groceryList.ts` (deleted ~440 lines of naive combine pipeline, simplified detectCategory and filterSmartPantryItems, updated smartCombineIngredients)
+- `src/components/recipes/GroceryListSection.tsx` (removed imports of deleted functions, removed naive fallback rendering, removed pantry excluded section, cleaned up unused state/imports)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (tests will break — fixed in US-006)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- `smartCombineIngredients` had a dependency on `combineIngredients` (called it internally at line 873), so removing `combineIngredients` required updating `smartCombineIngredients` in the same story
+- `GroceryListSection.tsx` imported 4 deleted functions — had to be cleaned up in this story to make build pass, even though full refactor is US-004
+- The naive fallback rendering block (`!smartGrouped && !combineError`) and pantry excluded items section both depended on `combineIngredients` output, so both were removed
+- File went from 975 lines to ~280 lines — massive reduction
+- `CATEGORY_OVERRIDES` is kept because it's used by `detectCategory()` which `IngredientFormRows` depends on
 
 ---

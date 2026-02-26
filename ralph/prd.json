@@ -65,7 +65,7 @@
         "npm run lint passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This is a large deletion. combineIngredients is defined starting around line 476 and runs ~275 lines. The supporting constants (UNIT_MAP, INGREDIENT_ALIASES, ADJECTIVES_TO_STRIP, PRESERVED_COMPOUNDS, ALWAYS_PLURAL, NO_STRIP_S, normalizeIngredientName, normalizeUnit, all the conversion maps) span lines 36-475. filterPantryItems is at line 848. Keep CATEGORY_OVERRIDES (line 171) — it's used by detectCategory() which IngredientFormRows depends on. GroceryListSection.tsx imports combineIngredients, filterPantryItems, normalizeIngredientName, normalizeUnit — these imports must be removed (handled in US-004). Tests will break — those are fixed in US-006."
     },
     {
