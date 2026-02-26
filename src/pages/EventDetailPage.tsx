@@ -54,7 +54,6 @@ import {
   UtensilsCrossed,
   Users,
   CheckCircle,
-  // Flame, // Cook Mode disabled
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
@@ -66,7 +65,6 @@ import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerT
 import { cn } from "@/lib/utils";
 import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
-// import CookModeSection from "@/components/recipes/CookModeSection"; // Cook Mode disabled
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
@@ -1386,12 +1384,6 @@ const EventDetailPage = () => {
               <UtensilsCrossed className="h-4 w-4" />
               <span className="hidden sm:inline">Pantry</span>
             </TabsTrigger>
-            {/* Cook Mode tab hidden for now
-            <TabsTrigger value="cook-mode" className="flex items-center gap-1.5">
-              <Flame className="h-4 w-4" />
-              <span className="hidden sm:inline">Cook</span>
-            </TabsTrigger>
-            */}
           </TabsList>
 
           <TabsContent value="recipes" forceMount className="data-[state=inactive]:hidden">
@@ -1444,27 +1436,6 @@ const EventDetailPage = () => {
             <PantrySection userId={user?.id} onPantryChange={handlePantryChange} />
           </TabsContent>
 
-          {/* Cook Mode tab content hidden for now
-          <TabsContent value="cook-mode">
-            {event && event.recipesWithNotes.length > 0 ? (
-              <CookModeSection
-                recipes={event.recipesWithNotes.map((r) => r.recipe)}
-                recipeContentMap={recipeContentMap}
-                recipeIngredients={recipeIngredients}
-                eventName={event.ingredientName || "Event"}
-              />
-            ) : (
-              <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
-                <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
-                  <Flame className="h-8 w-8 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground text-center text-sm sm:text-base">
-                    Add recipes first to use Cook Mode.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          */}
         </Tabs>
       </main>
 

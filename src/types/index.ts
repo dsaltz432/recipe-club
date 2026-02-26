@@ -139,21 +139,6 @@ export interface SmartGroceryItem {
   sourceRecipes: string[];
 }
 
-export interface CookingStep {
-  time: string;
-  action: string;
-  recipe: string;
-  equipment?: string;
-  duration?: string;
-}
-
-export interface CombinedCookPlan {
-  totalTime: string;
-  steps: CookingStep[];
-  tips: string[];
-}
-
-
 export interface MealPlan {
   id: string;
   userId: string;
