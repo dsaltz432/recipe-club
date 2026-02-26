@@ -11,8 +11,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 12
-**Current Task:** US-012 complete
+**Tasks Completed:** 13
+**Current Task:** US-013 complete
 
 ---
 
@@ -410,5 +410,36 @@
 - The `showManualMode` prop was needed because AddMealDialog conditionally shows "Enter Manually" based on `onAddManualMeal` prop, while RecipeInputForm always showed all 3 modes
 - All 52 AddMealDialog tests pass with only 1 minor selector update (label text change) — the RecipeInputForm uses same label IDs (`recipe-input-name`, `recipe-input-url`) so `getByLabelText` queries still work
 - AddMealDialog went from 458 lines to ~240 lines — significant reduction by eliminating duplicated form UI, upload handler, file validation, and mode switching logic
+
+---
+
+## 2026-02-26 21:00 — US-013: Replace inline recipe form in EventDetailPage with RecipeInputForm
+
+### What was implemented
+- Replaced ~130 lines of inline form JSX (mode selector, URL input, upload UI, manual IngredientFormRows) with `<RecipeInputForm>` component
+- Replaced 4 state vars (`recipeName`, `recipeUrl`, `addRecipeInputMode`, `addRecipeIngredientRows`) + upload state (`isUploadingRecipeImage`, `uploadingFileName`, `recipeImageInputRef`) with single `recipeFormData` state using `createInitialFormData()`
+- Removed duplicated handlers: `handleRecipeImageUpload`, `handleAddRecipeInputModeChange`, `canSubmitRecipe` — all handled by RecipeInputForm or `canSubmitRecipeForm()`
+- `handleSubmitRecipe` reads from `recipeFormData.name`, `recipeFormData.url`, `recipeFormData.inputMode`, `recipeFormData.ingredientRows`
+- Manual mode submission uses `buildIngredientPayload(recipeFormData.ingredientRows)` instead of inline map with `parseFractionToDecimal`
+- `handleRetryParse` uses `recipeFormData.url.trim()` and `recipeFormData.name.trim()` for retry
+- All state reset points use `setRecipeFormData(createInitialFormData())` instead of setting 4 vars individually
+- Dialog width still adjusts via `recipeFormData.inputMode === "manual"`
+- Removed unused imports: `useRef`, `Upload`, `Loader2`, `uploadRecipeFile`, `FileValidationError`, `parseFractionToDecimal`, `IngredientFormRows`, `createBlankRow`, `IngredientRow`
+- Added imports: `RecipeInputForm`, `createInitialFormData`, `canSubmitRecipeForm`, `buildIngredientPayload`, `RecipeFormData`
+
+### Files changed
+- `src/pages/EventDetailPage.tsx` (major refactor — replaced inline form with RecipeInputForm, removed duplicated state/handlers/imports)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1566 tests, 56 test files, 100% on required directories)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- All 181 EventDetailPage tests passed without any test modifications — RecipeInputForm uses the same default placeholders ("Enter recipe name", "https://...") and button text ("Enter URL", "Upload File", "Enter Manually") as the inline form did
+- The `isValidUrl` function was kept in EventDetailPage because it's still used by the Edit Recipe dialog (handleSaveRecipeEdit and edit recipe URL validation)
+- `Label` and `Input` imports remain needed for Edit Recipe dialog, Edit Notes dialog, and Event Time editor
+- `cn` import remains needed for the Dialog width conditional
+- The `parseFractionToDecimal` import was removed entirely — `buildIngredientPayload` from RecipeInputForm handles it
 
 ---

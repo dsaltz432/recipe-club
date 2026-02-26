@@ -276,7 +276,7 @@
         "npm run test:coverage passes with 100% on required directories"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "EventDetailPage.tsx has an add-recipe dialog starting around the Dialog component with 'Add Recipe'. The inline form JSX includes: mode selector buttons (lines ~1560-1585), URL input (lines ~1590-1605), upload input (lines ~1608-1650), manual IngredientFormRows (lines ~1651-1655). Replace all of this with <RecipeInputForm formData={recipeFormData} onFormDataChange={setRecipeFormData} />. The submit button stays in EventDetailPage's DialogFooter. handleSubmitRecipe currently reads recipeName, recipeUrl, addRecipeInputMode, addRecipeIngredientRows — change to read recipeFormData.name, recipeFormData.url, recipeFormData.inputMode, recipeFormData.ingredientRows. Use buildIngredientPayload() for manual mode. Test file: tests/unit/pages/EventDetailPage.test.tsx — this is a large test file, update form interaction queries."
     },
     {
