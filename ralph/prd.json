@@ -64,7 +64,7 @@
         "npm run build passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The display_name_map column was added by migration 20260225000001_add_display_name_map_to_grocery_cache.sql. It was replaced by per_recipe_items (migration 20260226100000). Grep confirms zero references to display_name_map or displayNameMap in any source files. Use: ALTER TABLE combined_grocery_items DROP COLUMN IF EXISTS display_name_map; Apply to production via Supabase MCP tool (project: bluilkrggkspxsnehfez)."
     },
     {
