@@ -9,8 +9,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 9
-**Current Task:** US-009 complete
+**Tasks Completed:** 10
+**Current Task:** US-010 complete
 
 ---
 
@@ -298,5 +298,43 @@
 ### Learnings for future iterations
 - Most of the US-009 ACs were already satisfied by earlier stories (US-004 removed displayNameMap state/props, US-005 updated SmartCombineResult/cache/smartCombineIngredients). The remaining work was adding `perRecipeItems` state and plumbing it through to GroceryListSection.
 - Both pages follow the same pattern: state → runSmartCombine stores → cache restore loads → prop passed to GroceryListSection
+
+---
+
+## 2026-02-26 16:30 — US-010: Update cache, migration, and remaining tests for 100% coverage
+
+### What was implemented
+- Updated `groceryCache.test.ts`: replaced `displayNameMap: undefined` expectations with `perRecipeItems: undefined`, added tests for `perRecipeItems` in cached data, `saveGroceryCache` with `perRecipeItems`, and default empty object behavior
+- Updated `groceryEdits.test.ts`: added `displayName` to all `GroceryEditItem` fixtures (loadCombinedGroceryItems, saveCombinedGroceryItems, updateGroceryItem, addCustomGroceryItem, removeGroceryItem)
+- Updated `EventDetailPage.test.tsx`: replaced all `displayNameMap: {}` with `perRecipeItems: {}`, replaced `displayNameMap: { onion: "Onion" }` with proper `perRecipeItems` shape
+- Updated `MealPlanPage.test.tsx`: replaced all `displayNameMap: {}` with `perRecipeItems: {}`, updated comment about combineIngredients, added `rpc` mock to Supabase mock, added 2 new tests for manual meal entry (handleAddManualMeal success + RPC error), fixed test for single-recipe grocery tab (no longer expects "onion" text since naive combine removed)
+- Updated `AddMealDialog.test.tsx`: added 6 new tests for manual entry mode (shows Enter Manually button, hides when no handler, switches modes, submits with ingredients, validates empty state)
+- Added migration `20260226100000_add_per_recipe_items_to_grocery_cache.sql` — adds `per_recipe_items jsonb DEFAULT '{}'` column
+- Deleted empty `tests/unit/debug_grocery.test.tsx` (staged but empty)
+- Verified no remaining `displayNameMap` references in entire codebase
+- Verified no remaining references to deleted functions/types (combineIngredients, CombinedGroceryItem, etc.)
+- Verified all 3 recipe entry flows unaffected (URL, upload, manual)
+
+### Files changed
+- `tests/unit/lib/groceryCache.test.ts` (replaced displayNameMap with perRecipeItems, added 3 new tests)
+- `tests/unit/lib/groceryEdits.test.ts` (added displayName to all fixtures)
+- `tests/unit/pages/EventDetailPage.test.tsx` (replaced displayNameMap with perRecipeItems)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (replaced displayNameMap, added rpc mock, added 2 manual meal tests, fixed single-recipe test)
+- `tests/unit/components/mealplan/AddMealDialog.test.tsx` (added 6 manual entry mode tests)
+- `supabase/migrations/20260226100000_add_per_recipe_items_to_grocery_cache.sql` (new migration)
+- `tests/unit/debug_grocery.test.tsx` (deleted)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1529 tests, 55 test files)
+- Coverage: 100% stmts/functions/lines on all required directories (events, ingredients, mealplan, recipes, lib)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- The `groceryCache.ts` source was already updated in US-005 (perRecipeItems, per_recipe_items column via cast) — US-010 only needed test updates
+- MealPlanPage's `handleAddManualMeal` function (lines 459-476) was previously untested, reducing mealplan coverage to 96%. Adding manual meal tests brought it to 100%
+- The `IngredientFormRows` component uses placeholder "Ingredient name" (not "e.g. chicken breast") — test fixtures need to match actual placeholders
+- Single-recipe grocery tab behavior changed: with naive combine removed, 1 parsed recipe shows no grocery items (runSmartCombine requires 2+ parsed recipes). Tests should assert the tab renders without crashing, not that specific ingredients appear.
+- `loadCombinedGroceryItems`/`saveCombinedGroceryItems` in groceryEdits.ts are function names for the edit layer — NOT references to the deleted `combineIngredients` function
 
 ---

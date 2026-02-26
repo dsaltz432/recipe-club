@@ -569,6 +569,87 @@ describe("AddMealDialog", () => {
     });
   });
 
+  describe("Manual Entry Mode", () => {
+    const propsWithManual = {
+      ...defaultProps,
+      onAddManualMeal: vi.fn(),
+    };
+
+    it("shows Enter Manually button when onAddManualMeal is provided", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      expect(screen.getByText("Enter Manually")).toBeInTheDocument();
+    });
+
+    it("does not show Enter Manually button when onAddManualMeal is not provided", () => {
+      render(<AddMealDialog {...defaultProps} />);
+
+      expect(screen.queryByText("Enter Manually")).not.toBeInTheDocument();
+    });
+
+    it("switches to manual mode and shows ingredient rows", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Should show ingredient form rows (IngredientFormRows renders inputs)
+      expect(screen.getByText("Ingredients *")).toBeInTheDocument();
+    });
+
+    it("switches from manual back to URL mode", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Enter URL"));
+
+      expect(screen.getByLabelText("Recipe URL *")).toBeInTheDocument();
+    });
+
+    it("submits manual meal with ingredients", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      // Fill name
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Pasta" },
+      });
+
+      // Switch to manual mode
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Fill ingredient name in the first row
+      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
+      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
+
+      // Fill quantity
+      const quantityInputs = screen.getAllByPlaceholderText("1");
+      fireEvent.change(quantityInputs[0], { target: { value: "1" } });
+
+      // Submit
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      expect(propsWithManual.onAddManualMeal).toHaveBeenCalledWith("Pasta", [
+        expect.objectContaining({
+          name: "spaghetti",
+          quantity: 1,
+          sort_order: 0,
+        }),
+      ]);
+    });
+
+    it("disables submit in manual mode when no ingredients are entered", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Pasta" },
+      });
+
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Submit should be disabled — no ingredient names filled
+      expect(screen.getByText("Add to Meal")).toBeDisabled();
+    });
+  });
+
   describe("File Upload", () => {
     const createFile = (name: string, type: string, size = 1024) => {
       const file = new File(["x".repeat(size)], name, { type });

@@ -208,7 +208,7 @@
         "All 3 recipe entry flows verified: URL parsing, file/photo upload, manual entry — no imports of deleted functions"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "groceryCache.ts currently stores display_name_map. Change to per_recipe_items. Use same cast pattern (column not in generated Supabase types). Add migration at supabase/migrations/ with next timestamp. Keep display_name_map column in DB for backward compat (old cached rows) — loadGroceryCache should handle rows that have display_name_map but not per_recipe_items gracefully (return undefined for perRecipeItems). Required 100% directories: src/components/events/, src/components/ingredients/, src/components/mealplan/, src/components/recipes/, src/lib/. Exception: IngredientWheel.tsx (~55% acceptable). IMPORTANT: Verify all 3 recipe entry paths are unaffected: (1) URL parsing — parse-recipe edge function with url, (2) File/photo upload — PhotoUpload.tsx + parse-recipe with file content, (3) Manual entry — AddMealDialog, IngredientFormRows, EditRecipeIngredientsDialog. These produce RecipeIngredient[] and don't depend on removed functions. EditRecipeIngredientsDialog imports parseFractionToDecimal (kept) and deleteGroceryCache (kept). IngredientFormRows imports detectCategory (kept, simplified). Run final: npm run test:coverage && npm run build && npm run lint."
     },
     {

@@ -43,7 +43,7 @@ describe("groceryEdits", () => {
   describe("loadCombinedGroceryItems", () => {
     it("returns items when data is found", async () => {
       const items: GroceryEditItem[] = [
-        { name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"] },
+        { name: "onion", displayName: "2 onions", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"] },
       ];
       mockMaybeSingle.mockResolvedValue({
         data: { items, recipe_ids: ["r1", "r2"] },
@@ -88,7 +88,7 @@ describe("groceryEdits", () => {
   describe("saveCombinedGroceryItems", () => {
     it("upserts with correct params and sorted recipe IDs", async () => {
       const items: GroceryEditItem[] = [
-        { name: "tomato", totalQuantity: 3, category: "produce", sourceRecipes: ["Soup"] },
+        { name: "tomato", displayName: "3 tomatoes", totalQuantity: 3, category: "produce", sourceRecipes: ["Soup"] },
       ];
 
       await saveCombinedGroceryItems("event", "event-1", "user-1", items, ["r2", "r1"]);
@@ -126,8 +126,8 @@ describe("groceryEdits", () => {
   describe("updateGroceryItem", () => {
     it("updates item name in the list", async () => {
       const existingItems: GroceryEditItem[] = [
-        { name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Soup"] },
-        { name: "garlic", totalQuantity: 3, unit: "clove", category: "produce", sourceRecipes: ["Soup"] },
+        { name: "onion", displayName: "2 onions", totalQuantity: 2, category: "produce", sourceRecipes: ["Soup"] },
+        { name: "garlic", displayName: "3 cloves garlic", totalQuantity: 3, unit: "clove", category: "produce", sourceRecipes: ["Soup"] },
       ];
       mockMaybeSingle.mockResolvedValue({
         data: { items: existingItems, recipe_ids: ["r1"] },
@@ -145,7 +145,7 @@ describe("groceryEdits", () => {
 
     it("updates item quantity and unit", async () => {
       const existingItems: GroceryEditItem[] = [
-        { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Bread"] },
+        { name: "flour", displayName: "2 cups flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Bread"] },
       ];
       mockMaybeSingle.mockResolvedValue({
         data: { items: existingItems, recipe_ids: ["r1"] },
@@ -213,7 +213,7 @@ describe("groceryEdits", () => {
   describe("addCustomGroceryItem", () => {
     it("appends a custom item to existing list", async () => {
       const existingItems: GroceryEditItem[] = [
-        { name: "tomato", totalQuantity: 4, category: "produce", sourceRecipes: ["Soup"] },
+        { name: "tomato", displayName: "4 tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Soup"] },
       ];
       mockMaybeSingle.mockResolvedValue({
         data: { items: existingItems, recipe_ids: ["r1"] },
@@ -289,8 +289,8 @@ describe("groceryEdits", () => {
   describe("removeGroceryItem", () => {
     it("removes item by name from the list", async () => {
       const existingItems: GroceryEditItem[] = [
-        { name: "tomato", totalQuantity: 4, category: "produce", sourceRecipes: ["Soup"] },
-        { name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Soup"] },
+        { name: "tomato", displayName: "4 tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Soup"] },
+        { name: "onion", displayName: "2 onions", totalQuantity: 2, category: "produce", sourceRecipes: ["Soup"] },
       ];
       mockMaybeSingle.mockResolvedValue({
         data: { items: existingItems, recipe_ids: ["r1"] },

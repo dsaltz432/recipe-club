@@ -5000,7 +5000,7 @@ describe("EventDetailPage", () => {
 
   it("runs smart combine on cache miss with 2+ parsed recipes", async () => {
     mockLoadGroceryCache.mockResolvedValue(null);
-    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "Combined ingredient", displayName: "Combined ingredient" }], displayNameMap: {} });
+    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "Combined ingredient", displayName: "Combined ingredient" }], perRecipeItems: {} });
 
     const twoRecipes = [
       ...recipesData,
@@ -5366,7 +5366,7 @@ describe("EventDetailPage", () => {
     });
 
     mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
-    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "Combined", displayName: "Combined" }], displayNameMap: {} });
+    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "Combined", displayName: "Combined" }], perRecipeItems: {} });
 
     render(<EventDetailPage />);
 
@@ -6231,7 +6231,7 @@ describe("EventDetailPage", () => {
     mockLoadGroceryCache.mockResolvedValue({
       items: cachedItems,
       recipeIds: ["recipe-1"],
-      displayNameMap: { onion: "Onion" },
+      perRecipeItems: { "Chicken Parm": [{ name: "onion", displayName: "Onion", totalQuantity: 1, category: "produce", sourceRecipes: ["Chicken Parm"] }] },
     });
 
     render(<EventDetailPage />);
