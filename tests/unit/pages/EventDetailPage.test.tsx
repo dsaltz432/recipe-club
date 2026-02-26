@@ -5071,6 +5071,74 @@ describe("EventDetailPage", () => {
     });
   });
 
+  // ---- GROCERY CACHE MISS WITH SMART COMBINE — SINGLE RECIPE ----
+
+  it("runs smart combine on cache miss with 1 parsed recipe", async () => {
+    mockLoadGroceryCache.mockResolvedValue(null);
+    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "chicken", displayName: "Chicken" }], perRecipeItems: {} });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Smart combine IS called even with just 1 parsed recipe (single-recipe grocery fix)
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+
+    // Cache should be saved after combine
+    await waitFor(() => {
+      expect(mockSaveGroceryCache).toHaveBeenCalled();
+    });
+  });
+
   // ---- RUN SMART COMBINE ERROR (line 450) ----
 
   it("handles smart combine error gracefully", async () => {

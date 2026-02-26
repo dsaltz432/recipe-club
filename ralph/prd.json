@@ -34,7 +34,7 @@
         "npm run test:run passes (all tests green)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "MealPlanPage.test.tsx line ~2575 has a test 'skips smart combine when fewer than 2 parsed recipes' that explicitly verifies the old (buggy) behavior — this test must be updated. EventDetailPage.test.tsx line ~5001 has 'runs smart combine on cache miss with 2+ parsed recipes' — add a companion test for 1 parsed recipe. For MealPlanPage, also check line ~3525 'runs combine step during parse when 2+ recipes with URLs on groceries tab' and add a test for 1 recipe. The showCombineStep progress label should still only appear for 2+ recipes — add assertions for that."
     },
     {

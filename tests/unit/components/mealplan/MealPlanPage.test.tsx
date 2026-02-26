@@ -3648,6 +3648,108 @@ describe("MealPlanPage", () => {
       }, { timeout: 5000 });
     });
 
+    it("runs combine step during parse for a single URL recipe on groceries tab", async () => {
+      // Use a delayed parse mock so we can switch tabs while parse is in flight
+      let resolveInvoke: (value: { data: unknown; error: null }) => void;
+      mockInvoke.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveInvoke = resolve;
+      }));
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-single");
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-single-new" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              // No existing recipes — this will be the only one
+              data: [],
+              error: null,
+            }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-s1",
+                plan_id: "plan-single",
+                recipe_id: "recipe-single-new",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "Solo Parsed Recipe", url: "https://example.com/solo-parse" },
+              },
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      // Wait for initial load (empty plan)
+      await waitFor(() => {
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      });
+
+      // Add a meal with URL to trigger parse (this is the only recipe with URL)
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Solo Parsed Recipe" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+        target: { value: "https://example.com/solo-parse" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      // Wait for parsing dialog
+      await waitFor(() => {
+        expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
+      });
+
+      // Wait for invoke to actually be called
+      await waitFor(() => {
+        expect(mockInvoke).toHaveBeenCalled();
+      });
+
+      // Switch to Groceries tab while parse is in flight
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      // Resolve parse — shouldCombine is true (1 recipe with URL), showCombineStep is false (< 2)
+      resolveInvoke!({ data: { success: true }, error: null });
+
+      // Parse succeeds and smart combine should run even for single recipe
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+      }, { timeout: 5000 });
+    });
+
   });
 
   describe("manual meal entry", () => {

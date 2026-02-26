@@ -9,8 +9,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 1
-**Current Task:** US-001 completed
+**Tasks Completed:** 2
+**Current Task:** US-002 completed
 
 ---
 
@@ -40,5 +40,29 @@
 - EventDetailPage is in `src/pages/`, not `src/components/events/` — the PRD notes reference line numbers that are accurate
 - The two-layer guard pattern means fixing the bug requires changes in 4 locations across 2 files
 - Tests that assert old buggy behavior need updating — look for `not.toHaveBeenCalled` assertions on `mockSmartCombineIngredients`
+
+---
+
+## 2026-02-26 09:35 — US-002: Update tests for single-recipe grocery behavior
+
+### What was implemented
+- Added new EventDetailPage test "runs smart combine on cache miss with 1 parsed recipe" — verifies smartCombineIngredients IS called with a single parsed recipe and cache is saved
+- Added new MealPlanPage test "runs combine step during parse for a single URL recipe on groceries tab" — verifies the parse flow triggers smart combine even when there's only 1 recipe with a URL
+- Verified existing tests from US-001 still pass: "runs smart combine even with a single parsed recipe" (MealPlanPage), "runs smart combine on cache miss with 2+ parsed recipes" (EventDetailPage)
+- Note: AC3/AC4 were already completed as part of US-001 (test renamed from "skips smart combine when fewer than 2 parsed recipes" → "runs smart combine even with a single parsed recipe")
+
+### Files changed
+- `tests/unit/pages/EventDetailPage.test.tsx` (added test after line ~5072)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (added test after line ~3649)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1515/1515 all green)
+- Lint: pass (all warnings/errors pre-existing, none from changed files)
+
+### Learnings for future iterations
+- US-001 already covered AC3/AC4 by updating MealPlanPage tests — future PRDs should check if prior stories already satisfy downstream test ACs
+- The EventDetailPage smart combine test pattern uses `mockSupabaseFrom.mockImplementation` with table-specific return values, including `recipe_content` with `status: "completed"` which is required for `parsedRecipes` filtering
+- MealPlanPage parse flow tests use a delayed invoke mock (`mockInvoke.mockImplementationOnce(() => new Promise(...))`) to allow tab switching during parse
 
 ---
