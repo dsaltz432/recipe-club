@@ -234,19 +234,6 @@ const Dashboard = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {/* Mobile stats */}
-              <div className="md:hidden px-2 py-2 border-b">
-                <div className="flex justify-around text-xs">
-                  <div className="text-center">
-                    <div className="font-bold text-purple">{completedEventsCount}</div>
-                    <div className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-orange">{userRecipesCount}</div>
-                    <div className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</div>
-                  </div>
-                </div>
-              </div>
               {userIsAdmin && (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">

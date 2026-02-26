@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { ScheduledEvent } from "@/types";
 import { format, parseISO, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
-import { Calendar as CalendarIcon, Clock, ChefHat, Pencil, X } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, ChefHat, Pencil, X, CheckCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -44,6 +44,8 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Edit event state
   const [showEditEventDialog, setShowEditEventDialog] = useState(false);
@@ -86,6 +88,37 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
   const isToday = countdown.days === 0;
   const isSoon = countdown.days <= 1;
   const isTimeUp = isToday && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0;
+
+  const handleCompleteEvent = async () => {
+    if (!event.id) return;
+
+    setIsCompleting(true);
+    try {
+      const { error: statusError } = await supabase
+        .from("scheduled_events")
+        .update({ status: "completed" })
+        .eq("id", event.id);
+
+      if (statusError) throw statusError;
+
+      if (event.ingredientId) {
+        const { error: rpcError } = await supabase.rpc(
+          "increment_ingredient_used_count",
+          { p_ingredient_id: event.ingredientId, p_user_id: userId }
+        );
+        if (rpcError) throw rpcError;
+      }
+
+      toast.success("Event marked as completed!");
+      setShowCompleteConfirm(false);
+      onEventUpdated?.();
+    } catch (error) {
+      console.error("Error completing event:", error);
+      toast.error("Failed to complete event");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
 
   const handleEditEventClick = () => {
     setEditEventDate(parseISO(event.eventDate));
@@ -249,10 +282,19 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
                     Edit
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCompleteConfirm(true)}
+                    className="h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10"
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Complete
+                  </Button>
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowCancelConfirm(true)}
-                    className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive"
+                    className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50"
                   >
                     <X className="h-3 w-3 mr-1" />
                     Cancel
@@ -327,6 +369,28 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
         </div>
       </CardContent>
     </Card>
+
+    {/* Complete Event Confirmation */}
+    <AlertDialog open={showCompleteConfirm} onOpenChange={setShowCompleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Mark Event as Complete?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will mark the {event.ingredientName} event as completed and increment the ingredient's usage count.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isCompleting}>Keep Scheduled</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleCompleteEvent}
+            disabled={isCompleting}
+            className="bg-purple hover:bg-purple-dark"
+          >
+            {isCompleting ? "Completing..." : "Mark Complete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     {/* Edit Event Dialog */}
     <Dialog open={showEditEventDialog} onOpenChange={setShowEditEventDialog}>

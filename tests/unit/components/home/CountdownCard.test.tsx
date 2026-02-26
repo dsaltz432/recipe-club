@@ -5,10 +5,12 @@ import { createMockEvent } from "@tests/utils";
 
 // Mock supabase
 const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }));
 
@@ -172,21 +174,24 @@ describe("CountdownCard", () => {
     expect(screen.getByText("sec")).toBeInTheDocument();
   });
 
-  it("hides Edit and Cancel buttons for non-admin users", () => {
+  it("hides Edit, Complete, and Cancel buttons for non-admin users", () => {
     render(<CountdownCard {...defaultProps} isAdmin={false} />);
     expect(screen.queryByText("Edit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Complete")).not.toBeInTheDocument();
     expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
   });
 
-  it("hides Edit and Cancel buttons for admin who did not create the event", () => {
+  it("hides Edit, Complete, and Cancel buttons for admin who did not create the event", () => {
     render(<CountdownCard {...defaultProps} isAdmin={true} userId="other-user" />);
     expect(screen.queryByText("Edit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Complete")).not.toBeInTheDocument();
     expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
   });
 
-  it("shows Edit and Cancel buttons for admin event creator", () => {
+  it("shows Edit, Complete, and Cancel buttons for admin event creator", () => {
     render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
     expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(screen.getByText("Complete")).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeInTheDocument();
   });
 
@@ -698,6 +703,120 @@ describe("CountdownCard", () => {
     fireEvent.click(screen.getByText("Cancel Event"));
 
     // Should return early — no supabase calls
+    await waitFor(() => {
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+  });
+
+  it("opens complete confirmation when Complete is clicked", () => {
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    expect(screen.getByText("Mark Event as Complete?")).toBeInTheDocument();
+    expect(screen.getByText(/This will mark the Chicken event as completed/)).toBeInTheDocument();
+  });
+
+  it("closes complete confirmation when Keep Scheduled is clicked", () => {
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    expect(screen.getByText("Mark Event as Complete?")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Keep Scheduled"));
+    expect(screen.queryByText("Mark Event as Complete?")).not.toBeInTheDocument();
+  });
+
+  it("handles complete event successfully with ingredientId", async () => {
+    const updateChain = {
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    };
+    mockFrom.mockReturnValue(updateChain);
+    mockRpc.mockResolvedValue({ error: null });
+
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    fireEvent.click(screen.getByText("Mark Complete"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Event marked as completed!");
+      expect(defaultProps.onEventUpdated).toHaveBeenCalled();
+    });
+  });
+
+  it("handles complete event successfully without ingredientId", async () => {
+    const eventNoIngredient = createMockEvent({
+      ...defaultEvent,
+      ingredientId: undefined,
+    });
+    const updateChain = {
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    };
+    mockFrom.mockReturnValue(updateChain);
+
+    render(<CountdownCard {...defaultProps} event={eventNoIngredient} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    fireEvent.click(screen.getByText("Mark Complete"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Event marked as completed!");
+    });
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("handles complete event with status update error", async () => {
+    const updateChain = {
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: { message: "DB error" } }),
+      }),
+    };
+    mockFrom.mockReturnValue(updateChain);
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    fireEvent.click(screen.getByText("Mark Complete"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to complete event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("handles complete event with RPC error", async () => {
+    const updateChain = {
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    };
+    mockFrom.mockReturnValue(updateChain);
+    mockRpc.mockResolvedValue({ error: { message: "RPC error" } });
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    fireEvent.click(screen.getByText("Mark Complete"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to complete event");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("returns early from handleCompleteEvent when event.id is empty", async () => {
+    const noIdEvent = createMockEvent({
+      ...defaultEvent,
+      id: "",
+      createdBy: "user-1",
+    });
+    render(<CountdownCard {...defaultProps} event={noIdEvent} isAdmin={true} userId="user-1" />);
+    fireEvent.click(screen.getByText("Complete"));
+    fireEvent.click(screen.getByText("Mark Complete"));
+
     await waitFor(() => {
       expect(mockFrom).not.toHaveBeenCalled();
     });

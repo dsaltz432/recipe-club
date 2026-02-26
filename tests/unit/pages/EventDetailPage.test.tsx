@@ -2032,6 +2032,18 @@ describe("EventDetailPage", () => {
     expect(mockSignOut).toHaveBeenCalled();
   });
 
+  it("navigates to /users when Manage Users is clicked (admin)", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // Dropdown is mocked to render content directly; admin sees Manage Users
+    fireEvent.click(screen.getByText("Manage Users"));
+    expect(mockNavigate).toHaveBeenCalledWith("/users");
+  });
+
   // ---- HANDLE COMPLETE CLICK (admin, creator) ----
 
   it("opens complete event dialog for admin creator", async () => {
@@ -2042,7 +2054,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked to render content directly
-    fireEvent.click(screen.getByText("Complete Event"));
+    fireEvent.click(screen.getByText("Complete"));
 
     // Should open the rating dialog
     await waitFor(() => {
@@ -2060,7 +2072,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    fireEvent.click(screen.getByText("Complete Event"));
+    fireEvent.click(screen.getByText("Complete"));
 
     await waitFor(() => {
       expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
@@ -2118,7 +2130,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    fireEvent.click(screen.getByText("Complete Event"));
+    fireEvent.click(screen.getByText("Complete"));
 
     await waitFor(() => {
       expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
@@ -2197,7 +2209,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    fireEvent.click(screen.getByText("Complete Event"));
+    fireEvent.click(screen.getByText("Complete"));
 
     await waitFor(() => {
       expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
@@ -2221,7 +2233,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -2247,8 +2259,7 @@ describe("EventDetailPage", () => {
 
     // Dropdown is mocked - items render directly
     // Click "Cancel Event" in the dropdown
-    const cancelItems = screen.getAllByText("Cancel Event");
-    fireEvent.click(cancelItems[0]);
+    fireEvent.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
       expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
@@ -2308,8 +2319,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    const cancelItems = screen.getAllByText("Cancel Event");
-    fireEvent.click(cancelItems[0]);
+    fireEvent.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
       expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
@@ -2656,7 +2666,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -2871,8 +2881,8 @@ describe("EventDetailPage", () => {
 
     // Dropdown is mocked - items render directly
     // Should show Complete Event but NOT Edit Event (non-creator)
-    expect(screen.getByText("Complete Event")).toBeInTheDocument();
-    expect(screen.queryByText("Edit Event")).not.toBeInTheDocument();
+    expect(screen.getByText("Complete")).toBeInTheDocument();
+    expect(screen.queryByText("Edit")).not.toBeInTheDocument();
   });
 
   // ---- PDF FILE UPLOAD ----
@@ -3058,7 +3068,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -3113,8 +3123,7 @@ describe("EventDetailPage", () => {
     });
 
     // Dropdown is mocked - items render directly
-    const cancelItems = screen.getAllByText("Cancel Event");
-    fireEvent.click(cancelItems[0]);
+    fireEvent.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
       expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
@@ -3669,7 +3678,7 @@ describe("EventDetailPage", () => {
     });
 
     // Click Edit Event - dropdown mocked
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -3726,7 +3735,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -3783,8 +3792,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken")).toBeInTheDocument();
     });
 
-    const cancelItems = screen.getAllByText("Cancel Event");
-    fireEvent.click(cancelItems[0]);
+    fireEvent.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
       expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
@@ -3840,7 +3848,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -3865,7 +3873,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -4172,7 +4180,7 @@ describe("EventDetailPage", () => {
 
     // The edit event dialog Save Changes button is disabled when no date selected
     // The guard at line 916 is defensive
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -4603,7 +4611,7 @@ describe("EventDetailPage", () => {
       };
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -4661,8 +4669,7 @@ describe("EventDetailPage", () => {
       };
     });
 
-    const cancelItems = screen.getAllByText("Cancel Event");
-    fireEvent.click(cancelItems[0]);
+    fireEvent.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
       expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
@@ -4724,8 +4731,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken")).toBeInTheDocument();
     });
 
-    const cancelItems = screen.getAllByText("Cancel Event");
-    fireEvent.click(cancelItems[0]);
+    fireEvent.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
       expect(screen.getByText("Cancel Event?")).toBeInTheDocument();
@@ -4758,7 +4764,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Complete Event"));
+    fireEvent.click(screen.getByText("Complete"));
 
     await waitFor(() => {
       expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
@@ -5891,7 +5897,7 @@ describe("EventDetailPage", () => {
     });
 
     // Must open the rating dialog first by clicking "Complete Event" dropdown item
-    fireEvent.click(screen.getByText("Complete Event"));
+    fireEvent.click(screen.getByText("Complete"));
 
     await waitFor(() => {
       expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
@@ -5919,7 +5925,7 @@ describe("EventDetailPage", () => {
     });
 
     // Open edit event dialog via dropdown item
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -6381,7 +6387,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -6433,7 +6439,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -6493,7 +6499,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();
@@ -6555,7 +6561,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Edit Event"));
+    fireEvent.click(screen.getByText("Edit"));
 
     await waitFor(() => {
       expect(screen.getByText("Change the date and time for this event.")).toBeInTheDocument();

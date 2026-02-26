@@ -908,13 +908,12 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // Desktop + mobile: "Club Event" (singular) appears twice
+    // Desktop header only (mobile stats removed from dropdown)
     const eventLabels = screen.getAllByText("Club Event");
-    expect(eventLabels).toHaveLength(2);
+    expect(eventLabels).toHaveLength(1);
 
-    // Desktop + mobile: "Total Recipe" (singular) appears twice
     const recipeLabels = screen.getAllByText("Total Recipe");
-    expect(recipeLabels).toHaveLength(2);
+    expect(recipeLabels).toHaveLength(1);
   });
 
   it("shows plural 'Club Events' and 'Total Recipes' when counts are 2+", async () => {
@@ -945,13 +944,12 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // Desktop + mobile: "Club Events" (plural) appears twice
+    // Desktop header only (mobile stats removed from dropdown)
     const eventLabels = screen.getAllByText("Club Events");
-    expect(eventLabels).toHaveLength(2);
+    expect(eventLabels).toHaveLength(1);
 
-    // Desktop + mobile: "Total Recipes" (plural) appears twice
     const recipeLabels = screen.getAllByText("Total Recipes");
-    expect(recipeLabels).toHaveLength(2);
+    expect(recipeLabels).toHaveLength(1);
   });
 
   it("shows plural labels when counts are 0", async () => {
@@ -982,12 +980,12 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // 0 is plural
+    // 0 is plural, desktop header only (mobile stats removed from dropdown)
     const eventLabels = screen.getAllByText("Club Events");
-    expect(eventLabels).toHaveLength(2);
+    expect(eventLabels).toHaveLength(1);
 
     const recipeLabels = screen.getAllByText("Total Recipes");
-    expect(recipeLabels).toHaveLength(2);
+    expect(recipeLabels).toHaveLength(1);
   });
 
   // --- loadStats count || 0 fallback branches (lines 150-151) ---

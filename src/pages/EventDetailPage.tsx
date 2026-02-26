@@ -52,6 +52,8 @@ import {
   ShoppingCart,
   BookOpen,
   UtensilsCrossed,
+  Users,
+  CheckCircle,
   // Flame, // Cook Mode disabled
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
@@ -1141,8 +1143,8 @@ const EventDetailPage = () => {
           borderBottom: `1px solid ${headerBorderColor || "rgba(155, 135, 245, 0.1)"}`,
         }}
       >
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <Button
               variant="ghost"
               size="sm"
@@ -1167,6 +1169,7 @@ const EventDetailPage = () => {
               )}
             </div>
           </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-purple/5 shrink-0">
@@ -1176,44 +1179,18 @@ const EventDetailPage = () => {
                     {user?.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
+                <span className="text-sm font-medium hidden sm:inline">
+                  {user?.name}
+                </span>
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {isUpcoming && userIsAdmin && user?.id === event?.createdBy && (
+              {userIsAdmin && (
                 <>
-                  <DropdownMenuItem onClick={handleEditEventClick} className="cursor-pointer">
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit Event
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCompleteClick} className="cursor-pointer">
-                    <Star className="h-4 w-4 mr-2" />
-                    Complete Event
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="cursor-pointer text-destructive"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel Event
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {isUpcoming && userIsAdmin && user?.id !== event?.createdBy && (
-                <>
-                  <DropdownMenuItem onClick={handleCompleteClick} className="cursor-pointer">
-                    <Star className="h-4 w-4 mr-2" />
-                    Complete Event
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {!isUpcoming && userIsMember && totalRecipes > 0 && (
-                <>
-                  <DropdownMenuItem onClick={handleRateRecipesClick} className="cursor-pointer">
-                    <Star className="h-4 w-4 mr-2" />
-                    Rate Recipes
+                  <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Users
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -1238,27 +1215,61 @@ const EventDetailPage = () => {
           }}
         >
           <CardContent className="py-4 sm:py-6">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
-                <div
-                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full"
-                  style={{ backgroundColor: bgColor || "rgba(155, 135, 245, 0.05)" }}
-                >
-                  <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: themeColor }} />
-                  <span className="font-medium">{event && format(parseISO(event.eventDate), "EEE, MMM d, yyyy")}</span>
-                </div>
-                {event?.eventTime && (
-                  <div className="flex items-center gap-1.5 sm:gap-2 bg-orange/5 px-2 sm:px-3 py-1 rounded-full">
-                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange" />
-                    <span className="font-medium">{formatTime(event.eventTime)}</span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
+                  <div
+                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full"
+                    style={{ backgroundColor: bgColor || "rgba(155, 135, 245, 0.05)" }}
+                  >
+                    <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: themeColor }} />
+                    <span className="font-medium">{event && format(parseISO(event.eventDate), "EEE, MMM d, yyyy")}</span>
                   </div>
-                )}
+                  {event?.eventTime && (
+                    <div className="flex items-center gap-1.5 sm:gap-2 bg-orange/5 px-2 sm:px-3 py-1 rounded-full">
+                      <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange" />
+                      <span className="font-medium">{formatTime(event.eventTime)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <ChefHat className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span>
+                    <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                <ChefHat className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>
-                  <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
-                </span>
+
+              {/* Event action buttons */}
+              <div className="flex flex-wrap gap-2 shrink-0">
+                {isUpcoming && userIsAdmin && user?.id === event?.createdBy && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 px-3 text-xs">
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10">
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      Complete
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowCancelConfirm(true)} className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50">
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Cancel
+                    </Button>
+                  </>
+                )}
+                {isUpcoming && userIsAdmin && user?.id !== event?.createdBy && (
+                  <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10">
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                    Complete
+                  </Button>
+                )}
+                {!isUpcoming && userIsMember && totalRecipes > 0 && (
+                  <Button variant="outline" size="sm" onClick={handleRateRecipesClick} className="h-8 px-3 text-xs">
+                    <Star className="h-3.5 w-3.5 mr-1" />
+                    Rate Recipes
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>

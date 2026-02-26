@@ -232,6 +232,53 @@ describe("RecipeHub", () => {
     // Verify the supabase call was made to load ingredients
     expect(mockSupabaseFrom).toHaveBeenCalledWith("ingredients");
   });
+
+  it("sets pantry item names when userId provided and pantry returns items", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder(mockRatingsData);
+      if (table === "ingredients") return createMockQueryBuilder(mockIngredientsData);
+      if (table === "user_pantry_items") {
+        return createMockQueryBuilder([
+          { id: "p1", name: "salt" },
+          { id: "p2", name: "pepper" },
+        ]);
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Pantry items were loaded; user_pantry_items table was queried
+    expect(mockSupabaseFrom).toHaveBeenCalledWith("user_pantry_items");
+  });
+
+  it("falls back gracefully when getPantryItems throws", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder(mockRatingsData);
+      if (table === "ingredients") return createMockQueryBuilder(mockIngredientsData);
+      if (table === "user_pantry_items") {
+        return createMockQueryBuilder([], { message: "Pantry fetch failed" });
+      }
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Component renders normally despite pantry error (catch handler swallows the error)
+    expect(mockSupabaseFrom).toHaveBeenCalledWith("user_pantry_items");
+  });
 });
 
 describe("RecipeHub - Error Handling", () => {

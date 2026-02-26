@@ -1559,6 +1559,178 @@ describe("MealPlanPage", () => {
       });
     });
 
+    it("shows data.error message when parse returns success:false", async () => {
+      mockInvoke.mockResolvedValue({ data: { success: false, error: "Site blocked parsing" }, error: null });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pasta", url: "https://example.com/pasta" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "content-1",
+                  recipe_id: "recipe-1",
+                  description: null,
+                  servings: null,
+                  prep_time: null,
+                  cook_time: null,
+                  total_time: null,
+                  instructions: null,
+                  source_title: null,
+                  parsed_at: null,
+                  status: "pending",
+                  error_message: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Pasta", url: "https://example.com/pasta" }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pasta")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Parse "Pasta"'));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Site blocked parsing");
+      });
+    });
+
+    it("uses fallback error message when parse returns success:false without error field", async () => {
+      mockInvoke.mockResolvedValue({ data: { success: false }, error: null });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-1",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pasta", url: "https://example.com/pasta" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "content-1",
+                  recipe_id: "recipe-1",
+                  description: null,
+                  servings: null,
+                  prep_time: null,
+                  cook_time: null,
+                  total_time: null,
+                  instructions: null,
+                  source_title: null,
+                  parsed_at: null,
+                  status: "pending",
+                  error_message: null,
+                  created_at: "2026-01-01",
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: "recipe-1", name: "Pasta", url: "https://example.com/pasta" }],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pasta")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Parse "Pasta"'));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
+      });
+    });
+
     it("does not parse recipe without URL", async () => {
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
@@ -2904,6 +3076,68 @@ describe("MealPlanPage", () => {
       await waitFor(() => {
         expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
       });
+    });
+
+    it("shows parse failure dialog when parse returns success:false without error field", async () => {
+      mockInvoke.mockReset();
+      mockInvoke.mockResolvedValueOnce({ data: { success: false }, error: null });
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: { id: "recipe-noerrfield" },
+              error: null,
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: "item-noerrfield",
+                plan_id: "plan-new",
+                recipe_id: "recipe-noerrfield",
+                day_of_week: 0,
+                meal_type: "dinner",
+                custom_name: null,
+                custom_url: null,
+                sort_order: 0,
+                recipes: { name: "No Error Field", url: "https://example.com/noerrfield" },
+              },
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      fireEvent.click(slotButtons[0]);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "No Error Field" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+        target: { value: "https://example.com/noerrfield" },
+      });
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
+      }, { timeout: 3000 });
     });
 
 

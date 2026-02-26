@@ -494,7 +494,7 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
                   <span className="sm:hidden">Done</span>
                 </Button>
                 {onCancel && userId === event.createdBy && (
-                  <Button variant="ghost" size="sm" onClick={handleCancelClick} className="h-8 px-2 text-muted-foreground hover:text-destructive">
+                  <Button variant="outline" size="sm" onClick={handleCancelClick} className="h-8 px-2 text-muted-foreground hover:text-destructive hover:border-destructive/50">
                     <X className="h-3.5 w-3.5" />
                     Cancel
                   </Button>
