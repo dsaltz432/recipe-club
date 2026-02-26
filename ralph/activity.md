@@ -5,11 +5,12 @@
 - **Git rm**: Use `git rm` for tracked files; it removes the parent directory automatically if empty.
 - **Types file**: `src/types/index.ts` contains all shared interfaces. When removing types, check for blank lines left behind.
 - **SmartCombineResult flow**: `smartCombineIngredients()` returns `{ items, perRecipeItems }`. Callers (EventDetailPage, MealPlanPage) pass `result.perRecipeItems` to `saveGroceryCache()`. Cache stores as `per_recipe_items` column (via cast, not in generated Supabase types).
+- **Radix Tabs in tests**: `fireEvent.click` does NOT switch Radix UI tabs in jsdom. Use `userEvent.click` from `@testing-library/user-event` instead — it properly dispatches pointer events that Radix listens to.
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 7
-**Current Task:** US-007 complete
+**Tasks Completed:** 8
+**Current Task:** US-008 complete
 
 ---
 
@@ -237,5 +238,38 @@
 - The `perRecipeItems` field defaults to `{}` when AI omits it, matching the same pattern used for empty rawIngredients
 - Edge function went from 222 lines to ~200 lines — slightly shorter despite the expanded system prompt, because the user message construction is simpler (no conditional perRecipeNames handling)
 - The model identifier `claude-sonnet-4-5-20250929` is retained from the original implementation
+
+---
+
+## 2026-02-26 14:20 — US-008: Update GroceryListSection and component tests
+
+### What was implemented
+- Updated `GroceryListSection.test.tsx`:
+  - Removed "falls back to naive combine" test (naive combine no longer exists)
+  - Removed 4 pantry excluded UI tests (excluded items section was removed from component in US-003)
+  - Replaced single pantry excluded test with a simpler assertion that pantry items are silently filtered
+  - Updated "renders combined view" test to pass `smartGroceryItems` prop (combined tab now requires AI items)
+  - Updated 4 per-recipe tab tests to pass `perRecipeItems` prop (per-recipe tabs now use AI results)
+  - Added `combineError` prop test for error state rendering
+  - Added test for empty per-recipe tab when `perRecipeItems` missing for a recipe
+  - Switched per-recipe tab tests from `fireEvent.click` to `userEvent.click` (Radix tabs require proper pointer events in jsdom)
+  - Imported `userEvent` from `@testing-library/user-event`
+  - Removed unused `waitFor` usage in some tests (userEvent.click is async, no need for waitFor)
+- Verified `GroceryItemRow.test.tsx`, `GroceryCategoryGroup.test.tsx`, `GroceryExportMenu.test.tsx` already use `SmartGroceryItem` only (updated in US-002)
+
+### Files changed
+- `tests/unit/components/recipes/GroceryListSection.test.tsx` (major rewrite — removed naive tests, added perRecipeItems/combineError tests, switched to userEvent for tabs)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1517 tests across 55 files; 2 pre-existing MealPlanPage failures expected in US-010)
+- Coverage: 100% lines/functions on src/components/recipes/ (99.84% stmts, 99.17% branches — uncovered branches in AddPersonalRecipeDialog are pre-existing)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- `fireEvent.click` does NOT trigger Radix UI tab state changes in jsdom — `userEvent.click` must be used
+- Several old per-recipe tab tests were "passing" accidentally because the combined tab showed naive combine results — the tab click never actually switched tabs
+- The pantry excluded items UI (count + toggle to show names) was removed from GroceryListSection in US-003 — tests testing that feature needed to be deleted, not just updated
+- Test count went from 41 to 38: removed 5 naive/pantry-excluded tests, added 2 new tests (combineError, empty perRecipeItems)
 
 ---

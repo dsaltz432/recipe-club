@@ -164,7 +164,7 @@
         "npm run test:run passes (all tests green)"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryListSection.test.tsx is the most complex — it tests the combined tab, per-recipe tabs, pantry filtering, parse buttons, add item UI, and export. Remove tests that rely on combineIngredients or naive fallback. Per-recipe tab tests should now pass perRecipeItems prop (Record<string, SmartGroceryItem[]>) and verify items render correctly. Remove all displayNameMap prop references. The combineError prop should show an error message. All SmartGroceryItem fixtures must include the required displayName field."
     },
     {
