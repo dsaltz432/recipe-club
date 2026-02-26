@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import GoogleSignIn from "@/components/auth/GoogleSignIn";
 import { isAuthenticated } from "@/lib/auth";
 import { WHEEL_COLORS } from "@/lib/constants";
@@ -147,6 +147,13 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="container mx-auto px-4 py-4 text-center">
+        <Link to="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+          Privacy Policy
+        </Link>
+      </footer>
 
       {/* Custom animation for slow spin */}
       <style>{`
