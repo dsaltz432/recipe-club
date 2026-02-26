@@ -9,8 +9,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 8
-**Current Task:** US-008 complete
+**Tasks Completed:** 9
+**Current Task:** US-009 complete
 
 ---
 
@@ -271,5 +271,32 @@
 - Several old per-recipe tab tests were "passing" accidentally because the combined tab showed naive combine results — the tab click never actually switched tabs
 - The pantry excluded items UI (count + toggle to show names) was removed from GroceryListSection in US-003 — tests testing that feature needed to be deleted, not just updated
 - Test count went from 41 to 38: removed 5 naive/pantry-excluded tests, added 2 new tests (combineError, empty perRecipeItems)
+
+---
+
+## 2026-02-26 15:00 — US-009: Update EventDetailPage and MealPlanPage for unified AI flow
+
+### What was implemented
+- Added `perRecipeItems` state (`Record<string, SmartGroceryItem[]> | undefined`) to EventDetailPage
+- Added `perRecipeItems` state to MealPlanPage
+- Updated `runSmartCombine` in both pages to store `result.perRecipeItems` in state (and clear on error)
+- Updated cache restore logic in both pages to restore `cached.perRecipeItems` into state
+- Passed `perRecipeItems` prop to `GroceryListSection` in both pages
+- Verified no remaining `displayNameMap` references in `src/`
+- Note: `smartCombineIngredients` call already no longer passes `perRecipeNames` (done in US-005)
+- Note: Cache already stores `perRecipeItems` instead of `displayNameMap` (done in US-005)
+
+### Files changed
+- `src/pages/EventDetailPage.tsx` (added perRecipeItems state, updated runSmartCombine, cache restore, GroceryListSection props)
+- `src/components/mealplan/MealPlanPage.tsx` (added perRecipeItems state, updated runSmartCombine, cache restore, GroceryListSection props)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (test updates in US-010)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- Most of the US-009 ACs were already satisfied by earlier stories (US-004 removed displayNameMap state/props, US-005 updated SmartCombineResult/cache/smartCombineIngredients). The remaining work was adding `perRecipeItems` state and plumbing it through to GroceryListSection.
+- Both pages follow the same pattern: state → runSmartCombine stores → cache restore loads → prop passed to GroceryListSection
 
 ---

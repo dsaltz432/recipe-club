@@ -158,6 +158,7 @@ const EventDetailPage = () => {
 
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
+  const [perRecipeItems, setPerRecipeItems] = useState<Record<string, SmartGroceryItem[]> | undefined>(undefined);
   const [isCombining, setIsCombining] = useState(false);
   const [combineError, setCombineError] = useState<string | null>(null);
 
@@ -440,6 +441,7 @@ const EventDetailPage = () => {
       }
       const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
       setSmartGroceryItems(result.items);
+      setPerRecipeItems(result.perRecipeItems);
 
       // Persist to cache
       const eid = forEventId || eventId;
@@ -450,6 +452,7 @@ const EventDetailPage = () => {
     } catch (err) {
       console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
+      setPerRecipeItems(undefined);
       setCombineError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsCombining(false);
@@ -543,6 +546,7 @@ const EventDetailPage = () => {
             currentParsedIds.every((id, i) => id === cachedIds[i])
           ) {
             setSmartGroceryItems(cached.items);
+            setPerRecipeItems(cached.perRecipeItems);
             return;
           }
         }
@@ -1413,6 +1417,7 @@ const EventDetailPage = () => {
                 smartGroceryItems={smartGroceryItems}
                 isCombining={isCombining}
                 combineError={combineError}
+                perRecipeItems={perRecipeItems}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">

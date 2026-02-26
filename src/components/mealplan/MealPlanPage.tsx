@@ -63,6 +63,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
+  const [perRecipeItems, setPerRecipeItems] = useState<Record<string, SmartGroceryItem[]> | undefined>(undefined);
   const [isCombining, setIsCombining] = useState(false);
   const [combineError, setCombineError] = useState<string | null>(null);
   const lastCombinedRecipeIds = useRef<string[]>([]);
@@ -291,6 +292,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       }
       const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
       setSmartGroceryItems(result.items);
+      setPerRecipeItems(result.perRecipeItems);
       lastCombinedRecipeIds.current = sortedRecipeIds;
 
       // Persist to cache
@@ -299,6 +301,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     } catch (err) {
       console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
+      setPerRecipeItems(undefined);
       setCombineError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsCombining(false);
@@ -325,6 +328,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           currentParsedIds.every((id, i) => id === cachedIds[i])
         ) {
           setSmartGroceryItems(cached.items);
+          setPerRecipeItems(cached.perRecipeItems);
           lastCombinedRecipeIds.current = cachedIds;
           return;
         }
@@ -697,6 +701,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               smartGroceryItems={smartGroceryItems}
               isCombining={isCombining}
               combineError={combineError}
+              perRecipeItems={perRecipeItems}
             />
           ) : items.length > 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -183,7 +183,7 @@
         "npm run lint passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "EventDetailPage.tsx and MealPlanPage.tsx both have: (1) state for displayNameMap — rename to perRecipeItems with type Record<string, SmartGroceryItem[]>, (2) runSmartCombine that calls smartCombineIngredients — update to store result.perRecipeItems, remove perRecipeNames collection, (3) GroceryListSection props — change displayNameMap to perRecipeItems. Cache: saveGroceryCache currently stores displayNameMap as 6th param — change to perRecipeItems. loadGroceryCache returns displayNameMap — change to perRecipeItems. The groceryCache.ts file (US-010) needs to store per_recipe_items instead of display_name_map."
     },
     {
