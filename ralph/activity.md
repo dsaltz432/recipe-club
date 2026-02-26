@@ -9,8 +9,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 2
-**Current Task:** US-002 completed
+**Tasks Completed:** 3
+**Current Task:** US-003 completed
 
 ---
 
@@ -64,5 +64,27 @@
 - US-001 already covered AC3/AC4 by updating MealPlanPage tests — future PRDs should check if prior stories already satisfy downstream test ACs
 - The EventDetailPage smart combine test pattern uses `mockSupabaseFrom.mockImplementation` with table-specific return values, including `recipe_content` with `status: "completed"` which is required for `parsedRecipes` filtering
 - MealPlanPage parse flow tests use a delayed invoke mock (`mockInvoke.mockImplementationOnce(() => new Promise(...))`) to allow tab switching during parse
+
+---
+
+## 2026-02-26 09:45 — US-003: Delete dead groceryEdits module
+
+### What was implemented
+- Verified `src/lib/groceryEdits.ts` already deleted (removed in prior commit, not present in HEAD)
+- Verified `tests/unit/lib/groceryEdits.test.ts` already deleted (removed in prior commit, not present in HEAD)
+- Confirmed zero references to `groceryEdits` anywhere in the repository (grep returned no results)
+- All quality checks pass — no-op story since files were already removed
+
+### Files changed
+- None (files were already deleted in a prior commit)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1515/1515 all green)
+- Lint: N/A (no changed files)
+
+### Learnings for future iterations
+- The groceryEdits module was deleted as part of an earlier commit in this branch's history (commit 80801d6 or earlier) — the PRD noted files were "already staged via git rm" but they were already committed
+- When a story's work was already done in a prior commit, verify all ACs are met and mark as passed — no need for an empty commit
 
 ---

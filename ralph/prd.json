@@ -49,7 +49,7 @@
         "npm run test:coverage passes with 100% on required directories"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Both files are already staged for deletion via git rm. Just need to verify no remaining references and include in the commit. groceryEdits.ts (149 lines) contained loadCombinedGroceryItems, saveCombinedGroceryItems, updateGroceryItem, addCustomGroceryItem, removeGroceryItem — all duplicating groceryCache.ts functionality and never imported in production code."
     },
     {
