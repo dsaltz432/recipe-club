@@ -8,14 +8,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Check, Loader2, Search, Upload } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
-import { parseFractionToDecimal } from "@/lib/groceryList";
-import IngredientFormRows, { createBlankRow, type IngredientRow } from "@/components/recipes/IngredientFormRows";
+import RecipeInputForm, {
+  createInitialFormData,
+  canSubmitRecipeForm,
+  buildIngredientPayload,
+  type RecipeFormData,
+} from "@/components/recipes/RecipeInputForm";
 
 interface RecipeResult {
   id: string;
@@ -34,13 +35,7 @@ interface AddMealDialogProps {
   onAddManualMeal?: (name: string, ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>) => void;
 }
 
-type CustomInputMode = "url" | "upload" | "manual";
-
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const isValidUrl = (value: string) => {
-  return value.trim().startsWith("http://") || value.trim().startsWith("https://");
-};
 
 const AddMealDialog = ({
   open,
@@ -52,64 +47,22 @@ const AddMealDialog = ({
   onAddManualMeal,
 }: AddMealDialogProps) => {
   const [activeTab, setActiveTab] = useState<"custom" | "recipes">("custom");
-  const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
-  const [customInputMode, setCustomInputMode] = useState<CustomInputMode>("url");
-  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([createBlankRow()]);
+  const [formData, setFormData] = useState<RecipeFormData>(createInitialFormData());
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<RecipeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [uploadingFileName, setUploadingFileName] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setActiveTab("custom");
-    setName("");
-    setUrl("");
-    setCustomInputMode("url");
-    setIngredientRows([createBlankRow()]);
+    setFormData(createInitialFormData());
+    setIsUploadingFile(false);
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
     setSelectedRecipes([]);
-    setIsUploadingFile(false);
-  };
-
-  const handleCustomInputModeChange = (mode: CustomInputMode) => {
-    setCustomInputMode(mode);
-    if (mode !== "url" && mode !== "upload") setUrl("");
-    if (mode !== "manual") setIngredientRows([createBlankRow()]);
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploadingFile(true);
-    setUploadingFileName(file.name);
-    try {
-      const publicUrl = await uploadRecipeFile(file);
-      setUrl(publicUrl);
-      if (!name.trim()) {
-        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        setName(baseName);
-      }
-      toast.success("File uploaded!");
-    } catch (error) {
-      if (error instanceof FileValidationError) {
-        toast.error(error.message);
-      } else {
-        console.error("Error uploading file:", error);
-        toast.error("Failed to upload file");
-      }
-    } finally {
-      setIsUploadingFile(false);
-      setUploadingFileName("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
   };
 
   const handleClose = () => {
@@ -158,29 +111,13 @@ const AddMealDialog = ({
   }, [searchQuery]);
 
   const handleCustomSubmit = () => {
-    if (customInputMode === "manual" && onAddManualMeal) {
-      const ingredientData = ingredientRows
-        .filter((r) => r.name.trim())
-        .map((r, i) => ({
-          name: r.name.trim(),
-          quantity: parseFractionToDecimal(r.quantity) ?? null,
-          unit: r.unit.trim() || null,
-          category: r.category,
-          sort_order: i,
-        }));
-      onAddManualMeal(name.trim(), ingredientData);
+    if (formData.inputMode === "manual" && onAddManualMeal) {
+      const ingredientData = buildIngredientPayload(formData.ingredientRows);
+      onAddManualMeal(formData.name.trim(), ingredientData);
     } else {
-      onAddCustomMeal(name.trim(), url.trim() || undefined, !!url.trim());
+      onAddCustomMeal(formData.name.trim(), formData.url.trim() || undefined, !!formData.url.trim());
     }
     handleClose();
-  };
-
-  const canSubmitCustom = () => {
-    if (!name.trim()) return false;
-    if (customInputMode === "url" && (!url.trim() || !isValidUrl(url))) return false;
-    if (customInputMode === "upload" && (!url.trim() || !isValidUrl(url))) return false;
-    if (customInputMode === "manual" && !ingredientRows.some((r) => r.name.trim())) return false;
-    return true;
   };
 
   const toggleRecipeSelection = (recipe: RecipeResult) => {
@@ -208,7 +145,7 @@ const AddMealDialog = ({
     <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className={cn(
         "max-h-[85vh] overflow-y-auto",
-        activeTab === "custom" && customInputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
+        activeTab === "custom" && formData.inputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
       )}>
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
@@ -242,122 +179,15 @@ const AddMealDialog = ({
 
         {activeTab === "custom" && (
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="meal-name">Meal Name *</Label>
-              <Input
-                id="meal-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter meal name"
-              />
-            </div>
-
-            {/* Ingredient source mode selector */}
-            <div className="space-y-2">
-              <Label>Ingredient Source</Label>
-              <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
-                <button
-                  className={cn(
-                    "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
-                    customInputMode === "url" && "bg-background text-foreground shadow-sm"
-                  )}
-                  onClick={() => handleCustomInputModeChange("url")}
-                >
-                  Enter URL
-                </button>
-                <button
-                  className={cn(
-                    "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
-                    customInputMode === "upload" && "bg-background text-foreground shadow-sm"
-                  )}
-                  onClick={() => handleCustomInputModeChange("upload")}
-                >
-                  Upload File
-                </button>
-                {onAddManualMeal && (
-                  <button
-                    className={cn(
-                      "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
-                      customInputMode === "manual" && "bg-background text-foreground shadow-sm"
-                    )}
-                    onClick={() => handleCustomInputModeChange("manual")}
-                  >
-                    Enter Manually
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* URL mode */}
-            {customInputMode === "url" && (
-              <div className="space-y-2">
-                <Label htmlFor="meal-url">Recipe URL *</Label>
-                <Input
-                  id="meal-url"
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://..."
-                  className={url.trim() && !isValidUrl(url) ? "border-red-500" : ""}
-                />
-                {url.trim() && !isValidUrl(url) && (
-                  <p className="text-sm text-red-500">
-                    URL must start with http:// or https://
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Upload mode */}
-            {customInputMode === "upload" && (
-              <div className="space-y-2">
-                <Label>Upload Photo or PDF *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    value={url}
-                    placeholder="File URL will appear here..."
-                    readOnly
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingFile}
-                    className="shrink-0"
-                    aria-label="Upload photo or PDF"
-                  >
-                    {isUploadingFile ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                        <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-1" />
-                        Upload
-                      </>
-                    )}
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,.pdf,application/pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Manual mode */}
-            {customInputMode === "manual" && (
-              <div className="space-y-2">
-                <Label>Ingredients *</Label>
-                <IngredientFormRows rows={ingredientRows} onRowsChange={setIngredientRows} />
-              </div>
-            )}
+            <RecipeInputForm
+              formData={formData}
+              onFormDataChange={setFormData}
+              isUploading={isUploadingFile}
+              onUploadingChange={setIsUploadingFile}
+              nameLabel="Meal Name *"
+              namePlaceholder="Enter meal name"
+              showManualMode={!!onAddManualMeal}
+            />
 
             <div className="flex justify-end gap-2">
               <Button
@@ -368,7 +198,7 @@ const AddMealDialog = ({
               </Button>
               <Button
                 onClick={handleCustomSubmit}
-                disabled={!canSubmitCustom()}
+                disabled={!canSubmitRecipeForm(formData, false)}
                 className="bg-purple hover:bg-purple-dark"
               >
                 Add to Meal

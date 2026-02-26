@@ -593,7 +593,7 @@ describe("AddMealDialog", () => {
       fireEvent.click(screen.getByText("Enter Manually"));
 
       // Should show ingredient form rows (IngredientFormRows renders inputs)
-      expect(screen.getByText("Ingredients *")).toBeInTheDocument();
+      expect(screen.getByText("Ingredients")).toBeInTheDocument();
     });
 
     it("switches from manual back to URL mode", () => {

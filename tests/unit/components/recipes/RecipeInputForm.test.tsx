@@ -72,6 +72,20 @@ describe("RecipeInputForm", () => {
     expect(screen.getByText("Enter Manually")).toBeInTheDocument();
   });
 
+  it("hides Enter Manually button when showManualMode is false", () => {
+    render(
+      <RecipeInputForm
+        formData={defaultFormData}
+        onFormDataChange={onFormDataChange}
+        showManualMode={false}
+      />
+    );
+
+    expect(screen.getByText("Enter URL")).toBeInTheDocument();
+    expect(screen.getByText("Upload File")).toBeInTheDocument();
+    expect(screen.queryByText("Enter Manually")).not.toBeInTheDocument();
+  });
+
   it("renders URL input by default", () => {
     render(
       <RecipeInputForm formData={defaultFormData} onFormDataChange={onFormDataChange} />

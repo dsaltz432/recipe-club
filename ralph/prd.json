@@ -254,7 +254,7 @@
         "npm run test:coverage passes with 100% on src/components/mealplan/"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "AddMealDialog.tsx is at src/components/mealplan/AddMealDialog.tsx. The Custom tab currently has ~150 lines of form JSX that duplicates AddPersonalRecipeDialog. Replace with <RecipeInputForm formData={formData} onFormDataChange={setFormData} isUploading={isUploading} />. Keep everything unique to AddMealDialog: the Tabs wrapper, the 'From Recipes' tab with recipe search, the submit button in DialogFooter, the onAddCustomMeal/onAddRecipeMeal/onAddManualMeal callbacks. The submit handler needs to map formData fields to the existing callback signatures. Test file: tests/unit/components/mealplan/AddMealDialog.test.tsx — update any element queries that change (e.g., aria-labels, placeholder text). The user-visible behavior should be identical."
     },
     {

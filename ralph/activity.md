@@ -6,12 +6,13 @@
 - **Types file**: `src/types/index.ts` contains all shared interfaces. When removing types, check for blank lines left behind.
 - **SmartCombineResult flow**: `smartCombineIngredients()` returns `{ items, perRecipeItems }`. Callers (EventDetailPage, MealPlanPage) pass `result.perRecipeItems` to `saveGroceryCache()`. Cache stores as `per_recipe_items` column (via cast, not in generated Supabase types).
 - **Radix Tabs in tests**: `fireEvent.click` does NOT switch Radix UI tabs in jsdom. Use `userEvent.click` from `@testing-library/user-event` instead — it properly dispatches pointer events that Radix listens to.
-- **RecipeInputForm shared component**: `src/components/recipes/RecipeInputForm.tsx` exports `RecipeInputForm` (default), `RecipeFormData`, `InputMode`, `createInitialFormData()`, `canSubmitRecipeForm()`, `buildIngredientPayload()`. Uses `eslint-disable react-refresh/only-export-components` to suppress the same lint error as IngredientFormRows.tsx. Callers provide their own Dialog wrapper, submit button, and submission logic.
+- **RecipeInputForm shared component**: `src/components/recipes/RecipeInputForm.tsx` exports `RecipeInputForm` (default), `RecipeFormData`, `InputMode`, `createInitialFormData()`, `canSubmitRecipeForm()`, `buildIngredientPayload()`. Uses `eslint-disable react-refresh/only-export-components` to suppress the same lint error as IngredientFormRows.tsx. Callers provide their own Dialog wrapper, submit button, and submission logic. Has `showManualMode` prop (defaults to `true`) to conditionally hide the "Enter Manually" button.
+- **RecipeInputForm label IDs**: RecipeInputForm uses `htmlFor="recipe-input-name"` and `htmlFor="recipe-input-url"` — tests that query via `getByLabelText("Meal Name *")` or `getByLabelText("Recipe URL *")` still work because the label text resolves through `htmlFor`. The manual mode label is "Ingredients" (no asterisk), unlike the old AddMealDialog which had "Ingredients *".
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 11
-**Current Task:** US-011 complete
+**Tasks Completed:** 12
+**Current Task:** US-012 complete
 
 ---
 
@@ -372,5 +373,42 @@
 - The `isUploading` and `onUploadingChange` props use an external state pattern — the parent manages uploading state (needed for submit button disabling). The `uploadingFileNameRef` uses a ref for the filename display since it's transient UI state that doesn't need to trigger re-renders.
 - The `buildIngredientPayload` helper uses `parseFractionToDecimal` to convert "1/2" → 0.5, matching the existing pattern in AddPersonalRecipeDialog and AddMealDialog.
 - Test file mocks `@/lib/upload` using `vi.hoisted()` + `vi.mock()` pattern, same as AddPersonalRecipeDialog.test.tsx.
+
+---
+
+## 2026-02-26 18:50 — US-012: Rewrite AddMealDialog to use RecipeInputForm
+
+### What was implemented
+- Replaced Custom tab's inline form JSX (~130 lines of mode selector, URL input, upload UI, manual IngredientFormRows) with `<RecipeInputForm>` component
+- Replaced 4 local state vars (`name`, `url`, `customInputMode`, `ingredientRows`) + upload state (`isUploadingFile`, `uploadingFileName`, `fileInputRef`) with single `formData` state using `createInitialFormData()`
+- Removed duplicated handlers: `handleCustomInputModeChange`, `handleFileUpload`, `isValidUrl`, `fileInputRef`
+- `canSubmitCustom` replaced with `canSubmitRecipeForm(formData, false)`
+- `handleCustomSubmit` reads from `formData` and uses `buildIngredientPayload()` for manual mode
+- Added `showManualMode` prop to RecipeInputForm (defaults to `true`), used as `showManualMode={!!onAddManualMeal}` in AddMealDialog
+- Removed unused imports: `Label`, `toast`, `Upload`, `uploadRecipeFile`, `FileValidationError`, `parseFractionToDecimal`, `IngredientFormRows`, `createBlankRow`, `IngredientRow`
+- Two-tab structure (Custom Meal / From Recipes) preserved
+- Recipe search with debounce preserved
+- Multi-select recipe picker preserved
+- Dialog width adjusts based on `formData.inputMode`
+- Updated test: "Ingredients *" → "Ingredients" (RecipeInputForm uses no asterisk)
+- Added RecipeInputForm test for `showManualMode={false}`
+
+### Files changed
+- `src/components/mealplan/AddMealDialog.tsx` (major rewrite — replaced inline form with RecipeInputForm, reduced from 458 to ~240 lines)
+- `src/components/recipes/RecipeInputForm.tsx` (added `showManualMode` prop with conditional rendering)
+- `tests/unit/components/mealplan/AddMealDialog.test.tsx` (updated "Ingredients *" to "Ingredients")
+- `tests/unit/components/recipes/RecipeInputForm.test.tsx` (added showManualMode={false} test)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1566 tests, 56 test files, 100% on required directories)
+- Lint: pass (pre-existing issues only, 0 new issues)
+- Coverage: mealplan/ — 100% stmts/functions/lines, 99.21% branches (pre-existing uncovered branch at AddMealDialog:118)
+
+### Learnings for future iterations
+- RecipeInputForm's manual mode label is "Ingredients" (no asterisk), while AddMealDialog used "Ingredients *" — tests needed updating
+- The `showManualMode` prop was needed because AddMealDialog conditionally shows "Enter Manually" based on `onAddManualMeal` prop, while RecipeInputForm always showed all 3 modes
+- All 52 AddMealDialog tests pass with only 1 minor selector update (label text change) — the RecipeInputForm uses same label IDs (`recipe-input-name`, `recipe-input-url`) so `getByLabelText` queries still work
+- AddMealDialog went from 458 lines to ~240 lines — significant reduction by eliminating duplicated form UI, upload handler, file validation, and mode switching logic
 
 ---

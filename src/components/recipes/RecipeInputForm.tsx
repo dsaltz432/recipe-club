@@ -26,6 +26,7 @@ interface RecipeInputFormProps {
   onUploadingChange?: (uploading: boolean) => void;
   nameLabel?: string;
   namePlaceholder?: string;
+  showManualMode?: boolean;
 }
 
 export function createInitialFormData(): RecipeFormData {
@@ -68,6 +69,7 @@ const RecipeInputForm = ({
   onUploadingChange,
   nameLabel = "Recipe Name *",
   namePlaceholder = "Enter recipe name",
+  showManualMode = true,
 }: RecipeInputFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingFile = externalUploading ?? false;
@@ -147,15 +149,17 @@ const RecipeInputForm = ({
           >
             Upload File
           </button>
-          <button
-            className={cn(
-              "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
-              formData.inputMode === "manual" && "bg-background text-foreground shadow-sm"
-            )}
-            onClick={() => handleModeChange("manual")}
-          >
-            Enter Manually
-          </button>
+          {showManualMode && (
+            <button
+              className={cn(
+                "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                formData.inputMode === "manual" && "bg-background text-foreground shadow-sm"
+              )}
+              onClick={() => handleModeChange("manual")}
+            >
+              Enter Manually
+            </button>
+          )}
         </div>
       </div>
 
