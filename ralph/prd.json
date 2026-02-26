@@ -231,7 +231,7 @@
         "npm run test:coverage passes with 100% on src/components/recipes/"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Extract from src/components/recipes/AddPersonalRecipeDialog.tsx (the cleanest standalone implementation, ~325 lines). The key patterns to extract: (1) mode selector button group with 3 buttons styled via cn() for active state, (2) URL input with isValidUrl check, (3) file upload with hidden input + Button trigger + uploadRecipeFile() call + FileValidationError handling + toast, (4) IngredientFormRows for manual mode. Reuses: IngredientFormRows from ./IngredientFormRows, uploadRecipeFile/FileValidationError from @/lib/upload, parseFractionToDecimal from @/lib/groceryList, cn from @/lib/utils. The component should NOT include any Dialog wrapper — callers provide their own. The Dialog width changes based on mode (manual is wider) — export a helper or let callers handle this via inputMode check."
     },
     {

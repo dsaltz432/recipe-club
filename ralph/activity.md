@@ -6,11 +6,12 @@
 - **Types file**: `src/types/index.ts` contains all shared interfaces. When removing types, check for blank lines left behind.
 - **SmartCombineResult flow**: `smartCombineIngredients()` returns `{ items, perRecipeItems }`. Callers (EventDetailPage, MealPlanPage) pass `result.perRecipeItems` to `saveGroceryCache()`. Cache stores as `per_recipe_items` column (via cast, not in generated Supabase types).
 - **Radix Tabs in tests**: `fireEvent.click` does NOT switch Radix UI tabs in jsdom. Use `userEvent.click` from `@testing-library/user-event` instead — it properly dispatches pointer events that Radix listens to.
+- **RecipeInputForm shared component**: `src/components/recipes/RecipeInputForm.tsx` exports `RecipeInputForm` (default), `RecipeFormData`, `InputMode`, `createInitialFormData()`, `canSubmitRecipeForm()`, `buildIngredientPayload()`. Uses `eslint-disable react-refresh/only-export-components` to suppress the same lint error as IngredientFormRows.tsx. Callers provide their own Dialog wrapper, submit button, and submission logic.
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 10
-**Current Task:** US-010 complete
+**Tasks Completed:** 11
+**Current Task:** US-011 complete
 
 ---
 
@@ -336,5 +337,40 @@
 - The `IngredientFormRows` component uses placeholder "Ingredient name" (not "e.g. chicken breast") — test fixtures need to match actual placeholders
 - Single-recipe grocery tab behavior changed: with naive combine removed, 1 parsed recipe shows no grocery items (runSmartCombine requires 2+ parsed recipes). Tests should assert the tab renders without crashing, not that specific ingredients appear.
 - `loadCombinedGroceryItems`/`saveCombinedGroceryItems` in groceryEdits.ts are function names for the edit layer — NOT references to the deleted `combineIngredients` function
+
+---
+
+## 2026-02-26 17:30 — US-011: Create shared RecipeInputForm component
+
+### What was implemented
+- Created `src/components/recipes/RecipeInputForm.tsx` with shared recipe input form UI
+- Exported `RecipeFormData` interface: `{ name, url, inputMode: 'url' | 'upload' | 'manual', ingredientRows: IngredientRow[] }`
+- Exported `InputMode` type
+- Exported `RecipeInputForm` component with props: `formData, onFormDataChange, isUploading?, onUploadingChange?, nameLabel?, namePlaceholder?`
+- Component renders: name input, mode selector button group (Enter URL / Upload File / Enter Manually), URL input (url mode), upload button + file input (upload mode), IngredientFormRows (manual mode)
+- Exported `createInitialFormData()` helper — returns default form state
+- Exported `canSubmitRecipeForm(data, isSubmitting)` helper — validates each mode
+- Exported `buildIngredientPayload(rows)` helper — filters empty rows, calls parseFractionToDecimal, builds payload array
+- File upload handler uses `uploadRecipeFile()` from `@/lib/upload` and `FileValidationError`
+- Mode switching clears appropriate fields (manual clears url, non-manual resets ingredient rows)
+- Created comprehensive test file `tests/unit/components/recipes/RecipeInputForm.test.tsx` with 36 tests
+- Tests cover: mode switching, file upload (success, FileValidationError, generic error, no file), URL validation styling, manual mode rendering, canSubmitRecipeForm logic, buildIngredientPayload logic, createInitialFormData, custom labels/placeholders
+
+### Files changed
+- `src/components/recipes/RecipeInputForm.tsx` (new — 206 lines)
+- `tests/unit/components/recipes/RecipeInputForm.test.tsx` (new — 36 tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1565 tests, 56 test files, 100% on required directories)
+- Lint: pass (pre-existing issues only, 0 new issues — used eslint-disable for react-refresh)
+- Coverage: RecipeInputForm.tsx — 100% stmts, 98.41% branches (uncovered: fileInputRef.value="" in finally block, same as AddPersonalRecipeDialog), 100% functions, 100% lines
+
+### Learnings for future iterations
+- The `react-refresh/only-export-components` lint rule fires when a file exports both a React component and named functions. Used `eslint-disable` at file top, matching the pre-existing pattern in IngredientFormRows.tsx
+- Component does NOT include Dialog wrapper — callers provide their own Dialog, header, footer, and submit button. This keeps the component focused and reusable.
+- The `isUploading` and `onUploadingChange` props use an external state pattern — the parent manages uploading state (needed for submit button disabling). The `uploadingFileNameRef` uses a ref for the filename display since it's transient UI state that doesn't need to trigger re-renders.
+- The `buildIngredientPayload` helper uses `parseFractionToDecimal` to convert "1/2" → 0.5, matching the existing pattern in AddPersonalRecipeDialog and AddMealDialog.
+- Test file mocks `@/lib/upload` using `vi.hoisted()` + `vi.mock()` pattern, same as AddPersonalRecipeDialog.test.tsx.
 
 ---
