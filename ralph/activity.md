@@ -11,8 +11,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 13
-**Current Task:** US-013 complete
+**Tasks Completed:** 14
+**Current Task:** US-014 complete — ALL STORIES DONE
 
 ---
 
@@ -441,5 +441,34 @@
 - `Label` and `Input` imports remain needed for Edit Recipe dialog, Edit Notes dialog, and Event Time editor
 - `cn` import remains needed for the Dialog width conditional
 - The `parseFractionToDecimal` import was removed entirely — `buildIngredientPayload` from RecipeInputForm handles it
+
+---
+
+## 2026-02-26 22:00 — US-014: Delete dead AddPersonalRecipeDialog and verify all entry flows
+
+### What was implemented
+- Deleted `src/components/recipes/AddPersonalRecipeDialog.tsx` (~325 lines of dead code)
+- Deleted `tests/unit/components/recipes/AddPersonalRecipeDialog.test.tsx` (test file for dead component)
+- Verified no remaining imports or references to AddPersonalRecipeDialog in the codebase
+- Verified no duplicated form patterns (mode selector, file upload handler) outside of RecipeInputForm
+- Verified all 3 recipe entry flows are intact: URL parsing, file/photo upload, manual ingredient entry
+- Both consumers (EventDetailPage, AddMealDialog) use RecipeInputForm correctly
+- PersonalMealDetailPage uses EditRecipeIngredientsDialog (not affected)
+
+### Files changed
+- `src/components/recipes/AddPersonalRecipeDialog.tsx` (deleted)
+- `tests/unit/components/recipes/AddPersonalRecipeDialog.test.tsx` (deleted)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1531 tests, 55 test files, 100% on required directories)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- AddPersonalRecipeDialog was confirmed dead code — never imported in src/ after US-011/US-012/US-013 replaced all callers with RecipeInputForm
+- Test count dropped from 1566 to 1531 (35 tests removed with the deleted test file)
+- Test files dropped from 56 to 55
+- Coverage remains 100% on all required directories — the deleted file was previously contributing to coverage but no longer needed
+- ALL 14 user stories are now complete. The full pipeline removal + RecipeInputForm unification is done.
 
 ---

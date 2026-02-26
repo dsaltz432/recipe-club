@@ -294,7 +294,7 @@
         "All 3 entry flows verified working: URL input, file/photo upload, manual ingredient entry"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "AddPersonalRecipeDialog is confirmed dead code — grep shows it's never imported in src/. The component was at src/components/recipes/AddPersonalRecipeDialog.tsx (~325 lines) and its test at tests/unit/components/recipes/AddPersonalRecipeDialog.test.tsx. Use git rm. After deletion, run a final grep to ensure no references remain. Also verify the RecipeInputForm is correctly used in both AddMealDialog (Custom tab) and EventDetailPage (add recipe dialog). Run full test suite and coverage to confirm nothing broke. NOTE: PersonalMealDetailPage.tsx also has recipe entry functionality — verify it doesn't need RecipeInputForm (it uses EditRecipeIngredientsDialog for editing existing ingredients, not for adding new recipes)."
     }
   ]
