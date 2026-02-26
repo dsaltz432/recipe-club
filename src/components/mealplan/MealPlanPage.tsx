@@ -289,14 +289,13 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       for (const r of currentRecipes) {
         recipeNameMap[r.id] = r.name;
       }
-      const perRecipeNames = [...new Set(currentIngredients.map((i) => i.name))];
-      const result = await smartCombineIngredients(currentIngredients, recipeNameMap, perRecipeNames);
+      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
       setSmartGroceryItems(result.items);
       lastCombinedRecipeIds.current = sortedRecipeIds;
 
       // Persist to cache
       const weekStartStr = weekStart.toISOString().split("T")[0];
-      saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.displayNameMap);
+      saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.perRecipeItems);
     } catch (err) {
       console.error("Smart combine error:", err);
       setSmartGroceryItems(null);

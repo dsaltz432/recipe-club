@@ -438,16 +438,14 @@ const EventDetailPage = () => {
       for (const r of recipes) {
         recipeNameMap[r.id] = r.name;
       }
-      // Collect unique per-recipe ingredient names for displayNameMap
-      const perRecipeNames = [...new Set(currentIngredients.map((i) => i.name))];
-      const result = await smartCombineIngredients(currentIngredients, recipeNameMap, perRecipeNames);
+      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
       setSmartGroceryItems(result.items);
 
       // Persist to cache
       const eid = forEventId || eventId;
       if (eid) {
         const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
-        saveGroceryCache("event", eid, user!.id, result.items, sortedRecipeIds, result.displayNameMap);
+        saveGroceryCache("event", eid, user!.id, result.items, sortedRecipeIds, result.perRecipeItems);
       }
     } catch (err) {
       console.error("Smart combine error:", err);

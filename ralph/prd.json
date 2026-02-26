@@ -106,7 +106,7 @@
         "npm run build passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "smartCombineIngredients is at src/lib/groceryList.ts around line 864. Currently it calls combineIngredients() at line 870, maps to preCombined format, and passes perRecipeNames. The new version: (1) map RecipeIngredient[] directly to { name, quantity, unit, category, recipeName } using recipeNameMap, (2) send as rawIngredients to edge function, (3) receive { items, perRecipeItems } back. The perRecipeNames parameter is no longer needed because the AI figures out per-recipe grouping from the recipeName field on each ingredient. The edge function is updated in US-007."
     },
     {

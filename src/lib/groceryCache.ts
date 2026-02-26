@@ -7,7 +7,7 @@ export type GroceryCacheContextType = "event" | "meal_plan";
 export interface GroceryCacheResult {
   items: SmartGroceryItem[];
   recipeIds: string[];
-  displayNameMap?: Record<string, string>;
+  perRecipeItems?: Record<string, SmartGroceryItem[]>;
 }
 
 export async function loadGroceryCache(
@@ -27,12 +27,12 @@ export async function loadGroceryCache(
     if (error) throw error;
     if (!data) return null;
 
-    // display_name_map column added by migration; access via cast
+    // per_recipe_items column added by migration; access via cast
     const row = data as unknown as Record<string, unknown>;
     return {
       items: row.items as SmartGroceryItem[],
       recipeIds: row.recipe_ids as string[],
-      displayNameMap: (row.display_name_map as Record<string, string>) ?? undefined,
+      perRecipeItems: (row.per_recipe_items as Record<string, SmartGroceryItem[]>) ?? undefined,
     };
   } catch (error) {
     console.error("Error loading grocery cache:", error);
@@ -46,18 +46,18 @@ export async function saveGroceryCache(
   userId: string,
   items: SmartGroceryItem[],
   recipeIds: string[],
-  displayNameMap?: Record<string, string>
+  perRecipeItems?: Record<string, SmartGroceryItem[]>
 ): Promise<void> {
   try {
     const sortedIds = [...recipeIds].sort();
-    // display_name_map column added by migration; cast to satisfy generated types
+    // per_recipe_items column added by migration; cast to satisfy generated types
     const upsertPayload = {
       context_type: contextType,
       context_id: contextId,
       user_id: userId,
       items: items as unknown as Json,
       recipe_ids: sortedIds,
-      display_name_map: (displayNameMap || {}) as unknown as Json,
+      per_recipe_items: (perRecipeItems || {}) as unknown as Json,
       updated_at: new Date().toISOString(),
     };
     const { error } = await supabase

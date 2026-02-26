@@ -4,11 +4,12 @@
 - **Pre-existing lint issues**: 9 problems (1 error in IngredientFormRows.tsx re: react-refresh/only-export-components, 8 warnings in UserManagement, RecipeHub, coverage files). These are NOT introduced by our changes — confirmed by running lint on base commit.
 - **Git rm**: Use `git rm` for tracked files; it removes the parent directory automatically if empty.
 - **Types file**: `src/types/index.ts` contains all shared interfaces. When removing types, check for blank lines left behind.
+- **SmartCombineResult flow**: `smartCombineIngredients()` returns `{ items, perRecipeItems }`. Callers (EventDetailPage, MealPlanPage) pass `result.perRecipeItems` to `saveGroceryCache()`. Cache stores as `per_recipe_items` column (via cast, not in generated Supabase types).
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ---
 
@@ -144,5 +145,32 @@
 - Removing the `displayNameMap` prop from GroceryListSection required also removing it from callers (EventDetailPage, MealPlanPage) to avoid TS6133 "declared but never read" build errors
 - The `result.displayNameMap` references in `saveGroceryCache` calls remain for now — those are passed through to the cache function and will be updated in US-009/US-010
 - Per-recipe tabs gracefully fall back to empty array when `perRecipeItems` is not provided (`perRecipeItems?.[recipe.name] ?? []`)
+
+---
+
+## 2026-02-26 09:00 — US-005: Update SmartCombineResult and smartCombineIngredients for unified AI response
+
+### What was implemented
+- Changed `SmartCombineResult` type from `{ items, displayNameMap }` to `{ items: SmartGroceryItem[], perRecipeItems: Record<string, SmartGroceryItem[]> }`
+- Updated `smartCombineIngredients()`: removed `perRecipeNames` parameter, maps raw `RecipeIngredient[]` to `{ name, quantity, unit, category, recipeName }` format, sends as `rawIngredients` (not `preCombined`), returns `perRecipeItems` instead of `displayNameMap`
+- Updated EventDetailPage.tsx: removed `perRecipeNames` collection, passes `result.perRecipeItems` to `saveGroceryCache`
+- Updated MealPlanPage.tsx: same changes as EventDetailPage
+- Updated `groceryCache.ts`: `GroceryCacheResult` uses `perRecipeItems` instead of `displayNameMap`, `saveGroceryCache` accepts and stores `per_recipe_items`, `loadGroceryCache` returns `perRecipeItems`
+
+### Files changed
+- `src/lib/groceryList.ts` (SmartCombineResult type, smartCombineIngredients function)
+- `src/pages/EventDetailPage.tsx` (removed perRecipeNames, updated saveGroceryCache call)
+- `src/components/mealplan/MealPlanPage.tsx` (removed perRecipeNames, updated saveGroceryCache call)
+- `src/lib/groceryCache.ts` (GroceryCacheResult type, loadGroceryCache, saveGroceryCache — updated for perRecipeItems)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (test updates in US-006/US-008/US-010)
+- Lint: N/A (no new lint issues expected — build passed)
+
+### Learnings for future iterations
+- Updating `SmartCombineResult` required cascading changes to `groceryCache.ts` (type, save, load) since callers pass the result through to cache — these changes were pulled forward from US-010 to keep the build passing
+- The `displayNameMap` was never destructured from cache results by callers (already cleaned up in US-004), so the cache type change was safe
+- No `displayNameMap` references remain in `src/` after this story
 
 ---

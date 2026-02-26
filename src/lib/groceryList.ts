@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface SmartCombineResult {
   items: SmartGroceryItem[];
-  displayNameMap: Record<string, string>;
+  perRecipeItems: Record<string, SmartGroceryItem[]>;
 }
 
 
@@ -188,21 +188,20 @@ export function filterSmartPantryItems(
 
 export async function smartCombineIngredients(
   ingredients: RecipeIngredient[],
-  recipeNameMap: Record<string, string>,
-  perRecipeNames?: string[]
+  recipeNameMap: Record<string, string>
 ): Promise<SmartCombineResult> {
   // Map raw ingredients for the AI edge function
-  const preCombined = ingredients.map((ing) => ({
+  const rawIngredients = ingredients.map((ing) => ({
     name: ing.name,
     quantity: ing.quantity != null ? decimalToFraction(ing.quantity) : null,
     unit: ing.unit ?? null,
     category: ing.category,
-    sourceRecipes: [recipeNameMap[ing.recipeId] ?? "Unknown Recipe"],
+    recipeName: recipeNameMap[ing.recipeId] ?? "Unknown Recipe",
   }));
 
   try {
     const { data, error } = await supabase.functions.invoke("combine-ingredients", {
-      body: { preCombined, perRecipeNames },
+      body: { rawIngredients },
     });
 
     if (error) throw error;
@@ -213,7 +212,7 @@ export async function smartCombineIngredients(
 
     return {
       items: data.items as SmartGroceryItem[],
-      displayNameMap: (data.displayNameMap as Record<string, string>) || {},
+      perRecipeItems: (data.perRecipeItems as Record<string, SmartGroceryItem[]>) || {},
     };
   } catch (error) {
     console.error("Smart combine failed:", error);
