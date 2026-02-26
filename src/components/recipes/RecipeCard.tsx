@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, ListChecks } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
 import { GROCERY_CATEGORIES, CATEGORY_ORDER } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
@@ -48,13 +48,14 @@ interface RecipeCardProps {
   onDelete?: (recipeId: string) => void;
   onEditRating?: (recipe: RecipeWithNotes) => void;
   onAddNote?: (recipe: RecipeWithNotes) => void;
+  onEditIngredients?: (recipe: RecipeWithNotes) => void;
   ingredients?: RecipeIngredient[];
   pantryItems?: string[];
   contentStatus?: RecipeContent["status"];
   onParseRecipe?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditIngredients, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
@@ -121,8 +122,20 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             </Badge>
           )}
 
-          {(onDelete || (recipe.isPersonal && onEdit)) && (
+          {(onDelete || (recipe.isPersonal && onEdit) || onEditIngredients) && (
             <div className="flex items-center gap-1 ml-auto">
+              {onEditIngredients && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
+                  aria-label="Edit ingredients"
+                  onClick={() => onEditIngredients(recipe)}
+                >
+                  <ListChecks className="h-3.5 w-3.5" />
+                  <span className="text-xs">Ingredients</span>
+                </Button>
+              )}
               {recipe.isPersonal && onEdit && (
                 <Button
                   variant="ghost"

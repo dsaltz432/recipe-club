@@ -64,6 +64,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
   const [isCombining, setIsCombining] = useState(false);
+  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
+  const [combineError, setCombineError] = useState<string | null>(null);
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const viewTabRef = useRef(viewTab);
   viewTabRef.current = viewTab;
@@ -269,6 +271,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     const parsedRecipes = currentRecipes.filter((r) => currentContentMap[r.id]?.status === "completed");
     if (parsedRecipes.length < 2) {
       setSmartGroceryItems(null);
+      setCombineError(null);
       return;
     }
 
@@ -281,22 +284,25 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
 
     setIsCombining(true);
+    setCombineError(null);
     try {
       const recipeNameMap: Record<string, string> = {};
       for (const r of currentRecipes) {
         recipeNameMap[r.id] = r.name;
       }
-      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
-      setSmartGroceryItems(result);
+      const perRecipeNames = [...new Set(currentIngredients.map((i) => i.name))];
+      const result = await smartCombineIngredients(currentIngredients, recipeNameMap, perRecipeNames);
+      setSmartGroceryItems(result.items);
+      setDisplayNameMap(result.displayNameMap);
       lastCombinedRecipeIds.current = sortedRecipeIds;
 
       // Persist to cache
-      if (result) {
-        const weekStartStr = weekStart.toISOString().split("T")[0];
-        saveGroceryCache("meal_plan", weekStartStr, userId, result, sortedRecipeIds);
-      }
-    } catch {
+      const weekStartStr = weekStart.toISOString().split("T")[0];
+      saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.displayNameMap);
+    } catch (err) {
+      console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
+      setCombineError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsCombining(false);
     }
@@ -322,6 +328,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           currentParsedIds.every((id, i) => id === cachedIds[i])
         ) {
           setSmartGroceryItems(cached.items);
+          setDisplayNameMap(cached.displayNameMap ?? {});
           lastCombinedRecipeIds.current = cachedIds;
           return;
         }
@@ -441,6 +448,30 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     // pendingSlot is always set when the dialog is mounted
     for (const recipe of recipes) {
       await addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
+    }
+    setPendingSlot(null);
+  };
+
+  const handleAddManualMeal = async (
+    name: string,
+    ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>
+  ) => {
+    const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType);
+    if (recipeId && ingredients.length > 0) {
+      try {
+        const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+          p_recipe_id: recipeId,
+          p_ingredients: ingredients,
+        });
+        if (rpcError) throw rpcError;
+        await supabase.from("recipe_content").insert({
+          recipe_id: recipeId,
+          status: "completed",
+        });
+      } catch (error) {
+        console.error("Error saving manual ingredients:", error);
+        toast.error("Recipe added but failed to save ingredients");
+      }
     }
     setPendingSlot(null);
   };
@@ -650,6 +681,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               mealType={pendingSlot.mealType}
               onAddCustomMeal={handleAddCustomMeal}
               onAddRecipeMeal={handleAddRecipeMeal}
+              onAddManualMeal={handleAddManualMeal}
             />
           )}
         </>
@@ -668,6 +700,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               pantryItems={pantryItems}
               smartGroceryItems={smartGroceryItems}
               isCombining={isCombining}
+              displayNameMap={displayNameMap}
+              combineError={combineError}
             />
           ) : items.length > 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -690,7 +724,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       {viewTab === "pantry" && (
         <PantrySection userId={userId} onPantryChange={loadPantryItems} />
       )}
-
 
       {/* Parse progress dialog */}
       <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {

@@ -497,7 +497,7 @@ describe("GroceryListSection", () => {
 
   it("shows smart grocery items in combined view when provided", () => {
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry", "Salad"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry", "Salad"] },
     ];
 
     render(
@@ -517,8 +517,8 @@ describe("GroceryListSection", () => {
 
   it("filters pantry items from smart grocery items", () => {
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
-      { name: "salt", category: "spices", sourceRecipes: ["Stir Fry"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+      { name: "salt", displayName: "salt", category: "spices", sourceRecipes: ["Stir Fry"] },
     ];
 
     render(
@@ -854,7 +854,7 @@ describe("GroceryListSection", () => {
     const onEditItem = vi.fn();
     const onRemoveItem = vi.fn();
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
     ];
 
     render(

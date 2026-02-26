@@ -15,6 +15,7 @@ interface PreCombinedInput {
 
 interface SmartGroceryItem {
   name: string;
+  displayName: string;
   totalQuantity: number | null;
   unit: string | null;
   category: string;
@@ -36,11 +37,11 @@ serve(async (req) => {
       );
     }
 
-    const { preCombined }: { preCombined: PreCombinedInput[] } = await req.json();
+    const { preCombined, perRecipeNames }: { preCombined: PreCombinedInput[]; perRecipeNames?: string[] } = await req.json();
 
     if (!preCombined || preCombined.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, items: [] }),
+        JSON.stringify({ success: true, items: [], displayNameMap: {} }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -98,18 +99,38 @@ Your tasks:
 - Use clean base ingredient names (e.g. "broccoli" not "broccoli floret")
 - Never use metric units (g, kg, ml) — convert to imperial (oz, lb, tsp, tbsp, cup)
 
-Return ONLY a valid JSON array with no markdown formatting:
-[
-  {
-    "name": "clean ingredient name",
-    "totalQuantity": 2.5,
-    "unit": "cup",
-    "category": "one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other",
-    "sourceRecipes": ["Recipe Name 1", "Recipe Name 2"]
-  }
-]
+## displayName generation:
+For EVERY item, generate a "displayName" — the human-friendly name to show on the grocery list. Rules:
+- Mass/uncountable nouns stay SINGULAR regardless of quantity: "flour", "sugar", "salt", "rice", "chicken", "broccoli", "celery", "garlic", "pasta", "cheese", "butter", "milk", "cream", "honey", "bacon", "spinach", "kale", etc.
+- Countable nouns get pluralized when quantity > 1 or when there's a unit (e.g. "2 eggs" → "eggs", "1 cup blueberries" → "blueberries")
+- Countable nouns stay singular when quantity is exactly 1 with no unit (e.g. "1 lemon" → "lemon")
+- Items with NAME_FIRST units (stalk, clove, head, bunch, etc.) always use singular displayName (e.g. "celery" not "celeries")
+- Naturally plural items stay plural: "tortilla chips", "breadcrumbs", "red pepper flakes", "oats"
+- Use standard English pluralization: "tomato" → "tomatoes", "potato" → "potatoes", "leaf" → "leaves", "peach" → "peaches"
 
-totalQuantity must be a number or null. unit must be a string or null.`;
+Return ONLY a valid JSON object (not an array!) with no markdown formatting:
+{
+  "items": [
+    {
+      "name": "clean ingredient name",
+      "displayName": "correctly pluralized display name",
+      "totalQuantity": 2.5,
+      "unit": "cup",
+      "category": "one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other",
+      "sourceRecipes": ["Recipe Name 1", "Recipe Name 2"]
+    }
+  ],
+  "displayNameMap": {
+    "raw ingredient name": "singular display name"
+  }
+}
+
+totalQuantity must be a number or null. unit must be a string or null.
+displayNameMap: maps raw ingredient names (from the perRecipeNames list in the user message, if provided) to their correct SINGULAR display form. Use singular because per-recipe items have varying quantities. If no perRecipeNames are provided, return an empty object {}.`;
+
+    const userContent = perRecipeNames && perRecipeNames.length > 0
+      ? `Review these pre-combined ingredients and merge any semantic duplicates. Do NOT change quantities unless merging:\n${JSON.stringify(preCombined, null, 2)}\n\nAlso generate displayNameMap for these per-recipe ingredient names (use singular form):\n${JSON.stringify(perRecipeNames)}`
+      : `Review these pre-combined ingredients and merge any semantic duplicates. Do NOT change quantities unless merging:\n${JSON.stringify(preCombined, null, 2)}`;
 
     const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -125,7 +146,7 @@ totalQuantity must be a number or null. unit must be a string or null.`;
         messages: [
           {
             role: "user",
-            content: `Review these pre-combined ingredients and merge any semantic duplicates. Do NOT change quantities unless merging:\n${JSON.stringify(preCombined, null, 2)}`,
+            content: userContent,
           },
         ],
       }),
@@ -139,12 +160,19 @@ totalQuantity must be a number or null. unit must be a string or null.`;
     const aiResult = await aiResponse.json();
     const aiText = aiResult.content?.[0]?.text || "";
 
-    let items: SmartGroceryItem[];
+    let parsed: { items: SmartGroceryItem[]; displayNameMap?: Record<string, string> };
     try {
       const jsonMatch = aiText.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, aiText];
-      items = JSON.parse(jsonMatch[1].trim());
+      parsed = JSON.parse(jsonMatch[1].trim());
     } catch {
       throw new Error(`Failed to parse AI response as JSON: ${aiText.slice(0, 200)}`);
+    }
+
+    const items = parsed.items;
+    const displayNameMap = parsed.displayNameMap || {};
+
+    if (!Array.isArray(items)) {
+      throw new Error(`AI response items is not an array: ${JSON.stringify(parsed).slice(0, 200)}`);
     }
 
     // Validate: AI must not drop ingredients. Compare unique names in vs out.
@@ -166,8 +194,15 @@ totalQuantity must be a number or null. unit must be a string or null.`;
       );
     }
 
+    // Ensure every item has a displayName (fallback to name if AI omitted it)
+    for (const item of items) {
+      if (!item.displayName) {
+        item.displayName = item.name;
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, items }),
+      JSON.stringify({ success: true, items, displayNameMap }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

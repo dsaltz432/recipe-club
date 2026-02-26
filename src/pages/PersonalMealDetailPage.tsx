@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser } from "@/lib/auth";
-import type { User, Recipe, RecipeNote, RecipeRatingsSummary } from "@/types";
+import type { User, Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +52,7 @@ import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
+import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
 
 interface PersonalEventData {
   eventId: string;
@@ -107,6 +108,10 @@ const PersonalMealDetailPage = () => {
   // Cooked state
   const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
   const [uncookConfirmOpen, setUncookConfirmOpen] = useState(false);
+
+  // Edit ingredients state
+  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
+  const [editIngredientsItems, setEditIngredientsItems] = useState<RecipeIngredient[]>([]);
 
   // Notes expansion state
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -439,6 +444,70 @@ const PersonalMealDetailPage = () => {
     }
   };
 
+  const handleAddManualMeal = async (
+    name: string,
+    ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>
+  ) => {
+    if (!user?.id || !event) return;
+
+    try {
+      const { data: insertedRecipe, error: recipeError } = await supabase
+        .from("recipes")
+        .insert({
+          name,
+          url: null,
+          event_id: event.eventId,
+          created_by: user.id,
+        })
+        .select("id")
+        .single();
+
+      if (recipeError) throw recipeError;
+
+      // Create meal_plan_item
+      if (slotPlanId) {
+        const { data: newItem } = await supabase
+          .from("meal_plan_items")
+          .insert({
+            plan_id: slotPlanId,
+            day_of_week: slotDayOfWeek,
+            meal_type: slotMealType,
+            recipe_id: insertedRecipe.id,
+            sort_order: mealItems.length,
+          })
+          .select("id")
+          .single();
+
+        if (newItem) {
+          await supabase
+            .from("meal_plan_items")
+            .update({ event_id: event.eventId } as Record<string, unknown>)
+            .eq("id", newItem.id);
+        }
+      }
+
+      // Save ingredients via RPC
+      if (ingredients.length > 0) {
+        const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+          p_recipe_id: insertedRecipe.id,
+          p_ingredients: ingredients,
+        });
+        if (rpcError) throw rpcError;
+
+        await supabase.from("recipe_content").insert({
+          recipe_id: insertedRecipe.id,
+          status: "completed",
+        });
+      }
+
+      toast.success("Recipe added!");
+      loadEventData();
+    } catch (error) {
+      console.error("Error adding manual meal:", error);
+      toast.error("Failed to add meal");
+    }
+  };
+
   // Execute parse when parseStatus transitions to "parsing"
   useEffect(() => {
     if (parseStatus !== "parsing" || !pendingParseRecipeId) return;
@@ -491,6 +560,34 @@ const PersonalMealDetailPage = () => {
     setPendingParseName("");
     setParseStep("saving");
     toast.success("Recipe saved without parsing");
+  };
+
+  const handleEditIngredientsClick = async (recipe: Recipe) => {
+    try {
+      const { data } = await supabase
+        .from("recipe_ingredients")
+        .select("*")
+        .eq("recipe_id", recipe.id)
+        .order("sort_order", { ascending: true });
+
+      setEditIngredientsItems(
+        (data || []).map((row) => ({
+          id: row.id,
+          recipeId: row.recipe_id,
+          name: row.name,
+          quantity: row.quantity ?? undefined,
+          unit: row.unit ?? undefined,
+          category: row.category as RecipeIngredient["category"],
+          rawText: row.raw_text ?? undefined,
+          sortOrder: row.sort_order ?? undefined,
+          createdAt: row.created_at,
+        }))
+      );
+      setEditIngredientsRecipe({ id: recipe.id, name: recipe.name });
+    } catch (error) {
+      console.error("Error loading ingredients:", error);
+      toast.error("Failed to load ingredients");
+    }
   };
 
   const handleEditRecipeClick = (recipe: Recipe) => {
@@ -850,8 +947,24 @@ const PersonalMealDetailPage = () => {
           onDeleteNoteClick={handleDeleteClick}
           onDeleteRecipeClick={handleDeleteRecipeClick}
           onRateRecipe={handleRateRecipe}
+          onEditIngredients={handleEditIngredientsClick}
         />
       </main>
+
+      {/* Edit Ingredients Dialog */}
+      {editIngredientsRecipe && (
+        <EditRecipeIngredientsDialog
+          open={!!editIngredientsRecipe}
+          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
+          recipeId={editIngredientsRecipe.id}
+          recipeName={editIngredientsRecipe.name}
+          ingredients={editIngredientsItems}
+          onSaved={() => {
+            setEditIngredientsRecipe(null);
+            loadEventData();
+          }}
+        />
+      )}
 
       {/* Add Meal Dialog */}
       <AddMealDialog
@@ -861,6 +974,7 @@ const PersonalMealDetailPage = () => {
         mealType={slotMealType}
         onAddCustomMeal={handleAddCustomMeal}
         onAddRecipeMeal={handleAddRecipeMeal}
+        onAddManualMeal={handleAddManualMeal}
       />
 
       {/* Parse progress dialog */}

@@ -229,6 +229,7 @@ describe("groceryEdits", () => {
       expect(result).toHaveLength(2);
       expect(result![1]).toEqual({
         name: "paper towels",
+        displayName: "paper towels",
         totalQuantity: 2,
         unit: undefined,
         category: "other",

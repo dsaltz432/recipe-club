@@ -34,7 +34,7 @@ describe("GroceryCategoryGroup", () => {
   it("renders all items in the category", () => {
     render(<GroceryCategoryGroup category="produce" items={items} />);
 
-    expect(screen.getByText("3 tomatoes")).toBeInTheDocument();
+    expect(screen.getByText("3 tomato")).toBeInTheDocument();
     expect(screen.getByText("1 lettuce head")).toBeInTheDocument();
   });
 
@@ -50,7 +50,7 @@ describe("GroceryCategoryGroup", () => {
 
   it("renders SmartGroceryItem items", () => {
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
     ];
 
     render(<GroceryCategoryGroup category="produce" items={smartItems} />);

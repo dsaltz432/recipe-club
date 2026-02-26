@@ -111,6 +111,7 @@ export async function addCustomGroceryItem(
 
     const newItem: GroceryEditItem = {
       name: item.name,
+      displayName: item.name,
       totalQuantity: item.totalQuantity,
       unit: item.unit,
       category: item.category ?? "other",

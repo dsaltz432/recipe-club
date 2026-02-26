@@ -304,6 +304,9 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Homemade Tacos" },
     });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/tacos" },
+    });
     fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
@@ -362,6 +365,9 @@ describe("MealPlanPage", () => {
 
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Leftovers" },
+    });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/leftovers" },
     });
     fireEvent.click(screen.getByText("Add to Meal"));
 
@@ -524,6 +530,9 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "New Meal" },
     });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/new-meal" },
+    });
     fireEvent.click(screen.getByText("Add to Meal"));
 
     // Verify the insert was called with sort_order: 2 (max of 0,1 = 1, plus 1 = 2)
@@ -664,6 +673,9 @@ describe("MealPlanPage", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Test Meal" },
     });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/test-meal" },
+    });
     fireEvent.click(screen.getByText("Add to Meal"));
 
     await waitFor(() => {
@@ -714,6 +726,9 @@ describe("MealPlanPage", () => {
     // Add custom meal — recipe insert succeeds but item insert fails
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Failing Meal" },
+    });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/failing-meal" },
     });
     fireEvent.click(screen.getByText("Add to Meal"));
 
@@ -819,6 +834,9 @@ describe("MealPlanPage", () => {
     // Try to add a custom meal — should silently return because planId is null
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "No Plan Meal" },
+    });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/no-plan" },
     });
     fireEvent.click(screen.getByText("Add to Meal"));
 
@@ -2145,9 +2163,9 @@ describe("MealPlanPage", () => {
 
     it("runs smart combine when 2+ parsed recipes are present", async () => {
       const smartItems = [
-        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
+        { name: "chicken", displayName: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
       ];
-      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+      mockSmartCombineIngredients.mockResolvedValue({ items: smartItems, displayNameMap: {} });
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
@@ -2230,16 +2248,17 @@ describe("MealPlanPage", () => {
           expect.any(String),
           "user-123",
           smartItems,
-          expect.any(Array)
+          expect.any(Array),
+          {}
         );
       });
     });
 
     it("skips re-combine when same recipe IDs already combined", async () => {
       const smartItems = [
-        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
+        { name: "chicken", displayName: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
       ];
-      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+      mockSmartCombineIngredients.mockResolvedValue({ items: smartItems, displayNameMap: {} });
       // Cache always returns null so runSmartCombine is invoked on every tab switch
       mockLoadGroceryCache.mockResolvedValue(null);
 
@@ -2344,9 +2363,9 @@ describe("MealPlanPage", () => {
 
     it("skips runSmartCombine when recipe IDs unchanged after adding non-URL meal", async () => {
       const smartItems = [
-        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
+        { name: "chicken", displayName: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Chicken Stir Fry"] },
       ];
-      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+      mockSmartCombineIngredients.mockResolvedValue({ items: smartItems, displayNameMap: {} });
       mockLoadGroceryCache.mockResolvedValue(null);
 
       mockSupabaseFrom.mockImplementation((table: string) => {
@@ -2447,6 +2466,9 @@ describe("MealPlanPage", () => {
       }
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "Toast" },
+      });
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+        target: { value: "https://example.com/toast" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
 
@@ -2698,6 +2720,89 @@ describe("MealPlanPage", () => {
       });
     });
 
+    it("handles smart combine non-Error rejection gracefully", async () => {
+      // Reject with a non-Error value (e.g., a string) to cover the "Unknown error" branch
+      mockSmartCombineIngredients.mockRejectedValue("string-error");
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-1");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1", plan_id: "plan-1", recipe_id: "recipe-1",
+                  day_of_week: 1, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe A", url: "https://example.com/a" },
+                },
+                {
+                  id: "item-2", plan_id: "plan-1", recipe_id: "recipe-2",
+                  day_of_week: 2, meal_type: "dinner", custom_name: null,
+                  custom_url: null, sort_order: 0,
+                  recipes: { name: "Recipe B", url: "https://example.com/b" },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "ing-1", recipe_id: "recipe-1", name: "flour", quantity: 2, unit: "cups", category: "grains", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+                { id: "ing-2", recipe_id: "recipe-2", name: "sugar", quantity: 1, unit: "cup", category: "grains", raw_text: null, sort_order: 0, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "c1", recipe_id: "recipe-1", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+                { id: "c2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { id: "recipe-1", name: "Recipe A", url: "https://example.com/a" },
+                { id: "recipe-2", name: "Recipe B", url: "https://example.com/b" },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Groceries"));
+
+      await waitFor(() => {
+        expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      });
+
+      // Page should still render
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+    });
+
     it("does not cache when smartCombineIngredients returns null", async () => {
       mockSmartCombineIngredients.mockResolvedValue(null);
 
@@ -2780,9 +2885,9 @@ describe("MealPlanPage", () => {
 
     it("re-runs smart combine when cache exists but recipe IDs are stale", async () => {
       const smartItems = [
-        { name: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Recipe A"] },
+        { name: "chicken", displayName: "chicken", totalQuantity: 2, unit: "lbs", category: "meat_seafood", sourceRecipes: ["Recipe A"] },
       ];
-      mockSmartCombineIngredients.mockResolvedValue(smartItems);
+      mockSmartCombineIngredients.mockResolvedValue({ items: smartItems, displayNameMap: {} });
 
       // Cache has recipe IDs that don't match current parsed recipes
       mockLoadGroceryCache.mockResolvedValue({
@@ -2956,6 +3061,9 @@ describe("MealPlanPage", () => {
       );
       fireEvent.click(slotButtons[0]);
 
+      // Switch to Upload File mode
+      fireEvent.click(screen.getByText("Upload File"));
+
       // Upload a file
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(["test"], "recipe.jpg", { type: "image/jpeg" });
@@ -2994,7 +3102,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "Tacos" },
       });
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/tacos" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
@@ -3054,6 +3162,9 @@ describe("MealPlanPage", () => {
         (b) => b.textContent?.includes("Dinner")
       );
       fireEvent.click(slotButtons[0]);
+
+      // Switch to Upload File mode
+      fireEvent.click(screen.getByText("Upload File"));
 
       // Upload a file
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -3130,7 +3241,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "No Error Field" },
       });
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/noerrfield" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
@@ -3194,7 +3305,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "Test Recipe" },
       });
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/test" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
@@ -3268,7 +3379,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "Open Test" },
       });
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/open" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
@@ -3379,7 +3490,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "New Meal" },
       });
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/new" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));
@@ -3499,7 +3610,7 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
         target: { value: "New Recipe" },
       });
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/new-combine" },
       });
       fireEvent.click(screen.getByText("Add to Meal"));

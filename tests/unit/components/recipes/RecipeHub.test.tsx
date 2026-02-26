@@ -4016,4 +4016,109 @@ describe("RecipeHub - Parse Recipe", () => {
     expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
     expect(mockFunctionsInvoke).not.toHaveBeenCalled();
   });
+
+  it("shows edit ingredients button for personal recipes and opens dialog", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "My Editable Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("My Editable Recipe")).toBeInTheDocument();
+    });
+
+    // Click edit ingredients button
+    fireEvent.click(screen.getByLabelText("Edit ingredients"));
+
+    // Edit Ingredients Dialog should open
+    await waitFor(() => {
+      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+    });
+  });
+
+  it("reloads recipes after saving ingredients", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "Recipe To Edit",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+    ];
+
+    // Mock rpc for saving ingredients
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    // Need to also mock rpc on supabase for the EditRecipeIngredientsDialog save
+    const { supabase } = await import("@/integrations/supabase/client");
+    (supabase as unknown as Record<string, unknown>).rpc = vi.fn().mockResolvedValue({ error: null });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe To Edit")).toBeInTheDocument();
+    });
+
+    // Click edit ingredients button
+    fireEvent.click(screen.getByLabelText("Edit ingredients"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+    });
+
+    // Add an ingredient name so save will work
+    fireEvent.change(screen.getByLabelText("Name for row 1"), {
+      target: { value: "Flour" },
+    });
+
+    // Click save
+    fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
+
+    // The dialog should close and recipes should reload
+    await waitFor(() => {
+      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
+    });
+  });
 });

@@ -52,8 +52,9 @@ describe("groceryCache", () => {
       expect(result).toEqual({
         items: cachedData.items,
         recipeIds: ["r1", "r2"],
+        displayNameMap: undefined,
       });
-      expect(mockSelect).toHaveBeenCalledWith("items, recipe_ids");
+      expect(mockSelect).toHaveBeenCalledWith("*");
       expect(mockEq).toHaveBeenCalledWith("context_type", "event");
     });
 
@@ -154,6 +155,7 @@ describe("groceryCache", () => {
       expect(result).toEqual({
         items: cachedData.items,
         recipeIds: ["r3"],
+        displayNameMap: undefined,
       });
       expect(mockEq).toHaveBeenCalledWith("context_type", "meal_plan");
     });

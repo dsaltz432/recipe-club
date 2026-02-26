@@ -14,6 +14,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 import {
   GROCERY_CATEGORIES,
   CATEGORY_ORDER,
+  CATEGORY_OVERRIDES,
   normalizeUnit,
   normalizeIngredientName,
   combineIngredients,
@@ -26,6 +27,8 @@ import {
   filterSmartPantryItems,
   smartCombineIngredients,
   decimalToFraction,
+  detectCategory,
+  parseFractionToDecimal,
 } from "@/lib/groceryList";
 import type { RecipeIngredient, CombinedGroceryItem, SmartGroceryItem, GroceryCategory } from "@/types";
 import { createMockRecipeIngredient } from "@tests/utils";
@@ -2819,62 +2822,63 @@ describe("groceryList", () => {
       expect(formatGroceryItem(item)).toBe("salt");
     });
 
-    it("pluralizes name when no unit and quantity > 1", () => {
+    it("uses name as-is for CombinedGroceryItem (no pluralization)", () => {
+      // CombinedGroceryItem has no displayName — name is used verbatim
       expect(formatGroceryItem({
         name: "egg",
         totalQuantity: 3,
         category: "dairy",
         sourceRecipes: ["Recipe A"],
-      })).toBe("3 eggs");
+      } as CombinedGroceryItem)).toBe("3 egg");
 
       expect(formatGroceryItem({
         name: "onion",
         totalQuantity: 4,
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("4 onions");
+      } as CombinedGroceryItem)).toBe("4 onion");
 
       expect(formatGroceryItem({
         name: "tomato",
         totalQuantity: 2,
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("2 tomatoes");
+      } as CombinedGroceryItem)).toBe("2 tomato");
+    });
+
+    it("uses displayName for SmartGroceryItem", () => {
+      // SmartGroceryItem has displayName — used instead of name
+      expect(formatGroceryItem({
+        name: "egg",
+        displayName: "eggs",
+        totalQuantity: 3,
+        category: "dairy",
+        sourceRecipes: ["Recipe A"],
+      } as SmartGroceryItem)).toBe("3 eggs");
 
       expect(formatGroceryItem({
-        name: "avocado",
-        totalQuantity: 3,
+        name: "tomato",
+        displayName: "tomatoes",
+        totalQuantity: 2,
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("3 avocados");
+      } as SmartGroceryItem)).toBe("2 tomatoes");
 
       expect(formatGroceryItem({
         name: "bay leaf",
+        displayName: "bay leaves",
         totalQuantity: 3,
         category: "spices",
         sourceRecipes: ["Recipe A"],
-      })).toBe("3 bay leaves");
+      } as SmartGroceryItem)).toBe("3 bay leaves");
 
       expect(formatGroceryItem({
         name: "cherry",
+        displayName: "cherries",
         totalQuantity: 5,
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("5 cherries");
-
-      expect(formatGroceryItem({
-        name: "radish",
-        totalQuantity: 3,
-        category: "produce",
-        sourceRecipes: ["Recipe A"],
-      })).toBe("3 radishes");
-
-      expect(formatGroceryItem({
-        name: "peach",
-        totalQuantity: 4,
-        category: "produce",
-        sourceRecipes: ["Recipe A"],
-      })).toBe("4 peaches");
+      } as SmartGroceryItem)).toBe("5 cherries");
     });
 
     it("keeps singular when no unit and quantity is 1", () => {
@@ -2886,40 +2890,44 @@ describe("groceryList", () => {
       })).toBe("1 egg");
     });
 
-    it("pluralizes countable nouns even with unit", () => {
+    it("uses displayName for SmartGroceryItem with unit", () => {
       expect(formatGroceryItem({
         name: "egg",
+        displayName: "eggs",
         totalQuantity: 3,
         unit: "cup",
         category: "dairy",
         sourceRecipes: ["Recipe A"],
-      })).toBe("3 cups eggs");
+      } as SmartGroceryItem)).toBe("3 cups eggs");
 
       expect(formatGroceryItem({
         name: "black bean",
+        displayName: "black beans",
         totalQuantity: 2,
         unit: "cup",
         category: "pantry",
         sourceRecipes: ["Recipe A"],
-      })).toBe("2 cups black beans");
+      } as SmartGroceryItem)).toBe("2 cups black beans");
     });
 
-    it("pluralizes countable nouns with unit even when quantity is 1 or less", () => {
+    it("uses displayName for SmartGroceryItem with unit even when quantity is 1 or less", () => {
       expect(formatGroceryItem({
         name: "blueberry",
+        displayName: "blueberries",
         totalQuantity: 1,
         unit: "cup",
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("1 cup blueberries");
+      } as SmartGroceryItem)).toBe("1 cup blueberries");
 
       expect(formatGroceryItem({
         name: "mushroom",
+        displayName: "mushrooms",
         totalQuantity: 0.5,
         unit: "cup",
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("1/2 cup mushrooms");
+      } as SmartGroceryItem)).toBe("1/2 cup mushrooms");
     });
 
     it("keeps mass nouns singular even with quantity > 1", () => {
@@ -3104,13 +3112,13 @@ describe("groceryList", () => {
         sourceRecipes: ["Recipe A"],
       })).toBe("2 tsp pepper");
 
-      // bell pepper should still pluralize
+      // bell pepper as CombinedGroceryItem: no pluralization (no displayName)
       expect(formatGroceryItem({
         name: "bell pepper",
         totalQuantity: 3,
         category: "produce",
         sourceRecipes: ["Recipe A"],
-      })).toBe("3 bell peppers");
+      })).toBe("3 bell pepper");
     });
 
     it("formats name-first units: celery stalks, bacon strips, corn ears", () => {
@@ -3298,6 +3306,17 @@ describe("groceryList", () => {
       expect(lines[1]).toBe('Other,flour,1,cup,"Recipe A, The Best"');
     });
 
+    it("falls back to name when SmartGroceryItem has empty displayName", () => {
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
+      grouped.set("produce", [
+        { name: "tomatoes", displayName: "", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"] },
+      ]);
+
+      const csv = generateCSV(grouped);
+      const lines = csv.split("\n");
+      expect(lines[1]).toBe("Produce,tomatoes,2,,Recipe A");
+    });
+
     it("returns header only for empty map", () => {
       const csv = generateCSV(new Map());
       expect(csv).toBe("Category,Item,Quantity,Unit,Recipes");
@@ -3339,7 +3358,7 @@ describe("groceryList", () => {
 
       const text = generatePlainText(grouped);
       expect(text).toContain("PRODUCE");
-      expect(text).toContain("  2 onions");
+      expect(text).toContain("  2 onion");
       expect(text).toContain("  3 garlic cloves");
       expect(text).toContain("DAIRY");
       expect(text).toContain("  1 tbsp butter");
@@ -3493,9 +3512,9 @@ describe("groceryList", () => {
 
     it("calls combine-ingredients edge function with pre-combined payload", async () => {
       const mockItems = [
-        { name: "broccoli", totalQuantity: 4, unit: "cup", category: "produce", sourceRecipes: ["Pasta", "Salad"] },
+        { name: "broccoli", displayName: "broccoli", totalQuantity: 4, unit: "cup", category: "produce", sourceRecipes: ["Pasta", "Salad"] },
       ];
-      mockInvoke.mockResolvedValue({ data: { items: mockItems }, error: null });
+      mockInvoke.mockResolvedValue({ data: { items: mockItems, displayNameMap: {} }, error: null });
 
       const result = await smartCombineIngredients(ingredients, recipeNameMap);
 
@@ -3505,41 +3524,60 @@ describe("groceryList", () => {
           preCombined: expect.arrayContaining([
             expect.objectContaining({ name: "broccoli", category: "produce" }),
           ]),
+          perRecipeNames: undefined,
         },
       });
       // Verify preCombined format has quantity as string (from decimalToFraction)
       const callBody = mockInvoke.mock.calls[0][1].body;
       expect(callBody).toHaveProperty("preCombined");
       expect(callBody.preCombined[0]).toHaveProperty("sourceRecipes");
-      expect(result).toEqual(mockItems);
+      expect(result.items).toEqual(mockItems);
+      expect(result.displayNameMap).toEqual({});
     });
 
-    it("returns null when edge function returns skipped", async () => {
+    it("falls back to naive combine when edge function returns skipped", async () => {
       mockInvoke.mockResolvedValue({ data: { skipped: true }, error: null });
 
       const result = await smartCombineIngredients(ingredients, recipeNameMap);
-      expect(result).toBeNull();
+      // Should return naive-combined items as fallback
+      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.displayNameMap).toEqual({});
     });
 
-    it("returns null when edge function returns error", async () => {
+    it("falls back to naive combine when edge function returns error", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       mockInvoke.mockResolvedValue({ data: null, error: new Error("Network error") });
 
       const result = await smartCombineIngredients(ingredients, recipeNameMap);
-      expect(result).toBeNull();
+      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.displayNameMap).toEqual({});
+      consoleSpy.mockRestore();
     });
 
-    it("returns null when data has no items", async () => {
+    it("falls back to naive combine when data has no items", async () => {
       mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
 
       const result = await smartCombineIngredients(ingredients, recipeNameMap);
-      expect(result).toBeNull();
+      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.displayNameMap).toEqual({});
+    });
+
+    it("defaults displayNameMap to empty object when not provided", async () => {
+      const mockItems = [
+        { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "cup", category: "produce", sourceRecipes: ["Pasta"] },
+      ];
+      mockInvoke.mockResolvedValue({ data: { items: mockItems }, error: null });
+
+      const result = await smartCombineIngredients(ingredients, recipeNameMap);
+
+      expect(result.displayNameMap).toEqual({});
     });
 
     it("handles unknown recipe IDs gracefully", async () => {
       const unknownIngredients: RecipeIngredient[] = [
         createMockRecipeIngredient({ id: "1", recipeId: "unknown", name: "flour", quantity: 1, unit: "cup" }),
       ];
-      mockInvoke.mockResolvedValue({ data: { items: [] }, error: null });
+      mockInvoke.mockResolvedValue({ data: { items: [], displayNameMap: {} }, error: null });
 
       await smartCombineIngredients(unknownIngredients, recipeNameMap);
 
@@ -3548,6 +3586,7 @@ describe("groceryList", () => {
           preCombined: [
             { name: "flour", quantity: "1", unit: "cup", category: "pantry", sourceRecipes: ["Unknown Recipe"] },
           ],
+          perRecipeNames: undefined,
         },
       });
     });
@@ -3556,7 +3595,7 @@ describe("groceryList", () => {
       const nullIngredients: RecipeIngredient[] = [
         createMockRecipeIngredient({ id: "1", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
       ];
-      mockInvoke.mockResolvedValue({ data: { items: [] }, error: null });
+      mockInvoke.mockResolvedValue({ data: { items: [], displayNameMap: {} }, error: null });
 
       await smartCombineIngredients(nullIngredients, recipeNameMap);
 
@@ -3565,8 +3604,83 @@ describe("groceryList", () => {
           preCombined: [
             { name: "salt", quantity: null, unit: null, category: "spices", sourceRecipes: ["Pasta"] },
           ],
+          perRecipeNames: undefined,
         },
       });
+    });
+  });
+
+  describe("CATEGORY_OVERRIDES", () => {
+    it("is exported and contains known overrides", () => {
+      expect(CATEGORY_OVERRIDES["olive oil"]).toBe("pantry");
+      expect(CATEGORY_OVERRIDES["tofu"]).toBe("meat_seafood");
+      expect(CATEGORY_OVERRIDES["egg"]).toBe("pantry");
+      expect(CATEGORY_OVERRIDES["water"]).toBe("other");
+    });
+  });
+
+  describe("detectCategory", () => {
+    it("returns override category for known ingredients", () => {
+      expect(detectCategory("olive oil")).toBe("pantry");
+      expect(detectCategory("tofu")).toBe("meat_seafood");
+      expect(detectCategory("egg")).toBe("pantry");
+    });
+
+    it("returns 'other' for unknown ingredients", () => {
+      expect(detectCategory("dragon fruit")).toBe("other");
+      expect(detectCategory("mystery spice")).toBe("other");
+    });
+
+    it("normalizes name before lookup", () => {
+      // "eggs" → normalized to "egg" → pantry override
+      expect(detectCategory("eggs")).toBe("pantry");
+    });
+  });
+
+  describe("parseFractionToDecimal", () => {
+    it("parses integers", () => {
+      expect(parseFractionToDecimal("3")).toBe(3);
+      expect(parseFractionToDecimal("0")).toBe(0);
+    });
+
+    it("parses decimals", () => {
+      expect(parseFractionToDecimal("2.5")).toBe(2.5);
+      expect(parseFractionToDecimal("0.75")).toBe(0.75);
+    });
+
+    it("parses simple fractions", () => {
+      expect(parseFractionToDecimal("1/2")).toBe(0.5);
+      expect(parseFractionToDecimal("1/4")).toBe(0.25);
+      expect(parseFractionToDecimal("3/4")).toBe(0.75);
+    });
+
+    it("parses mixed numbers", () => {
+      expect(parseFractionToDecimal("1 1/2")).toBe(1.5);
+      expect(parseFractionToDecimal("2 1/4")).toBe(2.25);
+    });
+
+    it("returns undefined for empty string", () => {
+      expect(parseFractionToDecimal("")).toBeUndefined();
+      expect(parseFractionToDecimal("   ")).toBeUndefined();
+    });
+
+    it("returns undefined for non-numeric strings", () => {
+      expect(parseFractionToDecimal("abc")).toBeUndefined();
+      expect(parseFractionToDecimal("a few")).toBeUndefined();
+    });
+
+    it("handles division by zero", () => {
+      expect(parseFractionToDecimal("1/0")).toBeUndefined();
+      expect(parseFractionToDecimal("2 1/0")).toBeUndefined();
+    });
+
+    it("handles whitespace", () => {
+      expect(parseFractionToDecimal("  1/2  ")).toBe(0.5);
+      expect(parseFractionToDecimal(" 3 ")).toBe(3);
+    });
+
+    it("handles fractions with spaces around slash", () => {
+      expect(parseFractionToDecimal("1 / 2")).toBe(0.5);
     });
   });
 });

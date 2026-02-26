@@ -13,6 +13,7 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
+  ListChecks,
 } from "lucide-react";
 import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary } from "@/types";
 
@@ -54,6 +55,7 @@ interface EventRecipesTabProps {
   onDeleteNoteClick: (note: RecipeNote) => void;
   onDeleteRecipeClick: (recipe: Recipe) => void;
   onRateRecipe?: (recipe: EventRecipeWithRatings) => void;
+  onEditIngredients?: (recipe: Recipe) => void;
 }
 
 const EventRecipesTab = ({
@@ -70,6 +72,7 @@ const EventRecipesTab = ({
   onDeleteNoteClick,
   onDeleteRecipeClick,
   onRateRecipe,
+  onEditIngredients,
 }: EventRecipesTabProps) => {
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -213,6 +216,18 @@ const EventRecipesTab = ({
                         <span className="text-[10px] sm:text-xs bg-purple/10 text-purple px-2 py-0.5 rounded-full font-medium">
                           {notes.length} {notes.length !== 1 ? "notes" : "note"}
                         </span>
+                      )}
+                      {onEditIngredients && recipe.createdBy === user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
+                          aria-label={`Edit ingredients for ${recipe.name}`}
+                          onClick={() => onEditIngredients(recipe)}
+                        >
+                          <ListChecks className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          <span className="text-[10px] sm:text-xs">Ingredients</span>
+                        </Button>
                       )}
                       {(recipe.createdBy === user?.id || userIsAdmin) && (
                         <>

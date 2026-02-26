@@ -1,6 +1,11 @@
 import type { RecipeIngredient, GroceryCategory, CombinedGroceryItem, SmartGroceryItem } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface SmartCombineResult {
+  items: SmartGroceryItem[];
+  displayNameMap: Record<string, string>;
+}
+
 
 export const GROCERY_CATEGORIES: Record<GroceryCategory, string> = {
   produce: "Produce",
@@ -94,6 +99,8 @@ const COOKING_ADJECTIVES = [
 const PRESERVED_COMPOUNDS = new Set([
   "crushed tomato",
   "crushed tomatoes",
+  "diced tomato",
+  "diced tomatoes",
   "peeled whole tomato",
   "peeled whole tomatoes",
   "ground beef",
@@ -161,7 +168,7 @@ const INGREDIENT_ALIASES: Record<string, string> = {
 };
 
 // Override categories that the AI parser frequently gets wrong
-const CATEGORY_OVERRIDES: Record<string, GroceryCategory> = {
+export const CATEGORY_OVERRIDES: Record<string, GroceryCategory> = {
   "olive oil": "pantry",
   "vegetable oil": "pantry",
   "canola oil": "pantry",
@@ -741,10 +748,10 @@ export function combineIngredients(
   return results;
 }
 
-export function groupByCategory(
-  items: CombinedGroceryItem[]
-): Map<GroceryCategory, CombinedGroceryItem[]> {
-  const map = new Map<GroceryCategory, CombinedGroceryItem[]>();
+export function groupByCategory<T extends { category: GroceryCategory }>(
+  items: T[]
+): Map<GroceryCategory, T[]> {
+  const map = new Map<GroceryCategory, T[]>();
   for (const category of CATEGORY_ORDER) {
     const categoryItems = items.filter((item) => item.category === category);
     if (categoryItems.length > 0) {
@@ -754,60 +761,8 @@ export function groupByCategory(
   return map;
 }
 
-function simplePluralize(name: string): string {
-  // Avoid double-pluralization: if already looks plural, return as-is
-  const lastWord = name.split(" ").pop()!;
-  if (lastWord.length > 2 && lastWord.endsWith("s") && !lastWord.endsWith("ss") && !lastWord.endsWith("us")) {
-    return name;
-  }
-  if (name.endsWith("leaf")) {
-    return name.slice(0, -4) + "leaves";
-  }
-  if (name.endsWith("ss") || name.endsWith("sh") || name.endsWith("ch") || name.endsWith("x") || name.endsWith("z")) {
-    return name + "es";
-  }
-  if (name.endsWith("y") && !"aeiou".includes(name[name.length - 2])) {
-    return name.slice(0, -1) + "ies";
-  }
-  const O_ES_WORDS = new Set(["potato", "tomato", "hero"]);
-  if (name.endsWith("o")) {
-    const lastWord = name.split(" ").pop()!;
-    return O_ES_WORDS.has(lastWord) ? name + "es" : name + "s";
-  }
-  return name + "s";
-}
-
 // Metric units that should be converted to imperial when possible
 const METRIC_UNITS = new Set(["g", "kg", "ml"]);
-
-// Mass/uncountable nouns that should never be pluralized in display
-const MASS_NOUNS = new Set([
-  "flour", "sugar", "salt", "rice", "water", "milk", "butter", "oil",
-  "garlic", "ginger", "chicken", "beef", "pork", "lamb", "turkey", "fish",
-  "salmon", "tuna", "shrimp", "pasta", "spaghetti", "penne", "macaroni", "bread", "cheese", "cream", "honey",
-  "mustard", "vinegar", "broth", "stock", "cornstarch", "cornmeal", "cilantro", "parsley",
-  "basil", "oregano", "thyme", "rosemary", "dill", "cinnamon", "paprika",
-  "cumin", "turmeric", "nutmeg", "lettuce", "spinach", "kale", "cabbage",
-  "celery", "broccoli", "cauliflower", "corn", "bacon", "sausage", "ham",
-  "chocolate", "cocoa", "coffee", "tea", "juice", "wine", "beer",
-  "mayonnaise", "ketchup", "sriracha", "tahini", "hummus", "pesto", "couscous",
-  "quinoa", "oatmeal", "granola", "yogurt", "tofu", "tempeh", "seitan",
-  "coriander", "sage", "tarragon", "powder", "sauce", "paste", "soy",
-  "mint", "wheat", "sumac", "breadcrumbs", "flakes", "half", "cayenne", "buttermilk",
-  "soda", "extract", "vanilla", "ghee",
-  "allspice", "arugula", "watercress", "asparagus", "paneer", "pancetta",
-  "gelatin", "margarine", "seaweed", "molasses", "steak", "noodle",
-  "liquid", "broth",
-]);
-
-// Full ingredient names that are mass nouns (checked against entire name)
-const MASS_NOUN_NAMES = new Set([
-  "cayenne pepper", "pepper",
-  "half and half",
-  "garam masala", "tandoori masala", "italian seasoning", "kasuri methi",
-  "gochujang", "pomegranate molasses", "urad dal", "white hominy",
-  "foie gras",
-]);
 
 // Abbreviated units that should never be pluralized
 const ABBREVIATION_UNITS = new Set(["tsp", "tbsp", "oz", "lb", "g", "kg", "ml"]);
@@ -817,49 +772,60 @@ const NAME_FIRST_UNITS = new Set([
   "stalk", "strip", "ear", "clove", "head", "bunch", "sprig", "piece", "slice", "rib",
 ]);
 
+// Plural forms for count-based units (a small, closed set)
+const UNIT_PLURAL_MAP: Record<string, string> = {
+  stalk: "stalks",
+  strip: "strips",
+  ear: "ears",
+  clove: "cloves",
+  head: "heads",
+  bunch: "bunches",
+  sprig: "sprigs",
+  piece: "pieces",
+  slice: "slices",
+  rib: "ribs",
+  can: "cans",
+  bottle: "bottles",
+  cup: "cups",
+  pinch: "pinches",
+  dash: "dashes",
+  liter: "liters",
+};
+
 function pluralizeUnit(unit: string, quantity: number): string {
   if (quantity <= 1) return unit;
   if (ABBREVIATION_UNITS.has(unit)) return unit;
-  return simplePluralize(unit);
+  return UNIT_PLURAL_MAP[unit] ?? unit;
 }
 
-export function formatGroceryItem(item: CombinedGroceryItem): string {
+export function formatGroceryItem(item: CombinedGroceryItem | SmartGroceryItem): string {
   const parts: string[] = [];
   const qty = item.totalQuantity;
   if (qty != null) {
     parts.push(decimalToFraction(qty));
   }
 
+  // Use AI-provided displayName when available (SmartGroceryItem), otherwise fall back to name
+  const nameToDisplay = "displayName" in item && item.displayName ? item.displayName : item.name;
+
   const isNameFirst = item.unit != null && NAME_FIRST_UNITS.has(item.unit);
 
   if (isNameFirst) {
-    // "5 celery stalks" — name stays singular, unit carries the count
-    parts.push(item.name);
+    // "5 celery stalks" — name before unit
+    parts.push(nameToDisplay);
     parts.push(qty != null ? pluralizeUnit(item.unit!, qty) : item.unit!);
   } else {
     if (item.unit) {
       parts.push(qty != null ? pluralizeUnit(item.unit, qty) : item.unit);
     }
-    // Pluralize name when it's a countable noun and either:
-    // - quantity > 1 (e.g. "4 eggs"), or
-    // - there's a unit (e.g. "1 cup blueberries", not "1 cup blueberry")
-    const baseName = item.name.split(" ").pop()!;
-    const isMassNoun = MASS_NOUNS.has(baseName) || MASS_NOUN_NAMES.has(item.name);
-    const isAlwaysPlural = ALWAYS_PLURAL.has(item.name);
-    const shouldPluralize = !isMassNoun && !isAlwaysPlural && qty != null && (qty > 1 || !!item.unit);
-    const displayName = isAlwaysPlural
-      ? item.name
-      : shouldPluralize
-        ? simplePluralize(item.name)
-        : item.name;
-    parts.push(displayName);
+    parts.push(nameToDisplay);
   }
 
   return parts.join(" ");
 }
 
 export function generateCSV(
-  groupedItems: Map<GroceryCategory, CombinedGroceryItem[]>
+  groupedItems: Map<GroceryCategory, (CombinedGroceryItem | SmartGroceryItem)[]>
 ): string {
   const rows: string[] = ["Category,Item,Quantity,Unit,Recipes"];
   for (const [category, items] of groupedItems) {
@@ -868,7 +834,8 @@ export function generateCSV(
       const qty = item.totalQuantity != null ? decimalToFraction(item.totalQuantity) : "";
       const unit = item.unit ?? "";
       const recipes = item.sourceRecipes.join("; ");
-      const escapedName = item.name.includes(",") ? `"${item.name}"` : item.name;
+      const itemName = "displayName" in item && item.displayName ? item.displayName : item.name;
+      const escapedName = itemName.includes(",") ? `"${itemName}"` : itemName;
       const escapedRecipes = recipes.includes(",") ? `"${recipes}"` : recipes;
       rows.push(
         `${categoryName},${escapedName},${qty},${unit},${escapedRecipes}`
@@ -896,44 +863,55 @@ export function filterSmartPantryItems(
 
 export async function smartCombineIngredients(
   ingredients: RecipeIngredient[],
-  recipeNameMap: Record<string, string>
-): Promise<SmartGroceryItem[] | null> {
+  recipeNameMap: Record<string, string>,
+  perRecipeNames?: string[]
+): Promise<SmartCombineResult> {
+  // Step 1: Naive combine first (handles unit conversion, normalization)
+  const naiveCombined = combineIngredients(ingredients, recipeNameMap);
+
+  // Step 2: Format for AI — send pre-combined results for semantic-only merging
+  const preCombined = naiveCombined.map((item) => ({
+    name: item.name,
+    quantity: item.totalQuantity != null ? decimalToFraction(item.totalQuantity) : null,
+    unit: item.unit ?? null,
+    category: item.category,
+    sourceRecipes: item.sourceRecipes,
+  }));
+
+  // Fallback: convert naive combine to SmartGroceryItem format
+  const fallbackItems: SmartGroceryItem[] = naiveCombined.map((item) => ({
+    name: item.name,
+    displayName: item.name,
+    totalQuantity: item.totalQuantity,
+    unit: item.unit,
+    category: item.category,
+    sourceRecipes: item.sourceRecipes,
+  }));
+  const fallbackResult: SmartCombineResult = { items: fallbackItems, displayNameMap: {} };
+
   try {
-    // Step 1: Naive combine first (handles unit conversion, normalization)
-    const naiveCombined = combineIngredients(ingredients, recipeNameMap);
-
-    // Step 2: Format for AI — send pre-combined results for semantic-only merging
-    const preCombined = naiveCombined.map((item) => ({
-      name: item.name,
-      quantity: item.totalQuantity != null ? decimalToFraction(item.totalQuantity) : null,
-      unit: item.unit ?? null,
-      category: item.category,
-      sourceRecipes: item.sourceRecipes,
-    }));
-
     const { data, error } = await supabase.functions.invoke("combine-ingredients", {
-      body: { preCombined },
+      body: { preCombined, perRecipeNames },
     });
 
     if (error) throw error;
 
-    if (data?.skipped) {
-      return null;
+    if (data?.skipped || !data?.items) {
+      return fallbackResult;
     }
 
-    if (data?.items) {
-      return data.items as SmartGroceryItem[];
-    }
-
-    return null;
+    return {
+      items: data.items as SmartGroceryItem[],
+      displayNameMap: (data.displayNameMap as Record<string, string>) || {},
+    };
   } catch (error) {
     console.error("Smart combine failed, falling back to naive combine:", error);
-    return null;
+    return fallbackResult;
   }
 }
 
 export function generatePlainText(
-  groupedItems: Map<GroceryCategory, CombinedGroceryItem[]>
+  groupedItems: Map<GroceryCategory, (CombinedGroceryItem | SmartGroceryItem)[]>
 ): string {
   const lines: string[] = [];
   for (const [category, items] of groupedItems) {
@@ -956,4 +934,38 @@ export function downloadCSV(csvContent: string, filename: string): void {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+export function detectCategory(name: string): GroceryCategory {
+  const normalized = normalizeIngredientName(name);
+  return CATEGORY_OVERRIDES[normalized] ?? "other";
+}
+
+export function parseFractionToDecimal(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  // Pure decimal or integer: "2.5", "3"
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    return parseFloat(trimmed);
+  }
+
+  // Pure fraction: "1/2"
+  const fractionMatch = trimmed.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (fractionMatch) {
+    const num = parseInt(fractionMatch[1]);
+    const den = parseInt(fractionMatch[2]);
+    return den === 0 ? undefined : num / den;
+  }
+
+  // Mixed number: "1 1/2"
+  const mixedMatch = trimmed.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (mixedMatch) {
+    const whole = parseInt(mixedMatch[1]);
+    const num = parseInt(mixedMatch[2]);
+    const den = parseInt(mixedMatch[3]);
+    return den === 0 ? undefined : whole + num / den;
+  }
+
+  return undefined;
 }

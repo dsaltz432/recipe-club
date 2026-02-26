@@ -4,8 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { RecipeIngredient, RecipeContent, CombinedGroceryItem, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
-import { combineIngredients, groupByCategory, filterPantryItems, filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
+import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
+import { combineIngredients, groupByCategory, filterPantryItems, filterSmartPantryItems, normalizeIngredientName, normalizeUnit, CATEGORY_ORDER } from "@/lib/groceryList";
 import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
@@ -25,6 +25,8 @@ interface GroceryListSectionProps {
   onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemoveItem?: (itemName: string) => void;
   onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
+  displayNameMap?: Record<string, string>;
+  combineError?: string | null;
 }
 
 function groupSmartByCategory(
@@ -54,6 +56,8 @@ const GroceryListSection = ({
   onEditItem,
   onRemoveItem,
   onAddItem,
+  displayNameMap,
+  combineError,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [showExcluded, setShowExcluded] = useState(false);
@@ -138,7 +142,7 @@ const GroceryListSection = ({
           </div>
           {hasAnyIngredients && (
             <GroceryExportMenu
-              items={filteredItems}
+              items={filteredSmartItems || filteredItems}
               eventName={eventName}
             />
           )}
@@ -246,7 +250,7 @@ const GroceryListSection = ({
                 </>
               )}
 
-              {!isCombining && !smartGrouped && (
+              {!isCombining && !smartGrouped && !combineError && (
                 <>
                   {Array.from(groupedItems.entries()).map(([category, items]) => (
                     <GroceryCategoryGroup
@@ -260,21 +264,34 @@ const GroceryListSection = ({
                   ))}
                 </>
               )}
+
+              {!isCombining && !smartGrouped && combineError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-md border border-red-200">
+                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                  <p className="text-sm text-red-700">
+                    Failed to combine ingredients: {combineError}
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             {recipesWithIngredients.map((recipe) => {
               const recipeIngs = ingredientsByRecipe.get(recipe.id)!;
-              const recipeItems: CombinedGroceryItem[] = recipeIngs.map((ing) => ({
-                name: ing.name,
-                totalQuantity: ing.quantity ?? undefined,
-                unit: ing.unit ?? undefined,
-                category: ing.category,
-                sourceRecipes: [recipe.name],
-              }));
+              const recipeItems: SmartGroceryItem[] = recipeIngs.map((ing) => {
+                const normalized = normalizeIngredientName(ing.name);
+                return {
+                  name: normalized,
+                  displayName: displayNameMap?.[ing.name] ?? normalized,
+                  totalQuantity: ing.quantity ?? undefined,
+                  unit: normalizeUnit(ing.unit),
+                  category: ing.category,
+                  sourceRecipes: [recipe.name],
+                };
+              });
               const filteredRecipeItems = pantryItems.length > 0
-                ? filterPantryItems(recipeItems, pantryItems)
+                ? filterSmartPantryItems(recipeItems, pantryItems)
                 : recipeItems;
-              const recipeGrouped = groupByCategory(filteredRecipeItems);
+              const recipeGrouped = groupSmartByCategory(filteredRecipeItems);
 
               return (
                 <TabsContent key={recipe.id} value={recipe.id}>

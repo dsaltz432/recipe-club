@@ -81,24 +81,25 @@ describe("combine-ingredients edge function", () => {
     expect(data).toMatchObject({ success: true, skipped: true });
   });
 
-  it("returns {success:true, items:[]} when preCombined is empty", async () => {
+  it("returns {success:true, items:[], displayNameMap:{}} when preCombined is empty", async () => {
     const req = createEdgeRequest({ preCombined: [] });
     const { data } = await parseResponse(await handler(req));
 
-    expect(data).toEqual({ success: true, items: [] });
+    expect(data).toEqual({ success: true, items: [], displayNameMap: {} });
   });
 
-  it("returns {success:true, items:[]} when preCombined is null", async () => {
+  it("returns {success:true, items:[], displayNameMap:{}} when preCombined is null", async () => {
     const req = createEdgeRequest({ preCombined: null });
     const { data } = await parseResponse(await handler(req));
 
-    expect(data).toEqual({ success: true, items: [] });
+    expect(data).toEqual({ success: true, items: [], displayNameMap: {} });
   });
 
   it("returns parsed items from a successful AI response", async () => {
     const aiItems = [
       {
         name: "broccoli",
+        displayName: "broccoli",
         totalQuantity: 3,
         unit: "head",
         category: "produce",
@@ -107,7 +108,7 @@ describe("combine-ingredients edge function", () => {
     ];
 
     const mockFetch = vi.fn().mockResolvedValue(
-      createAnthropicResponse(JSON.stringify(aiItems)),
+      createAnthropicResponse(JSON.stringify({ items: aiItems, displayNameMap: {} })),
     );
     globalThis.fetch = mockFetch;
 
@@ -132,7 +133,7 @@ describe("combine-ingredients edge function", () => {
 
     const { data } = await parseResponse(await handler(req));
 
-    expect(data).toEqual({ success: true, items: aiItems });
+    expect(data).toEqual({ success: true, items: aiItems, displayNameMap: {} });
     expect(mockFetch).toHaveBeenCalledWith(
       "https://api.anthropic.com/v1/messages",
       expect.objectContaining({ method: "POST" }),
@@ -140,8 +141,8 @@ describe("combine-ingredients edge function", () => {
   });
 
   it("returns items when AI response wraps JSON in markdown code block", async () => {
-    const aiItems = [{ name: "garlic", totalQuantity: 5, unit: "clove", category: "produce", sourceRecipes: ["R1"] }];
-    const wrappedContent = "```json\n" + JSON.stringify(aiItems) + "\n```";
+    const aiItems = [{ name: "garlic", displayName: "garlic", totalQuantity: 5, unit: "clove", category: "produce", sourceRecipes: ["R1"] }];
+    const wrappedContent = "```json\n" + JSON.stringify({ items: aiItems, displayNameMap: {} }) + "\n```";
 
     const mockFetch = vi.fn().mockResolvedValue(
       createAnthropicResponse(wrappedContent),
@@ -153,7 +154,7 @@ describe("combine-ingredients edge function", () => {
     });
 
     const { data } = await parseResponse(await handler(req));
-    expect(data).toEqual({ success: true, items: aiItems });
+    expect(data).toEqual({ success: true, items: aiItems, displayNameMap: {} });
   });
 
   it("returns 500 when AI API responds with non-ok status", async () => {
@@ -209,11 +210,11 @@ describe("combine-ingredients edge function", () => {
   it("falls back to skipped when AI drops an ingredient", async () => {
     // AI returns only "garlic" but input had "garlic" + "onion"
     const aiItems = [
-      { name: "garlic", totalQuantity: 5, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
+      { name: "garlic", displayName: "garlic", totalQuantity: 5, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
     ];
 
     globalThis.fetch = vi.fn().mockResolvedValue(
-      createAnthropicResponse(JSON.stringify(aiItems)),
+      createAnthropicResponse(JSON.stringify({ items: aiItems, displayNameMap: {} })),
     );
 
     const req = createEdgeRequest({
@@ -233,11 +234,11 @@ describe("combine-ingredients edge function", () => {
   it("allows semantic merges where one name contains the other", async () => {
     // "broccoli floret" merged into "broccoli" is OK (substring match)
     const aiItems = [
-      { name: "broccoli", totalQuantity: 3, unit: "head", category: "produce", sourceRecipes: ["R1", "R2"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 3, unit: "head", category: "produce", sourceRecipes: ["R1", "R2"] },
     ];
 
     globalThis.fetch = vi.fn().mockResolvedValue(
-      createAnthropicResponse(JSON.stringify(aiItems)),
+      createAnthropicResponse(JSON.stringify({ items: aiItems, displayNameMap: {} })),
     );
 
     const req = createEdgeRequest({
@@ -248,7 +249,7 @@ describe("combine-ingredients edge function", () => {
     });
 
     const { data } = await parseResponse(await handler(req));
-    expect(data).toEqual({ success: true, items: aiItems });
+    expect(data).toEqual({ success: true, items: aiItems, displayNameMap: {} });
   });
 
   it("returns 'Unknown error' when a non-Error value is thrown", async () => {

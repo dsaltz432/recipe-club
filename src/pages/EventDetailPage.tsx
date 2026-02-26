@@ -63,15 +63,18 @@ import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
+import { cn } from "@/lib/utils";
 import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 // import CookModeSection from "@/components/recipes/CookModeSection"; // Cook Mode disabled
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
-import { smartCombineIngredients } from "@/lib/groceryList";
+import { smartCombineIngredients, parseFractionToDecimal } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache, deleteGroceryCache } from "@/lib/groceryCache";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
+import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
+import IngredientFormRows, { createBlankRow, type IngredientRow } from "@/components/recipes/IngredientFormRows";
 
 interface EventData {
   eventId: string;
@@ -101,6 +104,8 @@ const EventDetailPage = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [recipeName, setRecipeName] = useState("");
   const [recipeUrl, setRecipeUrl] = useState("");
+  const [addRecipeInputMode, setAddRecipeInputMode] = useState<"url" | "upload" | "manual">("url");
+  const [addRecipeIngredientRows, setAddRecipeIngredientRows] = useState<IngredientRow[]>([createBlankRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingRecipeImage, setIsUploadingRecipeImage] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState("");
@@ -156,10 +161,15 @@ const EventDetailPage = () => {
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
   const [isCombining, setIsCombining] = useState(false);
+  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
+  const [combineError, setCombineError] = useState<string | null>(null);
 
   // Pantry state
   const [pantryItems, setPantryItems] = useState<string[]>([]);
   const [showPantryDialog, setShowPantryDialog] = useState(false);
+
+  // Edit ingredients state
+  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
 
   // Parse progress step definitions
   const parseSteps = [
@@ -420,26 +430,33 @@ const EventDetailPage = () => {
     const parsedRecipes = recipes.filter((r) => currentContentMap[r.id]?.status === "completed");
     if (parsedRecipes.length < 2) {
       setSmartGroceryItems(null);
+      setCombineError(null);
       return;
     }
 
     setIsCombining(true);
+    setCombineError(null);
     try {
       const recipeNameMap: Record<string, string> = {};
       for (const r of recipes) {
         recipeNameMap[r.id] = r.name;
       }
-      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
-      setSmartGroceryItems(result);
+      // Collect unique per-recipe ingredient names for displayNameMap
+      const perRecipeNames = [...new Set(currentIngredients.map((i) => i.name))];
+      const result = await smartCombineIngredients(currentIngredients, recipeNameMap, perRecipeNames);
+      setSmartGroceryItems(result.items);
+      setDisplayNameMap(result.displayNameMap);
 
       // Persist to cache
       const eid = forEventId || eventId;
-      if (result && eid) {
+      if (eid) {
         const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
-        saveGroceryCache("event", eid, user!.id, result, sortedRecipeIds);
+        saveGroceryCache("event", eid, user!.id, result.items, sortedRecipeIds, result.displayNameMap);
       }
-    } catch {
+    } catch (err) {
+      console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
+      setCombineError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsCombining(false);
     }
@@ -532,6 +549,7 @@ const EventDetailPage = () => {
             currentParsedIds.every((id, i) => id === cachedIds[i])
           ) {
             setSmartGroceryItems(cached.items);
+            setDisplayNameMap(cached.displayNameMap ?? {});
             return;
           }
         }
@@ -608,6 +626,20 @@ const EventDetailPage = () => {
     }
   };
 
+  const handleAddRecipeInputModeChange = (mode: "url" | "upload" | "manual") => {
+    setAddRecipeInputMode(mode);
+    if (mode !== "url" && mode !== "upload") setRecipeUrl("");
+    if (mode !== "manual") setAddRecipeIngredientRows([createBlankRow()]);
+  };
+
+  const canSubmitRecipe = () => {
+    if (!recipeName.trim() || isSubmitting) return false;
+    if (addRecipeInputMode === "url" && (!recipeUrl.trim() || !isValidUrl(recipeUrl))) return false;
+    if (addRecipeInputMode === "upload" && (!recipeUrl.trim() || !isValidUrl(recipeUrl))) return false;
+    if (addRecipeInputMode === "manual" && !addRecipeIngredientRows.some((r) => r.name.trim())) return false;
+    return true;
+  };
+
   const handleSubmitRecipe = async () => {
     if (!user?.id || !event) {
       return;
@@ -629,7 +661,7 @@ const EventDetailPage = () => {
         .from("recipes")
         .insert({
           name: recipeName.trim(),
-          url: recipeUrl.trim() || null,
+          url: addRecipeInputMode === "manual" ? null : (recipeUrl.trim() || null),
           event_id: event.eventId,
           ingredient_id: event.ingredientId,
           created_by: user.id,
@@ -643,18 +675,35 @@ const EventDetailPage = () => {
       setPendingRecipeId(newRecipeId);
 
       setIsSubmitting(false);
-      setParseStep("parsing");
 
       const savedRecipeName = recipeName.trim();
-      const savedRecipeUrl = recipeUrl.trim();
+      const savedRecipeUrl = addRecipeInputMode === "manual" ? "" : recipeUrl.trim();
 
-      try {
-        const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: newRecipeId, recipeUrl: savedRecipeUrl, recipeName: savedRecipeName },
-        });
+      if (addRecipeInputMode === "manual") {
+        // Manual mode: save ingredients directly, skip parsing
+        setParseStep("parsing");
+        const ingredientData = addRecipeIngredientRows
+          .filter((r) => r.name.trim())
+          .map((r, i) => ({
+            name: r.name.trim(),
+            quantity: parseFractionToDecimal(r.quantity) ?? null,
+            unit: r.unit.trim() || null,
+            category: r.category,
+            sort_order: i,
+          }));
 
-        if (parseError) throw parseError;
-        if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
+        if (ingredientData.length > 0) {
+          const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+            p_recipe_id: newRecipeId,
+            p_ingredients: ingredientData,
+          });
+          if (rpcError) throw rpcError;
+
+          await supabase.from("recipe_content").insert({
+            recipe_id: newRecipeId,
+            status: "completed",
+          });
+        }
 
         // Loading step: reload event and grocery data
         setParseStep("loading");
@@ -663,7 +712,6 @@ const EventDetailPage = () => {
         const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
         const groceryData = await loadGroceryData(recipeIds);
 
-        // Combining step (only if 2+ parsed recipes)
         if (willCombine && groceryData) {
           setParseStep("combining");
           const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
@@ -671,28 +719,74 @@ const EventDetailPage = () => {
           await new Promise(resolve => setTimeout(resolve, 200));
         }
 
-        // Notifying step: send email notification to club members
         setParseStep("notifying");
         await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Show "done" state with all checkmarks for 1.5s before closing
         setParseStep("done");
         await new Promise(resolve => setTimeout(resolve, 2500));
 
-        // Success: close dialog, reset state
         setParseStatus("idle");
         setParseError(null);
         setPendingRecipeId(null);
         setRecipeName("");
         setRecipeUrl("");
+        setAddRecipeInputMode("url");
+        setAddRecipeIngredientRows([createBlankRow()]);
         setShowAddForm(false);
         setParseStep("saving");
-      } catch (error) {
-        console.error("Error parsing recipe:", error);
-        const msg = error instanceof Error ? error.message : "Failed to parse recipe";
-        setParseStatus("failed");
-        setParseError(msg);
+      } else {
+        // URL/Upload mode: parse via edge function
+        setParseStep("parsing");
+
+        try {
+          const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
+            body: { recipeId: newRecipeId, recipeUrl: savedRecipeUrl, recipeName: savedRecipeName },
+          });
+
+          if (parseError) throw parseError;
+          if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
+
+          // Loading step: reload event and grocery data
+          setParseStep("loading");
+          await loadEventData();
+
+          const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
+          const groceryData = await loadGroceryData(recipeIds);
+
+          // Combining step (only if 2+ parsed recipes)
+          if (willCombine && groceryData) {
+            setParseStep("combining");
+            const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
+            await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+
+          // Notifying step: send email notification to club members
+          setParseStep("notifying");
+          await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          // Show "done" state with all checkmarks for 1.5s before closing
+          setParseStep("done");
+          await new Promise(resolve => setTimeout(resolve, 2500));
+
+          // Success: close dialog, reset state
+          setParseStatus("idle");
+          setParseError(null);
+          setPendingRecipeId(null);
+          setRecipeName("");
+          setRecipeUrl("");
+          setAddRecipeInputMode("url");
+          setAddRecipeIngredientRows([createBlankRow()]);
+          setShowAddForm(false);
+          setParseStep("saving");
+        } catch (error) {
+          console.error("Error parsing recipe:", error);
+          const msg = error instanceof Error ? error.message : "Failed to parse recipe";
+          setParseStatus("failed");
+          setParseError(msg);
+        }
       }
     } catch (error: unknown) {
       console.error("Error saving recipe:", error);
@@ -709,6 +803,8 @@ const EventDetailPage = () => {
     setParseStep("saving");
     setRecipeName("");
     setRecipeUrl("");
+    setAddRecipeInputMode("url");
+    setAddRecipeIngredientRows([createBlankRow()]);
     setShowAddForm(false);
     toast.success("Recipe added (parsing skipped)");
     loadEventData();
@@ -1313,6 +1409,7 @@ const EventDetailPage = () => {
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={handleRateRecipe}
+              onEditIngredients={(recipe) => setEditIngredientsRecipe({ id: recipe.id, name: recipe.name })}
             />
           </TabsContent>
 
@@ -1328,6 +1425,8 @@ const EventDetailPage = () => {
                 pantryItems={pantryItems}
                 smartGroceryItems={smartGroceryItems}
                 isCombining={isCombining}
+                displayNameMap={displayNameMap}
+                combineError={combineError}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
@@ -1378,6 +1477,8 @@ const EventDetailPage = () => {
               setShowAddForm(false);
               setRecipeName("");
               setRecipeUrl("");
+              setAddRecipeInputMode("url");
+              setAddRecipeIngredientRows([createBlankRow()]);
               setParseStatus("idle");
               setParseError(null);
               setPendingRecipeId(null);
@@ -1388,6 +1489,8 @@ const EventDetailPage = () => {
             setShowAddForm(false);
             setRecipeName("");
             setRecipeUrl("");
+            setAddRecipeInputMode("url");
+            setAddRecipeIngredientRows([createBlankRow()]);
             setParseStatus("idle");
             setParseError(null);
             setPendingRecipeId(null);
@@ -1395,7 +1498,10 @@ const EventDetailPage = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className={cn(
+          "max-h-[85vh] overflow-y-auto",
+          addRecipeInputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
+        )}>
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
               Add a Recipe
@@ -1446,52 +1552,108 @@ const EventDetailPage = () => {
                   />
                 </div>
 
+                {/* Ingredient source mode selector */}
                 <div className="space-y-2">
-                  <Label htmlFor="recipe-url">Recipe URL</Label>
-                  <div className="flex gap-2">
+                  <Label>Ingredient Source</Label>
+                  <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+                    <button
+                      className={cn(
+                        "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                        addRecipeInputMode === "url" && "bg-background text-foreground shadow-sm"
+                      )}
+                      onClick={() => handleAddRecipeInputModeChange("url")}
+                    >
+                      Enter URL
+                    </button>
+                    <button
+                      className={cn(
+                        "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                        addRecipeInputMode === "upload" && "bg-background text-foreground shadow-sm"
+                      )}
+                      onClick={() => handleAddRecipeInputModeChange("upload")}
+                    >
+                      Upload File
+                    </button>
+                    <button
+                      className={cn(
+                        "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                        addRecipeInputMode === "manual" && "bg-background text-foreground shadow-sm"
+                      )}
+                      onClick={() => handleAddRecipeInputModeChange("manual")}
+                    >
+                      Enter Manually
+                    </button>
+                  </div>
+                </div>
+
+                {/* URL mode */}
+                {addRecipeInputMode === "url" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-url">Recipe URL *</Label>
                     <Input
                       id="recipe-url"
                       type="url"
                       value={recipeUrl}
                       onChange={(e) => setRecipeUrl(e.target.value)}
-                      placeholder="https://... or upload a file"
-                      className={`flex-1 ${recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}`}
+                      placeholder="https://..."
+                      className={recipeUrl.trim() && !isValidUrl(recipeUrl) ? "border-red-500" : ""}
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => recipeImageInputRef.current?.click()}
-                      disabled={isUploadingRecipeImage}
-                      className="shrink-0"
-                      aria-label="Upload photo or PDF"
-                    >
-                      {isUploadingRecipeImage ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                          <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-1" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                    <input
-                      ref={recipeImageInputRef}
-                      type="file"
-                      accept="image/*,.pdf,application/pdf"
-                      onChange={handleRecipeImageUpload}
-                      className="hidden"
-                    />
+                    {recipeUrl.trim() && !isValidUrl(recipeUrl) && (
+                      <p className="text-sm text-red-500">URL must start with http:// or https://</p>
+                    )}
                   </div>
-                  {recipeUrl.trim() && !isValidUrl(recipeUrl) && (
-                    <p className="text-sm text-red-500">URL must start with http:// or https://</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Enter a URL or upload a file (max 5MB)
-                  </p>
-                </div>
+                )}
+
+                {/* Upload mode */}
+                {addRecipeInputMode === "upload" && (
+                  <div className="space-y-2">
+                    <Label>Upload Photo or PDF *</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="url"
+                        value={recipeUrl}
+                        placeholder="File URL will appear here..."
+                        readOnly
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => recipeImageInputRef.current?.click()}
+                        disabled={isUploadingRecipeImage}
+                        className="shrink-0"
+                        aria-label="Upload photo or PDF"
+                      >
+                        {isUploadingRecipeImage ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-1" />
+                            Upload
+                          </>
+                        )}
+                      </Button>
+                      <input
+                        ref={recipeImageInputRef}
+                        type="file"
+                        accept="image/*,.pdf,application/pdf"
+                        onChange={handleRecipeImageUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual mode */}
+                {addRecipeInputMode === "manual" && (
+                  <div className="space-y-2">
+                    <Label>Ingredients *</Label>
+                    <IngredientFormRows rows={addRecipeIngredientRows} onRowsChange={setAddRecipeIngredientRows} />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2">
@@ -1501,6 +1663,8 @@ const EventDetailPage = () => {
                     setShowAddForm(false);
                     setRecipeName("");
                     setRecipeUrl("");
+                    setAddRecipeInputMode("url");
+                    setAddRecipeIngredientRows([createBlankRow()]);
                   }}
                   disabled={isSubmitting}
                 >
@@ -1508,7 +1672,7 @@ const EventDetailPage = () => {
                 </Button>
                 <Button
                   onClick={handleSubmitRecipe}
-                  disabled={isSubmitting || !recipeName.trim() || (!!recipeUrl.trim() && !isValidUrl(recipeUrl))}
+                  disabled={!canSubmitRecipe()}
                   className="bg-purple hover:bg-purple-dark"
                 >
                   Add Recipe
@@ -1777,6 +1941,29 @@ const EventDetailPage = () => {
           onOpenChange={setShowPantryDialog}
           userId={user.id}
           onPantryChange={handlePantryChange}
+        />
+      )}
+
+      {/* Edit Ingredients Dialog */}
+      {editIngredientsRecipe && user?.id && (
+        <EditRecipeIngredientsDialog
+          open={!!editIngredientsRecipe}
+          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
+          recipeId={editIngredientsRecipe.id}
+          recipeName={editIngredientsRecipe.name}
+          ingredients={recipeIngredients.filter((i) => i.recipeId === editIngredientsRecipe.id)}
+          onSaved={async () => {
+            setEditIngredientsRecipe(null);
+            const recipeIds = event?.recipesWithNotes.map((r) => r.recipe.id) || [];
+            if (recipeIds.length > 0) {
+              const groceryData = await loadGroceryData(recipeIds);
+              if (groceryData) {
+                const allRecipes = event!.recipesWithNotes.map((r) => r.recipe);
+                await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
+              }
+            }
+          }}
+          cacheContext={eventId ? { type: "event", id: eventId, userId: user.id } : undefined}
         />
       )}
     </div>

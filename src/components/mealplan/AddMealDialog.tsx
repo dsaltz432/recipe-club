@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Check, Loader2, Search, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
+import { parseFractionToDecimal } from "@/lib/groceryList";
+import IngredientFormRows, { createBlankRow, type IngredientRow } from "@/components/recipes/IngredientFormRows";
 
 interface RecipeResult {
   id: string;
@@ -29,7 +31,10 @@ interface AddMealDialogProps {
   mealType: string;
   onAddCustomMeal: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal: (recipes: Array<{ id: string; name: string; url?: string }>) => void;
+  onAddManualMeal?: (name: string, ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>) => void;
 }
+
+type CustomInputMode = "url" | "upload" | "manual";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -44,10 +49,13 @@ const AddMealDialog = ({
   mealType,
   onAddCustomMeal,
   onAddRecipeMeal,
+  onAddManualMeal,
 }: AddMealDialogProps) => {
   const [activeTab, setActiveTab] = useState<"custom" | "recipes">("custom");
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
+  const [customInputMode, setCustomInputMode] = useState<CustomInputMode>("url");
+  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([createBlankRow()]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<RecipeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -61,11 +69,19 @@ const AddMealDialog = ({
     setActiveTab("custom");
     setName("");
     setUrl("");
+    setCustomInputMode("url");
+    setIngredientRows([createBlankRow()]);
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
     setSelectedRecipes([]);
     setIsUploadingFile(false);
+  };
+
+  const handleCustomInputModeChange = (mode: CustomInputMode) => {
+    setCustomInputMode(mode);
+    if (mode !== "url" && mode !== "upload") setUrl("");
+    if (mode !== "manual") setIngredientRows([createBlankRow()]);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,8 +158,29 @@ const AddMealDialog = ({
   }, [searchQuery]);
 
   const handleCustomSubmit = () => {
-    onAddCustomMeal(name.trim(), url.trim() || undefined, !!url.trim());
+    if (customInputMode === "manual" && onAddManualMeal) {
+      const ingredientData = ingredientRows
+        .filter((r) => r.name.trim())
+        .map((r, i) => ({
+          name: r.name.trim(),
+          quantity: parseFractionToDecimal(r.quantity) ?? null,
+          unit: r.unit.trim() || null,
+          category: r.category,
+          sort_order: i,
+        }));
+      onAddManualMeal(name.trim(), ingredientData);
+    } else {
+      onAddCustomMeal(name.trim(), url.trim() || undefined, !!url.trim());
+    }
     handleClose();
+  };
+
+  const canSubmitCustom = () => {
+    if (!name.trim()) return false;
+    if (customInputMode === "url" && (!url.trim() || !isValidUrl(url))) return false;
+    if (customInputMode === "upload" && (!url.trim() || !isValidUrl(url))) return false;
+    if (customInputMode === "manual" && !ingredientRows.some((r) => r.name.trim())) return false;
+    return true;
   };
 
   const toggleRecipeSelection = (recipe: RecipeResult) => {
@@ -169,7 +206,10 @@ const AddMealDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => handleClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={cn(
+        "max-h-[85vh] overflow-y-auto",
+        activeTab === "custom" && customInputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
+      )}>
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Add Meal
@@ -212,9 +252,46 @@ const AddMealDialog = ({
               />
             </div>
 
+            {/* Ingredient source mode selector */}
             <div className="space-y-2">
-              <Label htmlFor="meal-url">Recipe URL or Photo/PDF</Label>
-              <div className="flex gap-2">
+              <Label>Ingredient Source</Label>
+              <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+                <button
+                  className={cn(
+                    "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                    customInputMode === "url" && "bg-background text-foreground shadow-sm"
+                  )}
+                  onClick={() => handleCustomInputModeChange("url")}
+                >
+                  Enter URL
+                </button>
+                <button
+                  className={cn(
+                    "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                    customInputMode === "upload" && "bg-background text-foreground shadow-sm"
+                  )}
+                  onClick={() => handleCustomInputModeChange("upload")}
+                >
+                  Upload File
+                </button>
+                {onAddManualMeal && (
+                  <button
+                    className={cn(
+                      "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                      customInputMode === "manual" && "bg-background text-foreground shadow-sm"
+                    )}
+                    onClick={() => handleCustomInputModeChange("manual")}
+                  >
+                    Enter Manually
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* URL mode */}
+            {customInputMode === "url" && (
+              <div className="space-y-2">
+                <Label htmlFor="meal-url">Recipe URL *</Label>
                 <Input
                   id="meal-url"
                   type="url"
@@ -223,40 +300,64 @@ const AddMealDialog = ({
                   placeholder="https://..."
                   className={url.trim() && !isValidUrl(url) ? "border-red-500" : ""}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingFile}
-                  className="shrink-0"
-                  aria-label="Upload photo or PDF"
-                >
-                  {isUploadingFile ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                      <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-1" />
-                      Upload
-                    </>
-                  )}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf,application/pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
+                {url.trim() && !isValidUrl(url) && (
+                  <p className="text-sm text-red-500">
+                    URL must start with http:// or https://
+                  </p>
+                )}
               </div>
-              {url.trim() && !isValidUrl(url) && (
-                <p className="text-sm text-red-500">
-                  URL must start with http:// or https://
-                </p>
-              )}
-            </div>
+            )}
+
+            {/* Upload mode */}
+            {customInputMode === "upload" && (
+              <div className="space-y-2">
+                <Label>Upload Photo or PDF *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    value={url}
+                    placeholder="File URL will appear here..."
+                    readOnly
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingFile}
+                    className="shrink-0"
+                    aria-label="Upload photo or PDF"
+                  >
+                    {isUploadingFile ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-1" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,.pdf,application/pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Manual mode */}
+            {customInputMode === "manual" && (
+              <div className="space-y-2">
+                <Label>Ingredients *</Label>
+                <IngredientFormRows rows={ingredientRows} onRowsChange={setIngredientRows} />
+              </div>
+            )}
 
             <div className="flex justify-end gap-2">
               <Button
@@ -267,7 +368,7 @@ const AddMealDialog = ({
               </Button>
               <Button
                 onClick={handleCustomSubmit}
-                disabled={!name.trim() || (!!url.trim() && !isValidUrl(url))}
+                disabled={!canSubmitCustom()}
                 className="bg-purple hover:bg-purple-dark"
               >
                 Add to Meal

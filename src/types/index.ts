@@ -132,6 +132,7 @@ export interface PantryItem {
 
 export interface SmartGroceryItem {
   name: string;
+  displayName: string;
   totalQuantity?: number;
   unit?: string;
   category: GroceryCategory;

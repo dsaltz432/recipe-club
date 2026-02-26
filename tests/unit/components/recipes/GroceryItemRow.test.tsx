@@ -52,7 +52,7 @@ describe("GroceryItemRow", () => {
 
     render(<GroceryItemRow item={item} />);
 
-    expect(screen.getByText("3 onions")).toBeInTheDocument();
+    expect(screen.getByText("3 onion")).toBeInTheDocument();
     expect(screen.getByText("Soup")).toBeInTheDocument();
     expect(screen.getByText("Salad")).toBeInTheDocument();
   });
@@ -60,6 +60,7 @@ describe("GroceryItemRow", () => {
   it("renders SmartGroceryItem with totalQuantity and unit", () => {
     const item: SmartGroceryItem = {
       name: "broccoli",
+      displayName: "broccoli",
       totalQuantity: 2,
       unit: "head",
       category: "produce",

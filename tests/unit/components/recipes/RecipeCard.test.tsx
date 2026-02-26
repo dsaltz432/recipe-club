@@ -951,3 +951,57 @@ describe("RecipeCard - Ingredients Section", () => {
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - Edit Ingredients", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit ingredients button when onEditIngredients is provided", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onEditIngredients={onEditIngredients} />);
+
+    expect(screen.getByLabelText("Edit ingredients")).toBeInTheDocument();
+  });
+
+  it("does not show edit ingredients button when onEditIngredients is not provided", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText("Edit ingredients")).not.toBeInTheDocument();
+  });
+
+  it("calls onEditIngredients with recipe when edit ingredients button is clicked", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onEditIngredients={onEditIngredients} />);
+
+    fireEvent.click(screen.getByLabelText("Edit ingredients"));
+
+    expect(onEditIngredients).toHaveBeenCalledWith(recipe);
+  });
+
+  it("shows edit ingredients alongside edit and delete buttons", () => {
+    const onEditIngredients = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(
+      <RecipeCard
+        recipe={recipe}
+        onEditIngredients={onEditIngredients}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+
+    expect(screen.getByLabelText("Edit ingredients")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+  });
+});
