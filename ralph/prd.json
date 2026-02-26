@@ -127,7 +127,7 @@
         "npm run test:run passes (all tests green)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "tests/unit/lib/groceryList.test.ts is the largest test file. The combineIngredients describe block has ~90+ test cases spanning many hundreds of lines — delete the entire block. Keep tests for: decimalToFraction, parseFractionToDecimal, formatGroceryItem (SmartGroceryItem only), groupByCategory, filterSmartPantryItems, detectCategory, smartCombineIngredients, generateCSV, generatePlainText, downloadCSV, CATEGORY_ORDER/GROCERY_CATEGORIES. The smartCombineIngredients tests need to mock supabase.functions.invoke with the new rawIngredients format and { items, perRecipeItems } response. Remove any references to displayNameMap in these tests."
     },
     {

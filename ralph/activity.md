@@ -8,8 +8,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 5
-**Current Task:** US-005 complete
+**Tasks Completed:** 6
+**Current Task:** US-006 complete
 
 ---
 
@@ -172,5 +172,36 @@
 - Updating `SmartCombineResult` required cascading changes to `groceryCache.ts` (type, save, load) since callers pass the result through to cache — these changes were pulled forward from US-010 to keep the build passing
 - The `displayNameMap` was never destructured from cache results by callers (already cleaned up in US-004), so the cache type change was safe
 - No `displayNameMap` references remain in `src/` after this story
+
+---
+
+## 2026-02-26 10:00 — US-006: Update groceryList.ts tests for pipeline removal
+
+### What was implemented
+- Removed all `combineIngredients` tests (~2400 lines including "real recipe data" sub-describes with ~90+ test cases)
+- Removed all `normalizeIngredientName` tests (~170 lines)
+- Removed all `normalizeUnit` tests (~50 lines)
+- Removed all `filterPantryItems` (non-smart version) tests (~60 lines)
+- Removed imports of deleted functions: `normalizeUnit`, `normalizeIngredientName`, `combineIngredients`, `filterPantryItems`
+- Updated `filterSmartPantryItems` tests: replaced normalization test ("Onions" matching "onion") with whitespace trimming test (simple toLowerCase matching)
+- Updated `detectCategory` tests: replaced normalization test ("eggs" → "egg") with case/whitespace tests ("Olive Oil", "  egg  ", "TOFU")
+- Rewrote `smartCombineIngredients` tests: changed from `preCombined`/`displayNameMap`/`perRecipeNames` to `rawIngredients`/`perRecipeItems` format; fallback tests now expect throws instead of naive combine fallback
+- `formatGroceryItem`, `generateCSV`, `generatePlainText` tests already used SmartGroceryItem fixtures (done in US-002) — no changes needed
+
+### Files changed
+- `tests/unit/lib/groceryList.test.ts` (reduced from 3672 lines to ~640 lines)
+
+### Quality checks
+- Build: pass
+- Tests: pass (70 tests in groceryList.test.ts, 244 total in src/lib/)
+- Coverage: 100% statements/functions/lines on src/lib/ (99.63% branches — uncovered branch is `pluralizeUnit` fallback)
+- Lint: N/A (no source changes)
+
+### Learnings for future iterations
+- Test file went from 3672 to ~640 lines — the combineIngredients "real recipe data" section alone was ~1600 lines
+- `smartCombineIngredients` now throws on error/skipped instead of falling back to naive combine — tests updated from `expect(result.items.length).toBeGreaterThan(0)` to `rejects.toThrow()`
+- `detectCategory` with simple `toLowerCase().trim()` means "eggs" ≠ "egg" — the CATEGORY_OVERRIDES map keys are all singular, so only exact lowercase matches work now
+- `filterSmartPantryItems` with simple `toLowerCase().trim()` means "Onions" ≠ "onion" — pantry matching is now exact (case-insensitive, trimmed) without normalization
+- Other test files (GroceryListSection.test.tsx, MealPlanPage.test.tsx) still fail — those are addressed in US-008 and US-010
 
 ---
