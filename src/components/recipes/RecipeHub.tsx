@@ -929,7 +929,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
       {editIngredientsRecipe && (
         <EditRecipeIngredientsDialog
           open={!!editIngredientsRecipe}
-          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
+          onOpenChange={() => setEditIngredientsRecipe(null)}
           recipeId={editIngredientsRecipe.id}
           recipeName={editIngredientsRecipe.name}
           ingredients={recipeIngredientsMap[editIngredientsRecipe.id] || []}

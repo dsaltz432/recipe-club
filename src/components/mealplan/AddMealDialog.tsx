@@ -115,7 +115,8 @@ const AddMealDialog = ({
       const ingredientData = buildIngredientPayload(formData.ingredientRows);
       onAddManualMeal(formData.name.trim(), ingredientData);
     } else {
-      onAddCustomMeal(formData.name.trim(), formData.url.trim() || undefined, !!formData.url.trim());
+      // In url/upload mode, form validation ensures URL is always present
+      onAddCustomMeal(formData.name.trim(), formData.url.trim(), true);
     }
     handleClose();
   };

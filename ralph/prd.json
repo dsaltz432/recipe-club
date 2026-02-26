@@ -100,7 +100,7 @@
         "npm run lint passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Run npm run test:coverage and inspect the output. Current state before this PRD: all required directories are at 100% statement coverage, with minor branch gaps in AddMealDialog.tsx (line 118), MealPlanPage.tsx (line 460), and RecipeHub.tsx (line 932). After the changes from US-001/US-002, new branches may be introduced that need coverage. If any file in the required directories is below 100%, add or update tests to close the gap. The pre-commit hook enforces this automatically, so this story is a final safety net. Also run npm run build and npm run lint to confirm everything is clean."
     }
   ]

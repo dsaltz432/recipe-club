@@ -3921,5 +3921,76 @@ describe("MealPlanPage", () => {
 
       consoleSpy.mockRestore();
     });
+
+    it("skips ingredient save when addItemToPlan fails for manual meal", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock(null);
+        }
+        if (table === "recipes") {
+          return createMockQueryBuilder({
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: new Error("Insert failed"),
+            }),
+          });
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_content") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        if (table === "recipe_ingredients") {
+          return createMockQueryBuilder({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Meals")).toBeInTheDocument();
+      });
+
+      // Click an empty dinner slot
+      const slotButtons = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.includes("Dinner")
+      );
+      if (slotButtons.length > 0) {
+        fireEvent.click(slotButtons[0]);
+      }
+
+      // Fill meal name
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Manual Pasta" },
+      });
+
+      // Switch to manual mode
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Fill ingredient
+      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
+      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
+
+      // Submit
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      // addItemToPlan fails → shows error, rpc is NOT called
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to add meal");
+      });
+      expect(mockRpc).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
   });
 });

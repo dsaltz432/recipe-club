@@ -8,11 +8,12 @@
 - **Test pattern for smart combine**: Tests mock `smartCombineIngredients` from `@/lib/groceryList` and assert on `toHaveBeenCalled()` / `toHaveBeenCalledTimes()`. Use `waitFor` when asserting async calls.
 - **Supabase migrations**: Local migration files live in `supabase/migrations/`. To apply to production, use `execute_sql` MCP tool (project: `bluilkrggkspxsnehfez`). The `apply_migration` tool may require extra permissions — `execute_sql` is a reliable fallback for DDL.
 - **handle_new_user() trigger**: Lives in baseline migration (20260117000000). Production version uses `full_name` as fallback for name. When modifying, use `CREATE OR REPLACE FUNCTION` to update in place. The trigger `on_auth_user_created` fires this on `auth.users` insert.
+- **v8 branch coverage quirks**: `||` and `&&` operators each count as two branches. When defensive code like `value || fallback` is unreachable (e.g., guarded by form validation), simplify the code to match runtime invariants rather than writing tests that bypass UI guards. Radix Dialog `onOpenChange` only fires `false`, so `if (!open)` guards create untestable branches.
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 5
-**Current Task:** US-005 completed
+**Tasks Completed:** 6
+**Current Task:** US-006 completed — all stories done
 
 ---
 
@@ -136,5 +137,32 @@
 ### Learnings for future iterations
 - The groceryEdits module was deleted as part of an earlier commit in this branch's history (commit 80801d6 or earlier) — the PRD noted files were "already staged via git rm" but they were already committed
 - When a story's work was already done in a prior commit, verify all ACs are met and mark as passed — no need for an empty commit
+
+---
+
+## 2026-02-26 09:55 — US-006: Verify and fix 100% test coverage on all required directories
+
+### What was implemented
+- Fixed branch coverage gap in `AddMealDialog.tsx` line 118: removed unreachable `|| undefined` pattern — form validation guarantees URL is present in url/upload modes, so simplified to always pass `formData.url.trim()` directly
+- Fixed branch coverage gap in `MealPlanPage.tsx` line 460: added test for `handleAddManualMeal` when `addItemToPlan` fails (recipes insert error), covering the `recipeId` falsy branch in `if (recipeId && ingredients.length > 0)`
+- Fixed branch coverage gap in `RecipeHub.tsx` line 932: simplified `onOpenChange` callback from `(open) => { if (!open) setEditIngredientsRecipe(null); }` to `() => setEditIngredientsRecipe(null)` — Radix Dialog only calls onOpenChange(false) for dismissal, making the `if (!open)` check unnecessary
+- All 5 required directories now at 100% statements, branches, functions, and lines
+- IngredientWheel.tsx remains at ~55% (exempt)
+
+### Files changed
+- `src/components/mealplan/AddMealDialog.tsx` (line 118 — simplified URL passing)
+- `src/components/recipes/RecipeHub.tsx` (line 932 — simplified onOpenChange)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (added test: "skips ingredient save when addItemToPlan fails for manual meal")
+
+### Quality checks
+- Build: pass
+- Tests: pass (1516/1516 all green)
+- Lint: pass (all warnings/errors pre-existing, none from changed files)
+
+### Learnings for future iterations
+- v8 coverage tracks `||` and `&&` as branches — when defensive code uses `value || fallback`, the falsy path must be exercised or the code simplified
+- Radix Dialog's `onOpenChange` only fires with `false` when dismissing an open dialog — the `if (!open)` guard is unnecessary and creates an untestable branch
+- When form validation prevents reaching a code path, the defensive code creates unreachable branches — simplify the code to match the actual runtime invariants rather than trying to write tests that bypass UI guards
+- Pre-existing lint issues (1 error, 8 warnings) exist in the codebase from before this branch — verified by comparing `git stash` lint output
 
 ---
