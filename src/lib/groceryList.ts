@@ -1,4 +1,4 @@
-import type { RecipeIngredient, GroceryCategory, CombinedGroceryItem, SmartGroceryItem } from "@/types";
+import type { RecipeIngredient, GroceryCategory, SmartGroceryItem } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SmartCombineResult {
@@ -476,7 +476,7 @@ function convertToPreferredUnit(totalBase: number, family: Record<string, number
 export function combineIngredients(
   ingredients: RecipeIngredient[],
   recipeNameMap: Record<string, string>
-): CombinedGroceryItem[] {
+): SmartGroceryItem[] {
   // Group by normalized name only (not name + unit)
   const grouped = new Map<string, {
     items: Array<{ quantity?: number; unit: string; recipeName: string }>;
@@ -500,7 +500,7 @@ export function combineIngredients(
     }
   }
 
-  const results: CombinedGroceryItem[] = [];
+  const results: SmartGroceryItem[] = [];
 
   for (const [name, group] of grouped) {
     const sourceRecipes = [...new Set(group.items.map((i) => i.recipeName))];
@@ -669,6 +669,7 @@ export function combineIngredients(
           const preferred = convertToPreferredUnit(totalBase, usableFamily, upscaleThreshold);
           results.push({
             name,
+            displayName: name,
             totalQuantity: preferred.quantity,
             unit: preferred.unit,
             category: group.category,
@@ -677,6 +678,7 @@ export function combineIngredients(
         } else {
           results.push({
             name,
+            displayName: name,
             totalQuantity: quantity,
             unit: originalUnit,
             category: group.category,
@@ -687,6 +689,7 @@ export function combineIngredients(
         const preferred = convertToPreferredUnit(totalBase, usableFamily);
         results.push({
           name,
+          displayName: name,
           totalQuantity: preferred.quantity,
           unit: preferred.unit,
           category: group.category,
@@ -737,6 +740,7 @@ export function combineIngredients(
     for (const [unit, { total, hasQuantity }] of plainTotals) {
       results.push({
         name,
+        displayName: name,
         totalQuantity: hasQuantity ? total : undefined,
         unit: unit || undefined,
         category: group.category,
@@ -798,15 +802,14 @@ function pluralizeUnit(unit: string, quantity: number): string {
   return UNIT_PLURAL_MAP[unit] ?? unit;
 }
 
-export function formatGroceryItem(item: CombinedGroceryItem | SmartGroceryItem): string {
+export function formatGroceryItem(item: SmartGroceryItem): string {
   const parts: string[] = [];
   const qty = item.totalQuantity;
   if (qty != null) {
     parts.push(decimalToFraction(qty));
   }
 
-  // Use AI-provided displayName when available (SmartGroceryItem), otherwise fall back to name
-  const nameToDisplay = "displayName" in item && item.displayName ? item.displayName : item.name;
+  const nameToDisplay = item.displayName || item.name;
 
   const isNameFirst = item.unit != null && NAME_FIRST_UNITS.has(item.unit);
 
@@ -825,7 +828,7 @@ export function formatGroceryItem(item: CombinedGroceryItem | SmartGroceryItem):
 }
 
 export function generateCSV(
-  groupedItems: Map<GroceryCategory, (CombinedGroceryItem | SmartGroceryItem)[]>
+  groupedItems: Map<GroceryCategory, SmartGroceryItem[]>
 ): string {
   const rows: string[] = ["Category,Item,Quantity,Unit,Recipes"];
   for (const [category, items] of groupedItems) {
@@ -834,7 +837,7 @@ export function generateCSV(
       const qty = item.totalQuantity != null ? decimalToFraction(item.totalQuantity) : "";
       const unit = item.unit ?? "";
       const recipes = item.sourceRecipes.join("; ");
-      const itemName = "displayName" in item && item.displayName ? item.displayName : item.name;
+      const itemName = item.displayName || item.name;
       const escapedName = itemName.includes(",") ? `"${itemName}"` : itemName;
       const escapedRecipes = recipes.includes(",") ? `"${recipes}"` : recipes;
       rows.push(
@@ -846,9 +849,9 @@ export function generateCSV(
 }
 
 export function filterPantryItems(
-  items: CombinedGroceryItem[],
+  items: SmartGroceryItem[],
   pantryItems: string[]
-): CombinedGroceryItem[] {
+): SmartGroceryItem[] {
   const normalizedPantry = new Set(pantryItems.map(normalizeIngredientName));
   return items.filter((item) => !normalizedPantry.has(normalizeIngredientName(item.name)));
 }
@@ -911,7 +914,7 @@ export async function smartCombineIngredients(
 }
 
 export function generatePlainText(
-  groupedItems: Map<GroceryCategory, (CombinedGroceryItem | SmartGroceryItem)[]>
+  groupedItems: Map<GroceryCategory, SmartGroceryItem[]>
 ): string {
   const lines: string[] = [];
   for (const [category, items] of groupedItems) {

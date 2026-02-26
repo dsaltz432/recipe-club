@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, Check, X } from "lucide-react";
-import type { CombinedGroceryItem, SmartGroceryItem } from "@/types";
+import type { SmartGroceryItem } from "@/types";
 import { formatGroceryItem } from "@/lib/groceryList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ export interface GroceryItemEdit {
 }
 
 interface GroceryItemRowProps {
-  item: CombinedGroceryItem | SmartGroceryItem;
+  item: SmartGroceryItem;
   editable?: boolean;
   onEdit?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemove?: (itemName: string) => void;

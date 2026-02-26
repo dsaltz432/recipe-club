@@ -115,14 +115,6 @@ export interface RecipeIngredient {
   createdAt?: string;
 }
 
-export interface CombinedGroceryItem {
-  name: string;
-  totalQuantity?: number;
-  unit?: string;
-  category: GroceryCategory;
-  sourceRecipes: string[];
-}
-
 export interface PantryItem {
   id: string;
   userId: string;

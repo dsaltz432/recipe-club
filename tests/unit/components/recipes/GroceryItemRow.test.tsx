@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
-import type { CombinedGroceryItem, SmartGroceryItem } from "@/types";
+import type { SmartGroceryItem } from "@/types";
 
 // Mock supabase client (imported transitively by groceryList)
 vi.mock("@/integrations/supabase/client", () => ({
@@ -15,8 +15,9 @@ import GroceryItemRow from "@/components/recipes/GroceryItemRow";
 
 describe("GroceryItemRow", () => {
   it("renders item with quantity, unit, and name", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -30,8 +31,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("renders item without quantity", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "salt",
+      displayName: "salt",
       category: "spices",
       sourceRecipes: ["Soup"],
     };
@@ -43,8 +45,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("renders multiple source recipe badges", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "onion",
+      displayName: "onions",
       totalQuantity: 3,
       category: "produce",
       sourceRecipes: ["Soup", "Salad"],
@@ -52,7 +55,7 @@ describe("GroceryItemRow", () => {
 
     render(<GroceryItemRow item={item} />);
 
-    expect(screen.getByText("3 onion")).toBeInTheDocument();
+    expect(screen.getByText("3 onions")).toBeInTheDocument();
     expect(screen.getByText("Soup")).toBeInTheDocument();
     expect(screen.getByText("Salad")).toBeInTheDocument();
   });
@@ -75,8 +78,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("does not show edit/remove buttons when editable is false", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -90,8 +94,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("shows edit/remove buttons when editable is true", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -105,8 +110,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("switches to edit mode when edit button is clicked", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -125,8 +131,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("populates edit fields with current values", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -143,8 +150,9 @@ describe("GroceryItemRow", () => {
   });
 
   it("populates edit fields with empty values when item has no quantity/unit", () => {
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "salt",
+      displayName: "salt",
       category: "spices",
       sourceRecipes: ["Soup"],
     };
@@ -160,8 +168,9 @@ describe("GroceryItemRow", () => {
 
   it("calls onEdit with updated values when save is clicked", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -187,8 +196,9 @@ describe("GroceryItemRow", () => {
 
   it("saves edit on Enter key", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -210,8 +220,9 @@ describe("GroceryItemRow", () => {
 
   it("cancels edit on Cancel button click", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -231,8 +242,9 @@ describe("GroceryItemRow", () => {
 
   it("cancels edit on Escape key", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -250,8 +262,9 @@ describe("GroceryItemRow", () => {
 
   it("does not call onEdit when name is empty", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -269,8 +282,9 @@ describe("GroceryItemRow", () => {
 
   it("calls onRemove when remove button is clicked", () => {
     const onRemove = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",
@@ -286,8 +300,9 @@ describe("GroceryItemRow", () => {
 
   it("handles save with empty quantity and unit", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "salt",
+      displayName: "salt",
       category: "spices",
       sourceRecipes: ["Soup"],
     };
@@ -306,8 +321,9 @@ describe("GroceryItemRow", () => {
 
   it("handles non-Enter/Escape key presses without action", () => {
     const onEdit = vi.fn();
-    const item: CombinedGroceryItem = {
+    const item: SmartGroceryItem = {
       name: "flour",
+      displayName: "flour",
       totalQuantity: 2,
       unit: "cup",
       category: "pantry",

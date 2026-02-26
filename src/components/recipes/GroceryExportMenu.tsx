@@ -1,11 +1,11 @@
 import { Download, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CombinedGroceryItem, SmartGroceryItem } from "@/types";
+import type { SmartGroceryItem } from "@/types";
 import { generateCSV, generatePlainText, downloadCSV, groupByCategory } from "@/lib/groceryList";
 import { toast } from "sonner";
 
 interface GroceryExportMenuProps {
-  items: (CombinedGroceryItem | SmartGroceryItem)[];
+  items: SmartGroceryItem[];
   eventName: string;
 }
 

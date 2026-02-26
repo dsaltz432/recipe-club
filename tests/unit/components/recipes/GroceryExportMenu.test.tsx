@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
 import GroceryExportMenu from "@/components/recipes/GroceryExportMenu";
-import type { CombinedGroceryItem } from "@/types";
+import type { SmartGroceryItem } from "@/types";
 import { toast } from "sonner";
 
 // Mock supabase client
@@ -22,8 +22,8 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-const items: CombinedGroceryItem[] = [
-  { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Pasta"] },
+const items: SmartGroceryItem[] = [
+  { name: "flour", displayName: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Pasta"] },
 ];
 
 describe("GroceryExportMenu", () => {

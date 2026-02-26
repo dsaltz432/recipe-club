@@ -30,7 +30,7 @@ import {
   detectCategory,
   parseFractionToDecimal,
 } from "@/lib/groceryList";
-import type { RecipeIngredient, CombinedGroceryItem, SmartGroceryItem, GroceryCategory } from "@/types";
+import type { RecipeIngredient, SmartGroceryItem, GroceryCategory } from "@/types";
 import { createMockRecipeIngredient } from "@tests/utils";
 
 describe("groceryList", () => {
@@ -2759,7 +2759,7 @@ describe("groceryList", () => {
 
   describe("groupByCategory", () => {
     it("groups items by category in correct order", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "chicken", totalQuantity: 1, unit: "lb", category: "meat_seafood", sourceRecipes: ["Recipe A"] },
         { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Recipe A"] },
         { name: "tomato", totalQuantity: 3, category: "produce", sourceRecipes: ["Recipe B"] },
@@ -2774,7 +2774,7 @@ describe("groceryList", () => {
     });
 
     it("omits empty categories", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Recipe A"] },
       ];
 
@@ -2792,7 +2792,7 @@ describe("groceryList", () => {
 
   describe("formatGroceryItem", () => {
     it("formats item with quantity and unit", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "flour",
         totalQuantity: 2,
         unit: "cup",
@@ -2803,7 +2803,7 @@ describe("groceryList", () => {
     });
 
     it("formats item with fractional quantity as fraction", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "butter",
         totalQuantity: 1.5,
         unit: "tbsp",
@@ -2814,7 +2814,7 @@ describe("groceryList", () => {
     });
 
     it("formats item without quantity", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "salt",
         category: "spices",
         sourceRecipes: ["Recipe A"],
@@ -2822,28 +2822,14 @@ describe("groceryList", () => {
       expect(formatGroceryItem(item)).toBe("salt");
     });
 
-    it("uses name as-is for CombinedGroceryItem (no pluralization)", () => {
-      // CombinedGroceryItem has no displayName — name is used verbatim
+    it("falls back to name when displayName is empty", () => {
       expect(formatGroceryItem({
         name: "egg",
+        displayName: "",
         totalQuantity: 3,
         category: "dairy",
         sourceRecipes: ["Recipe A"],
-      } as CombinedGroceryItem)).toBe("3 egg");
-
-      expect(formatGroceryItem({
-        name: "onion",
-        totalQuantity: 4,
-        category: "produce",
-        sourceRecipes: ["Recipe A"],
-      } as CombinedGroceryItem)).toBe("4 onion");
-
-      expect(formatGroceryItem({
-        name: "tomato",
-        totalQuantity: 2,
-        category: "produce",
-        sourceRecipes: ["Recipe A"],
-      } as CombinedGroceryItem)).toBe("2 tomato");
+      })).toBe("3 egg");
     });
 
     it("uses displayName for SmartGroceryItem", () => {
@@ -3112,7 +3098,7 @@ describe("groceryList", () => {
         sourceRecipes: ["Recipe A"],
       })).toBe("2 tsp pepper");
 
-      // bell pepper as CombinedGroceryItem: no pluralization (no displayName)
+      // bell pepper as SmartGroceryItem: no pluralization (no displayName)
       expect(formatGroceryItem({
         name: "bell pepper",
         totalQuantity: 3,
@@ -3167,7 +3153,7 @@ describe("groceryList", () => {
     });
 
     it("formats item with unit but no quantity", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "olive oil",
         unit: "tbsp",
         category: "condiments",
@@ -3177,7 +3163,7 @@ describe("groceryList", () => {
     });
 
     it("formats integer quantities without fraction", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "flour",
         totalQuantity: 3.0,
         unit: "cup",
@@ -3188,7 +3174,7 @@ describe("groceryList", () => {
     });
 
     it("formats 0.25 as 1/4", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "vanilla",
         totalQuantity: 0.25,
         unit: "tsp",
@@ -3199,7 +3185,7 @@ describe("groceryList", () => {
     });
 
     it("formats 0.333 as 1/3", () => {
-      const item: CombinedGroceryItem = {
+      const item: SmartGroceryItem = {
         name: "sugar",
         totalQuantity: 0.333,
         unit: "cup",
@@ -3258,7 +3244,7 @@ describe("groceryList", () => {
 
   describe("generateCSV", () => {
     it("generates CSV with header and rows", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("produce", [
         { name: "tomato", totalQuantity: 3, category: "produce", sourceRecipes: ["Recipe A"] },
       ]);
@@ -3274,7 +3260,7 @@ describe("groceryList", () => {
     });
 
     it("handles items without quantity", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("spices", [
         { name: "salt", category: "spices", sourceRecipes: ["Recipe A"] },
       ]);
@@ -3285,7 +3271,7 @@ describe("groceryList", () => {
     });
 
     it("escapes item names with commas", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("other", [
         { name: "salt, pepper", category: "other", sourceRecipes: ["Recipe A"] },
       ]);
@@ -3296,7 +3282,7 @@ describe("groceryList", () => {
     });
 
     it("escapes recipe names with commas", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("other", [
         { name: "flour", totalQuantity: 1, unit: "cup", category: "other", sourceRecipes: ["Recipe A, The Best"] },
       ]);
@@ -3323,7 +3309,7 @@ describe("groceryList", () => {
     });
 
     it("uses fractions in quantity column", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("spices", [
         { name: "vanilla", totalQuantity: 0.25, unit: "tsp", category: "spices", sourceRecipes: ["Recipe A"] },
       ]);
@@ -3334,7 +3320,7 @@ describe("groceryList", () => {
     });
 
     it("uses mixed numbers in quantity column", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("dairy", [
         { name: "butter", totalQuantity: 1.5, unit: "tbsp", category: "dairy", sourceRecipes: ["Recipe A"] },
       ]);
@@ -3347,7 +3333,7 @@ describe("groceryList", () => {
 
   describe("generatePlainText", () => {
     it("generates plain text grouped by category", () => {
-      const grouped = new Map<GroceryCategory, CombinedGroceryItem[]>();
+      const grouped = new Map<GroceryCategory, SmartGroceryItem[]>();
       grouped.set("produce", [
         { name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["R1"] },
         { name: "garlic", totalQuantity: 3, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
@@ -3372,7 +3358,7 @@ describe("groceryList", () => {
 
   describe("filterPantryItems", () => {
     it("removes items matching pantry list", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "salt", category: "spices", sourceRecipes: ["Recipe A"] },
         { name: "pepper", category: "spices", sourceRecipes: ["Recipe A"] },
         { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Recipe A"] },
@@ -3384,7 +3370,7 @@ describe("groceryList", () => {
     });
 
     it("matches case-insensitively", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "Salt", category: "spices", sourceRecipes: ["Recipe A"] },
         { name: "flour", totalQuantity: 1, unit: "cup", category: "pantry", sourceRecipes: ["Recipe A"] },
       ];
@@ -3395,7 +3381,7 @@ describe("groceryList", () => {
     });
 
     it("normalizes plurals when matching", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"] },
         { name: "tomato", totalQuantity: 3, category: "produce", sourceRecipes: ["Recipe B"] },
       ];
@@ -3406,7 +3392,7 @@ describe("groceryList", () => {
     });
 
     it("returns all items when pantry is empty", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["Recipe A"] },
       ];
 
@@ -3415,7 +3401,7 @@ describe("groceryList", () => {
     });
 
     it("returns empty array when all items are in pantry", () => {
-      const items: CombinedGroceryItem[] = [
+      const items: SmartGroceryItem[] = [
         { name: "salt", category: "spices", sourceRecipes: ["Recipe A"] },
       ];
 
