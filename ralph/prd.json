@@ -148,7 +148,7 @@
         "npm run test:coverage passes with 100% on edge function tests"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Edge function is at supabase/functions/combine-ingredients/index.ts (222 lines). Major rewrite needed. The PreCombinedInput interface changes to RawIngredientInput with recipeName field. The system prompt needs to explain two outputs: 'items' (combined across all recipes) and 'perRecipeItems' (combined within each recipe, keyed by recipe name). A single recipe can have duplicate ingredients (e.g., '1 cup flour' for cake + '2 tbsp flour' for dusting) — the AI must combine these in perRecipeItems. Both items and perRecipeItems entries get proper displayName with quantity-aware pluralization. Keep the must-merge rules, displayName rules, and contextual unit conversion rules from the current prompt. The validation at lines 178-195 needs to handle duplicates in raw input (multiple recipes may have 'garlic'). Edge function test file: tests/unit/edge-functions/combine-ingredients.test.ts."
     },
     {

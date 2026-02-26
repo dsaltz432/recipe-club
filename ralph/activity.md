@@ -8,8 +8,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 6
-**Current Task:** US-006 complete
+**Tasks Completed:** 7
+**Current Task:** US-007 complete
 
 ---
 
@@ -203,5 +203,39 @@
 - `detectCategory` with simple `toLowerCase().trim()` means "eggs" ≠ "egg" — the CATEGORY_OVERRIDES map keys are all singular, so only exact lowercase matches work now
 - `filterSmartPantryItems` with simple `toLowerCase().trim()` means "Onions" ≠ "onion" — pantry matching is now exact (case-insensitive, trimmed) without normalization
 - Other test files (GroceryListSection.test.tsx, MealPlanPage.test.tsx) still fail — those are addressed in US-008 and US-010
+
+---
+
+## 2026-02-26 12:10 — US-007: Rewrite edge function for unified combined + per-recipe response
+
+### What was implemented
+- Replaced `PreCombinedInput` interface with `RawIngredientInput` (adds `recipeName` field, removes `sourceRecipes`)
+- Changed request parsing from `{ preCombined, perRecipeNames }` to `{ rawIngredients }`
+- Rewrote system prompt to instruct AI to produce TWO outputs: `items` (combined across all recipes) and `perRecipeItems` (combined within each recipe, keyed by recipe name)
+- System prompt retains all existing rules: must-merge variants, keep-separate rules, unit conversion, displayName generation, contextual unit handling
+- Added new rule: per-recipe items should combine duplicate ingredients within a single recipe
+- Updated empty input response from `{ items: [], displayNameMap: {} }` to `{ items: [], perRecipeItems: {} }`
+- Updated response parsing to extract `perRecipeItems` instead of `displayNameMap`
+- Updated validation to use unique ingredient names from raw input (handles duplicates across recipes)
+- Added displayName fallback for both `items` and `perRecipeItems` entries
+- Updated response format from `{ success, items, displayNameMap }` to `{ success, items, perRecipeItems }`
+- Rewrote all 12 existing tests for new input/output format
+- Added 4 new tests: duplicate ingredient names across recipes, AI omitting perRecipeItems, displayName fallback for perRecipeItems, AI response items not an array
+
+### Files changed
+- `supabase/functions/combine-ingredients/index.ts` (major rewrite — new interface, new system prompt, new response format)
+- `tests/unit/edge-functions/combine-ingredients.test.ts` (all tests updated for rawIngredients/perRecipeItems format, 4 new tests added)
+
+### Quality checks
+- Build: pass
+- Tests: 16/16 edge function tests pass, 100% coverage (statements, branches, functions, lines)
+- Lint: pass (pre-existing issues only, 0 new issues)
+- Pre-existing failures: GroceryListSection.test.tsx (US-008), MealPlanPage.test.tsx (US-010) — not caused by this story
+
+### Learnings for future iterations
+- The validation logic uses `new Set()` on input names, so duplicate ingredient names across recipes (e.g., both recipes have "garlic") are deduplicated before comparison — this correctly handles the raw input format
+- The `perRecipeItems` field defaults to `{}` when AI omits it, matching the same pattern used for empty rawIngredients
+- Edge function went from 222 lines to ~200 lines — slightly shorter despite the expanded system prompt, because the user message construction is simpler (no conditional perRecipeNames handling)
+- The model identifier `claude-sonnet-4-5-20250929` is retained from the original implementation
 
 ---
