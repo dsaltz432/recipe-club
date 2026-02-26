@@ -7,8 +7,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-26
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ---
 
@@ -114,5 +114,35 @@
 - The naive fallback rendering block (`!smartGrouped && !combineError`) and pantry excluded items section both depended on `combineIngredients` output, so both were removed
 - File went from 975 lines to ~280 lines — massive reduction
 - `CATEGORY_OVERRIDES` is kept because it's used by `detectCategory()` which `IngredientFormRows` depends on
+
+---
+
+## 2026-02-26 08:30 — US-004: Simplify GroceryListSection to use AI results for all tabs
+
+### What was implemented
+- Replaced `displayNameMap` prop with `perRecipeItems?: Record<string, SmartGroceryItem[]>` on GroceryListSection
+- Per-recipe tabs now render from `perRecipeItems[recipe.name]` instead of constructing items from raw RecipeIngredient[] + displayNameMap lookups
+- Per-recipe tabs still apply pantry filtering via `filterSmartPantryItems`
+- Combined tab rendering from `smartGroceryItems` is unchanged
+- Error state (`combineError`) still renders error message on combined tab
+- `recipeIngredients` prop still used for `hasAnyIngredients` check and `ingredientsByRecipe` (tab visibility)
+- Removed `displayNameMap` state and all references from EventDetailPage.tsx and MealPlanPage.tsx (dead code since no consumer)
+- Removed `displayNameMap` prop passing from both callers
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx` (replaced displayNameMap prop with perRecipeItems, updated per-recipe tab rendering)
+- `src/pages/EventDetailPage.tsx` (removed displayNameMap state, removed setDisplayNameMap calls, removed prop passing)
+- `src/components/mealplan/MealPlanPage.tsx` (removed displayNameMap state, removed setDisplayNameMap calls, removed prop passing)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (test updates in US-006/US-008)
+- Lint: pass (pre-existing issues only, 0 new issues)
+
+### Learnings for future iterations
+- Several US-004 ACs (imports removed, naive variables removed, naive fallback removed, pantry excluded section removed) were already completed in US-003 to make the build pass
+- Removing the `displayNameMap` prop from GroceryListSection required also removing it from callers (EventDetailPage, MealPlanPage) to avoid TS6133 "declared but never read" build errors
+- The `result.displayNameMap` references in `saveGroceryCache` calls remain for now — those are passed through to the cache function and will be updated in US-009/US-010
+- Per-recipe tabs gracefully fall back to empty array when `perRecipeItems` is not provided (`perRecipeItems?.[recipe.name] ?? []`)
 
 ---

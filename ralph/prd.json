@@ -88,7 +88,7 @@
         "npm run lint passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryListSection.tsx is 405 lines. The key change: per-recipe tabs no longer construct SmartGroceryItem[] from raw RecipeIngredient[] with displayNameMap lookups. Instead, they receive fully-formed SmartGroceryItem[] from the AI via perRecipeItems prop. This means combined and per-recipe tabs use the exact same quality of AI output. The recipeIngredients prop is still needed to determine which recipes have been parsed (for tab visibility) and hasAnyIngredients. The groupSmartByCategory helper at the top of the file (lines 32-43) is still used for both tabs. Remove the displayNameMap prop from GroceryListSectionProps. Add perRecipeItems?: Record<string, SmartGroceryItem[]> prop. For per-recipe tab rendering (lines 278-310), replace the manual mapping logic with: const recipeItems = perRecipeItems?.[recipe.name] ?? []; then filter and group as usual."
     },
     {

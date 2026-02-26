@@ -159,7 +159,6 @@ const EventDetailPage = () => {
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
   const [isCombining, setIsCombining] = useState(false);
-  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
   const [combineError, setCombineError] = useState<string | null>(null);
 
   // Pantry state
@@ -443,7 +442,6 @@ const EventDetailPage = () => {
       const perRecipeNames = [...new Set(currentIngredients.map((i) => i.name))];
       const result = await smartCombineIngredients(currentIngredients, recipeNameMap, perRecipeNames);
       setSmartGroceryItems(result.items);
-      setDisplayNameMap(result.displayNameMap);
 
       // Persist to cache
       const eid = forEventId || eventId;
@@ -547,7 +545,6 @@ const EventDetailPage = () => {
             currentParsedIds.every((id, i) => id === cachedIds[i])
           ) {
             setSmartGroceryItems(cached.items);
-            setDisplayNameMap(cached.displayNameMap ?? {});
             return;
           }
         }
@@ -1417,7 +1414,6 @@ const EventDetailPage = () => {
                 pantryItems={pantryItems}
                 smartGroceryItems={smartGroceryItems}
                 isCombining={isCombining}
-                displayNameMap={displayNameMap}
                 combineError={combineError}
               />
             ) : (

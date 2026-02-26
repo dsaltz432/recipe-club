@@ -64,7 +64,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
   const [isCombining, setIsCombining] = useState(false);
-  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
   const [combineError, setCombineError] = useState<string | null>(null);
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const viewTabRef = useRef(viewTab);
@@ -293,7 +292,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       const perRecipeNames = [...new Set(currentIngredients.map((i) => i.name))];
       const result = await smartCombineIngredients(currentIngredients, recipeNameMap, perRecipeNames);
       setSmartGroceryItems(result.items);
-      setDisplayNameMap(result.displayNameMap);
       lastCombinedRecipeIds.current = sortedRecipeIds;
 
       // Persist to cache
@@ -328,7 +326,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           currentParsedIds.every((id, i) => id === cachedIds[i])
         ) {
           setSmartGroceryItems(cached.items);
-          setDisplayNameMap(cached.displayNameMap ?? {});
           lastCombinedRecipeIds.current = cachedIds;
           return;
         }
@@ -700,7 +697,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               pantryItems={pantryItems}
               smartGroceryItems={smartGroceryItems}
               isCombining={isCombining}
-              displayNameMap={displayNameMap}
               combineError={combineError}
             />
           ) : items.length > 0 ? (

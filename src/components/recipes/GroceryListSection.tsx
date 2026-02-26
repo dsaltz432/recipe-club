@@ -25,7 +25,7 @@ interface GroceryListSectionProps {
   onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemoveItem?: (itemName: string) => void;
   onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
-  displayNameMap?: Record<string, string>;
+  perRecipeItems?: Record<string, SmartGroceryItem[]>;
   combineError?: string | null;
 }
 
@@ -56,7 +56,7 @@ const GroceryListSection = ({
   onEditItem,
   onRemoveItem,
   onAddItem,
-  displayNameMap,
+  perRecipeItems,
   combineError,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
@@ -245,15 +245,7 @@ const GroceryListSection = ({
             </TabsContent>
 
             {recipesWithIngredients.map((recipe) => {
-              const recipeIngs = ingredientsByRecipe.get(recipe.id)!;
-              const recipeItems: SmartGroceryItem[] = recipeIngs.map((ing) => ({
-                name: ing.name.toLowerCase().trim(),
-                displayName: displayNameMap?.[ing.name] ?? ing.name,
-                totalQuantity: ing.quantity ?? undefined,
-                unit: ing.unit ?? undefined,
-                category: ing.category,
-                sourceRecipes: [recipe.name],
-              }));
+              const recipeItems = perRecipeItems?.[recipe.name] ?? [];
               const filteredRecipeItems = pantryItems.length > 0
                 ? filterSmartPantryItems(recipeItems, pantryItems)
                 : recipeItems;
