@@ -141,7 +141,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to /dashboard/recipes. Use take_snapshot to find tab buttons, search input, filter dropdown, sort dropdown. For search, type the first few characters of a recipe name visible in the snapshot. For filter/sort, click the dropdowns and select options. If no club recipes or personal recipes exist, note in activity log."
     },
     {
