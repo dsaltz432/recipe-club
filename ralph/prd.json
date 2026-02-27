@@ -124,7 +124,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to an event detail page. For pantry tab, use a unique item name like 'e2e-test-pantry-item' to avoid conflicts. After adding, remove it to clean up. For export, just verify the buttons exist (don't need to actually download — hard to verify file downloads via browser tools)."
     },
     {

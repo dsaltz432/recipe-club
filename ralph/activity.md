@@ -21,11 +21,14 @@
 - **Event detail URL:** `/events/{uuid}` — e.g. `/events/a9ede5ee-0514-4118-8fae-bfac640b4158` for the Salmon event. Back button labeled "Events" navigates to `/dashboard/events`.
 - **Event detail page structure:** Header has back button, ingredient name (h1), date/time, recipe count. Tabs: Recipes, Groceries, Pantry. "Rate Recipes" button visible on completed events. Recipe cards show name, external link, rate/edit-ingredients/edit/delete buttons, and "Show Notes (N)" expander.
 - **Known test event:** Salmon event ID `a9ede5ee-0514-4118-8fae-bfac640b4158`, status=completed, 1 recipe ("Salmon Teriyaki"), date Feb 28, 2026.
+- **Pantry tab on event detail:** "My Pantry" heading, info text, input+add button, items list with remove buttons. Add shows toast "Added '[item]' to pantry". Remove shows `alertdialog` "Remove from pantry?" with Cancel/Remove buttons. Default items (Pepper, Salt, Water) have no remove button.
+- **Grocery export buttons:** On Grocery tab, "Copy" and "CSV" buttons appear next to "Grocery List" heading. These are the clipboard copy and CSV download options respectively.
+- **Grocery Combined tab:** May work or fail depending on whether smart combine edge function has AI API key. When working, shows items grouped by category (PROTEIN, PANTRY, SPICES, BEVERAGES, etc.) with recipe attribution.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 7
-**Current Task:** US-007 completed
+**Tasks Completed:** 8
+**Current Task:** US-008 completed
 
 ---
 
@@ -250,5 +253,37 @@
 - Pantry filtering is silent — no UI banner tells users which items were excluded or how many. The only explanation is on the Pantry tab itself.
 - The Pantry tab shows "Default" badge on items that were pre-populated (Pepper, Salt, Water). User-added items (Garlic, Jalapeño, Lemon, Onion, Prune) show remove buttons.
 - To fully verify grocery category grouping and pantry filtering in action, would need a working AI API key for the smart combine edge function.
+
+---
+
+## 2026-02-27 12:15 — US-008: E2E: Event Detail - Pantry Tab & Export (Sections 6.14, 6.15)
+
+### What was tested
+- **AC 6.15 Pantry Tab — PASS:** Navigated to Salmon event detail, clicked Pantry tab. Verified "My Pantry" heading (h2), info text "Items you already have at home. These will be excluded from grocery lists.", 8 pantry items displayed (Garlic, Jalapeño, Lemon, Onion, Pepper (Default), Prune, Salt (Default), Water (Default)). Added test item "e2e-test-pantry-item" via input+add button. Toast appeared: "Added 'e2e-test-pantry-item' to pantry". Item appeared in list as "E2e-Test-Pantry-Item". Clicked "Remove e2e-test-pantry-item" trash icon. Confirmation `alertdialog` appeared: "Remove from pantry?" / "Remove 'e2e-test-pantry-item' from your pantry?" with Cancel and Remove buttons. Clicked Remove. Item removed from list, back to 8 original items. Cleanup complete.
+- **AC 6.14 Grocery Export — PASS:** Clicked Groceries tab. Verified "Grocery List" heading (h2), "Copy" button (Copy to Clipboard) and "CSV" button (Download CSV) visible next to heading. Combined tab now shows grocery items grouped by category: PROTEIN (1), PANTRY (6), SPICES (2), BEVERAGES (1) — with recipe attribution ("Salmon Teriyaki"). Export buttons verified as present and accessible.
+- **Skipped:** None — all ACs tested.
+
+### Screenshots
+- `ralph/us008-ac6.15-pantry-add-item.png` — Pantry tab after adding test item with toast
+- `ralph/us008-ac6.15-pantry-remove-confirm.png` — Remove confirmation dialog
+- `ralph/us008-ac6.15-pantry-after-remove.png` — Pantry tab after removing test item (clean state)
+- `ralph/us008-ac6.14-grocery-export.png` — Grocery tab with Copy and CSV export buttons
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Pantry add button on event detail is just a "+" icon button (no text label). It enables when input has text, disables when empty.
+- Pantry items are auto-capitalized on first letter when stored (e.g., "e2e-test-pantry-item" → "E2e-Test-Pantry-Item").
+- Pantry remove shows an `alertdialog` with Cancel/Remove buttons — similar pattern to recipe deletion.
+- Pantry remove does NOT show a toast after successful removal (unlike add which shows "Added '[item]' to pantry").
+- Default pantry items (Pepper, Salt, Water) do NOT have remove buttons — only user-added items can be removed.
+- Grocery Combined tab is now working (previously failed in US-007 with AI error). Items grouped by category with recipe attribution.
+- Grocery export buttons are labeled simply "Copy" and "CSV" (not "Copy to Clipboard" / "Download CSV" as AC suggests) — but functionality matches.
 
 ---
