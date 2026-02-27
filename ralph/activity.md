@@ -30,11 +30,15 @@
 - **Add Recipe button (My Recipes tab):** "Add Recipe" button appears on My Recipes tab only (not Club tab), opens a dialog with name (required) + URL (optional) fields. Creates a personal recipe with `event_id: null, ingredient_id: null`. Count updates in tab button label. Previously, personal recipes could only be created through Meal Plan "Add Meal" flow.
 - **Delete Recipe guard:** Deleting a recipe checks for `meal_plan_items` references first. If recipe is used in a meal plan, shows "Cannot Delete Recipe" guard dialog instead of delete confirmation.
 - **Recipe Notes on event detail:** Notes CRUD via `useRecipeNotes` hook in `EventDetailPage.tsx`. "Add notes" button (Plus icon) only visible when user has NO note on that recipe (`!hasUserNote`). Edit/Delete buttons visible on own notes only. Dialog title: "Add Notes" / "Edit Notes". Toasts: "Notes added!" (add), "Notes updated!" (edit), no toast for delete (silent). Delete uses `alertdialog` "Delete Notes?" with Cancel/Delete buttons. Notes section auto-expands after add, shows author name + text + photos.
+- **Meal Plan grid:** `/dashboard/meals` shows "Meal Plan" sub-tab (default), "Groceries", "Pantry". Grid: 7 days (Sun–Sat) x 3 rows (Breakfast, Lunch, Dinner). Empty slots show meal type name as button text (e.g. "Breakfast"). Filled slots show "View meal details" button with nested "Add another meal" button. Week range header shows "Mon DD - DD" with Previous/Next/Today navigation. "Today" button only visible when not on the current week.
+- **Add Meal dialog:** Clicking empty slot opens "Add Meal" dialog: "Add a meal for [day] [type]." Two tabs: "Custom Meal" (default) + "From Recipes". Custom requires name + either URL or manual ingredients. Manual mode: ingredient rows (Qty/Unit/Name/Category) with "Add Ingredient" button. "Add to Meal" enables when name + at least one ingredient name filled.
+- **Meal detail page:** URL `/meals/{uuid}`. Shows date, "Personal" badge, recipe count, "Rate Recipes" button, recipe cards. Back button "Meals" navigates to `/dashboard/meals`. Custom meals create a `recipes` entry so they appear in "My Recipes".
+- **Remove meal from detail page:** Delete (trash) button on recipe card in meal detail page. Shows `alertdialog` "Remove from meal?" — removes `meal_plan_item` link and unlinks recipe from event (`event_id: null`). Recipe persists in "My Recipes". Toast: "Recipe removed from meal". To fully clean up, delete the orphaned recipe from My Recipes tab separately.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 11
-**Current Task:** US-011 completed
+**Tasks Completed:** 12
+**Current Task:** US-012 completed
 
 ---
 
@@ -399,5 +403,41 @@
 - Notes section auto-expands after adding a note. The "Show Notes (N)" button changes to "Hide Notes" when expanded.
 - Photo upload is not automatable via browser MCP tools — the `upload_file` tool exists but requires a local file path. For full photo testing, would need pre-staged test image files.
 - Note deletion is destructive for photo associations — the photo URL in Supabase storage persists but the `recipe_notes.photos` array link is gone.
+
+---
+
+## 2026-02-27 16:00 — US-012: E2E: Meal Planning grid & CRUD (Section 9)
+
+### What was tested
+- **AC 9.1 Meal Plan Grid — PASS:** Navigated to `/dashboard/meals`, verified "Meal Plan" sub-tab active. Weekly grid shows 7 days (Sun 2/22 through Sat 2/28) x 3 meal types (Breakfast, Lunch, Dinner). Week range header shows "Feb 22 - 28". Empty slots render as buttons with meal type label (e.g. "Breakfast"). Three dinner slots (Tue, Wed, Thu) have existing meals shown as "View meal details" buttons with nested "Add another meal" buttons.
+- **AC 9.2 Week Navigation — PASS:** Clicked "Next week" → header updated to "Mar 1 - 7" with all 7 new dates. "Today" button appeared (not on current week). Clicked "Previous week" → back to "Feb 22 - 28". "Today" button disappeared (on current week). Clicked "Next week" again → "Mar 1 - 7", clicked "Today" → returned to "Feb 22 - 28" (current week containing today Feb 27, 2026). All three navigation controls work correctly.
+- **AC 9.3 Add Meal — PASS:** Clicked empty Sunday Breakfast slot. "Add Meal" dialog opened with description "Add a meal for Sunday breakfast." and two tabs: "Custom Meal" (selected) + "From Recipes". Entered "E2E Test Meal 20260227" as name, clicked "Enter Manually" for ingredient source, entered "test ingredient" in ingredient row. "Add to Meal" button enabled. Clicked it — dialog closed, Sunday Breakfast slot now shows "View meal details" button (meal created). Navigated to meal detail page (`/meals/b226befb-...`): confirmed "Sun, Feb 22, 2026", "Personal" badge, "1 recipe", recipe card "E2E Test Meal 20260227 by dev".
+- **AC 9.7 Remove Meal — PASS:** On meal detail page, clicked "Delete recipe E2E Test Meal 20260227" (trash icon). Confirmation `alertdialog`: "Remove from meal?" / "Remove 'E2E Test Meal 20260227' from this meal? The recipe will still be available in your personal recipes." with Cancel/Remove buttons. Clicked Remove. Toast "Recipe removed from meal". Recipes count updated to 0. Navigated back to grid — Sunday Breakfast slot returned to empty "Breakfast" button.
+- **Cleanup:** Deleted orphaned recipe from My Recipes tab (recipe persists after meal removal). "My Recipes (4)" → clicked Delete → "Delete Recipe" confirmation → "Recipe deleted!" toast → "My Recipes (3)". Original test data restored.
+- **Skipped:** AC 9.3a (manual ingredients — partially covered: entered ingredient during add), AC 9.4 (from recipes — needs specific existing recipes), AC 9.5 (upload), AC 9.6 (edit meal), AC 9.8 (action button labels), AC 9.9 (view details — partially covered: navigated to detail page during test)
+
+### Screenshots
+- `ralph/us012-ac9.1-meal-plan-grid.png` — Meal plan grid with 7 days x 3 types
+- `ralph/us012-ac9.2-week-navigation.png` — Grid after Today button (back to current week)
+- `ralph/us012-ac9.3-add-meal.png` — Grid after adding test meal to Sunday Breakfast
+- `ralph/us012-ac9.7-remove-confirm.png` — Remove from meal confirmation dialog
+- `ralph/us012-ac9.7-remove-complete.png` — Meal detail after removal (0 recipes)
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Empty meal grid slots use the meal type as button text (e.g. "Breakfast", "Lunch", "Dinner") — clicking opens the "Add Meal" dialog.
+- Filled slots show "View meal details" button — clicking navigates to `/meals/{uuid}` detail page, NOT opening an inline popup.
+- "Add another meal" button appears nested within filled slots for adding additional meals to the same slot.
+- Custom meals create a `recipes` entry linked via `meal_plan_items`. Removing a meal from the detail page only deletes the `meal_plan_item` link — the recipe persists in "My Recipes" with `event_id: null`. Must separately delete the recipe to fully clean up.
+- "Today" button only appears when viewing a week that doesn't contain today's date. On the current week, only Previous/Next are shown.
+- Week navigation causes content to briefly disappear (loading state) before re-rendering with new week data — need to wait for snapshot to stabilize.
+- Header "Total Recipes" badge may not immediately decrement when a recipe is deleted from My Recipes — appears to be a caching/refetch issue. The tab count (e.g. "My Recipes (3)") updates correctly.
 
 ---

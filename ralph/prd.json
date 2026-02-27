@@ -189,7 +189,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to /dashboard/meals. Use take_snapshot to find the grid structure, '+' buttons, and week navigation arrows. For adding a meal, find an empty slot's '+' button. Use a unique meal name. Clean up by removing the test meal. Skip 9.3a (manual ingredients), 9.4 (from recipes — needs existing recipes), 9.5 (upload), 9.6 (edit), 9.8 (action button labels), 9.9 (view details) — these are harder to automate or depend on specific state."
     },
     {
