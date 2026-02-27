@@ -95,7 +95,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to an event detail page (from US-005 or directly to a known event URL). Use take_snapshot to find the 'Add Recipe' button. For 6.7, just create a manual recipe (no URL) to keep it simple. For editing, click the pencil icon on the card. After tests, delete the test recipe to clean up. If no events exist, note 'SKIP' in activity log."
     },
     {

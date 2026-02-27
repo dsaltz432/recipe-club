@@ -24,8 +24,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 5
-**Current Task:** US-005 completed
+**Tasks Completed:** 6
+**Current Task:** US-006 completed
 
 ---
 
@@ -177,5 +177,42 @@
 - Event detail header has: back button ("Events"), ingredient name (h1), date/time, recipe count, and "Rate Recipes" button for completed events.
 - Event detail page has 3 tabs: Recipes, Groceries, Pantry — useful context for US-006/007/008.
 - Recipe cards on event detail show: name, external link (if URL exists), rate button, edit-ingredients button, edit/delete buttons, and "Show Notes (N)" expander.
+- **Add Recipe dialog:** Has three ingredient source modes: "Enter URL", "Upload File", "Enter Manually". Manual mode shows editable ingredient rows (Qty/Unit/Name/Category). "Add Recipe" button enables once name is filled and either URL or manual ingredient name is provided.
+- **Edit Recipe dialog:** Shows "Recipe Name" and "Recipe URL" fields. Successful edit shows toast "Recipe updated!".
+- **Delete Recipe dialog:** `alertdialog` with title "Delete recipe from event?", message "Permanently delete "[name]"? This cannot be undone.", Cancel + Delete buttons. Successful delete shows toast "Recipe deleted".
+- **External links:** Event detail page uses "View recipe" link text (in `EventRecipesTab.tsx`). Recipe Hub uses `aria-label="Open recipe URL"` (in `RecipeCard.tsx`). Both indicate external link presence.
+
+---
+
+## 2026-02-27 11:15 — US-006: E2E: Event Detail - Recipes Tab (Section 6.2, 6.7, 6.8, 6.10)
+
+### What was tested
+- **AC 6.2 Recipes Tab — PASS:** Navigated to Salmon event detail (`/events/a9ede5ee-...`). Verified recipe count heading "Recipes (1)", recipe card shows "Salmon Teriyaki" with name, "View recipe" external link, Rate/Edit-ingredients/Edit/Delete buttons, "Show Notes (1)" expander, and "1 note" count.
+- **AC 6.7 Add Recipe Manually — PASS:** Clicked "Add Recipe", entered "E2E Test Recipe 20260227" as name, selected "Enter Manually" ingredient source mode, entered "test ingredient" in the ingredient row, clicked "Add Recipe". Recipe appeared in list, count updated to "Recipes (2)" and "2 recipes" in header.
+- **AC 6.8 Edit Recipe — PASS:** Clicked "Edit recipe E2E Test Recipe 20260227" (pencil icon). Edit dialog opened with pre-filled name and empty URL field. Changed name to "E2E Test Recipe EDITED", clicked "Save Changes". Toast "Recipe updated!" appeared, name updated in list.
+- **AC 6.10 External Link — PASS:** Verified "Salmon Teriyaki" recipe has "View recipe" link (with ExternalLink icon) pointing to recipe URL. The test recipe (no URL) correctly does NOT show a "View recipe" link. Note: Event detail uses "View recipe" link text (EventRecipesTab.tsx), while Recipe Hub uses `aria-label="Open recipe URL"` (RecipeCard.tsx) — both correctly indicate external link presence.
+- **Cleanup — PASS:** Clicked "Delete recipe E2E Test Recipe EDITED", confirmation dialog appeared ("Delete recipe from event?" / "Permanently delete..."), clicked "Delete". Toast "Recipe deleted" appeared, count back to "Recipes (1)". Original data restored.
+- **Skipped:** None — all ACs tested.
+
+### Screenshots
+- `ralph/us006-ac6.2-recipes-tab.png` — Recipes tab with Salmon Teriyaki card
+- `ralph/us006-ac6.7-add-recipe.png` — After adding E2E Test Recipe, count shows 2
+- `ralph/us006-ac6.8-edit-recipe.png` — After editing recipe name, toast visible
+- `ralph/us006-ac6.10-external-link.png` — External link on Salmon Teriyaki recipe
+- `ralph/us006-cleanup-delete-recipe.png` — After deleting test recipe, count back to 1
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Add Recipe dialog has three modes: "Enter URL" (default), "Upload File", "Enter Manually". Manual mode requires at least one ingredient name for the Add button to enable.
+- Edit Recipe dialog only shows name and URL fields (no ingredient editing — that's via the separate "Edit ingredients" button).
+- Delete Recipe uses an `alertdialog` with explicit confirmation — Cancel and Delete buttons.
+- Recipe count updates in both the tab heading ("Recipes (N)") and the event header ("N recipe(s)") simultaneously after add/edit/delete.
 
 ---
