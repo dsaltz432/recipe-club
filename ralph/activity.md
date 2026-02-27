@@ -12,11 +12,14 @@
 - **Dialogs:** After clicking a trigger, take a new snapshot to find dialog elements
 - **Radix DropdownMenu:** The `click` MCP tool sometimes fails to toggle Radix dropdown menus open. Workaround: use `evaluate_script` with `pointerdown` event on the trigger button, then `take_snapshot` to get menu items. Once the menu is open, use `evaluate_script` with `.click()` on the `[role="menuitem"]` to select items. After clicking, use `wait_for` to confirm navigation/state change.
 - **Sign Out flow:** User menu button text is "D dev" (avatar initial + name). After sign out, page redirects to `/` with login form.
+- **Radix Tabs:** MCP `click` tool does NOT work on Radix TabsTrigger elements. Workaround: use `evaluate_script` to focus the tab (`tabs[N].focus()`), then `press_key` with `Enter` to activate it. Alternatively, navigate directly via URL for deep-link testing.
+- **Dashboard tabs & URLs:** Home→`/dashboard`, Events→`/dashboard/events`, Recipes→`/dashboard/recipes`, Meals→`/dashboard/meals`. Route uses `/dashboard/:tab?` pattern.
+- **HomeSection conditional rendering:** If an active event exists, Home tab shows CountdownCard (with admin buttons Edit/Complete/Cancel). Ingredient Wheel and Bank only appear when there is NO active event AND user is admin.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 2
-**Current Task:** US-002 completed
+**Tasks Completed:** 3
+**Current Task:** US-003 completed
 
 ---
 
@@ -76,5 +79,36 @@
 - Landing page at `/` serves dual purpose: it's both the marketing landing page AND the login page (form is embedded in the hero section).
 - 404 page has a "Go Home" button that links to `/` — useful for navigation recovery testing.
 - When logged out, navigating to `/dashboard` redirects to `/` with a "Your session has expired" toast — use this to confirm logged-out state.
+
+---
+
+## 2026-02-27 09:50 — US-003: E2E: Dashboard & Navigation (Section 3)
+
+### What was tested
+- **AC 3.1 Header Stats — PASS:** Logged in, verified header shows "1 Club Event" and "4 Total Recipes" badges in the banner area.
+- **AC 3.2 Tab Navigation — PASS:** Clicked Home, Events, Recipes, Meals tabs (using focus+Enter workaround for Radix tabs). Verified URLs update to `/dashboard`, `/dashboard/events`, `/dashboard/recipes`, `/dashboard/meals` respectively, and each tab's content panel renders correctly.
+- **AC 3.4 Deep Links — PASS:** Navigated directly to `/dashboard/events`, `/dashboard/recipes`, `/dashboard/meals`. Verified the correct tab is marked `selected` in each case with matching tabpanel content visible.
+- **AC 3.6 Home Tab Admin View — PASS (conditional):** Home tab shows CountdownCard with admin-only buttons (Edit, Complete, Cancel) because an active event exists. Ingredient Wheel and Ingredient Bank sections are conditionally rendered only when NO active event exists (confirmed via source code `HomeSection.tsx:49-75`). Current admin view with active event is correct.
+- **Skipped:** AC 3.3/3.5 (mobile viewport — covered in US-017 responsive design), AC 3.7 (non-admin view — only one test user available)
+
+### Screenshots
+- `ralph/us003-ac3.1-header-stats.png` — Dashboard header with Club Event and Total Recipes badges
+- `ralph/us003-ac3.2-tab-navigation.png` — Home tab active after full tab cycle
+- `ralph/us003-ac3.4-deep-links.png` — Meals tab active via direct URL navigation
+- `ralph/us003-ac3.6-home-admin-view.png` — Home tab with CountdownCard showing admin buttons
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Radix TabsTrigger elements do NOT respond to MCP `click` tool. Must use `evaluate_script` to focus + `press_key` Enter to activate tabs.
+- Dashboard route pattern is `/dashboard/:tab?` — Home tab uses no suffix (`/dashboard`), others use `/dashboard/{tabname}`.
+- HomeSection rendering is conditional: active event → CountdownCard; no event + admin → Wheel + Bank; no event + non-admin → "No Event Scheduled" card.
+- Header stat badges show "Club Event" (singular/plural based on count) and "Total Recipes" — not "Club Recipes" as the AC suggests. The actual labels are "Club Event" and "Total Recipes".
 
 ---

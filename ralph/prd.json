@@ -46,7 +46,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Login first with dev@example.com / test123. Use take_snapshot to verify tab states and content. The dev user is an admin, so 3.6 applies. Skip 3.3/3.5 (mobile viewport) for now — those are covered in US-015 responsive design. Skip 3.7 (non-admin view) as we only have one test user."
     },
     {
