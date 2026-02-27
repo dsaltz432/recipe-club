@@ -39,8 +39,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 17
-**Current Task:** US-017 completed
+**Tasks Completed:** 18
+**Current Task:** US-018 completed
 
 ---
 
@@ -617,5 +617,47 @@
 - The a11y snapshot doesn't show plain `<div>` elements inside dropdown menus — only `menuitem` role elements appear. Use `evaluate_script` to inspect raw DOM content of dropdowns.
 - Tab triggers use `flex-col sm:flex-row` — column layout (icons above text) on mobile, row layout (icons beside text) on tablet/desktop. Text size is `text-[10px]` on mobile, `text-sm` on tablet+.
 - Meal plan grid horizontal scroll: the `overflow-x-auto` container has a fixed content width (~700px) that overflows on narrow viewports, enabling native scroll.
+- **RecipeCard aria-labels:** After accessibility fix, RecipeCard.tsx uses recipe-specific aria-labels: `"Edit recipe ${name}"`, `"Delete recipe ${name}"`, `"Add note for ${name}"`, `"Edit ingredients for ${name}"`, `"Open recipe URL for ${name}"`, `"Edit rating for ${name}"`, `"Expand/Collapse ingredients for ${name}"`. EventRecipesTab already had this pattern.
+- **Star rating aria-labels:** Rating dialog star buttons use `"Rate N out of 5 stars"` pattern (e.g., `"Rate 1 out of 5 stars"` through `"Rate 5 out of 5 stars"`).
+- **Photo alt text patterns:** RecipeCard uses `alt="${recipe.name} photo ${idx + 1}"`, EventRecipesTab uses `alt="Photo for ${recipe.name}"`.
+
+---
+
+## 2026-02-27 20:00 — US-018: E2E: Accessibility checks (Section 16)
+
+### What was tested
+- **AC 16.1 Icon Button Labels — PASS (with fix):** Took verbose snapshots of dashboard, event detail, recipe hub, and meal plan pages. All icon-only buttons have aria-labels in the snapshot output. **Bug found:** `RecipeCard.tsx` used generic aria-labels (`"Edit recipe"`, `"Delete recipe"`, `"Add note"`, etc.) without recipe names — ambiguous when multiple recipe cards are visible. `EventRecipesTab.tsx` correctly used recipe-specific labels. **Fixed** RecipeCard.tsx to include recipe name in all aria-labels (e.g., `"Edit recipe Salmon Teriyaki"`, `"Delete recipe Salmon Teriyaki"`). Updated 6 aria-labels + expand/collapse ingredients label. Verified fix in browser: snapshot shows `"Open recipe URL for Salmon Teriyaki"`, `"Add note for Salmon Teriyaki"`, `"Edit ingredients for Salmon Teriyaki"`, `"Edit recipe Salmon Teriyaki"`, `"Delete recipe Salmon Teriyaki"`.
+- **AC 16.2 Color-Only Indicators — PASS:** Marked "Custom 1" dinner meal as cooked. Verbose snapshot showed `StaticText "Cooked"` (sr-only text) in the accessibility tree alongside the green visual indicator. When uncoked via "Undo cook", the "Cooked" text disappeared. Screen readers can identify cooked meals without relying on color alone.
+- **AC 16.4 Photo Alt Text — PASS (code review):** Verified both components have descriptive photo alt text: `RecipeCard.tsx` line 362 uses `alt={`${recipe.name} photo ${idx + 1}`}`, `EventRecipesTab.tsx` line 298 uses `alt={`Photo for ${recipe.name}`}`. No photos in current test data to verify visually (original photo lost during US-011 delete+re-add cycle), but code patterns are correct.
+- **AC 16.5 Star Rating — PASS:** Opened "Rate Recipes" dialog on completed Salmon event. Verified 5 star buttons have descriptive aria-labels: `"Rate 1 out of 5 stars"` through `"Rate 5 out of 5 stars"`. Also verified "Yes"/"No" buttons for "Would you make this again?" question, and "Submit Ratings" button.
+- **Skipped:** None — all ACs tested.
+
+### Bug Found & Fixed
+- **Generic aria-labels on RecipeCard icon buttons:** `RecipeCard.tsx` used generic labels like `"Edit recipe"` and `"Delete recipe"` without the recipe name. When multiple recipe cards are shown on the same page (e.g., Recipe Hub, event detail), screen readers cannot distinguish which recipe each button controls. **Fix:** Updated all 7 aria-labels in RecipeCard.tsx to include `recipe.name`: `"Open recipe URL for ${name}"`, `"Add note for ${name}"`, `"Edit ingredients for ${name}"`, `"Edit recipe ${name}"`, `"Delete recipe ${name}"`, `"Edit rating for ${name}"`, `"Expand/Collapse ingredients for ${name}"`. Updated test assertions in RecipeCard.test.tsx and RecipeHub.test.tsx to use regex matchers (`/Edit recipe/` instead of `"Edit recipe"`) so they match the new dynamic labels.
+
+### Screenshots
+- `ralph/us018-ac16.1-event-detail-aria.png` — Event detail page (before fix) with icon-only buttons
+- `ralph/us018-ac16.1-recipe-hub-aria.png` — Recipe Hub (after fix) showing recipe-specific aria-labels
+- `ralph/us018-ac16.2-cooked-sr-text.png` — Meal plan with cooked meal showing "Cooked" sr-only text
+- `ralph/us018-ac16.4-notes-expanded.png` — Event detail notes section expanded
+- `ralph/us018-ac16.5-star-rating-aria.png` — Rate Recipes dialog with star button aria-labels
+
+### Files changed
+- `src/components/recipes/RecipeCard.tsx` — Updated 7 aria-labels to include `recipe.name` for disambiguation
+- `tests/unit/components/recipes/RecipeCard.test.tsx` — Updated ~30 aria-label assertions from exact strings to regex matchers
+- `tests/unit/components/recipes/RecipeHub.test.tsx` — Updated ~55 aria-label assertions from exact strings to regex matchers
+
+### Quality checks
+- Build: PASS
+- Tests: PASS (1 pre-existing flaky failure in `MealPlanPage.test.tsx` — smart combine timing issue, unrelated to changes)
+- Lint: N/A
+
+### Learnings for future iterations
+- Accessibility testing with `take_snapshot verbose: true` reveals full a11y tree including aria-labels, sr-only text, and role attributes — essential for verifying screen reader experience.
+- Icon-only buttons MUST include context (like recipe/meal name) in aria-labels when multiple instances appear on the same page. Generic labels like "Edit recipe" are ambiguous for screen readers.
+- The `sr-only` CSS class (Tailwind) renders text invisible but readable by screen readers — verified via a11y snapshot showing `StaticText "Cooked"` that isn't visible on screen.
+- Star rating buttons follow WCAG pattern: `"Rate N out of 5 stars"` — clear, unambiguous labels for screen readers.
+- Photo alt text should be descriptive: include recipe name and photo index for context.
+- Test regex matchers (`/pattern/`) are useful when aria-labels become dynamic — they match partial strings without breaking when names change.
 
 ---

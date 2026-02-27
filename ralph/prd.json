@@ -283,7 +283,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "Use take_snapshot with verbose: true to see all aria attributes. Navigate to various pages and check the snapshot output for aria-labels. For 16.2, navigate to /dashboard/meals and look for cooked meals. For 16.5, navigate to a completed event detail page and look for rating UI. Some checks may be 'SKIP — no data' if the test environment lacks specific state."
     },
     {

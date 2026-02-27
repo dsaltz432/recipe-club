@@ -112,7 +112,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
-                      aria-label="Open recipe URL"
+                      aria-label={`Open recipe URL for ${recipe.name}`}
                     >
                       <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
                     </a>
@@ -123,7 +123,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                       size="sm"
                       className="h-7 w-7 p-0"
                       onClick={() => onAddNote(recipe)}
-                      aria-label="Add note"
+                      aria-label={`Add note for ${recipe.name}`}
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </Button>
@@ -133,7 +133,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0"
-                      aria-label="Edit ingredients"
+                      aria-label={`Edit ingredients for ${recipe.name}`}
                       onClick={() => onEditIngredients(recipe)}
                     >
                       <ListChecks className="h-3.5 w-3.5" />
@@ -144,7 +144,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0"
-                      aria-label="Edit recipe"
+                      aria-label={`Edit recipe ${recipe.name}`}
                       onClick={() => onEdit(recipe)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -155,7 +155,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                      aria-label="Delete recipe"
+                      aria-label={`Delete recipe ${recipe.name}`}
                       onClick={() => onDelete(recipe.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -216,7 +216,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 ml-1"
-                  aria-label="Edit rating"
+                  aria-label={`Edit rating for ${recipe.name}`}
                   onClick={() => onEditRating(recipe)}
                 >
                   <Pencil className="h-3 w-3" />
@@ -276,7 +276,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
             <button
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
               onClick={() => setIngredientsExpanded(!ingredientsExpanded)}
-              aria-label={ingredientsExpanded ? "Collapse ingredients" : "Expand ingredients"}
+              aria-label={ingredientsExpanded ? `Collapse ingredients for ${recipe.name}` : `Expand ingredients for ${recipe.name}`}
             >
               {ingredientsExpanded ? (
                 <ChevronUp className="h-3.5 w-3.5" />
