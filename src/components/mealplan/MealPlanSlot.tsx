@@ -1,5 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, RotateCcw, CheckCircle2, Eye } from "lucide-react";
 import type { MealPlanItem } from "@/types";
 
 interface MealPlanSlotProps {
@@ -8,6 +7,8 @@ interface MealPlanSlotProps {
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  onMarkCooked?: (dayOfWeek: number, mealType: string) => void;
+  onUndoCook?: (dayOfWeek: number, mealType: string) => void;
 }
 
 const mealTypeLabels: Record<string, string> = {
@@ -23,19 +24,20 @@ const MealPlanSlot = ({
   mealType,
   onAddMeal,
   onViewMealEvent,
+  onMarkCooked,
+  onUndoCook,
 }: MealPlanSlotProps) => {
   const isCooked = items.length > 0 && items.every((i) => i.cookedAt);
 
   if (items.length === 0) {
     return (
-      <Button
-        variant="ghost"
-        className="w-full h-full min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple"
+      <button
+        className="w-full h-full min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent"
         onClick={() => onAddMeal(dayOfWeek, mealType)}
       >
-        <Plus className="h-3 w-3 mr-1" />
+        <Plus className="h-3 w-3" />
         <span className="text-xs">{mealTypeLabels[mealType]}</span>
-      </Button>
+      </button>
     );
   }
 
@@ -43,12 +45,9 @@ const MealPlanSlot = ({
     <div
       className={`relative w-full min-h-[60px] p-2 rounded-lg border transition-colors ${
         isCooked
-          ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
-          : "bg-purple/5 border-purple/20 hover:bg-purple/10 hover:border-purple/40"
-      }${onViewMealEvent ? " cursor-pointer" : ""}`}
-      onClick={onViewMealEvent ? () => onViewMealEvent(dayOfWeek, mealType) : undefined}
-      role={onViewMealEvent ? "button" : undefined}
-      aria-label={onViewMealEvent ? "View meal details" : undefined}
+          ? "bg-green-50 border-green-200"
+          : "bg-purple/5 border-purple/20"
+      }`}
     >
       {isCooked && <span className="sr-only">Cooked</span>}
       <div className="space-y-1">
@@ -69,6 +68,39 @@ const MealPlanSlot = ({
       </div>
       <div className="flex items-center justify-end mt-1">
         <div className="flex items-center gap-1">
+          {onViewMealEvent && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewMealEvent(dayOfWeek, mealType); }}
+              className="text-muted-foreground hover:text-purple transition-colors p-1 text-xs flex items-center gap-0.5"
+              aria-label="View meal details"
+            >
+              <Eye className="h-3 w-3" />
+              <span className="hidden sm:inline">View</span>
+            </button>
+          )}
+          {isCooked ? (
+            onUndoCook && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onUndoCook(dayOfWeek, mealType); }}
+                className="text-muted-foreground hover:text-orange-600 transition-colors p-1 text-xs flex items-center gap-0.5"
+                aria-label="Undo cook"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span className="hidden sm:inline">Undo</span>
+              </button>
+            )
+          ) : (
+            onMarkCooked && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onMarkCooked(dayOfWeek, mealType); }}
+                className="text-muted-foreground hover:text-green-600 transition-colors p-1 text-xs flex items-center gap-0.5"
+                aria-label="Mark as cooked"
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                <span className="hidden sm:inline">Done</span>
+              </button>
+            )
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
             className="text-muted-foreground hover:text-purple transition-colors p-1"

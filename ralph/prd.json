@@ -204,7 +204,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to /dashboard/meals. First add a custom meal without a URL (so 'Done' marks it cooked immediately without rating dialog). After marking as cooked, verify the visual state change. Then undo. Skip 10.2 (with recipes — rating dialog is complex), 10.4 (meal detail rating), 10.5/10.6 (edit from detail page). Clean up by removing the test meal at the end."
     },
     {
