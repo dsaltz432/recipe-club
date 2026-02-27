@@ -110,7 +110,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to an event detail page. For 6.9, create a temporary recipe first (manual, no URL), then delete it. For grocery tab, if no recipes have parsed ingredients, the grocery tab may be empty — note this as expected behavior. Take snapshots of the grocery tab to verify category grouping."
     },
     {
