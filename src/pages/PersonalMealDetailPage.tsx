@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser } from "@/lib/auth";
-import type { User, Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient } from "@/types";
+import type { User, Recipe, RecipeRatingsSummary, RecipeIngredient } from "@/types";
+import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -88,16 +89,29 @@ const PersonalMealDetailPage = () => {
   const [editRecipeUrl, setEditRecipeUrl] = useState("");
   const [isEditingRecipe, setIsEditingRecipe] = useState(false);
 
-  // Edit/Add note state
-  const [noteToEdit, setNoteToEdit] = useState<RecipeNote | null>(null);
-  const [recipeForNewNote, setRecipeForNewNote] = useState<Recipe | null>(null);
-  const [editNotes, setEditNotes] = useState("");
-  const [editPhotos, setEditPhotos] = useState<string[]>([]);
-  const [isUpdatingNote, setIsUpdatingNote] = useState(false);
-
-  // Delete note state
-  const [noteToDelete, setNoteToDelete] = useState<RecipeNote | null>(null);
-  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+  // Note CRUD (shared hook)
+  const {
+    noteToEdit,
+    setNoteToEdit,
+    recipeForNewNote,
+    setRecipeForNewNote,
+    editNotes,
+    setEditNotes,
+    editPhotos,
+    setEditPhotos,
+    isUpdatingNote,
+    noteToDelete,
+    setNoteToDelete,
+    deletingNoteId,
+    handleEditNoteClick,
+    handleAddNotesClick,
+    handleSaveNote,
+    handleDeleteClick,
+    handleConfirmDelete,
+  } = useRecipeNotes({
+    userId: user?.id,
+    onNoteChanged: () => loadEventData(),
+  });
 
   // Delete recipe state
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
@@ -625,88 +639,6 @@ const PersonalMealDetailPage = () => {
       toast.error("Failed to update recipe");
     } finally {
       setIsEditingRecipe(false);
-    }
-  };
-
-  const handleEditNoteClick = (note: RecipeNote) => {
-    setNoteToEdit(note);
-    setRecipeForNewNote(null);
-    setEditNotes(note.notes || "");
-    setEditPhotos(note.photos || []);
-  };
-
-  const handleAddNotesClick = (recipe: Recipe) => {
-    setRecipeForNewNote(recipe);
-    setNoteToEdit(null);
-    setEditNotes("");
-    setEditPhotos([]);
-  };
-
-  const handleSaveNote = async () => {
-    if (!user?.id || !event) return;
-
-    setIsUpdatingNote(true);
-    try {
-      if (noteToEdit) {
-        const { error } = await supabase
-          .from("recipe_notes")
-          .update({
-            notes: editNotes.trim() || null,
-            photos: editPhotos.length > 0 ? editPhotos : null,
-          })
-          .eq("id", noteToEdit.id);
-
-        if (error) throw error;
-        toast.success("Notes updated!");
-      } else if (recipeForNewNote) {
-        const { error } = await supabase
-          .from("recipe_notes")
-          .insert({
-            recipe_id: recipeForNewNote.id,
-            user_id: user.id,
-            notes: editNotes.trim() || null,
-            photos: editPhotos.length > 0 ? editPhotos : null,
-          });
-
-        if (error) throw error;
-        toast.success("Notes added!");
-      }
-
-      setNoteToEdit(null);
-      setRecipeForNewNote(null);
-      loadEventData();
-    } catch (error) {
-      console.error("Error saving note:", error);
-      toast.error("Failed to save notes");
-    } finally {
-      setIsUpdatingNote(false);
-    }
-  };
-
-  const handleDeleteClick = (note: RecipeNote) => {
-    setNoteToDelete(note);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!noteToDelete) return;
-
-    setDeletingNoteId(noteToDelete.id);
-    setNoteToDelete(null);
-
-    try {
-      const { error } = await supabase
-        .from("recipe_notes")
-        .delete()
-        .eq("id", noteToDelete.id);
-
-      if (error) throw error;
-      toast.success("Notes removed");
-      loadEventData();
-    } catch (error) {
-      console.error("Error deleting notes:", error);
-      toast.error("Failed to remove notes");
-    } finally {
-      setDeletingNoteId(null);
     }
   };
 
