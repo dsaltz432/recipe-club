@@ -15,8 +15,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 1
-**Current Task:** US-001 completed
+**Tasks Completed:** 2
+**Current Task:** US-002 completed
 
 ---
 
@@ -50,5 +50,31 @@
 - After sign out, URL changes to `/` (root), not `/login` — the landing page IS the login page.
 - Login button text is "Sign in (Dev Mode)" in dev mode. It starts disabled and enables when both fields have values.
 - Toast notifications appear in a `region` with `Notifications alt+T` label in the snapshot — check `listitem` elements within it.
+
+---
+
+## 2026-02-27 09:25 — US-002: E2E: Landing page & 404 (Section 2)
+
+### What was tested
+- **AC 2.1 Landing Page — PASS:** Signed out first (confirmed by redirect to `/` on navigating to `/dashboard`). Verified hero section with "Recipe Club Hub" title (h1), colorful wheel visualization graphic, subtitle "Spin the wheel, get your ingredient, and share delicious recipes with your club!", "How It Works" section (h2) with 3 steps (Spin the Wheel, Pick a Date, Lock In Your Recipe), and "Sign in (Dev Mode)" button visible.
+- **AC 2.2 404 Page — PASS:** Navigated to `/nonexistent`, verified "404" heading (h1), "Oops! This page doesn't exist." message, and "Go Home" button linking back to `/`.
+- **Skipped:** None — all ACs tested.
+
+### Screenshots
+- `ralph/us002-ac2.1-landing-page.png` — Landing page with hero, wheel, and How It Works
+- `ralph/us002-ac2.2-404-page.png` — 404 page with heading and Go Home button
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Landing page at `/` serves dual purpose: it's both the marketing landing page AND the login page (form is embedded in the hero section).
+- 404 page has a "Go Home" button that links to `/` — useful for navigation recovery testing.
+- When logged out, navigating to `/dashboard` redirects to `/` with a "Your session has expired" toast — use this to confirm logged-out state.
 
 ---

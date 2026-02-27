@@ -30,7 +30,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Must be logged out first to see landing page (logged-in users redirect to /dashboard). Use take_snapshot to verify page content. Sign out by navigating to the app, finding the user menu, clicking Sign Out. If already logged out, landing page loads directly."
     },
     {
