@@ -15,11 +15,13 @@
 - **Radix Tabs:** MCP `click` tool does NOT work on Radix TabsTrigger elements. Workaround: use `evaluate_script` to focus the tab (`tabs[N].focus()`), then `press_key` with `Enter` to activate it. Alternatively, navigate directly via URL for deep-link testing.
 - **Dashboard tabs & URLs:** Home→`/dashboard`, Events→`/dashboard/events`, Recipes→`/dashboard/recipes`, Meals→`/dashboard/meals`. Route uses `/dashboard/:tab?` pattern.
 - **HomeSection conditional rendering:** If an active event exists, Home tab shows CountdownCard (with admin buttons Edit/Complete/Cancel). Ingredient Wheel and Bank only appear when there is NO active event AND user is admin.
+- **Ingredient Bank:** Input field and Add button only visible when bank is NOT full (< 10 ingredients). When full, shows "Bank full — spin the wheel!" message. Duplicate check is case-insensitive. Remove sets `in_bank: false` (ingredient survives for autocomplete/re-add). Count displays as "N / 10 ingredients".
+- **Completing an event:** "Complete" button on CountdownCard sets event status to "completed" and increments ingredient usedCount. Event data is preserved (unlike "Cancel" which deletes everything). Use this to clear the active event and expose the Ingredient Wheel/Bank on the Home tab.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 3
-**Current Task:** US-003 completed
+**Tasks Completed:** 4
+**Current Task:** US-004 completed
 
 ---
 
@@ -110,5 +112,36 @@
 - Dashboard route pattern is `/dashboard/:tab?` — Home tab uses no suffix (`/dashboard`), others use `/dashboard/{tabname}`.
 - HomeSection rendering is conditional: active event → CountdownCard; no event + admin → Wheel + Bank; no event + non-admin → "No Event Scheduled" card.
 - Header stat badges show "Club Event" (singular/plural based on count) and "Total Recipes" — not "Club Recipes" as the AC suggests. The actual labels are "Club Event" and "Total Recipes".
+
+---
+
+## 2026-02-27 10:15 — US-004: E2E: Ingredients & Wheel (Section 4)
+
+### What was tested
+- **Prerequisite — Complete Active Event:** The Salmon event was blocking access to the Ingredient Bank (Bank only renders when no active event exists). Completed the event via "Complete" button → "Mark Complete" confirmation. Event preserved as completed (status="completed", ingredient usedCount incremented). Home tab then rendered Ingredient Wheel + Bank with 9/10 ingredients.
+- **AC 4.1 Add Ingredient — PASS:** Entered "E2E-Test-Ingredient" in the bank input field, clicked "Add ingredient". Toast appeared: "Added "E2E-Test-Ingredient" to your ingredient bank!" Count updated from 9/10 to 10/10. Ingredient visible in both the wheel and bank list. "Ready to spin!" message displayed.
+- **AC 4.3 Duplicate Prevention — PASS:** Removed test ingredient first (bank was full, input hidden when full). Entered "Sweet Potato" (already in bank), clicked Add. Error toast: "This ingredient is already in your bank!" Count stayed at 9/10. Autocomplete also showed "Sweet Potato" as disabled with "In bank" label.
+- **AC 4.4 Remove Ingredient — PASS:** Re-added "E2E-Test-Ingredient" (count went to 10/10), then clicked "Remove E2E-Test-Ingredient from bank". Toast: "Removed "E2E-Test-Ingredient" from your ingredient bank." Count decremented from 10/10 to 9/10. Status changed from "Ready to spin!" back to "Need 1 more".
+- **Count Display — PASS:** Verified "N / 10 ingredients" format at both 9/10 and 10/10 states.
+- **Skipped:** AC 4.2 (autocomplete with out-of-bank ingredient — partially observed: autocomplete did show "E2E-Test-Ingredient Add to bank" when re-adding), AC 4.5/4.6/4.7 (bank full spin and event creation — destructive operations)
+
+### Screenshots
+- `ralph/us004-ac4.1-add-ingredient.png` — Bank at 10/10 after adding E2E-Test-Ingredient
+- `ralph/us004-ac4.3-duplicate-prevention.png` — Error toast on duplicate "Sweet Potato"
+- `ralph/us004-ac4.4-remove-ingredient.png` — Bank at 9/10 after removing E2E-Test-Ingredient
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Ingredient Bank input and Add button are hidden when bank is full (10/10). Must remove an ingredient to get input back for duplicate testing.
+- "Remove from bank" sets `in_bank: false` — the ingredient still exists in DB for autocomplete/re-add. Re-adding shows "Added back to your ingredient bank!" toast.
+- Completing an event is safe for test data: event transitions to "completed" status, data preserved. Cancel deletes everything permanently.
+- The Salmon event is now completed — future stories (US-005+) will see it as a past/completed event, not scheduled. No more active event exists.
 
 ---

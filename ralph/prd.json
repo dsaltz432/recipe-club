@@ -62,7 +62,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Must be logged in as admin (dev@example.com). Navigate to /dashboard (Home tab). Use take_snapshot to find the ingredient input field, add button, and bank list. Use a unique test ingredient name like 'E2E-Test-Ingredient-[timestamp]' to avoid conflicts. Skip 4.2 (autocomplete requires an out-of-bank ingredient), 4.5/4.6/4.7 (bank full and wheel spin are destructive — they create events and modify bank state heavily). Clean up by removing the test ingredient after verification."
     },
     {
