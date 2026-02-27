@@ -53,6 +53,7 @@ import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
+import { saveRecipeEdit } from "@/lib/recipeActions";
 
 interface PersonalEventData {
   eventId: string;
@@ -602,36 +603,21 @@ const PersonalMealDetailPage = () => {
       return;
     }
 
-    const urlChanged = (recipeToEdit.url || "") !== (editRecipeUrl.trim() || "");
-
     setIsEditingRecipe(true);
     try {
-      const { error } = await supabase
-        .from("recipes")
-        .update({
-          name: editRecipeName.trim(),
-          url: editRecipeUrl.trim() || null,
-        })
-        .eq("id", recipeToEdit.id);
+      const result = await saveRecipeEdit(
+        recipeToEdit.id,
+        editRecipeName,
+        editRecipeUrl,
+        recipeToEdit.url || ""
+      );
 
-      if (error) throw error;
-
-      // Trigger re-parse in background if URL changed and new URL is non-empty
-      if (urlChanged && editRecipeUrl.trim()) {
-        supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: recipeToEdit.id, recipeUrl: editRecipeUrl.trim(), recipeName: editRecipeName.trim() },
-        }).then(({ data: parseData, error: parseError }) => {
-          if (parseError || !parseData?.success) {
-            console.error("Error re-parsing recipe:", parseError ?? parseData?.error);
-          } else {
-            loadEventData();
-          }
-        });
-        toast.success("Recipe updated!");
-      } else {
-        toast.success("Recipe updated!");
+      if (!result.success) {
+        toast.error(result.error);
+        return;
       }
 
+      toast.success("Recipe updated!");
       setRecipeToEdit(null);
       loadEventData();
     } catch (error) {

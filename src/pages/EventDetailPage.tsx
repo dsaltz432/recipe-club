@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { cancelEvent, completeEvent, updateEvent } from "@/lib/eventActions";
+import { saveRecipeEdit } from "@/lib/recipeActions";
 import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
@@ -768,46 +769,26 @@ const EventDetailPage = () => {
   };
 
   const handleSaveRecipeEdit = async () => {
-    if (editRecipeUrl.trim() && !isValidUrl(editRecipeUrl)) {
-      toast.error("Please enter a valid URL starting with http:// or https://");
-      return;
-    }
-
-    const urlChanged = (recipeToEdit!.url || "") !== (editRecipeUrl.trim() || "");
-
     setIsEditingRecipe(true);
     try {
-      const { error } = await supabase
-        .from("recipes")
-        .update({
-          name: editRecipeName.trim(),
-          url: editRecipeUrl.trim() || null,
-        })
-        .eq("id", recipeToEdit!.id);
+      const result = await saveRecipeEdit(
+        recipeToEdit!.id,
+        editRecipeName,
+        editRecipeUrl,
+        recipeToEdit!.url || ""
+      );
 
-      if (error) throw error;
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
 
-      // Send notification only if URL changed
-      if (urlChanged) {
+      // Send notification only if URL changed (caller responsibility)
+      if (result.urlChanged) {
         sendRecipeNotification("updated", editRecipeName.trim(), editRecipeUrl.trim());
       }
 
-      // Trigger re-parse in background if URL changed and new URL is non-empty
-      if (urlChanged && editRecipeUrl.trim()) {
-        supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: recipeToEdit!.id, recipeUrl: editRecipeUrl.trim(), recipeName: editRecipeName.trim() },
-        }).then(({ data: parseData, error: parseError }) => {
-          if (parseError || !parseData?.success) {
-            console.error("Error re-parsing recipe:", parseError ?? parseData?.error);
-          } else {
-            loadEventData();
-          }
-        });
-        toast.success("Recipe updated!");
-      } else {
-        toast.success("Recipe updated!");
-      }
-
+      toast.success("Recipe updated!");
       setRecipeToEdit(null);
       loadEventData();
     } catch (error) {

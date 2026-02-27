@@ -4113,7 +4113,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to update recipe");
+      expect(toast.error).toHaveBeenCalledWith("Update failed");
     });
 
     consoleSpy.mockRestore();
