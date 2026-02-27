@@ -58,8 +58,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
   const [pendingParseName, setPendingParseName] = useState<string>("");
-  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "combining" | "done">("saving");
-  const [showCombineStep, setShowCombineStep] = useState(false);
+  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "done">("saving");
 
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
@@ -345,11 +344,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
     const doParse = async () => {
       try {
-        // Always combine groceries (even for a single recipe), but only show the "Combining" progress step for 2+
-        const recipesWithUrls = items.filter(i => i.recipeId && (i.recipeUrl || i.customUrl));
-        const shouldCombine = recipesWithUrls.length >= 1;
-        setShowCombineStep(recipesWithUrls.length >= 2);
-
         setParseStep("saving");
         await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -366,13 +360,12 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
 
         setParseStep("loading");
-        // Always load grocery data after parse so we can combine
+        // Load grocery data after parse, then fire off combining in background
         const groceryData = await loadGroceryData();
 
-        if (shouldCombine && groceryData) {
-          setParseStep("combining");
-          await runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
-          await new Promise(resolve => setTimeout(resolve, 200));
+        // Fire off combining in background (don't await — Groceries tab shows spinner)
+        if (groceryData) {
+          runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
         }
 
         setParseStep("done");
@@ -748,7 +741,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
                 { key: "saving", label: "Adding recipe" },
                 { key: "parsing", label: "Parsing ingredients & instructions" },
                 { key: "loading", label: "Loading recipe data" },
-                ...(showCombineStep ? [{ key: "combining", label: "Combining with other recipes" }] : []),
               ]}
               currentStep={parseStep}
             />

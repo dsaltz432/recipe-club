@@ -253,16 +253,23 @@ const GroceryListSection = ({
 
               return (
                 <TabsContent key={recipe.id} value={recipe.id}>
-                  {Array.from(recipeGrouped.entries()).map(([category, items]) => (
-                    <GroceryCategoryGroup
-                      key={`${recipe.id}-${category}`}
-                      category={category}
-                      items={items}
-                      editable={editable}
-                      onEditItem={onEditItem}
-                      onRemoveItem={onRemoveItem}
-                    />
-                  ))}
+                  {isCombining && recipeItems.length === 0 ? (
+                    <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Combining ingredients...</span>
+                    </div>
+                  ) : (
+                    Array.from(recipeGrouped.entries()).map(([category, items]) => (
+                      <GroceryCategoryGroup
+                        key={`${recipe.id}-${category}`}
+                        category={category}
+                        items={items}
+                        editable={editable}
+                        onEditItem={onEditItem}
+                        onRemoveItem={onRemoveItem}
+                      />
+                    ))
+                  )}
                 </TabsContent>
               );
             })}

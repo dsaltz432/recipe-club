@@ -2568,10 +2568,11 @@ describe("MealPlanPage", () => {
         );
       });
 
-      // Smart combine IS called even with 1 parsed recipe (single-recipe grocery fix)
-      await waitFor(() => {
-        expect(mockSmartCombineIngredients).toHaveBeenCalled();
-      });
+      // Cache hit — smart combine should not be called again after cache load
+      const callCount = mockSmartCombineIngredients.mock.calls.length;
+      // Wait a tick to ensure no deferred combine call fires
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(mockSmartCombineIngredients.mock.calls.length).toBe(callCount);
     });
 
     it("runs smart combine even with a single parsed recipe", async () => {

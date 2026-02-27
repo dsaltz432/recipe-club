@@ -214,11 +214,10 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
         }
       }
 
-      // Note: Recipes cascade delete with the event (ON DELETE CASCADE)
-      // Note: We do NOT reset the ingredient's used_count when cancelling
-      // The count tracks how many times it was used historically
+      // Detach any recipes used by meal plan items so they survive the cascade delete
+      await supabase.rpc("detach_meal_plan_recipes", { p_event_id: eventId });
 
-      // Delete the event row
+      // Delete the event row (remaining recipes cascade delete via ON DELETE CASCADE)
       await supabase
         .from("scheduled_events")
         .delete()

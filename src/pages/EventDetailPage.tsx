@@ -145,8 +145,7 @@ const EventDetailPage = () => {
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [parseError, setParseError] = useState<string | null>(null);
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
-  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "combining" | "notifying" | "done">("saving");
-  const [showCombineStep, setShowCombineStep] = useState(false);
+  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "notifying" | "done">("saving");
 
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
@@ -166,7 +165,6 @@ const EventDetailPage = () => {
     { key: "saving" as const, label: "Adding recipe" },
     { key: "parsing" as const, label: "Parsing ingredients & instructions" },
     { key: "loading" as const, label: "Loading recipe data" },
-    ...(showCombineStep ? [{ key: "combining" as const, label: "Combining with other recipes" }] : []),
     { key: "notifying" as const, label: "Notifying club members" },
   ];
 
@@ -591,13 +589,6 @@ const EventDetailPage = () => {
       return;
     }
 
-    // Always combine groceries (even for a single recipe), but only show the "Combining" progress step for 2+
-    const existingParsedCount = event.recipesWithNotes.filter(
-      r => recipeContentMap[r.recipe.id]?.status === "completed"
-    ).length;
-    const willCombine = existingParsedCount >= 0;
-    setShowCombineStep(existingParsedCount >= 1);
-
     setParseStep("saving");
     setParseStatus("parsing");
     setIsSubmitting(true);
@@ -650,11 +641,10 @@ const EventDetailPage = () => {
         const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
         const groceryData = await loadGroceryData(recipeIds);
 
-        if (willCombine && groceryData) {
-          setParseStep("combining");
+        // Fire off combining in background (don't await — Groceries tab shows spinner)
+        if (groceryData) {
           const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
-          await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-          await new Promise(resolve => setTimeout(resolve, 200));
+          runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
         }
 
         setParseStep("notifying");
@@ -689,12 +679,10 @@ const EventDetailPage = () => {
           const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
           const groceryData = await loadGroceryData(recipeIds);
 
-          // Combining step (only if 2+ parsed recipes)
-          if (willCombine && groceryData) {
-            setParseStep("combining");
+          // Fire off combining in background (don't await — Groceries tab shows spinner)
+          if (groceryData) {
             const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
-            await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-            await new Promise(resolve => setTimeout(resolve, 200));
+            runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
           }
 
           // Notifying step: send email notification to club members
@@ -1014,9 +1002,12 @@ const EventDetailPage = () => {
         }
       }
 
-      // Note: Recipes cascade delete with the event (ON DELETE CASCADE)
+      // Detach any recipes used by meal plan items so they survive the cascade delete.
+      // Uses SECURITY DEFINER RPC to see meal_plan_items across all users.
+      const { error: detachError } = await supabase.rpc("detach_meal_plan_recipes", { p_event_id: event!.eventId });
+      if (detachError) console.error("Failed to detach meal plan recipes:", detachError);
 
-      // Delete the event row
+      // Delete the event row (remaining recipes cascade delete via ON DELETE CASCADE)
       await supabase
         .from("scheduled_events")
         .delete()
