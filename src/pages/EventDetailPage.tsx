@@ -54,7 +54,8 @@ import {
   CheckCircle,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
-import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
+import { updateCalendarEvent } from "@/lib/googleCalendar";
+import { cancelEvent } from "@/lib/eventActions";
 import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
@@ -985,40 +986,14 @@ const EventDetailPage = () => {
   const handleCancelEvent = async () => {
     setIsCanceling(true);
     try {
-      // Get the event data including calendar_event_id
-      const { data: eventData, error: findError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (*)")
-        .eq("id", event!.eventId)
-        .single();
-
-      if (findError) throw findError;
-
-      // Delete the Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const deleteResult = await deleteCalendarEvent(eventData.calendar_event_id);
-        if (!deleteResult.success && !deleteResult.error?.includes("not available")) {
-          console.warn("Failed to delete calendar event:", deleteResult.error);
-        }
+      const result = await cancelEvent(event!.eventId);
+      if (result.success) {
+        toast.success("Event canceled");
+        setShowCancelConfirm(false);
+        navigate("/dashboard/events");
+      } else {
+        toast.error("Failed to cancel event");
       }
-
-      // Detach any recipes used by meal plan items so they survive the cascade delete.
-      // Uses SECURITY DEFINER RPC to see meal_plan_items across all users.
-      const { error: detachError } = await supabase.rpc("detach_meal_plan_recipes", { p_event_id: event!.eventId });
-      if (detachError) console.error("Failed to detach meal plan recipes:", detachError);
-
-      // Delete the event row (remaining recipes cascade delete via ON DELETE CASCADE)
-      await supabase
-        .from("scheduled_events")
-        .delete()
-        .eq("id", eventData.id);
-
-      toast.success("Event canceled");
-      setShowCancelConfirm(false);
-      navigate("/dashboard/events");
-    } catch (error) {
-      console.error("Error canceling event:", error);
-      toast.error("Failed to cancel event");
     } finally {
       setIsCanceling(false);
     }

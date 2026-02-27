@@ -651,7 +651,7 @@ describe("RecipeClubEvents", () => {
     fireEvent.click(screen.getByText("Cancel Event"));
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith("Error cancelling event:", expect.anything());
+      expect(consoleSpy).toHaveBeenCalledWith("Error canceling event:", expect.anything());
     });
 
     consoleSpy.mockRestore();

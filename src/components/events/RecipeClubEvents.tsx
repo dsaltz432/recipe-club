@@ -23,7 +23,8 @@ import {
   Pencil,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
+import { updateCalendarEvent } from "@/lib/googleCalendar";
+import { cancelEvent as cancelEventAction } from "@/lib/eventActions";
 import {
   Dialog,
   DialogContent,
@@ -195,39 +196,12 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
   }, []);
 
   const cancelEvent = async (eventId: string) => {
-    try {
-      // Find the event
-      const { data: eventData, error: findError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (*)")
-        .eq("id", eventId)
-        .single();
-
-      if (findError) throw findError;
-
-      // Delete the Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const deleteResult = await deleteCalendarEvent(eventData.calendar_event_id);
-        // Only warn for actual errors, not for expected "not available" cases
-        if (!deleteResult.success && !deleteResult.error?.includes("not available")) {
-          console.warn("Failed to delete calendar event:", deleteResult.error);
-        }
-      }
-
-      // Detach any recipes used by meal plan items so they survive the cascade delete
-      await supabase.rpc("detach_meal_plan_recipes", { p_event_id: eventId });
-
-      // Delete the event row (remaining recipes cascade delete via ON DELETE CASCADE)
-      await supabase
-        .from("scheduled_events")
-        .delete()
-        .eq("id", eventData.id);
-
+    const result = await cancelEventAction(eventId);
+    if (result.success) {
       toast.success("Event cancelled and calendar invite removed!");
       loadEvents();
       onEventChange?.();
-    } catch (error) {
-      console.error("Error cancelling event:", error);
+    } else {
       toast.error("Failed to cancel event");
     }
   };
