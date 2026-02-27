@@ -28,7 +28,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
-import { cancelEvent } from "@/lib/eventActions";
+import { cancelEvent, completeEvent } from "@/lib/eventActions";
 
 interface CountdownCardProps {
   event: ScheduledEvent;
@@ -95,27 +95,15 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
     setIsCompleting(true);
     try {
-      const { error: statusError } = await supabase
-        .from("scheduled_events")
-        .update({ status: "completed" })
-        .eq("id", event.id);
-
-      if (statusError) throw statusError;
-
-      if (event.ingredientId) {
-        const { error: rpcError } = await supabase.rpc(
-          "increment_ingredient_used_count",
-          { p_ingredient_id: event.ingredientId, p_user_id: userId }
-        );
-        if (rpcError) throw rpcError;
+      const result = await completeEvent(event.id, event.ingredientId || "", userId || "");
+      if (result.success) {
+        toast.success("Event marked as completed!");
+        setShowCompleteConfirm(false);
+        onEventUpdated?.();
+      } else {
+        console.error("Error completing event:", result.error);
+        toast.error("Failed to complete event");
       }
-
-      toast.success("Event marked as completed!");
-      setShowCompleteConfirm(false);
-      onEventUpdated?.();
-    } catch (error) {
-      console.error("Error completing event:", error);
-      toast.error("Failed to complete event");
     } finally {
       setIsCompleting(false);
     }

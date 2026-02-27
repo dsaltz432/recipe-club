@@ -55,7 +55,7 @@ import {
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
-import { cancelEvent } from "@/lib/eventActions";
+import { cancelEvent, completeEvent } from "@/lib/eventActions";
 import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
@@ -1034,32 +1034,14 @@ const EventDetailPage = () => {
   };
 
   const handleRatingsComplete = async () => {
-    try {
-      // Update event status to completed
-      const { error: statusError } = await supabase
-        .from("scheduled_events")
-        .update({ status: "completed" })
-        .eq("id", event!.eventId);
-
-      if (statusError) throw statusError;
-
-      // Atomically increment the ingredient's used_count via RPC
-      const { error: rpcError } = await supabase.rpc(
-        "increment_ingredient_used_count",
-        {
-          p_ingredient_id: event!.ingredientId,
-          p_user_id: user?.id,
-        }
-      );
-
-      if (rpcError) throw rpcError;
-
+    const result = await completeEvent(event!.eventId, event!.ingredientId, user?.id || "");
+    if (result.success) {
       toast.success("Event marked as completed!");
       setShowRatingDialog(false);
       setRatingRecipes(null);
       loadEventData();
-    } catch (error) {
-      console.error("Error completing event:", error);
+    } else {
+      console.error("Error completing event:", result.error);
       toast.error("Failed to complete event");
     }
   };

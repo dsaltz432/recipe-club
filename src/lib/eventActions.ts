@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { deleteCalendarEvent } from "@/lib/googleCalendar";
 
-type ActionResult = { success: true } | { success: false; error: string };
+export type ActionResult = { success: true } | { success: false; error: string };
 
 /**
  * Cancel an event: delete calendar event, detach meal plan recipes, delete event row.
@@ -43,5 +43,39 @@ export async function cancelEvent(eventId: string): Promise<ActionResult> {
   } catch (error) {
     console.error("Error canceling event:", error);
     return { success: false, error: error instanceof Error ? error.message : "Failed to cancel event" };
+  }
+}
+
+/**
+ * Complete an event: update status to 'completed' and increment ingredient used count.
+ * Callers handle UI concerns (toast, dialogs, callbacks).
+ */
+export async function completeEvent(eventId: string, ingredientId: string, userId: string): Promise<ActionResult> {
+  try {
+    // Update event status to completed
+    const { error: statusError } = await supabase
+      .from("scheduled_events")
+      .update({ status: "completed" })
+      .eq("id", eventId);
+
+    if (statusError) throw statusError;
+
+    // Atomically increment the ingredient's used_count via RPC
+    if (ingredientId) {
+      const { error: rpcError } = await supabase.rpc(
+        "increment_ingredient_used_count",
+        {
+          p_ingredient_id: ingredientId,
+          p_user_id: userId,
+        }
+      );
+
+      if (rpcError) throw rpcError;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error completing event:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to complete event" };
   }
 }
