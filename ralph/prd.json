@@ -173,7 +173,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to an event detail page that has at least one recipe. The add note button is the '+' icon in the recipe card header. After adding a note, expand the card with 'Show More' to view it. Use a unique note text like 'E2E test note [timestamp]'. Clean up by deleting the note at the end. Skip 8.3 (multi-user), 8.5 (cancel delete — covered implicitly), 8.7-8.10 (file upload — requires actual files which is hard in browser automation)."
     },
     {

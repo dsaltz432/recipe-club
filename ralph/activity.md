@@ -29,11 +29,12 @@
 - **Dev user profile name fix:** `handle_new_user()` trigger now falls back to `split_part(email, '@', 1)` when no name in user metadata. Previously, email-only signups got `name: null` in profiles table, causing RecipeCard to not render creator info. For existing users, profile name must be updated directly in DB.
 - **Add Recipe button (My Recipes tab):** "Add Recipe" button appears on My Recipes tab only (not Club tab), opens a dialog with name (required) + URL (optional) fields. Creates a personal recipe with `event_id: null, ingredient_id: null`. Count updates in tab button label. Previously, personal recipes could only be created through Meal Plan "Add Meal" flow.
 - **Delete Recipe guard:** Deleting a recipe checks for `meal_plan_items` references first. If recipe is used in a meal plan, shows "Cannot Delete Recipe" guard dialog instead of delete confirmation.
+- **Recipe Notes on event detail:** Notes CRUD via `useRecipeNotes` hook in `EventDetailPage.tsx`. "Add notes" button (Plus icon) only visible when user has NO note on that recipe (`!hasUserNote`). Edit/Delete buttons visible on own notes only. Dialog title: "Add Notes" / "Edit Notes". Toasts: "Notes added!" (add), "Notes updated!" (edit), no toast for delete (silent). Delete uses `alertdialog` "Delete Notes?" with Cancel/Delete buttons. Notes section auto-expands after add, shows author name + text + photos.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 10
-**Current Task:** US-010 completed
+**Tasks Completed:** 11
+**Current Task:** US-011 completed
 
 ---
 
@@ -362,5 +363,41 @@
 - Add Recipe dialog disables the submit button when name is empty OR when URL is provided but invalid (doesn't start with http/https). Same URL validation pattern as Edit Recipe dialog.
 - Personal recipes created via this dialog have `event_id: null` and `ingredient_id: null` — same structure as custom meals from meal plan. They show up with "Personal" badge and no ingredient tag.
 - Delete Recipe has a guard: if the recipe is linked to `meal_plan_items`, it shows a "Cannot Delete Recipe" dialog instead of the deletion confirmation. This prevents orphaning meal plan references.
+
+---
+
+## 2026-02-27 15:00 — US-011: E2E: Recipe Notes CRUD (Section 8)
+
+### What was tested
+- **AC 8.1 Add Notes — PASS:** After deleting the existing note (to reveal the "Add notes" button), clicked "Add notes" on Salmon Teriyaki recipe card. Dialog opened: "Add Notes" / "Add your notes and photos for 'Salmon Teriyaki'" with Notes/Variations textarea and photo upload area. Entered "So Good!" as note text, clicked "Add Notes". Toast "Notes added!" appeared, note count updated to "1 note" on card, notes section auto-expanded showing "dev's Notes" with text "So Good!".
+- **AC 8.2 View Notes — PASS:** Clicked "Show Notes (1)" on Salmon Teriyaki recipe card. Notes section expanded showing: author avatar ("d"), author name ("dev"), "'s Notes" heading, note count badge "1", note text "So Good!", photo (recipe photo from Supabase storage), and "Edit my notes" / "Delete my notes" action buttons.
+- **AC 8.4 Edit Notes — PASS:** Clicked "Edit my notes". Edit dialog opened with pre-filled text "So Good!" and existing photo. Changed text to "So Good! [E2E EDITED]", clicked "Save Changes". Toast "Notes updated!" appeared, note text updated in card to "So Good! [E2E EDITED]". Restored original text "So Good!" via second edit.
+- **AC 8.6 Delete Notes — PASS:** Clicked "Delete my notes". Confirmation `alertdialog` appeared: "Delete Notes?" / "Are you sure you want to delete your notes? This action cannot be undone." with Cancel and Delete buttons. Clicked Delete. Note removed from card silently (no toast). Note count disappeared from card header, "Add notes" button re-appeared (confirming `!hasUserNote` logic).
+- **Data restoration:** Re-added note with original text "So Good!" after delete test. Note: original note had a photo attachment which was lost during delete+re-add cycle (photo upload not automatable via browser tools). Photo file remains in Supabase storage but is no longer linked to the note.
+- **Skipped:** AC 8.3 (multi-user notes — only one test user), AC 8.5 (cancel delete — implicitly verified by seeing Cancel button), AC 8.7-8.10 (file upload — requires actual file upload which is hard in browser automation)
+
+### Screenshots
+- `ralph/us011-ac8.2-view-notes.png` — Expanded notes section with author, text, photo
+- `ralph/us011-ac8.4-edit-note.png` — After editing note text, toast visible
+- `ralph/us011-ac8.6-delete-confirm.png` — Delete confirmation dialog
+- `ralph/us011-ac8.6-delete-complete.png` — After deletion, "Add notes" button visible
+- `ralph/us011-ac8.1-add-note.png` — After adding new note, toast and expanded notes visible
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- "Add notes" button only appears when user has NO existing note on the recipe (`!hasUserNote` check). To test add flow, must delete any existing note first.
+- Notes dialog has two modes: "Add Notes" (new) and "Edit Notes" (existing). Both share the same dialog component with different titles and button text.
+- Toast messages: "Notes added!" for add, "Notes updated!" for edit, no toast for delete (silent success).
+- Delete uses `alertdialog` with "Delete Notes?" title — different from recipe delete which says "Delete recipe from event?".
+- Notes section auto-expands after adding a note. The "Show Notes (N)" button changes to "Hide Notes" when expanded.
+- Photo upload is not automatable via browser MCP tools — the `upload_file` tool exists but requires a local file path. For full photo testing, would need pre-staged test image files.
+- Note deletion is destructive for photo associations — the photo URL in Supabase storage persists but the `recipe_notes.photos` array link is gone.
 
 ---
