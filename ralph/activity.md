@@ -39,8 +39,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 15
-**Current Task:** US-015 completed
+**Tasks Completed:** 16
+**Current Task:** US-016 completed
 
 ---
 
@@ -545,5 +545,35 @@
 - Press Enter submits the add form (keyboard shortcut works in addition to clicking the add button).
 - Default pantry items (Pepper, Salt, Water) have "Default" badge and no remove button.
 - Duplicate check is case-insensitive — "E2E-TEST-PANTRY-ITEM" matches "e2e-test-pantry-item".
+- **User Management page:** `/users` route (outside dashboard layout). Header has "Back to Dashboard" button. Shows stats ("N admin · N viewers · N club members"), "Invite User" button, and user rows with email, role badges, "In Club" toggle, role combobox, and delete button. Self-protection: current user's row has "You" badge, disabled role combobox, and disabled delete button.
+
+---
+
+## 2026-02-27 18:30 — US-016: E2E: Admin features - User Management (Section 13)
+
+### What was tested
+- **AC 13.1 Manage Users - View — PASS:** Clicked user menu ("D dev" avatar button), clicked "Manage Users" menu item. Navigated to `/users`. Page shows "User Management" heading (h1 in header + h3 in content), stats summary "1 admin · 2 viewers · 2 club members", "Invite User" button, and 3 user rows: `dev@example.com` (You, Admin, Club Member), `viewer@example.com` (Viewer), `member@example.com` (Club Member, Viewer). Each row shows email, role badges, "In Club" toggle switch, role combobox dropdown, and delete button.
+- **AC 13.7 Self-Protection — PASS:** Verified current user row (`dev@example.com`) has "You" badge, role combobox is `disabled` (value="Admin"), and delete button is `disabled`. Other user rows (`viewer@example.com`, `member@example.com`) have enabled role comboboxes and enabled delete buttons. Self-protection correctly prevents admins from changing their own role or deleting their own account.
+- **Skipped:** AC 13.2-13.6 (add/change/toggle/delete users — destructive operations that modify real user data in test environment), AC 13.8 (non-admin view — only one test user available with admin role)
+
+### Screenshots
+- `ralph/us016-ac13.1-manage-users.png` — User Management page with user list, stats, and Invite User button
+- `ralph/us016-ac13.7-self-protection.png` — Self-protection: disabled role dropdown and delete button on current user row
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- User Management page is at `/users` (not `/dashboard/users`) — it's a separate route outside the dashboard layout.
+- Page header has a "Back to Dashboard" button for navigation back.
+- Stats summary dynamically counts users by role: "N admin(s) · N viewer(s) · N club member(s)".
+- Self-protection: current user's row shows "You" badge, disabled role combobox, and disabled delete button. The "In Club" toggle is visible but the combobox and delete are explicitly disabled.
+- Other users have: "In Club" toggle switch (checked/unchecked), role combobox (expandable, values: Admin/Viewer), and delete button (enabled).
+- "Invite User" button available for admins to add new users.
 
 ---

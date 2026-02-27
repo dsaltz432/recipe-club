@@ -249,7 +249,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "Login as admin (dev@example.com). Navigate via user menu > 'Manage Users'. Take a snapshot to verify the user list. Skip 13.2-13.6 (add/change/toggle/delete users — these modify real user data which is destructive for the test environment). Skip 13.8 (non-admin view — only one test user). For 13.7, just verify the current user's row shows disabled controls."
     },
     {
