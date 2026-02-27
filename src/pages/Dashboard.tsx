@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays } from "lucide-react";
+import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import RecipeClubEvents from "@/components/events/RecipeClubEvents";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
+import PantryDialog from "@/components/pantry/PantryDialog";
 
 const VALID_TABS = ["home", "events", "recipes", "meals"] as const;
 type TabValue = typeof VALID_TABS[number];
@@ -39,6 +40,7 @@ const Dashboard = () => {
   const [activeEvent, setActiveEvent] = useState<ScheduledEvent | null>(null);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
+  const [showPantryDialog, setShowPantryDialog] = useState(false);
   const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
 
   const loadActiveEvent = async () => {
@@ -243,6 +245,11 @@ const Dashboard = () => {
                   <DropdownMenuSeparator />
                 </>
               )}
+              <DropdownMenuItem onClick={() => setShowPantryDialog(true)} className="cursor-pointer">
+                <UtensilsCrossed className="h-4 w-4 mr-2" />
+                My Pantry
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -309,6 +316,13 @@ const Dashboard = () => {
         </Tabs>
       </main>
 
+      {user?.id && (
+        <PantryDialog
+          open={showPantryDialog}
+          onOpenChange={setShowPantryDialog}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };

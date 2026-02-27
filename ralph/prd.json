@@ -235,7 +235,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "From any dashboard page, click the user avatar/menu to find 'My Pantry'. Use a unique test item name like 'e2e-test-pantry-item'. After testing, remove it to clean up. Skip 12.2 (default items — can't test as first-time user) and 12.6 (grocery list integration — requires parsed recipes)."
     },
     {

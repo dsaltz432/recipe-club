@@ -554,7 +554,7 @@ describe("Dashboard", () => {
     expect(menuBtn).toBeInTheDocument();
   });
 
-  it("does not show My Pantry in hamburger menu (pantry moved to Meals tab)", async () => {
+  it("shows My Pantry in hamburger menu", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Test",
@@ -569,8 +569,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // My Pantry should no longer appear in the dropdown
-    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
+    // My Pantry should appear in the dropdown
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
   });
 
   // --- loadStats error ---
@@ -629,9 +629,9 @@ describe("Dashboard", () => {
     consoleSpy.mockRestore();
   });
 
-  // --- No My Pantry when user has no id ---
+  // --- My Pantry menu item always renders, dialog gated by userId ---
 
-  it("does not show My Pantry menu item when user has no id", async () => {
+  it("shows My Pantry menu item even when user has no id (dialog is gated)", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: null,
       name: "Test",
@@ -646,7 +646,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
+    // Menu item is always rendered; dialog opening is gated by user.id
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
   });
 
   // --- onEventChange passed to RecipeClubEvents ---
@@ -792,7 +793,7 @@ describe("Dashboard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/users");
   });
 
-  it("hamburger menu does not contain My Pantry entry", async () => {
+  it("hamburger menu contains My Pantry entry", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Test",
@@ -807,8 +808,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // My Pantry has been removed from the hamburger menu
-    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
+    // My Pantry is accessible from the hamburger menu
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
   });
 
   // --- handleTabChange (lines 31-33) ---

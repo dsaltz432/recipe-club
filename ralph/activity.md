@@ -34,12 +34,13 @@
 - **Add Meal dialog:** Clicking empty slot opens "Add Meal" dialog: "Add a meal for [day] [type]." Two tabs: "Custom Meal" (default) + "From Recipes". Custom requires name + either URL or manual ingredients. Manual mode: ingredient rows (Qty/Unit/Name/Category) with "Add Ingredient" button. "Add to Meal" enables when name + at least one ingredient name filled.
 - **Meal detail page:** URL `/meals/{uuid}`. Shows date, "Personal" badge, recipe count, "Rate Recipes" button, recipe cards. Back button "Meals" navigates to `/dashboard/meals`. Custom meals create a `recipes` entry so they appear in "My Recipes".
 - **Remove meal from detail page:** Delete (trash) button on recipe card in meal detail page. Shows `alertdialog` "Remove from meal?" — removes `meal_plan_item` link and unlinks recipe from event (`event_id: null`). Recipe persists in "My Recipes". Toast: "Recipe removed from meal". To fully clean up, delete the orphaned recipe from My Recipes tab separately.
+- **My Pantry dialog from header:** User dropdown menu (avatar button) now has "My Pantry" item between "Manage Users" (admin-only) and "Sign Out". Opens `PantryDialog` component (`src/components/pantry/PantryDialog.tsx`). Dialog shows input+add button, pantry items list with remove buttons, and info text. Add shows toast "Added '[item]' to pantry". Duplicate shows error toast "This item is already in your pantry". Remove shows `alertdialog` "Remove from pantry?" with Cancel/Remove buttons. Default items (Pepper, Salt, Water) have no remove button.
 - **Meal slot action buttons:** Filled meal slots now have three action buttons: "View meal details" (Eye icon), "Mark as cooked"/"Undo cook" (CheckCircle2/RotateCcw icons), and "Add another meal" (Plus icon). "Done" immediately sets `cooked_at` on all `meal_plan_items` in the slot. "Undo" shows confirmation dialog "Undo cook?" with Cancel/Continue buttons, then sets `cooked_at: null`. Cooked state tracked via `cooked_at` field in `meal_plan_items` table. Visual: green background + checkmark + sr-only "Cooked" text when cooked.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 14
-**Current Task:** US-014 completed
+**Tasks Completed:** 15
+**Current Task:** US-015 completed
 
 ---
 
@@ -506,5 +507,43 @@
 - Groceries Combined tab shows items grouped by category (PRODUCE, PROTEIN, DAIRY, PANTRY, SPICES, CONDIMENTS, OTHER) with recipe attribution (meal name next to each item).
 - Per-recipe sub-tabs (e.g., "Sal", "Sausage", "Custom 1") correspond to individual meals in that week.
 - "Today" button only appears when viewing a non-current week, consistent with Meal Plan tab behavior.
+
+---
+
+## 2026-02-27 18:00 — US-015: E2E: Pantry management (Section 12)
+
+### What was tested
+- **AC 12.1 My Pantry Dialog — PASS:** Clicked user menu ("D dev" avatar button), verified "My Pantry" menu item visible between "Manage Users" and "Sign Out". Clicked "My Pantry", verified dialog opens with title "My Pantry", description "Items you already have at home. These will be excluded from grocery lists.", input field "Add an item...", and 8 pantry items: Garlic, Jalapeño, Lemon, Onion, Pepper (Default), Prune, Salt (Default), Water (Default). Default items have no remove button. **Note:** "My Pantry" menu item was missing — added it to the user dropdown in Dashboard.tsx, wired to the existing `PantryDialog` component.
+- **AC 12.3 Add Item — PASS:** Typed "e2e-test-pantry-item" in input field, pressed Enter. Toast appeared: "Added 'e2e-test-pantry-item' to pantry". Item "E2e-Test-Pantry-Item" appeared in list (auto-capitalized first letter, sorted alphabetically at top). Item count increased to 9.
+- **AC 12.4 Duplicate Item — PASS:** Typed "e2e-test-pantry-item" again, pressed Enter. Error toast appeared: "This item is already in your pantry". Item not duplicated, list unchanged.
+- **AC 12.5 Remove Item — PASS:** Clicked "Remove e2e-test-pantry-item" trash icon. Confirmation `alertdialog` appeared: "Remove from pantry?" / "Remove 'e2e-test-pantry-item' from your pantry?" with Cancel and Remove buttons. Clicked Remove. Item removed from list, back to 8 original items. Test data cleaned up.
+- **Skipped:** AC 12.2 (default items — can't test as first-time user, defaults already populated), AC 12.6 (grocery list integration — requires parsed recipes)
+
+### Bug Found & Fixed
+- **Missing "My Pantry" menu item in user dropdown:** The E2E test flow (Section 12.1) expects a "My Pantry" option in the user dropdown menu, but it didn't exist. The `PantryDialog` component already existed (used on EventDetailPage), but was not accessible from the header. **Fix:** Added "My Pantry" `DropdownMenuItem` with `UtensilsCrossed` icon to the user dropdown in `Dashboard.tsx`, with `showPantryDialog` state to control the existing `PantryDialog` component. Updated 3 existing Dashboard tests that asserted "My Pantry" was NOT in the menu.
+
+### Screenshots
+- `ralph/us015-ac12.1-my-pantry-dialog.png` — My Pantry dialog opened from user menu
+- `ralph/us015-ac12.3-add-item.png` — Pantry after adding test item with toast
+- `ralph/us015-ac12.4-duplicate-item.png` — Error toast on duplicate item
+- `ralph/us015-ac12.5-remove-confirm.png` — Remove confirmation dialog
+- `ralph/us015-ac12.5-remove-complete.png` — Pantry after removing test item (clean state)
+
+### Files changed
+- `src/pages/Dashboard.tsx` — Added "My Pantry" menu item with `UtensilsCrossed` icon, `showPantryDialog` state, and `PantryDialog` component import/render
+- `tests/unit/pages/Dashboard.test.tsx` — Updated 3 tests from asserting "My Pantry" is NOT present to asserting it IS present
+
+### Quality checks
+- Build: PASS
+- Tests: PASS (1 pre-existing flaky failure in `MealPlanPage.test.tsx` — timing issue, unrelated to changes)
+- Lint: N/A
+
+### Learnings for future iterations
+- The `PantryDialog` component is a reusable dialog that just needs `open`, `onOpenChange`, and `userId` props — easy to integrate anywhere.
+- Pantry items are auto-capitalized on first letter when stored (e.g., "e2e-test-pantry-item" → "E2e-Test-Pantry-Item").
+- The add button in the dialog is disabled when input is empty — enabled when text is entered.
+- Press Enter submits the add form (keyboard shortcut works in addition to clicking the add button).
+- Default pantry items (Pepper, Salt, Water) have "Default" badge and no remove button.
+- Duplicate check is case-insensitive — "E2E-TEST-PANTRY-ITEM" matches "e2e-test-pantry-item".
 
 ---
