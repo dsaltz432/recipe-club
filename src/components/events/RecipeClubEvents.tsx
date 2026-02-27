@@ -23,8 +23,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { updateCalendarEvent } from "@/lib/googleCalendar";
-import { cancelEvent as cancelEventAction, completeEvent as completeEventAction } from "@/lib/eventActions";
+import { cancelEvent as cancelEventAction, completeEvent as completeEventAction, updateEvent as updateEventAction } from "@/lib/eventActions";
 import {
   Dialog,
   DialogContent,
@@ -318,48 +317,14 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
   const handleSaveEdit = async () => {
     setIsUpdating(true);
     try {
-      const newEventDate = format(editDate!, "yyyy-MM-dd");
-
-      // Get the event details including calendar_event_id and ingredient name
-      const { data: eventData, error: fetchError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (name)")
-        .eq("id", event.eventId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the scheduled event
-      const { error: updateError } = await supabase
-        .from("scheduled_events")
-        .update({
-          event_date: newEventDate,
-          event_time: editTime,
-        })
-        .eq("id", event.eventId);
-
-      if (updateError) throw updateError;
-
-      // Update Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const calendarResult = await updateCalendarEvent({
-          calendarEventId: eventData.calendar_event_id,
-          date: editDate!,
-          time: editTime,
-          ingredientName: eventData.ingredients?.name || "Unknown",
-        });
-
-        if (!calendarResult.success) {
-          console.warn("Failed to update calendar event:", calendarResult.error);
-        }
+      const result = await updateEventAction(event.eventId, editDate!, editTime);
+      if (result.success) {
+        toast.success("Event updated!");
+        setShowEditDialog(false);
+        onEdit?.();
+      } else {
+        toast.error("Failed to update event");
       }
-
-      toast.success("Event updated!");
-      setShowEditDialog(false);
-      onEdit?.();
-    } catch (error) {
-      console.error("Error updating event:", error);
-      toast.error("Failed to update event");
     } finally {
       setIsUpdating(false);
     }

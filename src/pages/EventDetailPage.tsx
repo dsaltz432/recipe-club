@@ -54,8 +54,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
-import { updateCalendarEvent } from "@/lib/googleCalendar";
-import { cancelEvent, completeEvent } from "@/lib/eventActions";
+import { cancelEvent, completeEvent, updateEvent } from "@/lib/eventActions";
 import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
@@ -932,52 +931,19 @@ const EventDetailPage = () => {
   };
 
   const handleSaveEventEdit = async () => {
-
     setIsUpdating(true);
     try {
-      const newEventDate = format(editDate!, "yyyy-MM-dd");
-
-      // Get the event details including calendar_event_id
-      const { data: eventData, error: fetchError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (name)")
-        .eq("id", event!.eventId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the scheduled event
-      const { error: updateError } = await supabase
-        .from("scheduled_events")
-        .update({
-          event_date: newEventDate,
-          event_time: editTime,
-        })
-        .eq("id", event!.eventId);
-
-      if (updateError) throw updateError;
-
-      // Update Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const calendarResult = await updateCalendarEvent({
-          calendarEventId: eventData.calendar_event_id,
-          date: editDate!,
-          time: editTime,
-          ingredientName: eventData.ingredients?.name || "Unknown",
-        });
-
-        if (!calendarResult.success) {
-          console.warn("Failed to update calendar event:", calendarResult.error);
+      const result = await updateEvent(event!.eventId, editDate!, editTime);
+      if (result.success) {
+        if (result.calendarSyncFailed) {
           toast.warning("Calendar sync failed. The event date was updated but your Google Calendar may be out of sync.");
         }
+        toast.success("Event updated!");
+        setShowEditDialog(false);
+        loadEventData();
+      } else {
+        toast.error("Failed to update event");
       }
-
-      toast.success("Event updated!");
-      setShowEditDialog(false);
-      loadEventData();
-    } catch (error) {
-      console.error("Error updating event:", error);
-      toast.error("Failed to update event");
     } finally {
       setIsUpdating(false);
     }

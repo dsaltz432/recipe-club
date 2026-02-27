@@ -1,7 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import { deleteCalendarEvent } from "@/lib/googleCalendar";
+import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
+import { format } from "date-fns";
 
 export type ActionResult = { success: true } | { success: false; error: string };
+export type UpdateEventResult = { success: true; calendarSyncFailed?: boolean } | { success: false; error: string };
 
 /**
  * Cancel an event: delete calendar event, detach meal plan recipes, delete event row.
@@ -77,5 +79,56 @@ export async function completeEvent(eventId: string, ingredientId: string, userI
   } catch (error) {
     console.error("Error completing event:", error);
     return { success: false, error: error instanceof Error ? error.message : "Failed to complete event" };
+  }
+}
+
+/**
+ * Update an event's date/time and sync Google Calendar if linked.
+ * Callers handle UI concerns (toast, dialogs, callbacks).
+ */
+export async function updateEvent(eventId: string, date: Date, time: string): Promise<UpdateEventResult> {
+  try {
+    const newEventDate = format(date, "yyyy-MM-dd");
+
+    // Fetch event row (need calendar_event_id and ingredient name for calendar sync)
+    const { data: eventData, error: fetchError } = await supabase
+      .from("scheduled_events")
+      .select("*, ingredients (name)")
+      .eq("id", eventId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Update the scheduled event
+    const { error: updateError } = await supabase
+      .from("scheduled_events")
+      .update({
+        event_date: newEventDate,
+        event_time: time,
+      })
+      .eq("id", eventId);
+
+    if (updateError) throw updateError;
+
+    // Sync Google Calendar if linked
+    let calendarSyncFailed = false;
+    if (eventData.calendar_event_id) {
+      const calendarResult = await updateCalendarEvent({
+        calendarEventId: eventData.calendar_event_id,
+        date,
+        time,
+        ingredientName: eventData.ingredients?.name || "Unknown",
+      });
+
+      if (!calendarResult.success) {
+        console.warn("Failed to update calendar event:", calendarResult.error);
+        calendarSyncFailed = true;
+      }
+    }
+
+    return { success: true, calendarSyncFailed };
+  } catch (error) {
+    console.error("Error updating event:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to update event" };
   }
 }
