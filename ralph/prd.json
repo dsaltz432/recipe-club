@@ -299,7 +299,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": "Since we're in dev mode, email notifications are skipped and Google Calendar returns mock data. The main thing to verify is that NO ERRORS appear — the features degrade gracefully. Navigate to an event detail page, add a test recipe (manual, no URL), check browser console via list_console_messages for errors. Clean up by deleting the test recipe. Skip 17.1-17.3 (require real RESEND_API_KEY) and 18.1-18.3 (require real Google Calendar)."
     },
     {

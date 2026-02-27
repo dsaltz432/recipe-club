@@ -39,8 +39,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 18
-**Current Task:** US-018 completed
+**Tasks Completed:** 19
+**Current Task:** US-019 completed
 
 ---
 
@@ -659,5 +659,36 @@
 - Star rating buttons follow WCAG pattern: `"Rate N out of 5 stars"` — clear, unambiguous labels for screen readers.
 - Photo alt text should be descriptive: include recipe name and photo index for context.
 - Test regex matchers (`/pattern/`) are useful when aria-labels become dynamic — they match partial strings without breaking when names change.
+
+---
+
+## 2026-02-27 21:00 — US-019: E2E: Email & Calendar in dev mode (Sections 17, 18)
+
+### What was tested
+- **AC 17.4 Dev Mode Notifications — PASS:** Added test recipe "E2E Dev Mode Test Recipe" to Salmon event (manual ingredient source). Recipe created successfully (count updated to "Recipes (2)"). Console showed `[DEV MODE] Skipping email notification` — confirming email notifications are gracefully skipped in dev mode. No errors thrown during the notification step. The recipe add flow completed without any user-facing issues.
+- **AC 18.4 Dev Mode Calendar — PASS:** Navigated across events list (`/dashboard/events`) and event detail page (`/events/a9ede5ee-...`). No calendar-related errors in browser console. Google Calendar integration degrades gracefully in dev mode — no errors, no broken UI, no error toasts. Calendar features simply don't appear.
+- **Console Error Check — PASS:** Checked browser console across all event page navigations (events list, event detail, back to events, return to event detail). Only messages found: `[DEV MODE] Skipping email notification` (expected, confirms graceful skip), smart combine AI errors (`AI returned skipped or no items` — expected, no AI API key in dev mode), Vite connection messages, React DevTools info. Zero calendar-related errors. Zero notification-related errors. All dev-mode guards work correctly.
+- **Cleanup — PASS:** Deleted test recipe "E2E Dev Mode Test Recipe" from Salmon event. Confirmation dialog "Delete recipe from event?" → clicked Delete → toast "Recipe deleted" appeared → count back to "Recipes (1)". Original test data restored.
+- **Skipped:** AC 17.1-17.3 (require real RESEND_API_KEY for actual email sending), AC 18.1-18.3 (require real Google Calendar API credentials)
+
+### Screenshots
+- `ralph/us019-ac17.4-add-recipe-no-errors.png` — Event detail after adding test recipe, no errors
+- `ralph/us019-ac18.4-no-calendar-errors.png` — Event detail page, clean console
+- `ralph/us019-console-clean.png` — Event detail page with no errors after multiple navigations
+- `ralph/us019-cleanup-complete.png` — After deleting test recipe, count back to 1
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Dev mode email guard: `[DEV MODE] Skipping email notification` is logged to console when a recipe is added to an event. The guard in the notification code checks for dev mode and silently skips the email send.
+- Dev mode calendar guard: No calendar-related code executes on event pages in dev mode — no errors, no mock data shown, features simply absent. This is different from the smart combine edge function which actively runs and fails with an AI error.
+- Console message categories in dev mode: (1) `[DEV MODE] Skipping...` for guarded features (notifications), (2) `AI returned skipped or no items` for edge functions that run but lack API keys (smart combine), (3) Standard Vite/React dev messages. None are user-facing errors.
+- Smart combine errors (`AI returned skipped or no items`) appear on the initial event detail page load when the Groceries tab data is prefetched. These are expected and contained to the grocery tab — they don't affect the Recipes or Pantry tabs.
 
 ---
