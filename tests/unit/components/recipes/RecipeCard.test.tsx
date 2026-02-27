@@ -587,7 +587,6 @@ describe("RecipeCard - Add Note Button", () => {
     render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
 
     expect(screen.getByLabelText("Add note")).toBeInTheDocument();
-    expect(screen.getByText("Add Note")).toBeInTheDocument();
   });
 
   it("does not show Add Note button when onAddNote is not provided", () => {

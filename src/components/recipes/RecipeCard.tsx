@@ -101,7 +101,58 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
             </Avatar>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-display text-lg font-semibold truncate">{recipe.name}</h3>
+            <div className="flex items-center gap-1">
+              <h3 className="font-display text-lg font-semibold truncate flex-1">{recipe.name}</h3>
+              {/* Action buttons in header */}
+              {(onAddNote || onEditIngredients || onDelete || (recipe.isPersonal && onEdit)) && (
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {onAddNote && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => onAddNote(recipe)}
+                      aria-label="Add note"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {onEditIngredients && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      aria-label="Edit ingredients"
+                      onClick={() => onEditIngredients(recipe)}
+                    >
+                      <ListChecks className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {recipe.isPersonal && onEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      aria-label="Edit recipe"
+                      onClick={() => onEdit(recipe)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      aria-label="Delete recipe"
+                      onClick={() => onDelete(recipe.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               {recipe.createdByName && (
                 <span className="text-xs text-muted-foreground">
@@ -115,65 +166,27 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
 
       <CardContent className="pt-0">
         {/* Badges row */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          {recipe.isPersonal && (
-            <Badge variant="outline" className="border-purple text-purple bg-purple/5">
-              Personal
-            </Badge>
-          )}
-
-          {(onDelete || (recipe.isPersonal && onEdit) || onEditIngredients) && (
-            <div className="flex items-center gap-1 ml-auto">
-              {onEditIngredients && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
-                  aria-label="Edit ingredients"
-                  onClick={() => onEditIngredients(recipe)}
-                >
-                  <ListChecks className="h-3.5 w-3.5" />
-                  <span className="text-xs">Ingredients</span>
-                </Button>
-              )}
-              {recipe.isPersonal && onEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  aria-label="Edit recipe"
-                  onClick={() => onEdit(recipe)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                  aria-label="Delete recipe"
-                  onClick={() => onDelete(recipe.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          )}
-
-          {recipe.ingredientName && (
-            <Badge
-              variant="outline"
-              style={{
-                borderColor: themeColor,
-                color: themeColor,
-                backgroundColor: bgColor || undefined,
-              }}
-            >
-              {recipe.ingredientName}
-            </Badge>
-          )}
-        </div>
+        {(recipe.isPersonal || recipe.ingredientName) && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {recipe.isPersonal && (
+              <Badge variant="outline" className="border-purple text-purple bg-purple/5">
+                Personal
+              </Badge>
+            )}
+            {recipe.ingredientName && (
+              <Badge
+                variant="outline"
+                style={{
+                  borderColor: themeColor,
+                  color: themeColor,
+                  backgroundColor: bgColor || undefined,
+                }}
+              >
+                {recipe.ingredientName}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Rating display */}
         {recipe.ratingSummary && recipe.ratingSummary.totalRatings > 0 && (
@@ -224,18 +237,6 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
               <Camera className="h-3 w-3" />
               {recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0)} photos
             </span>
-          )}
-          {onAddNote && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs"
-              onClick={() => onAddNote(recipe)}
-              aria-label="Add note"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Add Note
-            </Button>
           )}
         </div>
 
