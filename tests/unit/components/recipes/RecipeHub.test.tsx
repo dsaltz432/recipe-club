@@ -2398,7 +2398,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     await waitFor(() => {
       expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
       expect(screen.getByLabelText(/recipe name/i)).toHaveValue("My Home Recipe");
-      expect(screen.getByLabelText(/recipe url/i)).toHaveValue("https://example.com/home");
+      expect(screen.getByDisplayValue("https://example.com/home")).toBeInTheDocument();
     });
   });
 
@@ -2525,10 +2525,10 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByLabelText("Edit recipe"));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/recipe url/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("https://example.com/home")).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText(/recipe url/i), {
+    fireEvent.change(screen.getByDisplayValue("https://example.com/home"), {
       target: { value: "not-a-url" },
     });
 
@@ -2595,7 +2595,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     });
   });
 
-  it("does not show edit or delete buttons on club event recipe cards", async () => {
+  it("shows edit and delete buttons on club event recipe cards", async () => {
     const clubRecipesData = [
       {
         id: "recipe-1",
@@ -2623,9 +2623,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
       expect(screen.getByText("Club Recipe")).toBeInTheDocument();
     });
 
-    // Club event recipes should not show edit or delete
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+    // Club event recipes now show edit and delete like personal recipes
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
   });
 
   it("opens edit dialog with empty URL for recipe without URL", async () => {
@@ -2694,11 +2694,11 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByLabelText("Edit recipe"));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/recipe url/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("https://example.com/home")).toBeInTheDocument();
     });
 
     // Clear the URL
-    fireEvent.change(screen.getByLabelText(/recipe url/i), {
+    fireEvent.change(screen.getByDisplayValue("https://example.com/home"), {
       target: { value: "" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -3197,7 +3197,7 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     });
   });
 
-  it("does not show delete button on club event recipes", async () => {
+  it("shows delete and edit buttons on club event recipes", async () => {
     const clubRecipesData = [
       {
         id: "club-recipe-1",
@@ -3226,9 +3226,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
       expect(screen.getByText("Club Event Recipe")).toBeInTheDocument();
     });
 
-    // Club event recipes should not show delete or edit buttons
-    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    // Club event recipes now show edit and delete like personal recipes
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
   });
 });
 

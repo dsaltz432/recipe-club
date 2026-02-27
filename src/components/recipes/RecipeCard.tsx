@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, ListChecks } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
-import { GROCERY_CATEGORIES, CATEGORY_ORDER } from "@/lib/groceryList";
+import { GROCERY_CATEGORIES, CATEGORY_ORDER, isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 
@@ -63,10 +63,10 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
     ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
     : DEFAULT_PANTRY_ITEMS;
   const filteredIngredients = ingredients?.filter(
-    (ing) => !allPantryItems.includes(ing.name.toLowerCase())
+    (ing) => !isPantryItem(ing.name, allPantryItems, ing.unit)
   );
   const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
-  const hasDetails = recipe.url || recipe.notes.length > 0;
+  const hasDetails = recipe.notes.length > 0;
 
   // Get colors from ingredient
   const bgColor = recipe.ingredientColor ? getLightBackgroundColor(recipe.ingredientColor) : undefined;
@@ -104,8 +104,19 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
             <div className="flex items-center gap-1">
               <h3 className="font-display text-lg font-semibold truncate flex-1">{recipe.name}</h3>
               {/* Action buttons in header */}
-              {(onAddNote || onEditIngredients || onDelete || (recipe.isPersonal && onEdit)) && (
+              {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {recipe.url && (
+                    <a
+                      href={recipe.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
+                      aria-label="Open recipe URL"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
+                    </a>
+                  )}
                   {onAddNote && (
                     <Button
                       variant="ghost"
@@ -128,7 +139,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                       <ListChecks className="h-3.5 w-3.5" />
                     </Button>
                   )}
-                  {recipe.isPersonal && onEdit && (
+                  {onEdit && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -315,19 +326,6 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
           <>
             {isExpanded && (
               <div className="space-y-3 mt-3 pt-3 border-t">
-                {recipe.url && (
-                  <a
-                    href={recipe.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm hover:underline flex items-center gap-1"
-                    style={{ color: themeColor }}
-                  >
-                    View recipe
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-
                 {/* Notes from contributors */}
                 {recipe.notes.some((n) => n.notes || (n.photos && n.photos.length > 0)) && (
                   <div className="space-y-3">

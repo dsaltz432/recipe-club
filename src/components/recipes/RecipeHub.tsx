@@ -38,6 +38,7 @@ import EditRecipeIngredientsDialog from "./EditRecipeIngredientsDialog";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
 import { getPantryItems, DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
+import { saveRecipeEdit } from "@/lib/recipeActions";
 
 export interface RecipeWithNotes extends Recipe {
   notes: RecipeNote[];
@@ -451,22 +452,19 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   };
 
   const handleSaveEdit = async () => {
-    if (editUrl.trim() && !isValidUrl(editUrl)) {
-      toast.error("Please enter a valid URL starting with http:// or https://");
-      return;
-    }
-
     setIsEditing(true);
     try {
-      const { error } = await supabase
-        .from("recipes")
-        .update({
-          name: editName.trim(),
-          url: editUrl.trim() || null,
-        })
-        .eq("id", editingRecipe!.id);
+      const result = await saveRecipeEdit(
+        editingRecipe!.id,
+        editName,
+        editUrl,
+        editingRecipe!.url || ""
+      );
 
-      if (error) throw error;
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
 
       toast.success("Recipe updated!");
       setEditingRecipe(null);
@@ -618,6 +616,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   useEffect(() => {
     setIsLoading(true);
     loadRecipes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subTab]);
 
   // Filter recipes based on search and ingredient
@@ -690,6 +689,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                name="recipe-search"
                 placeholder="Search recipes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -749,8 +749,8 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
-                onEdit={subTab === "personal" ? handleEditRecipe : undefined}
-                onDelete={recipe.eventId && !recipe.isPersonal ? undefined : handleDeleteRecipe}
+                onEdit={handleEditRecipe}
+                onDelete={handleDeleteRecipe}
                 onEditRating={userId ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
                 onEditIngredients={recipe.createdBy === userId ? handleEditIngredients : undefined}

@@ -569,9 +569,9 @@ const EventDetailPage = () => {
 
   // Send email notification to club members
   const sendRecipeNotification = async (
-    type: "added" | "updated",
+    type: "added" | "updated" | "deleted",
     recipeNameVal: string,
-    recipeUrlVal: string
+    recipeUrlVal?: string
   ) => {
     if (isDevMode()) {
       console.log("[DEV MODE] Skipping email notification");
@@ -818,6 +818,7 @@ const EventDetailPage = () => {
   };
 
   const handleConfirmDeleteRecipe = async () => {
+    const deletedName = recipeToDelete!.name;
     try {
       const { error } = await supabase
         .from("recipes")
@@ -827,6 +828,7 @@ const EventDetailPage = () => {
       setRecipeToDelete(null);
       toast.success("Recipe deleted");
       deleteGroceryCache("event", eventId!, user!.id);
+      sendRecipeNotification("deleted", deletedName);
       loadEventData();
     } catch (error) {
       console.error("Error deleting recipe:", error);

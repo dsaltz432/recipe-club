@@ -10,10 +10,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import IngredientFormRows, {
-  createBlankRow,
-  type IngredientRow,
-} from "./IngredientFormRows";
+import IngredientFormRows from "./IngredientFormRows";
+import { createBlankRow } from "./ingredientRowTypes";
+import type { IngredientRow } from "./ingredientRowTypes";
 import { parseFractionToDecimal } from "@/lib/groceryList";
 import { deleteGroceryCache } from "@/lib/groceryCache";
 import type { RecipeIngredient, GroceryCategory } from "@/types";
@@ -44,7 +43,7 @@ function rowsToIngredientJson(rows: IngredientRow[]) {
     .filter((r) => r.name.trim())
     .map((r, i) => ({
       name: r.name.trim(),
-      quantity: parseFractionToDecimal(r.quantity) ?? null,
+      quantity: parseFractionToDecimal(r.quantity) ?? 1,
       unit: r.unit.trim() || null,
       category: r.category as GroceryCategory,
       sort_order: i,

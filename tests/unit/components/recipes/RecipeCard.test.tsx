@@ -173,15 +173,12 @@ describe("RecipeCard - Expandable Details", () => {
     expect(screen.getByRole("button", { name: /show less/i })).toBeInTheDocument();
   });
 
-  it("shows recipe URL link when expanded", () => {
+  it("shows recipe URL icon in header when recipe has URL", () => {
     const recipe = createMockRecipe({ url: "https://example.com/salmon-recipe" });
 
     render(<RecipeCard recipe={recipe} />);
 
-    // Expand
-    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-
-    const link = screen.getByRole("link", { name: /view recipe/i });
+    const link = screen.getByLabelText("Open recipe URL");
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "https://example.com/salmon-recipe");
     expect(link).toHaveAttribute("target", "_blank");
@@ -241,17 +238,18 @@ describe("RecipeCard - Expandable Details", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
+    // URL icon always visible in header
+    expect(screen.getByLabelText("Open recipe URL")).toBeInTheDocument();
+
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-    expect(screen.getByText("View recipe")).toBeInTheDocument();
 
     // Collapse
     fireEvent.click(screen.getByRole("button", { name: /show less/i }));
-    expect(screen.queryByText("View recipe")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /show more/i })).toBeInTheDocument();
   });
 
-  it("does not show URL link when recipe has no URL", () => {
+  it("does not show URL icon when recipe has no URL", () => {
     const recipe = createMockRecipe({
       url: undefined,
       notes: [createMockNote({ notes: "Some notes" })],
@@ -259,10 +257,7 @@ describe("RecipeCard - Expandable Details", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    // Expand
-    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-
-    expect(screen.queryByRole("link", { name: /view recipe/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Open recipe URL")).not.toBeInTheDocument();
   });
 
   it("does not show notes section when note has no notes or photos", () => {
@@ -399,14 +394,14 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
     expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
   });
 
-  it("shows delete but not edit button when not personal", () => {
+  it("shows edit and delete buttons for non-personal recipes with callbacks", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     const recipe = createMockRecipe({ isPersonal: false });
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
     expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
   });
 
@@ -443,14 +438,14 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
     expect(onDelete).toHaveBeenCalledWith("recipe-42");
   });
 
-  it("shows delete but not edit when isPersonal is undefined", () => {
+  it("shows edit and delete when isPersonal is undefined", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     const recipe = createMockRecipe({ isPersonal: undefined });
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
     expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
   });
 

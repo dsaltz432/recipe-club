@@ -193,7 +193,7 @@ describe("EditRecipeIngredientsDialog", () => {
     });
   });
 
-  it("handles quantity with no value as null", async () => {
+  it("defaults quantity to 1 when left blank", async () => {
     const ingredients = [
       createIngredient({ id: "ing-1", name: "Salt", quantity: undefined, unit: "" }),
     ];
@@ -206,7 +206,7 @@ describe("EditRecipeIngredientsDialog", () => {
       expect(mockRpc).toHaveBeenCalledWith("replace_recipe_ingredients", {
         p_recipe_id: "recipe-1",
         p_ingredients: expect.arrayContaining([
-          expect.objectContaining({ name: "Salt", quantity: null, unit: null }),
+          expect.objectContaining({ name: "Salt", quantity: 1, unit: null }),
         ]),
       });
     });

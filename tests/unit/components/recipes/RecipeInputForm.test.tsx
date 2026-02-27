@@ -6,7 +6,7 @@ import RecipeInputForm, {
   buildIngredientPayload,
   type RecipeFormData,
 } from "@/components/recipes/RecipeInputForm";
-import { createBlankRow, type IngredientRow } from "@/components/recipes/IngredientFormRows";
+import { createBlankRow, type IngredientRow } from "@/components/recipes/ingredientRowTypes";
 import { toast } from "sonner";
 
 // Mock Supabase (needed by upload utility)
@@ -528,7 +528,7 @@ describe("buildIngredientPayload", () => {
     });
     expect(payload[1]).toEqual({
       name: "Salt",
-      quantity: null,
+      quantity: 1,
       unit: null,
       category: "spices",
       sort_order: 1,

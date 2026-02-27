@@ -291,6 +291,7 @@ const GroceryListSection = ({
             ) : (
               <div className="flex items-center gap-2">
                 <Input
+                  name="new-grocery-qty"
                   value={newItemQuantity}
                   onChange={(e) => setNewItemQuantity(e.target.value)}
                   placeholder="Qty"
@@ -299,6 +300,7 @@ const GroceryListSection = ({
                   aria-label="New item quantity"
                 />
                 <Input
+                  name="new-grocery-unit"
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value)}
                   placeholder="Unit"
@@ -307,6 +309,7 @@ const GroceryListSection = ({
                   aria-label="New item unit"
                 />
                 <Input
+                  name="new-grocery-name"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   placeholder="Item name"

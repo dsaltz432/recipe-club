@@ -10,30 +10,12 @@ import {
 } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { GROCERY_CATEGORIES, CATEGORY_ORDER, detectCategory } from "@/lib/groceryList";
-import type { GroceryCategory } from "@/types";
-
-export interface IngredientRow {
-  id: string;
-  quantity: string;
-  unit: string;
-  name: string;
-  category: GroceryCategory;
-}
+import { createBlankRow } from "./ingredientRowTypes";
+import type { IngredientRow } from "./ingredientRowTypes";
 
 interface IngredientFormRowsProps {
   rows: IngredientRow[];
   onRowsChange: (rows: IngredientRow[]) => void;
-}
-
-let nextId = 1;
-export function createBlankRow(): IngredientRow {
-  return {
-    id: `new-${nextId++}`,
-    quantity: "",
-    unit: "",
-    name: "",
-    category: "other",
-  };
 }
 
 const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => {
@@ -90,6 +72,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
           className="grid grid-cols-[60px_70px_1fr_120px_32px] gap-1.5 items-center"
         >
           <Input
+            name={`qty-${row.id}`}
             value={row.quantity}
             onChange={(e) => updateRow(row.id, "quantity", e.target.value)}
             placeholder="1"
@@ -97,6 +80,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
             aria-label={`Quantity for row ${index + 1}`}
           />
           <Input
+            name={`unit-${row.id}`}
             value={row.unit}
             onChange={(e) => updateRow(row.id, "unit", e.target.value)}
             placeholder="cup"
@@ -104,6 +88,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
             aria-label={`Unit for row ${index + 1}`}
           />
           <Input
+            name={`name-${row.id}`}
             value={row.name}
             onChange={(e) => updateRow(row.id, "name", e.target.value)}
             onKeyDown={(e) => handleNameKeyDown(e, index)}
@@ -112,6 +97,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
             aria-label={`Name for row ${index + 1}`}
           />
           <Select
+            name={`cat-${row.id}`}
             value={row.category}
             onValueChange={(val) => updateRow(row.id, "category", val)}
           >

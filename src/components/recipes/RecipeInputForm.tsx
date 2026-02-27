@@ -8,7 +8,8 @@ import { Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
 import { parseFractionToDecimal } from "@/lib/groceryList";
-import IngredientFormRows, { createBlankRow, type IngredientRow } from "./IngredientFormRows";
+import IngredientFormRows from "./IngredientFormRows";
+import { createBlankRow, type IngredientRow } from "./ingredientRowTypes";
 
 export type InputMode = "url" | "upload" | "manual";
 
@@ -51,7 +52,7 @@ export function buildIngredientPayload(rows: IngredientRow[]) {
     .filter((r) => r.name.trim())
     .map((r, i) => ({
       name: r.name.trim(),
-      quantity: parseFractionToDecimal(r.quantity) ?? null,
+      quantity: parseFractionToDecimal(r.quantity) ?? 1,
       unit: r.unit.trim() || null,
       category: r.category,
       sort_order: i,

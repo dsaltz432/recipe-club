@@ -3983,6 +3983,8 @@ describe("EventDetailPage", () => {
   });
 
   it("handles confirm delete recipe when recipeToDelete is set", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
     render(<EventDetailPage />);
 
     await waitFor(() => {
@@ -4001,6 +4003,16 @@ describe("EventDetailPage", () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe deleted");
+    });
+
+    // Should send deletion notification to club members
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("notify-recipe-change", {
+        body: expect.objectContaining({
+          type: "deleted",
+          recipeName: "Chicken Parm",
+        }),
+      });
     });
   });
 

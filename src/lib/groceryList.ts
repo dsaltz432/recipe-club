@@ -178,12 +178,54 @@ export function generateCSV(
   return rows.join("\n");
 }
 
+/** Strip trailing "s" for simple plural handling (e.g. "olives"→"olive"). */
+function depluralize(word: string): string {
+  if (word.endsWith("s") && !word.endsWith("ss") && word.length > 2) return word.slice(0, -1);
+  return word;
+}
+
+/**
+ * Check if a pantry item matches a grocery item.
+ *
+ * Matches when:
+ * 1. Exact match (case-insensitive)
+ * 2. Simple plural: "olive" ↔ "olives"
+ * 3. Pantry name equals "itemName + unit" — handles cases like
+ *    pantry "garlic cloves" matching item name "garlic" with unit "clove"
+ * 4. Qualifier prefix: item "kosher salt" matches pantry "salt" — the item
+ *    name ends with the pantry name at a word boundary
+ */
+function pantryMatch(itemName: string, pantryName: string, itemUnit?: string): boolean {
+  if (pantryName === itemName) return true;
+  if (depluralize(pantryName) === depluralize(itemName)) return true;
+  // Check if pantry name is "name unit" (e.g. "garlic cloves" = "garlic" + "cloves")
+  if (itemUnit) {
+    const nameWithUnit = itemName + " " + itemUnit;
+    const nameWithUnits = itemName + " " + itemUnit + "s";
+    if (pantryName === nameWithUnit || pantryName === nameWithUnits
+      || depluralize(pantryName) === nameWithUnit || depluralize(pantryName) === depluralize(nameWithUnits))
+      return true;
+  }
+  // Qualifier prefix: "kosher salt" ends with " salt" → matches pantry "salt"
+  const dp = depluralize(pantryName);
+  if (itemName.endsWith(" " + pantryName) || itemName.endsWith(" " + dp)) return true;
+  const di = depluralize(itemName);
+  if (di.endsWith(" " + pantryName) || di.endsWith(" " + dp)) return true;
+  return false;
+}
+
+/** Check if an ingredient name (with optional unit) matches any pantry item. */
+export function isPantryItem(name: string, pantryItems: string[], unit?: string): boolean {
+  const itemName = name.toLowerCase().trim();
+  const itemUnit = unit?.toLowerCase().trim();
+  return pantryItems.some(p => pantryMatch(itemName, p.toLowerCase().trim(), itemUnit));
+}
+
 export function filterSmartPantryItems(
   items: SmartGroceryItem[],
   pantryItems: string[]
 ): SmartGroceryItem[] {
-  const normalizedPantry = new Set(pantryItems.map(n => n.toLowerCase().trim()));
-  return items.filter((item) => !normalizedPantry.has(item.name.toLowerCase().trim()));
+  return items.filter((item) => !isPantryItem(item.name, pantryItems, item.unit));
 }
 
 export async function smartCombineIngredients(

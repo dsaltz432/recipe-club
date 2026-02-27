@@ -21,6 +21,7 @@ import {
   generatePlainText,
   downloadCSV,
   filterSmartPantryItems,
+  isPantryItem,
   smartCombineIngredients,
   decimalToFraction,
   detectCategory,
@@ -739,6 +740,118 @@ describe("groceryList", () => {
 
       const result = filterSmartPantryItems(items, []);
       expect(result).toHaveLength(1);
+    });
+
+    it("matches pantry 'garlic cloves' against item named 'garlic'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "garlic", totalQuantity: 3, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
+        { name: "onion", totalQuantity: 1, unit: undefined, category: "produce", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["garlic cloves"]);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("onion");
+    });
+
+    it("matches pantry 'garlic clove' against item named 'garlic'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "garlic", totalQuantity: 3, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["garlic clove"]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("matches plural pantry item against singular grocery item", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "olive", totalQuantity: 10, unit: undefined, category: "produce", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["olives"]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("does not false-match 'butter' against 'butter beans'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "butter beans", totalQuantity: 1, unit: "can", category: "pantry", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["butter"]);
+      expect(result).toHaveLength(1);
+    });
+
+    it("does not false-match 'cream' against 'cream cheese'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "cream cheese", totalQuantity: 1, unit: "block", category: "dairy", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["cream"]);
+      expect(result).toHaveLength(1);
+    });
+
+    it("does not false-match 'chicken' against 'chicken broth'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "chicken broth", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["chicken"]);
+      expect(result).toHaveLength(1);
+    });
+
+    it("matches 'kosher salt' against pantry 'salt' via qualifier suffix", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "kosher salt", totalQuantity: 1, unit: "tsp", category: "spices", sourceRecipes: ["R1"] },
+        { name: "flour", totalQuantity: 2, unit: "cup", category: "pantry", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["salt"]);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("flour");
+    });
+
+    it("matches 'black pepper' against pantry 'pepper' via qualifier suffix", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "black pepper", totalQuantity: 1, unit: "tsp", category: "spices", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["pepper"]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("matches 'sea salt' against pantry 'salt'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "sea salt", totalQuantity: 1, unit: "pinch", category: "spices", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["salt"]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("matches 'extra virgin olive oil' against pantry 'olive oil'", () => {
+      const items: SmartGroceryItem[] = [
+        { name: "extra virgin olive oil", totalQuantity: 2, unit: "tbsp", category: "pantry", sourceRecipes: ["R1"] },
+      ];
+
+      const result = filterSmartPantryItems(items, ["olive oil"]);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe("isPantryItem", () => {
+    it("returns true for exact match", () => {
+      expect(isPantryItem("salt", ["salt", "pepper"])).toBe(true);
+    });
+
+    it("returns false when no match", () => {
+      expect(isPantryItem("flour", ["salt", "pepper"])).toBe(false);
+    });
+
+    it("handles name+unit matching for RecipeIngredient", () => {
+      expect(isPantryItem("garlic", ["garlic cloves"], "clove")).toBe(true);
+    });
+
+    it("handles qualifier suffix matching for RecipeIngredient", () => {
+      expect(isPantryItem("kosher salt", ["salt"])).toBe(true);
     });
   });
 

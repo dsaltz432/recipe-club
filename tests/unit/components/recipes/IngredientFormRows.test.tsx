@@ -38,10 +38,8 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import IngredientFormRows, {
-  createBlankRow,
-  type IngredientRow,
-} from "@/components/recipes/IngredientFormRows";
+import IngredientFormRows from "@/components/recipes/IngredientFormRows";
+import { createBlankRow, type IngredientRow } from "@/components/recipes/ingredientRowTypes";
 
 const makeRow = (overrides: Partial<IngredientRow> = {}): IngredientRow => ({
   id: "row-1",

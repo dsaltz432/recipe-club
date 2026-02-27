@@ -127,6 +127,7 @@ const PersonalMealDetailPage = () => {
   // Edit ingredients state
   const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
   const [editIngredientsItems, setEditIngredientsItems] = useState<RecipeIngredient[]>([]);
+  const [weekStart, setWeekStart] = useState<string | null>(null);
 
   // Notes expansion state
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -199,6 +200,18 @@ const PersonalMealDetailPage = () => {
         };
       });
       setMealItems(mealItemsList);
+
+      // Load week_start from the meal plan for grocery cache invalidation
+      if (mealItemsList.length > 0) {
+        const { data: planData } = await supabase
+          .from("meal_plans")
+          .select("week_start")
+          .eq("id", mealItemsList[0].plan_id)
+          .single();
+        if (planData) {
+          setWeekStart(planData.week_start);
+        }
+      }
 
       const linkedRecipeIds = mealItemsList
         .map((m) => m.recipe_id)
@@ -881,6 +894,7 @@ const PersonalMealDetailPage = () => {
             setEditIngredientsRecipe(null);
             loadEventData();
           }}
+          cacheContext={weekStart && user?.id ? { type: "meal_plan", id: weekStart, userId: user.id } : undefined}
         />
       )}
 
