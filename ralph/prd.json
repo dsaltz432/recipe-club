@@ -157,7 +157,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to /dashboard/recipes and click 'My Recipes' tab. Create a test recipe with a unique name like 'E2E Test Recipe [timestamp]'. After editing and verifying, delete it to clean up. For 7.11, just verify the ListChecks icon button exists on a recipe card you created (don't need to open the dialog — that's tested elsewhere)."
     },
     {

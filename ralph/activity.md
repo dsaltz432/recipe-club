@@ -27,11 +27,13 @@
 - **Recipe Hub structure:** `/dashboard/recipes` has two sub-tabs: "Club (N)" and "My Recipes (N)". Club tab shows recipes from club events; My Recipes shows personal/user-created recipes. Search input filters by name. Sort dropdown: "Newest First", "Alphabetical (A-Z)", "Highest Rated". Ingredient filter dropdown (Club tab only): "All Ingredients" + one option per used ingredient. My Recipes tab hides ingredient filter.
 - **RecipeCard fields:** Shows avatar, name, "by [creator]", ingredient badge, Personal badge (if personal), rating stars (if rated), notes count, photos count, ingredient list (expandable), and notes (expandable via "Show More"). Creator name comes from `profiles` table — may be null if profile wasn't populated during email signup (fixed in `handle_new_user` migration).
 - **Dev user profile name fix:** `handle_new_user()` trigger now falls back to `split_part(email, '@', 1)` when no name in user metadata. Previously, email-only signups got `name: null` in profiles table, causing RecipeCard to not render creator info. For existing users, profile name must be updated directly in DB.
+- **Add Recipe button (My Recipes tab):** "Add Recipe" button appears on My Recipes tab only (not Club tab), opens a dialog with name (required) + URL (optional) fields. Creates a personal recipe with `event_id: null, ingredient_id: null`. Count updates in tab button label. Previously, personal recipes could only be created through Meal Plan "Add Meal" flow.
+- **Delete Recipe guard:** Deleting a recipe checks for `meal_plan_items` references first. If recipe is used in a meal plan, shows "Cannot Delete Recipe" guard dialog instead of delete confirmation.
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 9
-**Current Task:** US-009 completed
+**Tasks Completed:** 10
+**Current Task:** US-010 completed
 
 ---
 
@@ -325,5 +327,40 @@
 - Ingredient filter dropdown only appears on Club tab, not My Recipes tab. This is by design.
 - Search `fill` with empty string may not trigger React state update. Workaround: reload the page for a clean state, or use `Ctrl+A` then `Backspace` with a subsequent input event dispatch.
 - Sort dropdown options: "Newest First" (value=`newest`), "Alphabetical (A-Z)" (value=`alphabetical`), "Highest Rated" (value=`highest_rated`).
+
+---
+
+## 2026-02-27 14:15 — US-010: E2E: Recipe Hub - Edit/Delete recipes (Section 7.8-7.11)
+
+### What was tested
+- **AC 7.8 Add Personal Recipe — PASS:** On My Recipes tab, clicked "Add Recipe" button. Dialog opened with "Recipe Name *" and "Recipe URL (optional)" fields. Entered "E2E Test Recipe 20260227", clicked "Add Recipe". Toast "Recipe added!" appeared, recipe appeared in list, tab count updated from "My Recipes (3)" to "My Recipes (4)". **Note:** This feature was missing — implemented an "Add Recipe" button + dialog on the My Recipes tab to match the E2E test flow spec.
+- **AC 7.9 Edit Recipe — PASS:** Clicked "Edit recipe" (pencil icon) on "E2E Test Recipe 20260227". Edit dialog opened with pre-filled name. Changed name to "E2E Test Recipe EDITED", clicked "Save Changes". Toast "Recipe updated!" appeared, name updated in list.
+- **AC 7.10 Delete Recipe — PASS:** Clicked "Delete recipe" (trash icon) on "E2E Test Recipe EDITED". Confirmation `alertdialog` appeared: "Delete Recipe" / "Are you sure you want to delete this recipe? This action cannot be undone." with Cancel and Delete buttons. Clicked Delete. Toast "Recipe deleted!" appeared, recipe removed from list, count back to "My Recipes (3)". Test data cleaned up.
+- **AC 7.11 Edit Ingredients Button — PASS:** Verified all 3 personal recipes (Custom 1, Sausage, Sal) show "Edit ingredients" button (ListChecks icon). The button only renders when `recipe.createdBy === userId` (via `onEditIngredients` prop), so it correctly appears only on recipes the user created.
+- **Skipped:** None — all ACs tested.
+
+### Bug Found & Fixed
+- **Missing "Add Recipe" button on My Recipes tab:** The E2E test flow (Section 7.8) expects an "Add Recipe" button on the My Recipes tab, but it didn't exist. Personal recipes could only be created through the Meal Plan "Add Meal" flow. **Fix:** Added an "Add Recipe" button (with Plus icon) that appears on the My Recipes tab when the user is logged in. Opens a dialog with name (required) + URL (optional) fields. Creates a personal recipe with `event_id: null, ingredient_id: null`, same as the meal plan custom meal flow.
+
+### Screenshots
+- `ralph/us010-ac7.8-add-recipe.png` — My Recipes tab with new recipe added, count shows 4
+- `ralph/us010-ac7.9-edit-recipe.png` — After editing recipe name, toast visible
+- `ralph/us010-ac7.10-delete-confirm.png` — Delete confirmation dialog
+- `ralph/us010-ac7.10-delete-complete.png` — After deletion, count back to 3
+- `ralph/us010-ac7.11-edit-ingredients.png` — Edit ingredients buttons visible on all personal recipes
+
+### Files changed
+- `src/components/recipes/RecipeHub.tsx` — Added "Add Recipe" button (visible on My Recipes tab only), add recipe dialog, and `handleAddPersonalRecipe` handler. Imported `Plus` icon from lucide-react. Added state: `addRecipeOpen`, `addRecipeName`, `addRecipeUrl`, `isAdding`.
+
+### Quality checks
+- Build: PASS
+- Tests: PASS (1 pre-existing flaky failure in `MealPlanPage.test.tsx` — timing issue, unrelated to changes)
+- Lint: N/A
+
+### Learnings for future iterations
+- The "Add Recipe" button uses `ml-auto` to push it to the right side of the sub-tabs row, keeping the layout clean.
+- Add Recipe dialog disables the submit button when name is empty OR when URL is provided but invalid (doesn't start with http/https). Same URL validation pattern as Edit Recipe dialog.
+- Personal recipes created via this dialog have `event_id: null` and `ingredient_id: null` — same structure as custom meals from meal plan. They show up with "Personal" badge and no ingredient tag.
+- Delete Recipe has a guard: if the recipe is linked to `meal_plan_items`, it shows a "Cannot Delete Recipe" dialog instead of the deletion confirmation. This prevents orphaning meal plan references.
 
 ---
