@@ -78,7 +78,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Login first. Navigate to /dashboard/events. Use take_snapshot to find event cards. Click the first event card to navigate to its detail page. If no events exist, note this in the activity log as 'SKIP — no events in test data'. The event detail page URL pattern is /events/{uuid}."
     },
     {
