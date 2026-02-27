@@ -1004,3 +1004,86 @@ describe("RecipeCard - Edit Ingredients", () => {
     expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - Layout Structure", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders all action buttons in header for personal recipe with all callbacks", () => {
+    const onAddNote = vi.fn();
+    const onEditIngredients = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true, ingredientName: "Salmon" });
+
+    render(
+      <RecipeCard
+        recipe={recipe}
+        onAddNote={onAddNote}
+        onEditIngredients={onEditIngredients}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+
+    // All action buttons should be present
+    expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit ingredients")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    // Badges should be in a separate row (both present)
+    expect(screen.getByText("Personal")).toBeInTheDocument();
+    expect(screen.getByText("Salmon")).toBeInTheDocument();
+  });
+
+  it("renders club recipe with rating and no edit/add buttons when no callbacks", () => {
+    const recipe = createMockRecipe({
+      isPersonal: false,
+      ingredientName: "Salmon",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.0,
+        wouldCookAgainPercent: 75,
+        totalRatings: 2,
+        memberRatings: [
+          { initial: "S", wouldCookAgain: true },
+          { initial: "D", wouldCookAgain: false },
+        ],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Rating visible
+    expect(screen.getByText("4/5")).toBeInTheDocument();
+    expect(screen.getByText("Make again:")).toBeInTheDocument();
+    // No action buttons in header
+    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+    // Ingredient badge present, no Personal badge
+    expect(screen.getByText("Salmon")).toBeInTheDocument();
+    expect(screen.queryByText("Personal")).not.toBeInTheDocument();
+  });
+
+  it("renders recipe with no notes, no ingredients, and no badges cleanly", () => {
+    const recipe = createMockRecipe({
+      notes: [],
+      ingredientName: undefined,
+      isPersonal: undefined,
+      url: undefined,
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Recipe name still renders
+    expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    // No badges row
+    expect(screen.queryByText("Personal")).not.toBeInTheDocument();
+    // Stats show 0 notes
+    expect(screen.getByText("0 notes")).toBeInTheDocument();
+    // No expand button (no URL, no notes content)
+    expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+  });
+});
