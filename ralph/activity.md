@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 13
-**Current Task:** US-013 completed
+**Tasks Completed:** 14
+**Current Task:** US-014 completed
 
 ---
 
@@ -476,5 +476,35 @@
 - Undo cook uses `AlertDialog` pattern consistent with other destructive confirmations in the app (recipe delete, note delete, pantry remove).
 - The "View" button text uses `hidden sm:inline` to hide on small screens (icon-only on mobile, icon+text on desktop) — follows responsive pattern.
 - Custom meals created via "Enter Manually" in Add Meal dialog create a `recipe_content` entry with `status: "completed"` — this means the meal detail page may show the "Rate Recipes" button, but the meal slot "Done" button provides a simpler direct path to mark as cooked.
+
+---
+
+## 2026-02-27 17:30 — US-014: E2E: Meal Groceries (Section 11)
+
+### What was tested
+- **AC 11.1 Groceries Tab — PASS:** Navigated to `/dashboard/meals`, clicked "Groceries" sub-tab. Verified week navigation still visible: "Previous week" button, "Feb 22 - 28" date range, "Next week" button. "Grocery List" heading (h2) with "Copy" and "CSV" export buttons. Sub-tabs: "Combined" (selected), "Sal", "Sausage", "Custom 1". Combined view shows items grouped by category: PRODUCE (1), PROTEIN (4), DAIRY (1), PANTRY (2), SPICES (2), CONDIMENTS (2), OTHER (4) — with recipe attribution per item.
+- **AC 11.6 Empty States — PASS:** Navigated to next week (Mar 1 - 7) on Groceries tab. No meals exist that week. Empty state message displayed: "No meals planned this week. Add meals to see a grocery list." Week navigation (Previous/Today/Next) still visible above the empty state.
+- **AC 11.8 Week Navigation — PASS:** Tested all three navigation controls on Groceries tab: clicked "Next week" (Feb 22-28 → Mar 1-7, data reloaded to empty state), clicked "Previous week" (Mar 1-7 → Feb 22-28, data reloaded with full grocery list), clicked "Next week" then "Today" (Mar 1-7 → Feb 22-28, returned to current week with data reloaded). "Today" button only visible when not on current week. All transitions reload grocery data correctly.
+- **Skipped:** AC 11.2-11.5 (combined/per-recipe/pantry filtering — these need meals with parsed ingredients and are partially covered by the Combined tab verification above), AC 11.7 (export — tested in US-008)
+
+### Screenshots
+- `ralph/us014-ac11.1-groceries-tab.png` — Groceries tab with Combined view, category grouping, week navigation
+- `ralph/us014-ac11.6-empty-state.png` — Empty state on Mar 1-7 (no meals)
+- `ralph/us014-ac11.8-week-navigation.png` — Groceries tab after Today navigation back to current week
+
+### Files changed
+- None (test-only story, no code changes needed)
+
+### Quality checks
+- Build: N/A — no code changes
+- Tests: N/A — no code changes
+- Lint: N/A — no code changes
+
+### Learnings for future iterations
+- Meal Groceries tab reuses the same week navigation component as Meal Plan tab — Previous/Next/Today buttons work identically.
+- Empty state message on Groceries tab: "No meals planned this week. Add meals to see a grocery list." — shown when the selected week has no meals at all.
+- Groceries Combined tab shows items grouped by category (PRODUCE, PROTEIN, DAIRY, PANTRY, SPICES, CONDIMENTS, OTHER) with recipe attribution (meal name next to each item).
+- Per-recipe sub-tabs (e.g., "Sal", "Sausage", "Custom 1") correspond to individual meals in that week.
+- "Today" button only appears when viewing a non-current week, consistent with Meal Plan tab behavior.
 
 ---

@@ -219,7 +219,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Navigate to /dashboard/meals then click 'Groceries' tab. The groceries tab may be empty if no meals have parsed recipes this week — verify the empty state message in that case. Skip 11.2-11.5 (combined/per-recipe/pantry — these need meals with parsed ingredients to test). Skip 11.7 (export — tested elsewhere)."
     },
     {
