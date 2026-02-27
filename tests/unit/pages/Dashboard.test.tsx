@@ -909,12 +909,15 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // Desktop header only (mobile stats removed from dropdown)
+    // Desktop header + mobile dropdown (both rendered, CSS controls visibility)
     const eventLabels = screen.getAllByText("Club Event");
-    expect(eventLabels).toHaveLength(1);
+    expect(eventLabels).toHaveLength(2);
 
+    // "Total Recipe" in header only, "Club Recipe" in mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipe");
     expect(recipeLabels).toHaveLength(1);
+    const mobileRecipeLabels = screen.getAllByText("Club Recipe");
+    expect(mobileRecipeLabels).toHaveLength(1);
   });
 
   it("shows plural 'Club Events' and 'Total Recipes' when counts are 2+", async () => {
@@ -945,12 +948,15 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // Desktop header only (mobile stats removed from dropdown)
+    // Desktop header + mobile dropdown (both rendered, CSS controls visibility)
     const eventLabels = screen.getAllByText("Club Events");
-    expect(eventLabels).toHaveLength(1);
+    expect(eventLabels).toHaveLength(2);
 
+    // "Total Recipes" in header only, "Club Recipes" in mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipes");
     expect(recipeLabels).toHaveLength(1);
+    const mobileRecipeLabels = screen.getAllByText("Club Recipes");
+    expect(mobileRecipeLabels).toHaveLength(1);
   });
 
   it("shows plural labels when counts are 0", async () => {
@@ -981,12 +987,15 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // 0 is plural, desktop header only (mobile stats removed from dropdown)
+    // 0 is plural, desktop header + mobile dropdown (both rendered, CSS controls visibility)
     const eventLabels = screen.getAllByText("Club Events");
-    expect(eventLabels).toHaveLength(1);
+    expect(eventLabels).toHaveLength(2);
 
+    // "Total Recipes" in header only, "Club Recipes" in mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipes");
     expect(recipeLabels).toHaveLength(1);
+    const mobileRecipeLabels = screen.getAllByText("Club Recipes");
+    expect(mobileRecipeLabels).toHaveLength(1);
   });
 
   // --- loadStats count || 0 fallback branches (lines 150-151) ---

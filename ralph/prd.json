@@ -267,7 +267,7 @@
         "If any test fails, diagnose the root cause and fix the code, then re-verify"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "Use mcp__chrome-devtools__resize_page to change viewport dimensions. Start at desktop (1280x800), then tablet (768x1024), then mobile (375x812). Take screenshots at each size. After testing, ALWAYS reset back to 1280x800. Use emulate tool with viewport settings for accurate mobile testing. Navigate to /dashboard first and login."
     },
     {

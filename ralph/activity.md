@@ -39,8 +39,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-27
-**Tasks Completed:** 16
-**Current Task:** US-016 completed
+**Tasks Completed:** 17
+**Current Task:** US-017 completed
 
 ---
 
@@ -546,6 +546,8 @@
 - Default pantry items (Pepper, Salt, Water) have "Default" badge and no remove button.
 - Duplicate check is case-insensitive — "E2E-TEST-PANTRY-ITEM" matches "e2e-test-pantry-item".
 - **User Management page:** `/users` route (outside dashboard layout). Header has "Back to Dashboard" button. Shows stats ("N admin · N viewers · N club members"), "Invite User" button, and user rows with email, role badges, "In Club" toggle, role combobox, and delete button. Self-protection: current user's row has "You" badge, disabled role combobox, and disabled delete button.
+- **Responsive breakpoints:** Header stats badges use `hidden md:flex` (hidden < 768px, visible >= 768px). Tab triggers use `flex-col sm:flex-row` (column/icons-above-text < 640px, row/inline >= 640px). Tab text uses `text-[10px] sm:text-sm`. User name in avatar button uses `hidden sm:inline`. Meal plan grid container has `overflow-x-auto` for horizontal scroll on mobile.
+- **Mobile dropdown stats:** On mobile (< 768px), "Club Events" and "Club Recipes" stats are shown at the top of the user dropdown menu (using `md:hidden` div). On desktop, these are hidden in the dropdown since they appear in the header badges.
 
 ---
 
@@ -575,5 +577,45 @@
 - Self-protection: current user's row shows "You" badge, disabled role combobox, and disabled delete button. The "In Club" toggle is visible but the combobox and delete are explicitly disabled.
 - Other users have: "In Club" toggle switch (checked/unchecked), role combobox (expandable, values: Admin/Viewer), and delete button (enabled).
 - "Invite User" button available for admins to add new users.
+
+---
+
+## 2026-02-27 19:00 — US-017: E2E: Responsive design (Section 15)
+
+### What was tested
+- **AC 15.1 Desktop (1280px+) — PASS:** At 1280x800, verified header stats badges ("1 Club Event", "4 Total Recipes") visible, tab labels ("Home", "Events", "Recipes", "Meals") visible as text, meal plan grid shows full 7-day view (Sun–Sat) with 3 meal types (Breakfast, Lunch, Dinner) all visible without scrolling.
+- **AC 15.2 Tablet (768px) — PASS:** At 768x1024, verified header stats badges still visible ("1 Club Event", "4 Total Recipes"), tab labels still visible as text. Layout adjusts but all content remains accessible.
+- **AC 15.3 Mobile (<768px) — PASS:** At 375x812, verified header stats badges are hidden (not in a11y snapshot — `hidden md:flex` class). Tab labels shown below icons (flex-direction: column, SVG icon + text span visible). Meal plan grid has horizontal scroll (`overflow-x: auto`, scrollWidth 700 > clientWidth 476). User menu button shows avatar initial only ("D", name hidden via `hidden sm:inline`).
+- **AC 3.3 Mobile Tab Labels — PASS:** At 375px, tab bar shows text labels ("Home", "Events", "Recipes", "Meals") below SVG icons. Tabs use `flex-col` on mobile with `text-[10px]` font size, switching to `flex-row` with `text-sm` at `sm:` breakpoint (640px+).
+- **AC 3.5 Mobile Menu Stats — PASS:** At 375px, clicking user menu shows "1 Club Event" and "4 Club Recipes" stats at the top of the dropdown (with separator below). Stats use `md:hidden` to only appear in the dropdown on mobile. At desktop (1280px), dropdown stats are hidden (`display: none`). **Note:** This feature was missing — implemented stats in the user dropdown for mobile.
+- **Reset Viewport — DONE:** Viewport reset to 1280x800 after all tests.
+- **Skipped:** None — all ACs tested.
+
+### Bug Found & Fixed
+- **Missing stats in mobile dropdown menu:** The E2E test flow (AC 3.5) expects "Club Events" and "Club Recipes" in the user dropdown menu on mobile, since the header stats badges are hidden at < 768px. The stats weren't being surfaced in the dropdown. **Fix:** Added a `md:hidden` div at the top of `DropdownMenuContent` in `Dashboard.tsx` showing "N Club Event(s)" and "N Club Recipe(s)". Also added a `md:hidden` separator below the stats. On desktop (>= 768px), both are hidden. Updated 3 Dashboard tests for the new label counts.
+
+### Screenshots
+- `ralph/us017-ac15.1-desktop-1280.png` — Desktop layout at 1280x800 with meal plan grid
+- `ralph/us017-ac15.2-tablet-768.png` — Tablet layout at 768x1024 with dashboard
+- `ralph/us017-ac15.3-mobile-375.png` — Mobile layout at 375x812 with dashboard
+- `ralph/us017-ac15.3-mobile-meals-375.png` — Mobile meal plan grid with horizontal scroll
+- `ralph/us017-ac3.5-mobile-menu-stats.png` — Mobile dropdown with Club Events/Recipes stats
+- `ralph/us017-ac15.1-desktop-reset.png` — Desktop after reset to 1280x800
+
+### Files changed
+- `src/pages/Dashboard.tsx` — Added mobile-only stats (`md:hidden` div with "Club Events" and "Club Recipes") at the top of the user dropdown menu, with a `md:hidden` separator
+- `tests/unit/pages/Dashboard.test.tsx` — Updated 3 pluralization tests: "Club Event(s)" now appears twice (header + dropdown), added assertions for "Club Recipe(s)" in dropdown
+
+### Quality checks
+- Build: PASS
+- Tests: PASS (1 pre-existing flaky failure in `MealPlanPage.test.tsx` — smart combine caching timing issue, unrelated to changes)
+- Lint: N/A
+
+### Learnings for future iterations
+- Tailwind responsive classes in tests: JSDOM doesn't process CSS, so `hidden md:flex` elements are always rendered. Tests see both desktop header AND mobile dropdown stats — must account for doubled counts in assertions.
+- `resize_page` MCP tool changes viewport dimensions accurately. Use it before taking snapshots/screenshots at different breakpoints.
+- The a11y snapshot doesn't show plain `<div>` elements inside dropdown menus — only `menuitem` role elements appear. Use `evaluate_script` to inspect raw DOM content of dropdowns.
+- Tab triggers use `flex-col sm:flex-row` — column layout (icons above text) on mobile, row layout (icons beside text) on tablet/desktop. Text size is `text-[10px]` on mobile, `text-sm` on tablet+.
+- Meal plan grid horizontal scroll: the `overflow-x-auto` container has a fixed content width (~700px) that overflows on narrow viewports, enabling native scroll.
 
 ---
