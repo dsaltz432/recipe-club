@@ -126,8 +126,8 @@ describe("MealPlanGrid", () => {
     const onViewMealEvent = vi.fn();
     render(<MealPlanGrid {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
 
-    // The whole card is now clickable since onViewMealEvent is provided
-    fireEvent.click(screen.getByLabelText("View meal details"));
+    // The whole card is clickable
+    fireEvent.click(screen.getByText("Pancakes"));
 
     expect(onViewMealEvent).toHaveBeenCalledWith(0, "breakfast");
   });

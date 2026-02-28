@@ -194,7 +194,7 @@ describe("MealPlanSlot", () => {
     expect(defaultProps.onAddMeal).toHaveBeenCalledWith(1, "dinner");
   });
 
-  it("shows View button when onViewMealEvent is provided", () => {
+  it("clicking filled card calls onViewMealEvent", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -209,12 +209,12 @@ describe("MealPlanSlot", () => {
     const onViewMealEvent = vi.fn();
     render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
 
-    fireEvent.click(screen.getByLabelText("View meal details"));
+    fireEvent.click(screen.getByText("Grilled Salmon"));
 
     expect(onViewMealEvent).toHaveBeenCalledWith(1, "dinner");
   });
 
-  it("does not show View button when onViewMealEvent is not provided", () => {
+  it("has aria-label on add-another-meal button", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -228,35 +228,10 @@ describe("MealPlanSlot", () => {
 
     render(<MealPlanSlot {...defaultProps} items={items} />);
 
-    expect(screen.queryByLabelText("View meal details")).not.toBeInTheDocument();
-  });
-
-  it("has aria-labels on action buttons", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    const onViewMealEvent = vi.fn();
-    render(
-      <MealPlanSlot
-        {...defaultProps}
-        items={items}
-        onViewMealEvent={onViewMealEvent}
-      />
-    );
-
-    expect(screen.getByLabelText("View meal details")).toBeInTheDocument();
     expect(screen.getByLabelText("Add another meal")).toBeInTheDocument();
   });
 
-  it("does not show Done or Undo buttons when callbacks not provided", () => {
+  it("does not show Done or Undo buttons on card", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -272,51 +247,7 @@ describe("MealPlanSlot", () => {
 
     expect(screen.queryByLabelText("Mark as cooked")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Undo cook")).not.toBeInTheDocument();
-  });
-
-  it("shows Done button when onMarkCooked is provided and not cooked", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    const onMarkCooked = vi.fn();
-    render(<MealPlanSlot {...defaultProps} items={items} onMarkCooked={onMarkCooked} />);
-
-    const doneBtn = screen.getByLabelText("Mark as cooked");
-    expect(doneBtn).toBeInTheDocument();
-
-    fireEvent.click(doneBtn);
-    expect(onMarkCooked).toHaveBeenCalledWith(1, "dinner");
-  });
-
-  it("shows Undo button when onUndoCook is provided and cooked", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-        cookedAt: "2026-02-19T12:00:00Z",
-      },
-    ];
-
-    const onUndoCook = vi.fn();
-    render(<MealPlanSlot {...defaultProps} items={items} onUndoCook={onUndoCook} />);
-
-    const undoBtn = screen.getByLabelText("Undo cook");
-    expect(undoBtn).toBeInTheDocument();
-
-    fireEvent.click(undoBtn);
-    expect(onUndoCook).toHaveBeenCalledWith(1, "dinner");
+    expect(screen.queryByLabelText("View meal details")).not.toBeInTheDocument();
   });
 
   describe("action buttons call correct handlers", () => {

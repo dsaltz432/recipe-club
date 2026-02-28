@@ -200,7 +200,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
   });
 
@@ -208,7 +208,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click previous week button (first chevron button)
@@ -223,7 +223,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // ChevronLeft and ChevronRight are icon-only buttons (no text content)
@@ -238,7 +238,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click an empty meal slot
@@ -291,7 +291,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click an empty dinner slot
@@ -355,7 +355,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     const slotButtons = screen.getAllByRole("button").filter(
@@ -418,7 +418,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click an empty dinner slot
@@ -549,7 +549,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click an empty meal slot to open dialog
@@ -627,7 +627,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Should have day headers
@@ -660,7 +660,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click slot to open dialog
@@ -714,7 +714,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Click slot to open dialog
@@ -743,7 +743,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Navigate away from current week (click ChevronLeft)
@@ -864,7 +864,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meals")).toBeInTheDocument();
+      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
     });
 
     // Should render with no items (empty grid)
@@ -913,8 +913,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Click the card (whole card is now clickable)
-    fireEvent.click(screen.getByLabelText("View meal details"));
+    // Click the card (whole card is clickable)
+    fireEvent.click(screen.getByText("Pancakes"));
 
     expect(mockNavigate).toHaveBeenCalledWith("/meals/event-existing-123");
   });
@@ -962,8 +962,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Click the card (whole card is now clickable)
-    fireEvent.click(screen.getByLabelText("View meal details"));
+    // Click the card (whole card is clickable)
+    fireEvent.click(screen.getByText("Pancakes"));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-456");
@@ -1027,9 +1027,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pasta")).toBeInTheDocument();
     });
 
-    // Click the card on the breakfast slot (day 0) — whole card is now clickable
-    const viewCards = screen.getAllByLabelText("View meal details");
-    fireEvent.click(viewCards[0]);
+    // Click the card on the breakfast slot (day 0) — whole card is clickable
+    fireEvent.click(screen.getByText("Pancakes"));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-789");
@@ -1081,8 +1080,8 @@ describe("MealPlanPage", () => {
       expect(screen.getByText("Pancakes")).toBeInTheDocument();
     });
 
-    // Click the card (whole card is now clickable)
-    fireEvent.click(screen.getByLabelText("View meal details"));
+    // Click the card (whole card is clickable)
+    fireEvent.click(screen.getByText("Pancakes"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to open meal details");
@@ -1094,7 +1093,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       expect(screen.getByText("Groceries")).toBeInTheDocument();
@@ -1104,7 +1103,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1119,7 +1118,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Pantry tab should be visible
@@ -1804,7 +1803,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Should show meal grid by default (check for day headers)
@@ -2560,6 +2559,11 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
+      // Wait for grocery section to fully render — proves cache path completed
+      await waitFor(() => {
+        expect(screen.getByText("Grocery List")).toBeInTheDocument();
+      });
+
       await waitFor(() => {
         expect(mockLoadGroceryCache).toHaveBeenCalledWith(
           "meal_plan",
@@ -2568,11 +2572,8 @@ describe("MealPlanPage", () => {
         );
       });
 
-      // Cache hit — smart combine should not be called again after cache load
-      const callCount = mockSmartCombineIngredients.mock.calls.length;
-      // Wait a tick to ensure no deferred combine call fires
-      await new Promise(resolve => setTimeout(resolve, 50));
-      expect(mockSmartCombineIngredients.mock.calls.length).toBe(callCount);
+      // Cache hit — smart combine should not have been called
+      expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
     });
 
     it("runs smart combine even with a single parsed recipe", async () => {
@@ -3060,7 +3061,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Open Add Meal dialog
@@ -3099,7 +3100,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -3163,7 +3164,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -3238,7 +3239,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -3302,7 +3303,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -3376,7 +3377,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -3486,7 +3487,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Add a new meal with URL to trigger parse
@@ -3802,7 +3803,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Click an empty dinner slot
@@ -3890,7 +3891,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Click an empty dinner slot
@@ -3959,7 +3960,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meals")).toBeInTheDocument();
+        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
       });
 
       // Click an empty dinner slot

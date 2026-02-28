@@ -246,7 +246,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
           {recipe.notes.some((n) => n.photos && n.photos.length > 0) && (
             <span className="flex items-center gap-1">
               <Camera className="h-3 w-3" />
-              {recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0)} photos
+              {(() => { const count = recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0); return `${count} ${count !== 1 ? "photos" : "photo"}`; })()}
             </span>
           )}
         </div>

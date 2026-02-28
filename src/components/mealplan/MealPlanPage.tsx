@@ -11,16 +11,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
@@ -80,71 +70,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   viewTabRef.current = viewTab;
   const groceryDirtyRef = useRef(true);
 
-  const [uncookConfirmSlot, setUncookConfirmSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
-
   const navigate = useNavigate();
-
-  const handleMarkCooked = async (dayOfWeek: number, mealType: string) => {
-    const slotItems = items.filter(
-      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
-    );
-    if (slotItems.length === 0) return;
-
-    const itemIds = slotItems.map((i) => i.id);
-    try {
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .update({ cooked_at: new Date().toISOString() } as Record<string, unknown>)
-        .in("id", itemIds);
-
-      if (error) throw error;
-
-      setItems((prev) =>
-        prev.map((item) =>
-          itemIds.includes(item.id)
-            ? { ...item, cookedAt: new Date().toISOString() }
-            : item
-        )
-      );
-      toast.success("Meal marked as cooked!");
-    } catch (error) {
-      console.error("Error marking meal as cooked:", error);
-      toast.error("Failed to mark meal as cooked");
-    }
-  };
-
-  const handleConfirmUncook = async () => {
-    if (!uncookConfirmSlot) return;
-    const { dayOfWeek, mealType } = uncookConfirmSlot;
-    setUncookConfirmSlot(null);
-
-    const slotItems = items.filter(
-      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
-    );
-    if (slotItems.length === 0) return;
-
-    const itemIds = slotItems.map((i) => i.id);
-    try {
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .update({ cooked_at: null } as Record<string, unknown>)
-        .in("id", itemIds);
-
-      if (error) throw error;
-
-      setItems((prev) =>
-        prev.map((item) =>
-          itemIds.includes(item.id)
-            ? { ...item, cookedAt: undefined }
-            : item
-        )
-      );
-      toast.success("Marked as uncooked");
-    } catch (error) {
-      console.error("Error marking as uncooked:", error);
-      toast.error("Failed to mark as uncooked");
-    }
-  };
 
   const loadPlan = useCallback(async () => {
     setIsLoading(true);
@@ -686,8 +612,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold">Meals</h2>
+      <div className="flex items-center justify-end">
         <div className="flex gap-1 bg-muted rounded-lg p-1">
           <button
             onClick={() => setViewTab("plan")}
@@ -738,8 +663,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             weekStart={weekStart}
             onAddMeal={handleAddMeal}
             onViewMealEvent={handleViewMealEvent}
-            onMarkCooked={handleMarkCooked}
-            onUndoCook={(dayOfWeek, mealType) => setUncookConfirmSlot({ dayOfWeek, mealType })}
           />
 
           {pendingSlot && (
@@ -793,24 +716,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       {viewTab === "pantry" && (
         <PantrySection userId={userId} onPantryChange={loadPantryItems} />
       )}
-
-      {/* Undo Cook Confirmation */}
-      <AlertDialog open={!!uncookConfirmSlot} onOpenChange={(open) => { if (!open) setUncookConfirmSlot(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Undo cook?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will mark the meal as uncooked. Ratings will be preserved.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmUncook}>
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Parse progress dialog */}
       <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {

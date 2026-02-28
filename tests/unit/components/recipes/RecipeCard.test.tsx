@@ -360,7 +360,7 @@ describe("RecipeCard - Edge Cases", () => {
     render(<RecipeCard recipe={recipe} />);
 
     // Should show total photo count (1 + 0 = 1)
-    expect(screen.getByText("1 photos")).toBeInTheDocument();
+    expect(screen.getByText("1 photo")).toBeInTheDocument();
   });
 
   it("does not show photo count when no notes have photos", () => {

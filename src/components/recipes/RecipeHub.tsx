@@ -30,7 +30,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, Plus } from "lucide-react";
+import { Search, BookOpen, Loader2 } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
@@ -99,40 +99,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<RecipeWithNotes | null>(null);
-  const [addRecipeOpen, setAddRecipeOpen] = useState(false);
-  const [addRecipeName, setAddRecipeName] = useState("");
-  const [addRecipeUrl, setAddRecipeUrl] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddPersonalRecipe = async () => {
-    if (!userId || !addRecipeName.trim()) return;
-    setIsAdding(true);
-    try {
-      const { error } = await supabase
-        .from("recipes")
-        .insert({
-          name: addRecipeName.trim(),
-          url: addRecipeUrl.trim() || null,
-          created_by: userId,
-          event_id: null,
-          ingredient_id: null,
-        });
-
-      if (error) throw error;
-
-      toast.success("Recipe added!");
-      setAddRecipeOpen(false);
-      setAddRecipeName("");
-      setAddRecipeUrl("");
-      setIsLoading(true);
-      loadRecipes();
-    } catch (error) {
-      console.error("Error adding recipe:", error);
-      toast.error("Failed to add recipe");
-    } finally {
-      setIsAdding(false);
-    }
-  };
 
   const handleEditIngredients = (recipe: RecipeWithNotes) => {
     setEditIngredientsRecipe(recipe);
@@ -561,6 +528,14 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   };
 
   const handleAddNote = (recipe: RecipeWithNotes) => {
+    // If user already has a note, open it for editing instead
+    const existingNote = recipe.notes.find((n) => n.userId === userId);
+    if (existingNote) {
+      setNoteRecipe(recipe);
+      setNoteText(existingNote.notes || "");
+      setNotePhotos(existingNote.photos || []);
+      return;
+    }
     setNoteRecipe(recipe);
     setNoteText("");
     setNotePhotos([]);
@@ -569,18 +544,29 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const handleSaveNote = async () => {
     setIsSavingNote(true);
     try {
-      const { error } = await supabase
-        .from("recipe_notes")
-        .insert({
-          recipe_id: noteRecipe!.id,
-          user_id: userId!,
-          notes: noteText.trim() || null,
-          photos: notePhotos.length > 0 ? notePhotos : null,
-        });
+      const existingNote = noteRecipe!.notes.find((n) => n.userId === userId);
+      if (existingNote) {
+        const { error } = await supabase
+          .from("recipe_notes")
+          .update({
+            notes: noteText.trim() || null,
+            photos: notePhotos.length > 0 ? notePhotos : null,
+          })
+          .eq("id", existingNote.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("recipe_notes")
+          .insert({
+            recipe_id: noteRecipe!.id,
+            user_id: userId!,
+            notes: noteText.trim() || null,
+            photos: notePhotos.length > 0 ? notePhotos : null,
+          });
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-
-      toast.success("Note added!");
+      toast.success(existingNote ? "Note updated!" : "Note added!");
       setNoteRecipe(null);
       setIsLoading(true);
       loadRecipes();
@@ -712,16 +698,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         >
           My Recipes{personalCount !== null ? ` (${personalCount})` : ""}
         </Button>
-        {subTab === "personal" && userId && (
-          <Button
-            size="sm"
-            onClick={() => setAddRecipeOpen(true)}
-            className="bg-purple hover:bg-purple-dark ml-auto"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Recipe
-          </Button>
-        )}
       </div>
 
       {/* Club / Personal tab content */}
@@ -872,75 +848,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Personal Recipe Dialog */}
-      <Dialog
-        open={addRecipeOpen}
-        onOpenChange={(open) => {
-          setAddRecipeOpen(open);
-          if (!open) {
-            setAddRecipeName("");
-            setAddRecipeUrl("");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Add Recipe</DialogTitle>
-            <DialogDescription>Create a new personal recipe.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="add-recipe-name">Recipe Name *</Label>
-              <Input
-                id="add-recipe-name"
-                value={addRecipeName}
-                onChange={(e) => setAddRecipeName(e.target.value)}
-                placeholder="Enter recipe name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="add-recipe-url">Recipe URL (optional)</Label>
-              <Input
-                id="add-recipe-url"
-                type="url"
-                value={addRecipeUrl}
-                onChange={(e) => setAddRecipeUrl(e.target.value)}
-                placeholder="https://..."
-                className={addRecipeUrl.trim() && !isValidUrl(addRecipeUrl) ? "border-red-500" : ""}
-              />
-              {addRecipeUrl.trim() && !isValidUrl(addRecipeUrl) && (
-                <p className="text-sm text-red-500">
-                  URL must start with http:// or https://
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setAddRecipeOpen(false)}
-              disabled={isAdding}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddPersonalRecipe}
-              disabled={isAdding || !addRecipeName.trim() || (addRecipeUrl.trim() !== "" && !isValidUrl(addRecipeUrl))}
-              className="bg-purple hover:bg-purple-dark"
-            >
-              {isAdding ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                "Add Recipe"
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={!!deletingRecipeId}
@@ -984,16 +891,20 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Add Note Dialog */}
+      {/* Add/Edit Note Dialog */}
       <Dialog
         open={!!noteRecipe}
         onOpenChange={() => setNoteRecipe(null)}
       >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Add Note</DialogTitle>
+            <DialogTitle className="font-display text-xl">
+              {noteRecipe?.notes.some((n) => n.userId === userId) ? "Edit Note" : "Add Note"}
+            </DialogTitle>
             <DialogDescription>
-              Add notes and photos for &quot;{noteRecipe?.name}&quot;.
+              {noteRecipe?.notes.some((n) => n.userId === userId)
+                ? <>Update your notes and photos for &quot;{noteRecipe?.name}&quot;.</>
+                : <>Add notes and photos for &quot;{noteRecipe?.name}&quot;.</>}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

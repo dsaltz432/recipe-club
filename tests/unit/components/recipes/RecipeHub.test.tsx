@@ -3429,15 +3429,16 @@ describe("RecipeHub - Add Note", () => {
     },
   ];
 
+  // Note belongs to a different user so clicking "+" opens "Add" dialog
   const mockNotesData = [
     {
       id: "note-1",
       recipe_id: "recipe-1",
-      user_id: "user-123",
+      user_id: "other-user-456",
       notes: "Test notes",
       photos: null,
       created_at: "2025-01-15T10:00:00Z",
-      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      profiles: { name: "Other User", avatar_url: "avatar.jpg" },
     },
   ];
 
@@ -3731,6 +3732,69 @@ describe("RecipeHub - Add Note", () => {
     });
 
     expect(screen.getByRole("button", { name: /save note/i })).toBeDisabled();
+  });
+
+  it("opens edit dialog with existing note when user already has a note", async () => {
+    const { toast } = await import("sonner");
+    const mockUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    // Note belongs to the current user (user-123)
+    const notesWithCurrentUser = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "My existing notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") {
+        const builder = createMockQueryBuilder(notesWithCurrentUser);
+        builder.update = mockUpdate;
+        return builder;
+      }
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText(/Add note/));
+
+    // Should open Edit dialog (not Add) with existing content
+    await waitFor(() => {
+      expect(screen.getByText(/Edit Note/)).toBeInTheDocument();
+      expect(screen.getByText(/Update your notes and photos/)).toBeInTheDocument();
+    });
+
+    // Text area should be pre-filled with existing note
+    expect(screen.getByLabelText("Notes")).toHaveValue("My existing notes");
+
+    // Update the note text
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Updated notes" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith({
+        notes: "Updated notes",
+        photos: null,
+      });
+      expect(toast.success).toHaveBeenCalledWith("Note updated!");
+    });
   });
 });
 
