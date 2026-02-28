@@ -95,6 +95,16 @@ vi.mock("@/lib/generalGrocery", () => ({
   toRawIngredients: (...args: unknown[]) => mockToRawIngredients(...args),
 }));
 
+// Mock user preferences
+const mockLoadUserPreferences = vi.fn().mockResolvedValue({
+  mealTypes: ["breakfast", "lunch", "dinner"],
+  weekStartDay: 0,
+  householdSize: 2,
+});
+vi.mock("@/lib/userPreferences", () => ({
+  loadUserPreferences: (...args: unknown[]) => mockLoadUserPreferences(...args),
+}));
+
 // Mock constants to show parse buttons in tests
 vi.mock("@/lib/constants", async () => {
   const actual = await vi.importActual("@/lib/constants");

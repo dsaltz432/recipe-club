@@ -326,7 +326,7 @@
         "Tests pass"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "Key changes:\n\n1. MealPlanGrid.tsx: Change the hardcoded MEAL_TYPES constant to use a prop. Add mealTypes?: string[] to MealPlanGridProps. Use const activeMealTypes = mealTypes || ['breakfast', 'lunch', 'dinner']. Replace all references to MEAL_TYPES with activeMealTypes. For mobile layout: grid-cols needs to be dynamic — use template literal for className: grid-cols-[56px_${'1fr_'.repeat(activeMealTypes.length).trim()}]. For desktop: grid-cols-${activeMealTypes.length + 1} (label col + day cols). Actually desktop iterates meal types as rows, so it just renders fewer rows — simpler.\n\n2. MealPlanPage.tsx: Add state for userPreferences, load via loadUserPreferences(userId) in useEffect. Pass mealTypes={userPreferences.mealTypes} to MealPlanGrid. This preference state will also be used by US-017 for weekStartDay.\n\n3. Check AddMealDialog — if it has a meal type dropdown, filter options to only show enabled types.\n\nTests: Update MealPlanGrid tests to verify fewer rows render when mealTypes prop is subset. Test default behavior (no prop = all three)."
     },
     {

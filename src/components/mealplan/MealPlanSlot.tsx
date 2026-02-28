@@ -4,7 +4,7 @@ import type { MealPlanItem } from "@/types";
 interface MealPlanSlotProps {
   items: MealPlanItem[];
   dayOfWeek: number;
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
+  mealType: string;
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
 }

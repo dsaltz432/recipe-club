@@ -6,12 +6,14 @@ interface MealPlanGridProps {
   weekStart: Date;
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  mealTypes?: string[];
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const;
+const DEFAULT_MEAL_TYPES = ["breakfast", "lunch", "dinner"];
 
-const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent }: MealPlanGridProps) => {
+const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes }: MealPlanGridProps) => {
+  const activeMealTypes = mealTypes || DEFAULT_MEAL_TYPES;
   const getItemsForSlot = (dayOfWeek: number, mealType: string): MealPlanItem[] => {
     return items.filter((item) => item.dayOfWeek === dayOfWeek && item.mealType === mealType);
   };
@@ -22,7 +24,7 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent }: MealPlan
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  const renderSlot = (dayIndex: number, mealType: typeof MEAL_TYPES[number]) => (
+  const renderSlot = (dayIndex: number, mealType: string) => (
     <MealPlanSlot
       items={getItemsForSlot(dayIndex, mealType)}
       dayOfWeek={dayIndex}
@@ -32,14 +34,16 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent }: MealPlan
     />
   );
 
+  const mobileGridCols = `grid-cols-[56px_${"1fr_".repeat(activeMealTypes.length).trim()}]`;
+
   return (
     <>
-      {/* Mobile: compact rows with B/L/D columns */}
+      {/* Mobile: compact rows with meal type columns */}
       <div className="md:hidden">
         {/* Header */}
-        <div className="grid grid-cols-[56px_1fr_1fr_1fr] gap-1 mb-1">
+        <div className={`grid ${mobileGridCols} gap-1 mb-1`}>
           <div />
-          {MEAL_TYPES.map((mt) => (
+          {activeMealTypes.map((mt) => (
             <div key={mt} className="text-center text-xs font-medium text-muted-foreground capitalize py-1">
               {mt.charAt(0).toUpperCase()}
             </div>
@@ -48,12 +52,12 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent }: MealPlan
         {/* Day rows */}
         <div className="space-y-1">
           {DAY_LABELS.map((day, dayIndex) => (
-            <div key={day} className="grid grid-cols-[56px_1fr_1fr_1fr] gap-1 items-stretch">
+            <div key={day} className={`grid ${mobileGridCols} gap-1 items-stretch`}>
               <div className="flex flex-col justify-center py-1">
                 <span className="text-xs font-semibold">{day}</span>
                 <span className="text-[10px] text-muted-foreground">{getDateLabel(dayIndex)}</span>
               </div>
-              {MEAL_TYPES.map((mealType) => (
+              {activeMealTypes.map((mealType) => (
                 <div key={mealType} className="min-h-[48px]">
                   {renderSlot(dayIndex, mealType)}
                 </div>
@@ -78,7 +82,7 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent }: MealPlan
           </div>
 
           {/* Meal type rows */}
-          {MEAL_TYPES.map((mealType) => (
+          {activeMealTypes.map((mealType) => (
             <div key={mealType} className="grid grid-cols-8 gap-1 mb-1">
               <div className="p-2 flex items-center">
                 <span className="text-xs font-medium text-muted-foreground capitalize">{mealType}</span>

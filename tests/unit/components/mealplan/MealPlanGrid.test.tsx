@@ -146,4 +146,82 @@ describe("MealPlanGrid", () => {
     expect(onViewMealEvent).toHaveBeenCalledWith(0, "breakfast");
   });
 
+  describe("mealTypes prop", () => {
+    it("defaults to breakfast, lunch, dinner when mealTypes is not provided", () => {
+      render(<MealPlanGrid {...defaultProps} />);
+
+      // All three meal types render in desktop layout
+      expect(screen.getAllByText("breakfast").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("lunch").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("dinner").length).toBeGreaterThan(0);
+    });
+
+    it("renders only the specified meal types", () => {
+      render(<MealPlanGrid {...defaultProps} mealTypes={["dinner"]} />);
+
+      // Only dinner renders
+      expect(screen.getAllByText("dinner").length).toBeGreaterThan(0);
+      // Breakfast and lunch do not render
+      expect(screen.queryByText("breakfast")).not.toBeInTheDocument();
+      expect(screen.queryByText("lunch")).not.toBeInTheDocument();
+    });
+
+    it("renders fewer slots when fewer meal types are provided", () => {
+      render(<MealPlanGrid {...defaultProps} mealTypes={["breakfast", "dinner"]} />);
+
+      // 7 days * 2 meal types = 14 per layout, x2 for mobile + desktop = 28
+      const buttons = screen.getAllByRole("button");
+      expect(buttons.length).toBe(28);
+    });
+
+    it("renders single meal type column header on mobile", () => {
+      render(<MealPlanGrid {...defaultProps} mealTypes={["dinner"]} />);
+
+      // Only "D" column header on mobile
+      expect(screen.getByText("D")).toBeInTheDocument();
+      expect(screen.queryByText("B")).not.toBeInTheDocument();
+      expect(screen.queryByText("L")).not.toBeInTheDocument();
+    });
+
+    it("renders two meal types correctly", () => {
+      render(<MealPlanGrid {...defaultProps} mealTypes={["breakfast", "lunch"]} />);
+
+      expect(screen.getAllByText("breakfast").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("lunch").length).toBeGreaterThan(0);
+      expect(screen.queryByText("dinner")).not.toBeInTheDocument();
+      // Mobile headers
+      expect(screen.getByText("B")).toBeInTheDocument();
+      expect(screen.getByText("L")).toBeInTheDocument();
+      expect(screen.queryByText("D")).not.toBeInTheDocument();
+    });
+
+    it("preserves items for disabled meal types in display", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 0,
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Pasta",
+        },
+        {
+          id: "item-2",
+          planId: "plan-1",
+          dayOfWeek: 0,
+          mealType: "breakfast",
+          sortOrder: 0,
+          recipeName: "Oatmeal",
+        },
+      ];
+
+      // Only show dinner — breakfast items exist but breakfast slot is not rendered
+      render(<MealPlanGrid {...defaultProps} items={items} mealTypes={["dinner"]} />);
+
+      expect(screen.getAllByText("Pasta").length).toBeGreaterThan(0);
+      // Oatmeal item exists in data but no breakfast slot is rendered to display it
+      expect(screen.queryByText("Oatmeal")).not.toBeInTheDocument();
+    });
+  });
+
 });

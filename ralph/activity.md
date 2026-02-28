@@ -70,8 +70,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 14
-**Current Task:** US-015 completed
+**Tasks Completed:** 15
+**Current Task:** US-016 completed
 
 ---
 
@@ -553,5 +553,42 @@
 - Number input: use `fireEvent.change` instead of `userEvent.clear`+`type` for number inputs to avoid intermediate state issues in tests
 - The `UserPreferences` type is intentionally minimal (mealTypes, weekStartDay, householdSize) — other columns like dietary_restrictions exist in DB but aren't exposed in Settings yet
 - Settings page defaults match the DB column defaults: mealTypes=['breakfast','lunch','dinner'], weekStartDay=0, householdSize=2
+
+---
+
+## 2026-02-28 16:00 — US-016: Filter meal plan grid by user's meal type preferences
+
+### What was implemented
+- Added optional `mealTypes` prop to `MealPlanGrid` component — defaults to `['breakfast', 'lunch', 'dinner']` when not provided
+- Grid now only renders rows/columns for the meal types in the `mealTypes` prop using `activeMealTypes = mealTypes || DEFAULT_MEAL_TYPES`
+- Mobile layout `grid-cols` is dynamically computed: `grid-cols-[56px_${"1fr_".repeat(activeMealTypes.length).trim()}]`
+- Desktop layout naturally adjusts since it iterates `activeMealTypes` as rows (fewer meal types = fewer rows)
+- Widened `MealPlanSlot` `mealType` prop from strict union type to `string` to accept dynamic meal types
+- `MealPlanPage` now loads user preferences via `loadUserPreferences(userId)` in a `useEffect` and passes `userPreferences?.mealTypes` to `MealPlanGrid`
+- AddMealDialog doesn't need changes — it receives `mealType` from grid slot clicks, and only enabled slots are rendered
+- Existing meal plan items for disabled meal types are preserved in the database (display-only filtering)
+- Added `userPreferences` mock to MealPlanPage test file
+- Added 6 new MealPlanGrid tests covering: default behavior, subset rendering, fewer slots, mobile header adjustment, two-type rendering, and hidden items for disabled types
+
+### Files changed
+- `src/components/mealplan/MealPlanGrid.tsx` (modified — added mealTypes prop, dynamic grid cols, activeMealTypes)
+- `src/components/mealplan/MealPlanSlot.tsx` (modified — widened mealType prop from union to string)
+- `src/components/mealplan/MealPlanPage.tsx` (modified — added userPreferences state, loadUserPreferences import/call, pass mealTypes to MealPlanGrid)
+- `tests/unit/components/mealplan/MealPlanGrid.test.tsx` (modified — added 6 mealTypes prop tests)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (modified — added userPreferences mock)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1683/1684, 61 files — 1 pre-existing flaky test in MealPlanPage full suite)
+- Lint: N/A
+
+### Learnings for future iterations
+- Desktop grid layout uses meal types as rows and days as columns — so reducing meal types just means fewer rows, no column count change needed
+- Mobile grid layout uses days as rows and meal types as columns — so reducing meal types requires dynamic `grid-cols` template
+- `"1fr_".repeat(n).trim()` generates the dynamic fractional column spec for mobile grid
+- The `mealType` prop on `MealPlanSlot` had to be widened from `"breakfast" | "lunch" | "dinner" | "snack"` to `string` to accept any dynamic value from user preferences
+- `userPreferences?.mealTypes` passes `undefined` when preferences haven't loaded yet, which correctly falls back to the default 3 meal types in MealPlanGrid
+- AddMealDialog doesn't have a meal type selector — it just displays the mealType passed from the slot, so no filtering logic needed there
+- The `userPreferences` state in MealPlanPage will also be used by US-017 for `weekStartDay`
 
 ---

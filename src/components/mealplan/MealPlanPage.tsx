@@ -21,8 +21,9 @@ import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache, deleteGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
 import { loadGeneralItems, addGeneralItem, removeGeneralItem, updateGeneralItem, toRawIngredients } from "@/lib/generalGrocery";
+import { loadUserPreferences } from "@/lib/userPreferences";
 import type { ParsedGroceryItem } from "@/components/recipes/GroceryListSection";
-import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem, GeneralGroceryItem } from "@/types";
+import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem, GeneralGroceryItem, UserPreferences } from "@/types";
 
 interface MealPlanPageProps {
   userId: string;
@@ -69,6 +70,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [combineError, setCombineError] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [generalItems, setGeneralItems] = useState<GeneralGroceryItem[]>([]);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const lastCombinedGeneralCount = useRef<number>(0);
   const viewTabRef = useRef(viewTab);
@@ -154,6 +156,11 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   useEffect(() => {
     loadPlan();
   }, [loadPlan]);
+
+  // Load user preferences once
+  useEffect(() => {
+    loadUserPreferences(userId).then(setUserPreferences);
+  }, [userId]);
 
   const handlePreviousWeek = () => {
     setWeekStart((prev) => {
@@ -772,6 +779,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             weekStart={weekStart}
             onAddMeal={handleAddMeal}
             onViewMealEvent={handleViewMealEvent}
+            mealTypes={userPreferences?.mealTypes}
           />
 
           {pendingSlot && (
