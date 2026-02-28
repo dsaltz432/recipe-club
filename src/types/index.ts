@@ -156,6 +156,12 @@ export interface MealPlanItem {
   recipeUrl?: string;
 }
 
+export interface UserPreferences {
+  mealTypes: string[];
+  weekStartDay: number;
+  householdSize: number;
+}
+
 export interface GeneralGroceryItem {
   id: string;
   userId: string;

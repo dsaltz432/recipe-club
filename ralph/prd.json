@@ -306,7 +306,7 @@
         "Tests pass"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "Two parts:\n\n1. src/lib/userPreferences.ts — Follow the same Supabase query patterns as src/lib/groceryCache.ts. loadUserPreferences(userId): query user_preferences table, return { mealTypes, weekStartDay, householdSize } with defaults if no row exists. saveUserPreferences(userId, prefs): upsert on user_id. The household_size column already exists in the table.\n\n2. src/pages/Settings.tsx — A standalone page (not a tab within Dashboard). Use the same styling patterns as other pages (container, card layout). For meal types: use Checkbox components from @/components/ui/checkbox. Validation: if user unchecks the last remaining meal type, show toast('You must keep at least one meal type selected') and re-check it. For week start day: RadioGroup or Select with two options. For household size: Input type='number' min=1. Add route in src/App.tsx (or wherever routes are defined — check the router setup). Add menu item in Dashboard.tsx DropdownMenuContent, between 'My Pantry' and 'Sign Out', with a Settings icon from lucide-react. Tests at tests/unit/pages/Settings.test.tsx and tests/unit/lib/userPreferences.test.ts."
     },
     {

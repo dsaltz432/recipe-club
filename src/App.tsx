@@ -8,6 +8,7 @@ import EventDetailPage from "./pages/EventDetailPage";
 import PersonalMealDetailPage from "./pages/PersonalMealDetailPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Settings from "./pages/Settings";
 import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient({
@@ -54,6 +55,14 @@ function App() {
             element={
               <AuthGuard>
                 <PersonalMealDetailPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <AuthGuard>
+                <Settings />
               </AuthGuard>
             }
           />

@@ -59,10 +59,19 @@
 - After confirm, all bulk paste state resets (textarea, preview, removed indices)
 - Each parsed item calls `onAddGeneralItem` sequentially — MealPlanPage handler invalidates cache and re-combines on each call
 
+### Settings Page Pattern
+- Settings page is a standalone route `/settings` (not a Dashboard tab) with AuthGuard
+- Uses `loadUserPreferences(userId)` / `saveUserPreferences(userId, prefs)` in `src/lib/userPreferences.ts`
+- `user_preferences` table not in generated Supabase types — uses `const db = supabase as any;` pattern
+- Save button with explicit save action (not auto-save) — simpler and gives user control
+- Meal type toggles use Switch component from `@radix-ui/react-switch`
+- Toast pattern: `toast()` for warnings (no icon), `toast.success()` for success, `toast.error()` for failures
+- In tests, mock `sonner` and check `toast.success`/`toast.error` as vi.fn() calls — do NOT look for toast text in DOM
+
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 13
-**Current Task:** US-014 completed
+**Tasks Completed:** 14
+**Current Task:** US-015 completed
 
 ---
 
@@ -501,5 +510,48 @@
 - `meal_types` is `TEXT[]` (PostgreSQL array) with default `'{breakfast,lunch,dinner}'` — this allows any subset and easy extension
 - `week_start_day` uses INTEGER with CHECK constraint for valid values — simple and effective for a small enum (0=Sunday, 1=Monday)
 - The `IF NOT EXISTS` guard on `ADD COLUMN` + conditional constraint creation make the migration idempotent
+
+---
+
+## 2026-02-28 15:00 — US-015: Create settings page with preferences lib
+
+### What was implemented
+- Created `src/lib/userPreferences.ts` with two exports:
+  - `loadUserPreferences(userId): Promise<UserPreferences>` — reads meal_types, week_start_day, household_size from user_preferences table, returns defaults when no row exists
+  - `saveUserPreferences(userId, prefs): Promise<void>` — upserts on user_id with meal_types, week_start_day, household_size, updated_at
+- Added `UserPreferences` interface to `src/types/index.ts`: `{ mealTypes: string[], weekStartDay: number, householdSize: number }`
+- Created `src/pages/Settings.tsx` — standalone page with three sections:
+  - Meal Types: Switch toggles for Breakfast, Lunch, Dinner — prevents unchecking last one with toast warning
+  - Week Start Day: Select dropdown for Sunday (0) vs Monday (1)
+  - Household Size: Number input (min 1)
+- Save button persists all settings, shows success/error toast
+- Back button navigates to `/dashboard`
+- Added `/settings` route to `src/App.tsx` wrapped in AuthGuard
+- Added Settings menu item to Dashboard.tsx dropdown menu (between My Pantry and Sign Out) with Settings icon from lucide-react
+- Created 8 tests for userPreferences lib (load defaults, load stored, error handling, null field handling, upsert, throw on error)
+- Created 12 tests for Settings page (loading, three sections render, back button, meal type switches, load prefs, save, success/error toasts, last meal type prevention, household size)
+
+### Files changed
+- `src/types/index.ts` (modified — added UserPreferences interface)
+- `src/lib/userPreferences.ts` (new)
+- `src/pages/Settings.tsx` (new)
+- `src/App.tsx` (modified — added /settings route with AuthGuard)
+- `src/pages/Dashboard.tsx` (modified — added Settings import and dropdown menu item)
+- `tests/unit/lib/userPreferences.test.ts` (new)
+- `tests/unit/pages/Settings.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1677/1678, 61 files — 1 pre-existing flaky test in MealPlanPage)
+- Lint: N/A
+
+### Learnings for future iterations
+- `user_preferences` table is not in generated Supabase types — must use `const db = supabase as any;` pattern (same as `general_grocery_items`)
+- Toast testing: mock `sonner` module and check `toast.success`/`toast.error` as `vi.fn()` calls — do NOT try to find toast text in DOM (Toaster component not in test render)
+- `toast()` (base call, no `.success`/`.error`) is used for non-critical warnings like "must keep one meal type" — it renders without an icon
+- Switch component: `onCheckedChange` passes boolean `checked` value directly (not an event)
+- Number input: use `fireEvent.change` instead of `userEvent.clear`+`type` for number inputs to avoid intermediate state issues in tests
+- The `UserPreferences` type is intentionally minimal (mealTypes, weekStartDay, householdSize) — other columns like dietary_restrictions exist in DB but aren't exposed in Settings yet
+- Settings page defaults match the DB column defaults: mealTypes=['breakfast','lunch','dinner'], weekStartDay=0, householdSize=2
 
 ---

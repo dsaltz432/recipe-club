@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed, DollarSign } from "lucide-react";
+import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed, DollarSign, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -285,6 +285,10 @@ const Dashboard = () => {
               <DropdownMenuItem onClick={() => setShowPantryDialog(true)} className="cursor-pointer">
                 <UtensilsCrossed className="h-4 w-4 mr-2" />
                 My Pantry
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
