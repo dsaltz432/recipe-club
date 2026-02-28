@@ -198,7 +198,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Use combine-ingredients/index.ts as the boilerplate template for CORS, OPTIONS, try-catch. This function DOES need a Supabase client (createClient with SUPABASE_SERVICE_ROLE_KEY) to bypass RLS and query auth.users. Auth pattern: check x-api-key header against Deno.env.get('GROCERY_API_KEY'). User lookup: query auth.users by email to get UUID, then use that for all general_grocery_items operations. The context_type is typically 'meal_plan' and context_id is a week_start date like '2026-03-02'. For GET requests, method detection via req.method. For the body-based methods, parse with req.json(). Important: this function sets verify_jwt: false when deployed (since external APIs won't have a Supabase JWT), but authenticates via the x-api-key instead. Set up env: supabase secrets set GROCERY_API_KEY=<key>. Example usage from curl:\n\ncurl -X POST https://<project>.supabase.co/functions/v1/grocery-items-api \\\n  -H 'x-api-key: <key>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"user_email\": \"daniel@example.com\", \"context_type\": \"meal_plan\", \"context_id\": \"2026-03-02\", \"items\": [{\"name\": \"paper towels\"}, {\"name\": \"dish soap\"}]}'"
     },
     {

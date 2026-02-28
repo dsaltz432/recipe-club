@@ -39,10 +39,19 @@
 - Migration files go in `supabase/migrations/` with timestamp prefix
 - If `apply_migration` MCP permission is blocked, use `execute_sql` to apply directly
 
+### External API Edge Function Pattern
+- Auth via `x-api-key` header checked against `Deno.env.get('GROCERY_API_KEY')`
+- User identification via `user_email` → lookup user ID from `auth.users` using `supabase.auth.admin.listUsers()`
+- Uses Supabase service role client (`SUPABASE_SERVICE_ROLE_KEY`) to bypass RLS
+- Method dispatch via `req.method` — GET uses query params, POST/PUT/DELETE parse `req.json()` body
+- CORS `Access-Control-Allow-Headers` must include `x-api-key` for external callers
+- Duplicate item constraint violation (PostgreSQL error code `23505`) returns 409 status
+- `verify_jwt: false` when deploying since external APIs authenticate via API key, not Supabase JWT
+
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 8
-**Current Task:** US-008 completed
+**Tasks Completed:** 9
+**Current Task:** US-010 completed
 
 ---
 
@@ -312,5 +321,42 @@
 - The `hasGeneralTab` flag is derived from `!!onAddGeneralItem` rather than checking `generalItems.length`, so the tab is always available for adding items
 - When MealPlanPage has no meals at all, we now render GroceryListSection with general items support instead of the old "No meals planned" empty state — this means users can always add general grocery items
 - Tests that click Radix UI tabs need `userEvent.setup()` + `await user.click()` rather than `fireEvent.click()` to properly trigger tab content changes
+
+---
+
+## 2026-02-28 10:30 — US-010: Create external API edge function for general grocery items
+
+### What was implemented
+- Created Supabase edge function at `supabase/functions/grocery-items-api/index.ts`
+- Full REST API (GET/POST/PUT/DELETE) for CRUD on `general_grocery_items` table
+- Auth via `x-api-key` header validated against `GROCERY_API_KEY` env var
+- User identification via `user_email` field — looks up user ID from auth.users via admin API
+- Uses Supabase service role client (`SUPABASE_SERVICE_ROLE_KEY`) to bypass RLS for all database operations
+- GET: list items by user_email, context_type, context_id (query params)
+- POST: add items with body `{ user_email, context_type, context_id, items: [{ name, quantity?, unit? }] }`
+- PUT: update item with body `{ item_id, name?, quantity?, unit? }`
+- DELETE: remove item with body `{ item_id }`
+- Duplicate item name (unique constraint violation) returns 409 with clear error message
+- Graceful fallback when GROCERY_API_KEY not configured (returns `{ success: true, skipped: true }`)
+- Returns 401 for invalid/missing API key, 404 for unknown user email
+- Follows same CORS, error handling, and response patterns as other edge functions
+- `verify_jwt: false` needed when deploying (external APIs use API key auth, not Supabase JWT)
+
+### Files changed
+- `supabase/functions/grocery-items-api/index.ts` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1634/1634, 59 files — 1 pre-existing flaky test in MealPlanPage full suite, passes in isolation)
+- Lint: N/A (edge function is Deno, not part of frontend lint)
+
+### Learnings for future iterations
+- Edge function with Supabase client needs `createClient` from `https://esm.sh/@supabase/supabase-js@2` (Deno import)
+- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are automatically available in Supabase Edge Functions — no need to set them
+- `supabase.auth.admin.listUsers()` is the reliable way to look up users by email when using service role key
+- PostgreSQL unique constraint violation returns error code `23505` — use this to detect duplicate items and return 409
+- For external API functions, add `x-api-key` to CORS `Access-Control-Allow-Headers`
+- GET requests use URL query params (`new URL(req.url).searchParams`), POST/PUT/DELETE use `req.json()` body
+- The `profiles` table may not have email column — prefer `auth.admin.listUsers()` fallback for user lookup
 
 ---
