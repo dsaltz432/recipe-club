@@ -811,7 +811,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       {viewTab === "groceries" && (
         <>
-          {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) || generalItems.length > 0 ? (
+          {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) || items.length > 0 || generalItems.length > 0 ? (
             <GroceryListSection
               recipes={groceryRecipes}
               recipeIngredients={recipeIngredients}
@@ -832,13 +832,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               onUpdateGeneralItem={handleUpdateGeneralItem}
               onBulkParseGroceryText={handleBulkParseGroceryText}
             />
-          ) : items.length > 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <UtensilsCrossed className="h-8 w-8 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-sm">
-                Your planned meals don&apos;t have linked recipes. Add a recipe URL to see ingredients here.
-              </p>
-            </div>
           ) : (
             <GroceryListSection
               recipes={[]}
