@@ -265,7 +265,7 @@
         "Tests pass"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Modify src/components/recipes/IngredientFormRows.tsx (152 lines). The component currently has rows managed via onRowsChange prop and an 'Add Ingredient' button at the bottom. Add a 'Paste ingredients' button next to it (use ClipboardPaste icon from lucide-react). The parse flow is simpler than US-012 because there's no preview/confirm step — parsed items just become editable IngredientRow entries that the user can modify before saving the whole recipe. The conversion from parse result to IngredientRow: { id: crypto.randomUUID(), name: parsed.name, quantity: String(parsed.quantity) or '', unit: parsed.unit or '', category: parsed.category }. Use createBlankRow() pattern from ingredientRowTypes.ts but populate with parsed values. Reuses the same parse-grocery-text edge function from US-011 — no new backend work. Tests at tests/unit/components/recipes/IngredientFormRows.test.tsx — test paste button renders, mock edge function, test rows are appended."
     },
     {

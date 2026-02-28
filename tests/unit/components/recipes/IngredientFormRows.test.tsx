@@ -40,6 +40,9 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import IngredientFormRows from "@/components/recipes/IngredientFormRows";
 import { createBlankRow, type IngredientRow } from "@/components/recipes/ingredientRowTypes";
+import { supabase } from "@/integrations/supabase/client";
+
+const mockInvoke = supabase.functions.invoke as ReturnType<typeof vi.fn>;
 
 const makeRow = (overrides: Partial<IngredientRow> = {}): IngredientRow => ({
   id: "row-1",
@@ -284,6 +287,199 @@ describe("IngredientFormRows", () => {
     expect(onRowsChange).toHaveBeenCalledWith([
       expect.objectContaining({ id: "r1", category: "meat_seafood" }),
     ]);
+  });
+});
+
+describe("Paste ingredients", () => {
+  let onRowsChange: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    onRowsChange = vi.fn();
+  });
+
+  it("renders Paste ingredients button", () => {
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+    expect(screen.getByRole("button", { name: /paste ingredients/i })).toBeInTheDocument();
+  });
+
+  it("shows textarea when Paste ingredients is clicked", () => {
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    expect(screen.getByLabelText("Paste ingredients text")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /parse/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+  });
+
+  it("disables Paste ingredients button when textarea is open", () => {
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    expect(screen.getByRole("button", { name: /paste ingredients/i })).toBeDisabled();
+  });
+
+  it("disables Parse button when textarea is empty", () => {
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    expect(screen.getByRole("button", { name: /^parse$/i })).toBeDisabled();
+  });
+
+  it("enables Parse button when textarea has text", () => {
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "2 cups flour, 1 lb chicken" },
+    });
+    expect(screen.getByRole("button", { name: /^parse$/i })).not.toBeDisabled();
+  });
+
+  it("appends parsed items as new rows on successful parse", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        success: true,
+        items: [
+          { name: "flour", quantity: 2, unit: "cups", category: "pantry" },
+          { name: "chicken", quantity: 1, unit: "lb", category: "meat_seafood" },
+        ],
+      },
+      error: null,
+    });
+
+    const existingRows = [makeRow({ id: "r1", name: "sugar" })];
+    render(<IngredientFormRows rows={existingRows} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "2 cups flour, 1 lb chicken" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+
+    await vi.waitFor(() => {
+      expect(onRowsChange).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "r1", name: "sugar" }),
+        expect.objectContaining({ name: "flour", quantity: "2", unit: "cups", category: "pantry" }),
+        expect.objectContaining({ name: "chicken", quantity: "1", unit: "lb", category: "meat_seafood" }),
+      ]);
+    });
+  });
+
+  it("handles items with null quantity and unit", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        success: true,
+        items: [
+          { name: "olive oil", quantity: null, unit: null, category: "pantry" },
+        ],
+      },
+      error: null,
+    });
+
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "olive oil" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+
+    await vi.waitFor(() => {
+      expect(onRowsChange).toHaveBeenCalledWith([
+        expect.objectContaining({ name: "olive oil", quantity: "", unit: "", category: "pantry" }),
+      ]);
+    });
+  });
+
+  it("shows toast error on parse failure", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: null,
+      error: new Error("Network error"),
+    });
+
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "flour, sugar" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+
+    await vi.waitFor(() => {
+      expect(onRowsChange).not.toHaveBeenCalled();
+    });
+  });
+
+  it("shows toast error when success is false", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: { success: false, error: "Parse failed" },
+      error: null,
+    });
+
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "flour" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+
+    await vi.waitFor(() => {
+      expect(onRowsChange).not.toHaveBeenCalled();
+    });
+  });
+
+  it("closes textarea when Cancel is clicked", () => {
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    expect(screen.getByLabelText("Paste ingredients text")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(screen.queryByLabelText("Paste ingredients text")).not.toBeInTheDocument();
+  });
+
+  it("closes textarea after successful parse", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        success: true,
+        items: [{ name: "flour", quantity: 2, unit: "cups", category: "pantry" }],
+      },
+      error: null,
+    });
+
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "flour" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+
+    await vi.waitFor(() => {
+      expect(screen.queryByLabelText("Paste ingredients text")).not.toBeInTheDocument();
+    });
+  });
+
+  it("defaults invalid category to other", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        success: true,
+        items: [{ name: "mystery item", quantity: 1, unit: null, category: "invalid_category" }],
+      },
+      error: null,
+    });
+
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "mystery item" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+
+    await vi.waitFor(() => {
+      expect(onRowsChange).toHaveBeenCalledWith([
+        expect.objectContaining({ name: "mystery item", category: "other" }),
+      ]);
+    });
   });
 });
 

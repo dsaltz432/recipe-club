@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -8,10 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ClipboardPaste, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { GROCERY_CATEGORIES, CATEGORY_ORDER, detectCategory } from "@/lib/groceryList";
+import { supabase } from "@/integrations/supabase/client";
 import { createBlankRow } from "./ingredientRowTypes";
 import type { IngredientRow } from "./ingredientRowTypes";
+import type { GroceryCategory } from "@/types";
 
 interface IngredientFormRowsProps {
   rows: IngredientRow[];
@@ -24,7 +28,48 @@ const categoryOptions = CATEGORY_ORDER.map((cat) => (
   </SelectItem>
 ));
 
+const VALID_CATEGORIES = new Set<string>([
+  "produce", "meat_seafood", "dairy", "pantry", "spices",
+  "frozen", "bakery", "beverages", "condiments", "other",
+]);
+
 const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => {
+  const [showPasteArea, setShowPasteArea] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [isParsing, setIsParsing] = useState(false);
+
+  const handleParse = useCallback(async () => {
+    if (!pasteText.trim()) return;
+    setIsParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-grocery-text", {
+        body: { text: pasteText },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error ?? "Failed to parse ingredients");
+      if (data.skipped) {
+        toast.error("Ingredient parsing is not available in dev mode.");
+        return;
+      }
+      const parsedItems: IngredientRow[] = (data.items as Array<{ name: string; quantity: number | null; unit: string | null; category: string }>).map(
+        (item) => ({
+          id: `parsed-${crypto.randomUUID()}`,
+          name: item.name || "",
+          quantity: item.quantity != null ? String(item.quantity) : "",
+          unit: item.unit || "",
+          category: (VALID_CATEGORIES.has(item.category) ? item.category : "other") as GroceryCategory,
+        })
+      );
+      onRowsChange([...rows, ...parsedItems]);
+      setPasteText("");
+      setShowPasteArea(false);
+    } catch {
+      toast.error("Failed to parse ingredients. Please try again.");
+    } finally {
+      setIsParsing(false);
+    }
+  }, [pasteText, rows, onRowsChange]);
+
   const updateRow = useCallback(
     (id: string, field: keyof IngredientRow, value: string) => {
       onRowsChange(
@@ -134,16 +179,61 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
         </div>
       ))}
 
-      {/* Add row button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full"
-        onClick={addRow}
-      >
-        <Plus className="h-3.5 w-3.5 mr-1" />
-        Add Ingredient
-      </Button>
+      {/* Paste ingredients area */}
+      {showPasteArea && (
+        <div className="space-y-2 border rounded-md p-3">
+          <Textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            placeholder="Paste your ingredients here (e.g., 2 cups flour, 1 lb chicken, olive oil...)"
+            className="min-h-[80px] text-sm"
+            aria-label="Paste ingredients text"
+          />
+          <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleParse}
+              disabled={isParsing || !pasteText.trim()}
+            >
+              {isParsing ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : null}
+              {isParsing ? "Parsing..." : "Parse"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setShowPasteArea(false); setPasteText(""); }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Add row and paste buttons */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={addRow}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add Ingredient
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => setShowPasteArea(true)}
+          disabled={showPasteArea}
+        >
+          <ClipboardPaste className="h-3.5 w-3.5 mr-1" />
+          Paste ingredients
+        </Button>
+      </div>
     </div>
   );
 };

@@ -61,8 +61,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 11
-**Current Task:** US-012 completed
+**Tasks Completed:** 12
+**Current Task:** US-013 completed
 
 ---
 
@@ -437,5 +437,43 @@
 - Preview items tracked by index, removed items tracked via `removedPreviewIndices: Set<number>` — simpler than maintaining a filtered array
 - The `onBulkParseGroceryText` callback is a clean abstraction: GroceryListSection doesn't need to know about supabase client, MealPlanPage owns the edge function invocation
 - Each `onAddGeneralItem` call in the confirm loop triggers MealPlanPage's full invalidation + re-combine cycle — this is correct for data consistency but means N API calls for N items. A batch add function could optimize this in the future.
+
+---
+
+## 2026-02-28 13:00 — US-013: Add bulk paste ingredients to recipe editing
+
+### What was implemented
+- Added "Paste ingredients" button to `IngredientFormRows` alongside the existing "Add Ingredient" button
+- Uses `ClipboardPaste` icon from lucide-react
+- Clicking "Paste ingredients" opens an inline textarea with a bordered container
+- "Parse" button sends text to `parse-grocery-text` edge function via `supabase.functions.invoke()`
+- Loading spinner (`Loader2`) shown on Parse button during parsing, button text changes to "Parsing..."
+- Parse button is disabled when textarea is empty or while parsing
+- On success, parsed items are converted to `IngredientRow` format and appended to existing rows (not replaced)
+- Conversion: `quantity: String(parsed.quantity)` for non-null (empty string for null), `unit: parsed.unit || ""`, `category` validated against allowed values (defaults to "other" for invalid)
+- Each parsed item gets a unique ID via `parsed-${crypto.randomUUID()}`
+- Textarea closes and clears after successful parse
+- On error (network error, `success: false`), shows toast: "Failed to parse ingredients. Please try again."
+- Cancel button closes the textarea and clears text
+- "Paste ingredients" button is disabled while textarea is open
+- Reuses the same `parse-grocery-text` edge function from US-011 — no new backend work
+- Added 12 new tests covering: button renders, textarea opens, paste button disabled when open, parse disabled when empty, parse enabled with text, successful parse appends rows, null quantity/unit handling, error handling (network error, success:false), cancel closes textarea, textarea closes after parse, invalid category defaults to "other"
+
+### Files changed
+- `src/components/recipes/IngredientFormRows.tsx` (modified — added paste ingredients UI, state, parse handler)
+- `tests/unit/components/recipes/IngredientFormRows.test.tsx` (modified — added 12 paste ingredients tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1658/1658, 59 files)
+- Lint: N/A
+
+### Learnings for future iterations
+- The paste flow for recipe editing is simpler than the General tab bulk paste (US-012) — no preview/confirm step needed since parsed items become editable `IngredientRow` entries the user can modify before saving the recipe
+- `crypto.randomUUID()` works in all modern browsers and jsdom — no polyfill needed for tests
+- The `parse-grocery-text` edge function returns `quantity: number | null` but `IngredientRow.quantity` is `string` — conversion: `String(item.quantity)` for non-null, `""` for null
+- Category validation with a `Set<string>` of valid categories is a good pattern — protects against AI returning unexpected values
+- The "Paste ingredients" button is disabled while the textarea is open via the `showPasteArea` state flag — simple boolean guard prevents duplicate open
+- Both "Add Ingredient" and "Paste ingredients" buttons use `flex-1` to share the width evenly in the button row
 
 ---
