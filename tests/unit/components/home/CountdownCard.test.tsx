@@ -98,8 +98,8 @@ describe("CountdownCard", () => {
 
   it("shows countdown timer with days", () => {
     render(<CountdownCard {...defaultProps} />);
-    // Should display some countdown value (days > 0)
-    expect(screen.getByText("Countdown")).toBeInTheDocument();
+    // Should display some countdown value (days > 0) — appears in both mobile + desktop layouts
+    expect(screen.getAllByText("Countdown").length).toBeGreaterThan(0);
   });
 
   it("displays 'It's Time!' when event time has passed", () => {
@@ -109,7 +109,8 @@ describe("CountdownCard", () => {
       eventTime: "00:00",
     });
     render(<CountdownCard {...defaultProps} event={pastEvent} />);
-    expect(screen.getByText("It's Time!")).toBeInTheDocument();
+    // Appears in both mobile + desktop layouts
+    expect(screen.getAllByText("It's Time!").length).toBeGreaterThan(0);
   });
 
   it("shows 'Starting in' label when event is today", async () => {
@@ -129,7 +130,8 @@ describe("CountdownCard", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Starting in")).toBeInTheDocument();
+      // Appears in both mobile + desktop layouts
+      expect(screen.getAllByText("Starting in").length).toBeGreaterThan(0);
     });
   });
 
@@ -169,9 +171,9 @@ describe("CountdownCard", () => {
       eventTime: "23:59",
     });
     render(<CountdownCard {...defaultProps} event={event} />);
-    // Should show day/days in the countdown
-    expect(screen.getByText("min")).toBeInTheDocument();
-    expect(screen.getByText("sec")).toBeInTheDocument();
+    // Should show day/days in the countdown — appears in both mobile + desktop layouts
+    expect(screen.getAllByText("min").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("sec").length).toBeGreaterThan(0);
   });
 
   it("hides Edit, Complete, and Cancel buttons for non-admin users", () => {
@@ -542,8 +544,8 @@ describe("CountdownCard", () => {
       eventTime: timeStr,
     });
     render(<CountdownCard {...defaultProps} event={event} />);
-    // Countdown renders
-    expect(screen.getByText("min")).toBeInTheDocument();
+    // Countdown renders — appears in both mobile + desktop layouts
+    expect(screen.getAllByText("min").length).toBeGreaterThan(0);
   });
 
   it("updates countdown on timer tick", () => {
@@ -554,8 +556,8 @@ describe("CountdownCard", () => {
       vi.advanceTimersByTime(1000);
     });
 
-    // The countdown should still be visible
-    expect(screen.getByText("Countdown")).toBeInTheDocument();
+    // The countdown should still be visible — appears in both mobile + desktop layouts
+    expect(screen.getAllByText("Countdown").length).toBeGreaterThan(0);
   });
 
   it("cleans up interval on unmount", () => {
@@ -616,8 +618,9 @@ describe("CountdownCard", () => {
       eventTime: "00:00",
     });
     render(<CountdownCard {...defaultProps} event={pastEvent} />);
-    const link = screen.getByText("Head to the event for recipes and cooking!");
-    fireEvent.click(link);
+    // Link appears in both mobile + desktop layouts
+    const links = screen.getAllByText("Head to the event for recipes and cooking!");
+    fireEvent.click(links[0]);
     expect(mockNavigate).toHaveBeenCalledWith("/events/event-1");
   });
 
@@ -840,6 +843,7 @@ describe("CountdownCard", () => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(screen.getByText("day")).toBeInTheDocument();
+    // Appears in both mobile + desktop layouts
+    expect(screen.getAllByText("day").length).toBeGreaterThan(0);
   });
 });

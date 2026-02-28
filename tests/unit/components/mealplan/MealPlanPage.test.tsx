@@ -521,7 +521,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Existing Meal 1")).toBeInTheDocument();
+      expect(screen.getAllByText("Existing Meal 1")[0]).toBeInTheDocument();
     });
 
     // Click the "Add another meal" button in the occupied Sunday Dinner slot
@@ -619,7 +619,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Grilled Chicken")).toBeInTheDocument();
+      expect(screen.getAllByText("Grilled Chicken")[0]).toBeInTheDocument();
     });
   });
 
@@ -631,8 +631,8 @@ describe("MealPlanPage", () => {
     });
 
     // Should have day headers
-    expect(screen.getByText("Sun")).toBeInTheDocument();
-    expect(screen.getByText("Mon")).toBeInTheDocument();
+    expect(screen.getAllByText("Sun")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Mon")[0]).toBeInTheDocument();
   });
 
   it("handles add meal error", async () => {
@@ -868,7 +868,7 @@ describe("MealPlanPage", () => {
     });
 
     // Should render with no items (empty grid)
-    expect(screen.getByText("Sun")).toBeInTheDocument();
+    expect(screen.getAllByText("Sun")[0]).toBeInTheDocument();
   });
 
 
@@ -910,11 +910,11 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
     });
 
     // Click the card (whole card is clickable)
-    fireEvent.click(screen.getByText("Pancakes"));
+    fireEvent.click(screen.getAllByText("Pancakes")[0]);
 
     expect(mockNavigate).toHaveBeenCalledWith("/meals/event-existing-123");
   });
@@ -959,11 +959,11 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
     });
 
     // Click the card (whole card is clickable)
-    fireEvent.click(screen.getByText("Pancakes"));
+    fireEvent.click(screen.getAllByText("Pancakes")[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-456");
@@ -1023,12 +1023,12 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Pancakes")).toBeInTheDocument();
-      expect(screen.getByText("Pasta")).toBeInTheDocument();
+      expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
+      expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
     });
 
     // Click the card on the breakfast slot (day 0) — whole card is clickable
-    fireEvent.click(screen.getByText("Pancakes"));
+    fireEvent.click(screen.getAllByText("Pancakes")[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-789");
@@ -1077,11 +1077,11 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Pancakes")).toBeInTheDocument();
+      expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
     });
 
     // Click the card (whole card is clickable)
-    fireEvent.click(screen.getByText("Pancakes"));
+    fireEvent.click(screen.getAllByText("Pancakes")[0]);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to open meal details");
@@ -1222,7 +1222,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Grilled Chicken")).toBeInTheDocument();
+        expect(screen.getAllByText("Grilled Chicken")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1266,7 +1266,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Just Toast")).toBeInTheDocument();
+        expect(screen.getAllByText("Just Toast")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1323,7 +1323,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1385,7 +1385,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab — should not crash even if pantry load fails
@@ -1464,7 +1464,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Pasta")).toBeInTheDocument();
+        expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1560,7 +1560,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Pasta")).toBeInTheDocument();
+        expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1648,7 +1648,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Pasta")).toBeInTheDocument();
+        expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText("Groceries"));
@@ -1734,7 +1734,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Pasta")).toBeInTheDocument();
+        expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText("Groceries"));
@@ -1781,7 +1781,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("No URL Recipe")).toBeInTheDocument();
+        expect(screen.getAllByText("No URL Recipe")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1807,13 +1807,13 @@ describe("MealPlanPage", () => {
       });
 
       // Should show meal grid by default (check for day headers)
-      expect(screen.getByText("Sun")).toBeInTheDocument();
+      expect(screen.getAllByText("Sun")[0]).toBeInTheDocument();
 
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
       // Day headers should be hidden (grid is not shown)
-      expect(screen.queryByText("Sun")).not.toBeInTheDocument();
+      expect(screen.queryAllByText("Sun")).toHaveLength(0);
 
       // Switch to Pantry tab
       fireEvent.click(screen.getByText("Pantry"));
@@ -1827,7 +1827,7 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Meal Plan"));
 
       // Day headers should be back
-      expect(screen.getByText("Sun")).toBeInTheDocument();
+      expect(screen.getAllByText("Sun")[0]).toBeInTheDocument();
     });
 
     it("reloads grocery data when switching weeks on Groceries tab", async () => {
@@ -1879,7 +1879,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1953,7 +1953,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab — should not crash with null data
@@ -2047,7 +2047,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Soup")).toBeInTheDocument();
+        expect(screen.getAllByText("Soup")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -2127,7 +2127,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -2233,7 +2233,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken Stir Fry")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -2328,7 +2328,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken Stir Fry")[0]).toBeInTheDocument();
       });
 
       // First visit to Groceries tab — smartCombine runs
@@ -2447,7 +2447,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+        expect(screen.getAllByText("Chicken Stir Fry")[0]).toBeInTheDocument();
       });
 
       // First visit to Groceries tab — smartCombine runs
@@ -2553,7 +2553,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Soup")).toBeInTheDocument();
+        expect(screen.getAllByText("Soup")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -2630,7 +2630,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Solo Recipe")).toBeInTheDocument();
+        expect(screen.getAllByText("Solo Recipe")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -2713,7 +2713,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+        expect(screen.getAllByText("Recipe A")[0]).toBeInTheDocument();
       });
 
       // Switch to Groceries tab — should not crash even though smart combine fails
@@ -2797,7 +2797,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+        expect(screen.getAllByText("Recipe A")[0]).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText("Groceries"));
@@ -2879,7 +2879,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+        expect(screen.getAllByText("Recipe A")[0]).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText("Groceries"));
@@ -2968,7 +2968,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Recipe A")).toBeInTheDocument();
+        expect(screen.getAllByText("Recipe A")[0]).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText("Groceries"));
@@ -3013,11 +3013,11 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Pancakes")).toBeInTheDocument();
+        expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
       });
 
       // Cooked item should show green styling (via cooked checkmark)
-      expect(screen.getByTestId("cooked-check")).toBeInTheDocument();
+      expect(screen.getAllByTestId("cooked-check")[0]).toBeInTheDocument();
     });
 
   });
@@ -3607,7 +3607,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Existing Recipe")).toBeInTheDocument();
+        expect(screen.getAllByText("Existing Recipe")[0]).toBeInTheDocument();
       });
 
       // Add a new meal with URL to trigger parse (this makes 2 recipes with URLs)

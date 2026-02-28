@@ -621,7 +621,7 @@ describe("AddMealDialog", () => {
       fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
 
       // Fill quantity
-      const quantityInputs = screen.getAllByPlaceholderText("1");
+      const quantityInputs = screen.getAllByPlaceholderText("Qty");
       fireEvent.change(quantityInputs[0], { target: { value: "1" } });
 
       // Submit

@@ -31,7 +31,7 @@ const MealPlanSlot = ({
         className="w-full h-full min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent"
         onClick={() => onAddMeal(dayOfWeek, mealType)}
       >
-        <Plus className="h-3 w-3" />
+        <Plus className="h-4 w-4" />
         <span className="text-xs">{mealTypeLabels[mealType]}</span>
       </button>
     );
@@ -69,11 +69,11 @@ const MealPlanSlot = ({
       <div className="flex items-center justify-end mt-1">
         <button
           onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
-          className="text-muted-foreground hover:text-purple transition-colors p-1"
+          className="text-muted-foreground hover:text-purple transition-colors p-2"
           title="Add another meal"
           aria-label="Add another meal"
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-4 w-4" />
         </button>
       </div>
     </div>

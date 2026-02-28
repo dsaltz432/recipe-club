@@ -42,7 +42,7 @@ const WeekNavigation = ({
 }: WeekNavigationProps) => {
   return (
     <div className="flex items-center justify-between mb-4">
-      <Button variant="outline" size="sm" onClick={onPreviousWeek} aria-label="Previous week">
+      <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" onClick={onPreviousWeek} aria-label="Previous week">
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex items-center gap-2">
@@ -50,12 +50,12 @@ const WeekNavigation = ({
           {formatWeekRange(weekStart)}
         </span>
         {!isCurrentWeek(weekStart) && (
-          <Button variant="ghost" size="sm" onClick={onCurrentWeek}>
+          <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={onCurrentWeek}>
             Today
           </Button>
         )}
       </div>
-      <Button variant="outline" size="sm" onClick={onNextWeek} aria-label="Next week">
+      <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" onClick={onNextWeek} aria-label="Next week">
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

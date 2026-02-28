@@ -81,16 +81,17 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
         borderColor: borderColor || undefined,
       }}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-3">
+      <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
+        <div className="flex items-start gap-2 sm:gap-3">
           {/* Recipe submitter avatar */}
           {recipe.createdByName && (
             <Avatar
-              className="h-9 w-9"
+              className="h-7 w-7 sm:h-9 sm:w-9"
               style={{ boxShadow: `0 0 0 2px ${borderColor || "rgba(155, 135, 245, 0.2)"}` }}
             >
               <AvatarImage src={recipe.createdByAvatar} />
               <AvatarFallback
+                className="text-xs sm:text-sm"
                 style={{
                   backgroundColor: bgColor || "rgba(155, 135, 245, 0.1)",
                   color: themeColor,
@@ -102,10 +103,10 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
-              <h3 className="font-display text-lg font-semibold truncate flex-1">{recipe.name}</h3>
-              {/* Action buttons in header */}
+              <h3 className="font-display text-base sm:text-lg font-semibold truncate flex-1">{recipe.name}</h3>
+              {/* Action buttons - desktop only inline */}
               {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
-                <div className="flex items-center gap-0.5 flex-shrink-0">
+                <div className="hidden sm:flex items-center gap-0.5 flex-shrink-0">
                   {recipe.url && (
                     <a
                       href={recipe.url}
@@ -171,14 +172,74 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                 </span>
               )}
             </div>
+            {/* Action buttons - mobile only, below name */}
+            {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
+              <div className="flex sm:hidden items-center gap-0 -ml-1">
+                {recipe.url && (
+                  <a
+                    href={recipe.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
+                    aria-label={`Open recipe URL for ${recipe.name}`}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
+                  </a>
+                )}
+                {onAddNote && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => onAddNote(recipe)}
+                    aria-label={`Add note for ${recipe.name}`}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {onEditIngredients && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={`Edit ingredients for ${recipe.name}`}
+                    onClick={() => onEditIngredients(recipe)}
+                  >
+                    <ListChecks className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={`Edit recipe ${recipe.name}`}
+                    onClick={() => onEdit(recipe)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    aria-label={`Delete recipe ${recipe.name}`}
+                    onClick={() => onDelete(recipe.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="px-3 sm:px-6 pt-0 pb-3 sm:pb-6">
         {/* Badges row */}
         {(recipe.isPersonal || recipe.ingredientName) && (
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
             {recipe.isPersonal && (
               <Badge variant="outline" className="border-purple text-purple bg-purple/5">
                 Personal
@@ -201,7 +262,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
 
         {/* Rating display */}
         {recipe.ratingSummary && recipe.ratingSummary.totalRatings > 0 && (
-          <div className="flex flex-col gap-1 mb-3">
+          <div className="flex flex-col gap-1 mb-2 sm:mb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-0.5">
                 {renderStars(recipe.ratingSummary.averageRating)}
@@ -215,7 +276,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 ml-1"
+                  className="h-8 w-8 sm:h-6 sm:w-6 p-0 ml-1"
                   aria-label={`Edit rating for ${recipe.name}`}
                   onClick={() => onEditRating(recipe)}
                 >
@@ -238,7 +299,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
         )}
 
         {/* Quick stats */}
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-3 items-center">
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-2 sm:mb-3 items-center">
           <span className="flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
             {recipe.notes.length} {recipe.notes.length !== 1 ? "notes" : "note"}
@@ -253,12 +314,12 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
 
         {/* Ingredients Section */}
         {contentStatus === "parsing" ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 sm:mb-3">
             <Loader2 className="h-4 w-4 animate-spin" />
             Parsing ingredients...
           </div>
         ) : contentStatus === "failed" ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 sm:mb-3">
             <span>Parsing failed</span>
             {recipe.url && onParseRecipe && (
               <Button
@@ -272,7 +333,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
             )}
           </div>
         ) : hasIngredients ? (
-          <div className="mb-3">
+          <div className="mb-2 sm:mb-3">
             <button
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
               onClick={() => setIngredientsExpanded(!ingredientsExpanded)}
@@ -309,7 +370,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
             )}
           </div>
         ) : recipe.url && contentStatus !== "completed" && onParseRecipe ? (
-          <div className="mb-3">
+          <div className="mb-2 sm:mb-3">
             <Button
               variant="ghost"
               size="sm"
@@ -360,7 +421,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                                   key={idx}
                                   src={photo}
                                   alt={`${recipe.name} photo ${idx + 1}`}
-                                  className="h-20 w-20 object-cover rounded-md flex-shrink-0"
+                                  className="h-24 w-24 sm:h-20 sm:w-20 object-cover rounded-md flex-shrink-0"
                                 />
                               ))}
                             </div>

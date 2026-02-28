@@ -616,7 +616,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         <div className="flex gap-1 bg-muted rounded-lg p-1">
           <button
             onClick={() => setViewTab("plan")}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-3 py-2.5 sm:py-1.5 text-sm rounded-md transition-colors ${
               viewTab === "plan"
                 ? "bg-white shadow-sm font-medium"
                 : "text-muted-foreground hover:text-foreground"
@@ -626,7 +626,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           </button>
           <button
             onClick={() => setViewTab("groceries")}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3 py-2.5 sm:py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
               viewTab === "groceries"
                 ? "bg-white shadow-sm font-medium"
                 : "text-muted-foreground hover:text-foreground"
@@ -637,7 +637,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           </button>
           <button
             onClick={() => setViewTab("pantry")}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+            className={`px-3 py-2.5 sm:py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
               viewTab === "pantry"
                 ? "bg-white shadow-sm font-medium"
                 : "text-muted-foreground hover:text-foreground"

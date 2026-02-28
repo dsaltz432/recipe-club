@@ -157,12 +157,76 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
     }
   };
 
+  const renderCountdown = () => (
+    <div className={`text-center p-3 sm:p-6 rounded-2xl ${isSoon ? 'bg-gradient-to-br from-orange/20 to-orange/5 border border-orange/20' : 'bg-gradient-to-br from-purple/20 to-purple/5 border border-purple/20'}`}>
+      {isTimeUp ? (
+        <div className="space-y-1 sm:space-y-2">
+          <div className="text-lg sm:text-2xl font-bold text-orange animate-pulse">
+            It's Time!
+          </div>
+          <button
+            onClick={() => navigate(`/events/${event.id}`)}
+            className="text-xs sm:text-sm text-purple hover:text-purple-dark underline underline-offset-2"
+          >
+            Head to the event for recipes and cooking!
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground mb-1.5 sm:mb-2 font-semibold">
+            {isToday ? "Starting in" : "Countdown"}
+          </div>
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+            {countdown.days > 0 && (
+              <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+                  {countdown.days}
+                </div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                  {countdown.days === 1 ? "day" : "days"}
+                </div>
+              </div>
+            )}
+            {(countdown.days > 0 || countdown.hours > 0) && (
+              <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+                  {String(countdown.hours).padStart(2, "0")}
+                </div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                  {countdown.hours === 1 ? "hr" : "hrs"}
+                </div>
+              </div>
+            )}
+            <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
+              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+                {String(countdown.minutes).padStart(2, "0")}
+              </div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                min
+              </div>
+            </div>
+            <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
+              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+                {String(countdown.seconds).padStart(2, "0")}
+              </div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                sec
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <>
     <Card className="bg-gradient-to-br from-purple/15 via-white to-orange/15 border-2 border-purple/20 shadow-lg overflow-hidden">
       <CardContent className="p-4 sm:p-6 md:p-8">
-        <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8">
-          {/* Left: Event Info */}
+        {/* Mobile: compact stacked layout */}
+        {/* Desktop: side-by-side with countdown on right */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+          {/* Event Info */}
           <div className="flex-1">
             <div className="flex items-center gap-2 text-purple mb-2">
               <div className="p-1.5 sm:p-2 bg-purple/10 rounded-full">
@@ -173,126 +237,76 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
               </span>
             </div>
 
-            <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-3">
-              {event.ingredientName || "Mystery Ingredient"}
-            </h3>
-
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className="flex items-center gap-1.5 bg-purple/5 px-2.5 py-1 rounded-full">
-                <CalendarIcon className="h-3.5 w-3.5 text-purple" />
-                <span className="font-medium text-xs sm:text-sm text-muted-foreground">{format(parseISO(event.eventDate), "EEE, MMM d")}</span>
-              </div>
-              {event.eventTime && (
-                <div className="flex items-center gap-1.5 bg-orange/5 px-2.5 py-1 rounded-full">
-                  <Clock className="h-3.5 w-3.5 text-orange" />
-                  <span className="font-medium text-xs sm:text-sm text-muted-foreground">{formatTime(event.eventTime)}</span>
+            {/* Mobile: ingredient name + date/time inline */}
+            <div className="flex items-baseline justify-between gap-2 sm:block">
+              <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 sm:mb-3">
+                {event.ingredientName || "Mystery Ingredient"}
+              </h3>
+              {/* Date/time pills - inline on mobile, below on desktop */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:mb-4">
+                <div className="flex items-center gap-1 sm:gap-1.5 bg-purple/5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
+                  <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple" />
+                  <span className="font-medium text-[11px] sm:text-sm text-muted-foreground">{format(parseISO(event.eventDate), "EEE, MMM d")}</span>
                 </div>
-              )}
+                {event.eventTime && (
+                  <div className="flex items-center gap-1 sm:gap-1.5 bg-orange/5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
+                    <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-orange" />
+                    <span className="font-medium text-[11px] sm:text-sm text-muted-foreground">{formatTime(event.eventTime)}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 items-center">
+            {/* Countdown - inline on mobile between header and buttons */}
+            <div className="md:hidden my-3">
+              {renderCountdown()}
+            </div>
+
+            {/* Action Buttons - full width on mobile */}
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
-                className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md"
+                className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md w-full sm:w-auto"
                 onClick={() => navigate(`/events/${event.id}`)}
               >
                 View Event Details
               </Button>
               {isAdmin && userId === event.createdBy && (
-                <>
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleEditEventClick}
-                    className="h-8 px-3 text-xs"
+                    className="h-9 sm:h-8 px-3 text-xs flex-1 sm:flex-none"
                   >
-                    <Pencil className="h-3 w-3 mr-1" />
+                    <Pencil className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />
                     Edit
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowCompleteConfirm(true)}
-                    className="h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10"
+                    className="h-9 sm:h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10 flex-1 sm:flex-none"
                   >
-                    <CheckCircle className="h-3 w-3 mr-1" />
+                    <CheckCircle className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />
                     Complete
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowCancelConfirm(true)}
-                    className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50"
+                    className="h-9 sm:h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50 flex-1 sm:flex-none"
                   >
-                    <X className="h-3 w-3 mr-1" />
+                    <X className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />
                     Cancel
                   </Button>
-                </>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Right: Countdown */}
-          <div className="flex-shrink-0 self-center">
-            <div className={`text-center p-4 sm:p-6 rounded-2xl ${isSoon ? 'bg-gradient-to-br from-orange/20 to-orange/5 border border-orange/20' : 'bg-gradient-to-br from-purple/20 to-purple/5 border border-purple/20'}`}>
-              {isTimeUp ? (
-                <div className="space-y-2">
-                  <div className="text-xl sm:text-2xl font-bold text-orange animate-pulse">
-                    It's Time!
-                  </div>
-                  <button
-                    onClick={() => navigate(`/events/${event.id}`)}
-                    className="text-xs sm:text-sm text-purple hover:text-purple-dark underline underline-offset-2"
-                  >
-                    Head to the event for recipes and cooking!
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground mb-2 font-semibold">
-                    {isToday ? "Starting in" : "Countdown"}
-                  </div>
-                  <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    {countdown.days > 0 && (
-                      <div className="text-center min-w-[40px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-purple">
-                          {countdown.days}
-                        </div>
-                        <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                          {countdown.days === 1 ? "day" : "days"}
-                        </div>
-                      </div>
-                    )}
-                    {(countdown.days > 0 || countdown.hours > 0) && (
-                      <div className="text-center min-w-[40px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-purple">
-                          {String(countdown.hours).padStart(2, "0")}
-                        </div>
-                        <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                          {countdown.hours === 1 ? "hr" : "hrs"}
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-center min-w-[40px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-                      <div className="text-xl sm:text-2xl md:text-3xl font-bold text-purple">
-                        {String(countdown.minutes).padStart(2, "0")}
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                        min
-                      </div>
-                    </div>
-                    <div className="text-center min-w-[40px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-                      <div className="text-xl sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
-                        {String(countdown.seconds).padStart(2, "0")}
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                        sec
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+          {/* Right: Countdown - desktop only */}
+          <div className="hidden md:flex flex-shrink-0 self-center">
+            {renderCountdown()}
           </div>
         </div>
       </CardContent>

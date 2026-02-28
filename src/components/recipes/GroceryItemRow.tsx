@@ -72,7 +72,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           value={editQuantity}
           onChange={(e) => setEditQuantity(e.target.value)}
           placeholder="Qty"
-          className="w-16 h-7 text-sm"
+          className="w-16 h-9 sm:h-7 text-sm"
           onKeyDown={handleKeyDown}
           aria-label="Quantity"
         />
@@ -81,7 +81,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           value={editUnit}
           onChange={(e) => setEditUnit(e.target.value)}
           placeholder="Unit"
-          className="w-20 h-7 text-sm"
+          className="w-20 h-9 sm:h-7 text-sm"
           onKeyDown={handleKeyDown}
           aria-label="Unit"
         />
@@ -90,7 +90,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
           placeholder="Item name"
-          className="flex-1 h-7 text-sm"
+          className="flex-1 h-9 sm:h-7 text-sm"
           onKeyDown={handleKeyDown}
           aria-label="Item name"
         />
@@ -98,7 +98,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           variant="ghost"
           size="sm"
           onClick={handleSave}
-          className="h-7 w-7 p-0"
+          className="h-9 w-9 sm:h-7 sm:w-7 p-0"
           aria-label="Save edit"
         >
           <Check className="h-3.5 w-3.5 text-green-600" />
@@ -107,7 +107,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           variant="ghost"
           size="sm"
           onClick={handleCancel}
-          className="h-7 w-7 p-0"
+          className="h-9 w-9 sm:h-7 sm:w-7 p-0"
           aria-label="Cancel edit"
         >
           <X className="h-3.5 w-3.5 text-gray-500" />
@@ -135,19 +135,19 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
               variant="ghost"
               size="sm"
               onClick={handleStartEdit}
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
               aria-label="Edit item"
             >
-              <Pencil className="h-3 w-3 text-gray-500" />
+              <Pencil className="h-4 w-4 text-gray-500" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onRemove?.(item.name)}
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
               aria-label="Remove item"
             >
-              <Trash2 className="h-3 w-3 text-red-500" />
+              <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </>
         )}

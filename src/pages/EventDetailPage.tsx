@@ -1065,26 +1065,24 @@ const EventDetailPage = () => {
             borderColor: headerBorderColor || "rgba(155, 135, 245, 0.1)",
           }}
         >
-          <CardContent className="py-4 sm:py-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
-                  <div
-                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full"
-                    style={{ backgroundColor: bgColor || "rgba(155, 135, 245, 0.05)" }}
-                  >
-                    <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: themeColor }} />
-                    <span className="font-medium">{event && format(parseISO(event.eventDate), "EEE, MMM d, yyyy")}</span>
-                  </div>
-                  {event?.eventTime && (
-                    <div className="flex items-center gap-1.5 sm:gap-2 bg-orange/5 px-2 sm:px-3 py-1 rounded-full">
-                      <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange" />
-                      <span className="font-medium">{formatTime(event.eventTime)}</span>
-                    </div>
-                  )}
+          <CardContent className="py-3 sm:py-6">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-sm sm:text-base text-muted-foreground min-w-0">
+                <div
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full"
+                  style={{ backgroundColor: bgColor || "rgba(155, 135, 245, 0.05)" }}
+                >
+                  <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" style={{ color: themeColor }} />
+                  <span className="font-medium text-xs sm:text-sm">{event && format(parseISO(event.eventDate), "EEE, MMM d, yyyy")}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                  <ChefHat className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                {event?.eventTime && (
+                  <div className="flex items-center gap-1 sm:gap-2 bg-orange/5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange shrink-0" />
+                    <span className="font-medium text-xs sm:text-sm">{formatTime(event.eventTime)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                  <ChefHat className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                   <span>
                     <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
                   </span>
@@ -1092,33 +1090,33 @@ const EventDetailPage = () => {
               </div>
 
               {/* Event action buttons */}
-              <div className="flex flex-wrap gap-2 shrink-0">
+              <div className="flex gap-1 sm:gap-2 shrink-0">
                 {isUpcoming && userIsAdmin && user?.id === event?.createdBy && (
                   <>
-                    <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 px-3 text-xs">
-                      <Pencil className="h-3.5 w-3.5 mr-1" />
-                      Edit
+                    <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs">
+                      <Pencil className="h-3.5 w-3.5 sm:mr-1" />
+                      <span className="hidden sm:inline">Edit</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10">
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                      Complete
+                    <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs bg-purple/5 hover:bg-purple/10">
+                      <CheckCircle className="h-3.5 w-3.5 sm:mr-1" />
+                      <span className="hidden sm:inline">Complete</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setShowCancelConfirm(true)} className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50">
-                      <X className="h-3.5 w-3.5 mr-1" />
-                      Cancel
+                    <Button variant="outline" size="sm" onClick={() => setShowCancelConfirm(true)} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50">
+                      <X className="h-3.5 w-3.5 sm:mr-1" />
+                      <span className="hidden sm:inline">Cancel</span>
                     </Button>
                   </>
                 )}
                 {isUpcoming && userIsAdmin && user?.id !== event?.createdBy && (
-                  <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10">
-                    <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                    Complete
+                  <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs bg-purple/5 hover:bg-purple/10">
+                    <CheckCircle className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Complete</span>
                   </Button>
                 )}
                 {!isUpcoming && userIsMember && totalRecipes > 0 && (
-                  <Button variant="outline" size="sm" onClick={handleRateRecipesClick} className="h-8 px-3 text-xs">
-                    <Star className="h-3.5 w-3.5 mr-1" />
-                    Rate Recipes
+                  <Button variant="outline" size="sm" onClick={handleRateRecipesClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs">
+                    <Star className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Rate Recipes</span>
                   </Button>
                 )}
               </div>
@@ -1128,18 +1126,18 @@ const EventDetailPage = () => {
 
         {/* Tabbed Content */}
         <Tabs defaultValue="recipes" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-3 mb-4">
-            <TabsTrigger value="recipes" className="flex items-center gap-1.5">
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Recipes</span>
+          <TabsList className="grid w-full max-w-lg grid-cols-3 mb-4 h-auto rounded-lg">
+            <TabsTrigger value="recipes" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
+              <BookOpen className="h-3.5 w-3.5" />
+              <span className="text-xs sm:text-sm">Recipes</span>
             </TabsTrigger>
-            <TabsTrigger value="grocery" className="flex items-center gap-1.5">
-              <ShoppingCart className="h-4 w-4" />
-              <span className="hidden sm:inline">Groceries</span>
+            <TabsTrigger value="grocery" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
+              <ShoppingCart className="h-3.5 w-3.5" />
+              <span className="text-xs sm:text-sm">Groceries</span>
             </TabsTrigger>
-            <TabsTrigger value="pantry" className="flex items-center gap-1.5">
-              <UtensilsCrossed className="h-4 w-4" />
-              <span className="hidden sm:inline">Pantry</span>
+            <TabsTrigger value="pantry" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
+              <UtensilsCrossed className="h-3.5 w-3.5" />
+              <span className="text-xs sm:text-sm">Pantry</span>
             </TabsTrigger>
           </TabsList>
 

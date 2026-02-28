@@ -256,13 +256,6 @@ const Dashboard = () => {
                 </div>
               </div>
               <DropdownMenuSeparator className="md:hidden" />
-              <DropdownMenuItem asChild className="md:hidden cursor-pointer">
-                <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer">
-                  <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-                  Deposit
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="md:hidden" />
               {userIsAdmin && (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">

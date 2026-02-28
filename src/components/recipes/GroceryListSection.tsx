@@ -204,7 +204,7 @@ const GroceryListSection = ({
               <TabsList className="mb-3 inline-flex w-auto">
                 <TabsTrigger value="combined">Combined</TabsTrigger>
                 {recipesWithIngredients.map((recipe) => (
-                  <TabsTrigger key={recipe.id} value={recipe.id} className="whitespace-nowrap">
+                  <TabsTrigger key={recipe.id} value={recipe.id} className="whitespace-nowrap max-w-[120px] truncate sm:max-w-none">
                     {recipe.name}
                   </TabsTrigger>
                 ))}
@@ -295,7 +295,7 @@ const GroceryListSection = ({
                   value={newItemQuantity}
                   onChange={(e) => setNewItemQuantity(e.target.value)}
                   placeholder="Qty"
-                  className="w-16 h-7 text-sm"
+                  className="w-16 h-9 sm:h-7 text-sm"
                   onKeyDown={handleAddItemKeyDown}
                   aria-label="New item quantity"
                 />
@@ -304,7 +304,7 @@ const GroceryListSection = ({
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value)}
                   placeholder="Unit"
-                  className="w-20 h-7 text-sm"
+                  className="w-20 h-9 sm:h-7 text-sm"
                   onKeyDown={handleAddItemKeyDown}
                   aria-label="New item unit"
                 />
@@ -313,7 +313,7 @@ const GroceryListSection = ({
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   placeholder="Item name"
-                  className="flex-1 h-7 text-sm"
+                  className="flex-1 h-9 sm:h-7 text-sm"
                   onKeyDown={handleAddItemKeyDown}
                   aria-label="New item name"
                 />
@@ -321,7 +321,7 @@ const GroceryListSection = ({
                   variant="default"
                   size="sm"
                   onClick={handleAddItem}
-                  className="h-7 text-xs"
+                  className="h-9 sm:h-7 text-xs"
                 >
                   Add
                 </Button>
@@ -329,7 +329,7 @@ const GroceryListSection = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsAddingItem(false)}
-                  className="h-7 text-xs"
+                  className="h-9 sm:h-7 text-xs"
                 >
                   Cancel
                 </Button>
