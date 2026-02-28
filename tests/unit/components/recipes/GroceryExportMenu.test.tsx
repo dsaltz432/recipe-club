@@ -18,6 +18,12 @@ vi.mock("@/lib/groceryList", () => ({
   groupByCategory: () => new Map(),
 }));
 
+// Mock instacart module
+const mockSendToInstacart = vi.fn();
+vi.mock("@/lib/instacart", () => ({
+  sendToInstacart: (...args: unknown[]) => mockSendToInstacart(...args),
+}));
+
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -31,13 +37,14 @@ describe("GroceryExportMenu", () => {
     vi.clearAllMocks();
   });
 
-  it("renders CSV and Copy buttons", () => {
+  it("renders CSV, Copy, and Instacart buttons", () => {
     render(
       <GroceryExportMenu items={items} eventName="Test Event" />
     );
 
     expect(screen.getByText("CSV")).toBeInTheDocument();
     expect(screen.getByText("Copy")).toBeInTheDocument();
+    expect(screen.getByText("Instacart")).toBeInTheDocument();
   });
 
   it("calls downloadCSV when CSV button is clicked", () => {
@@ -86,5 +93,70 @@ describe("GroceryExportMenu", () => {
     await vi.waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to copy to clipboard");
     });
+  });
+
+  it("opens Instacart URL in new tab on success", async () => {
+    mockSendToInstacart.mockResolvedValue("https://instacart.com/store/recipe/123");
+    const mockOpen = vi.fn();
+    vi.stubGlobal("open", mockOpen);
+
+    render(
+      <GroceryExportMenu items={items} eventName="Test Event" />
+    );
+
+    fireEvent.click(screen.getByText("Instacart"));
+
+    await vi.waitFor(() => {
+      expect(mockSendToInstacart).toHaveBeenCalledWith(items, "Test Event");
+      expect(mockOpen).toHaveBeenCalledWith("https://instacart.com/store/recipe/123", "_blank");
+    });
+
+    vi.unstubAllGlobals();
+  });
+
+  it("shows toast error when Instacart fails", async () => {
+    mockSendToInstacart.mockRejectedValue(new Error("Network error"));
+
+    render(
+      <GroceryExportMenu items={items} eventName="Test Event" />
+    );
+
+    fireEvent.click(screen.getByText("Instacart"));
+
+    await vi.waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to send to Instacart. Please try again.");
+    });
+  });
+
+  it("disables Instacart button while loading", async () => {
+    let resolvePromise: (value: string) => void;
+    mockSendToInstacart.mockReturnValue(
+      new Promise<string>((resolve) => {
+        resolvePromise = resolve;
+      })
+    );
+
+    render(
+      <GroceryExportMenu items={items} eventName="Test Event" />
+    );
+
+    fireEvent.click(screen.getByText("Instacart"));
+
+    await vi.waitFor(() => {
+      const instacartButton = screen.getByText("Instacart").closest("button");
+      expect(instacartButton).toBeDisabled();
+    });
+
+    // Resolve to clean up
+    resolvePromise!("https://instacart.com");
+  });
+
+  it("disables Instacart button when items array is empty", () => {
+    render(
+      <GroceryExportMenu items={[]} eventName="Test Event" />
+    );
+
+    const instacartButton = screen.getByText("Instacart").closest("button");
+    expect(instacartButton).toBeDisabled();
   });
 });

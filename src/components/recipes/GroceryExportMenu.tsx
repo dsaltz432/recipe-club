@@ -1,7 +1,9 @@
-import { Download, Copy } from "lucide-react";
+import { useState } from "react";
+import { Download, Copy, ShoppingCart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SmartGroceryItem } from "@/types";
 import { generateCSV, generatePlainText, downloadCSV, groupByCategory } from "@/lib/groceryList";
+import { sendToInstacart } from "@/lib/instacart";
 import { toast } from "sonner";
 
 interface GroceryExportMenuProps {
@@ -10,6 +12,8 @@ interface GroceryExportMenuProps {
 }
 
 const GroceryExportMenu = ({ items, eventName }: GroceryExportMenuProps) => {
+  const [isInstacartLoading, setIsInstacartLoading] = useState(false);
+
   const handleDownloadCSV = () => {
     const grouped = groupByCategory(items);
     const csv = generateCSV(grouped);
@@ -28,6 +32,18 @@ const GroceryExportMenu = ({ items, eventName }: GroceryExportMenuProps) => {
     }
   };
 
+  const handleInstacart = async () => {
+    setIsInstacartLoading(true);
+    try {
+      const url = await sendToInstacart(items, eventName);
+      window.open(url, "_blank");
+    } catch {
+      toast.error("Failed to send to Instacart. Please try again.");
+    } finally {
+      setIsInstacartLoading(false);
+    }
+  };
+
   return (
     <div className="flex gap-1">
       <Button variant="outline" size="sm" onClick={handleCopyToClipboard} className="px-2 sm:px-3">
@@ -37,6 +53,20 @@ const GroceryExportMenu = ({ items, eventName }: GroceryExportMenuProps) => {
       <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="px-2 sm:px-3">
         <Download className="h-4 w-4 sm:mr-1" />
         <span className="hidden sm:inline">CSV</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleInstacart}
+        disabled={isInstacartLoading || items.length === 0}
+        className="px-2 sm:px-3"
+      >
+        {isInstacartLoading ? (
+          <Loader2 className="h-4 w-4 sm:mr-1 animate-spin" />
+        ) : (
+          <ShoppingCart className="h-4 w-4 sm:mr-1" />
+        )}
+        <span className="hidden sm:inline">Instacart</span>
       </Button>
     </div>
   );
