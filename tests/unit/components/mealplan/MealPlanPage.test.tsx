@@ -70,9 +70,13 @@ vi.mock("@/lib/groceryList", async () => {
 // Mock grocery cache
 const mockLoadGroceryCache = vi.fn();
 const mockSaveGroceryCache = vi.fn();
+const mockLoadCheckedItems = vi.fn().mockResolvedValue(new Set());
+const mockSaveCheckedItems = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/groceryCache", () => ({
   loadGroceryCache: (...args: unknown[]) => mockLoadGroceryCache(...args),
   saveGroceryCache: (...args: unknown[]) => mockSaveGroceryCache(...args),
+  loadCheckedItems: (...args: unknown[]) => mockLoadCheckedItems(...args),
+  saveCheckedItems: (...args: unknown[]) => mockSaveCheckedItems(...args),
 }));
 
 // Mock constants to show parse buttons in tests

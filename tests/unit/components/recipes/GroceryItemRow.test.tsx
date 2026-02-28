@@ -339,4 +339,103 @@ describe("GroceryItemRow", () => {
     expect(screen.getByLabelText("Item name")).toBeInTheDocument();
     expect(onEdit).not.toHaveBeenCalled();
   });
+
+  // ---- Cross-off / checked state tests ----
+
+  it("renders checkbox when onToggleChecked is provided", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onToggleChecked={vi.fn()} />);
+
+    expect(screen.getByLabelText("Check item")).toBeInTheDocument();
+  });
+
+  it("does not render checkbox when onToggleChecked is not provided", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} />);
+
+    expect(screen.queryByLabelText("Check item")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Uncheck item")).not.toBeInTheDocument();
+  });
+
+  it("shows line-through styling when isChecked is true", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} isChecked onToggleChecked={vi.fn()} />);
+
+    const textSpan = screen.getByText("2 cups flour");
+    expect(textSpan.className).toContain("line-through");
+    expect(textSpan.className).toContain("opacity-50");
+  });
+
+  it("does not show line-through styling when isChecked is false", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} isChecked={false} onToggleChecked={vi.fn()} />);
+
+    const textSpan = screen.getByText("2 cups flour");
+    expect(textSpan.className).not.toContain("line-through");
+  });
+
+  it("calls onToggleChecked when checkbox is clicked", () => {
+    const onToggleChecked = vi.fn();
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onToggleChecked={onToggleChecked} />);
+
+    fireEvent.click(screen.getByLabelText("Check item"));
+
+    expect(onToggleChecked).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Uncheck item label when item is checked", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} isChecked onToggleChecked={vi.fn()} />);
+
+    expect(screen.getByLabelText("Uncheck item")).toBeInTheDocument();
+  });
 });

@@ -19,7 +19,7 @@ import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
-import { loadGroceryCache, saveGroceryCache } from "@/lib/groceryCache";
+import { loadGroceryCache, saveGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
 import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
 
 interface MealPlanPageProps {
@@ -65,6 +65,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [perRecipeItems, setPerRecipeItems] = useState<Record<string, SmartGroceryItem[]> | undefined>(undefined);
   const [isCombining, setIsCombining] = useState(false);
   const [combineError, setCombineError] = useState<string | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const viewTabRef = useRef(viewTab);
   viewTabRef.current = viewTab;
@@ -294,9 +295,14 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       setPerRecipeItems(result.perRecipeItems);
       lastCombinedRecipeIds.current = sortedRecipeIds;
 
+      // Reset checked items when recipes change (new combine = new list)
+      setCheckedItems(new Set());
+
       // Persist to cache
       const weekStartStr = weekStart.toISOString().split("T")[0];
       saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.perRecipeItems);
+      // Clear persisted checked items since the list changed
+      saveCheckedItems("meal_plan", weekStartStr, userId, new Set());
     } catch (err) {
       console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
@@ -307,14 +313,30 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   }, [weekStart, userId]);
 
+  const handleToggleChecked = useCallback((itemName: string) => {
+    setCheckedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemName)) {
+        next.delete(itemName);
+      } else {
+        next.add(itemName);
+      }
+      const weekStartStr = weekStart.toISOString().split("T")[0];
+      saveCheckedItems("meal_plan", weekStartStr, userId, next);
+      return next;
+    });
+  }, [weekStart, userId]);
+
   useEffect(() => {
     if (viewTab !== "groceries") return;
     if (!groceryDirtyRef.current) return;
     groceryDirtyRef.current = false;
     loadGroceryData().then(async (groceryData) => {
       if (!groceryData) return;
-      // Check cache before running AI combine
+      // Load checked items alongside grocery data
       const weekStartStr = weekStart.toISOString().split("T")[0];
+      loadCheckedItems("meal_plan", weekStartStr, userId).then(setCheckedItems);
+      // Check cache before running AI combine
       const cached = await loadGroceryCache("meal_plan", weekStartStr, userId);
       if (cached) {
         const currentParsedIds = groceryData.recipes
@@ -694,6 +716,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               isCombining={isCombining}
               combineError={combineError}
               perRecipeItems={perRecipeItems}
+              checkedItems={checkedItems}
+              onToggleChecked={handleToggleChecked}
             />
           ) : items.length > 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">

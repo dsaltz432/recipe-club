@@ -838,4 +838,95 @@ describe("GroceryListSection", () => {
     expect(screen.getByLabelText("New item name")).toBeInTheDocument();
     expect(onAddItem).not.toHaveBeenCalled();
   });
+
+  // ---- Cross-off / checked items tests ----
+
+  it("renders checkboxes when checkedItems and onToggleChecked are provided", () => {
+    const smartItems: SmartGroceryItem[] = [
+      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      { name: "chicken", displayName: "chicken", totalQuantity: 2, unit: "lb", category: "meat_seafood", sourceRecipes: ["Caesar Salad"] },
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        smartGroceryItems={smartItems}
+        checkedItems={new Set<string>()}
+        onToggleChecked={vi.fn()}
+      />
+    );
+
+    // Both items should have checkboxes
+    expect(screen.getAllByLabelText("Check item").length).toBe(2);
+  });
+
+  it("shows checked items with line-through styling", () => {
+    const smartItems: SmartGroceryItem[] = [
+      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        smartGroceryItems={smartItems}
+        checkedItems={new Set(["tomato"])}
+        onToggleChecked={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText("Uncheck item")).toBeInTheDocument();
+    const textEl = screen.getByText("4 tomatoes");
+    expect(textEl.className).toContain("line-through");
+  });
+
+  it("calls onToggleChecked when item checkbox is clicked", () => {
+    const onToggleChecked = vi.fn();
+    const smartItems: SmartGroceryItem[] = [
+      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        smartGroceryItems={smartItems}
+        checkedItems={new Set<string>()}
+        onToggleChecked={onToggleChecked}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Check item"));
+
+    expect(onToggleChecked).toHaveBeenCalledWith("tomato");
+  });
+
+  it("does not render checkboxes when onToggleChecked is not provided", () => {
+    const smartItems: SmartGroceryItem[] = [
+      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+    ];
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        smartGroceryItems={smartItems}
+      />
+    );
+
+    expect(screen.queryByLabelText("Check item")).not.toBeInTheDocument();
+  });
 });

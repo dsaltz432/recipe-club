@@ -17,9 +17,11 @@ interface GroceryItemRowProps {
   editable?: boolean;
   onEdit?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemove?: (itemName: string) => void;
+  isChecked?: boolean;
+  onToggleChecked?: () => void;
 }
 
-const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProps) => {
+const GroceryItemRow = ({ item, editable, onEdit, onRemove, isChecked, onToggleChecked }: GroceryItemRowProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
   const [editQuantity, setEditQuantity] = useState(
@@ -118,7 +120,23 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
 
   return (
     <div className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded group">
-      <span className="text-sm">{displayText}</span>
+      <div className="flex items-center gap-2 min-w-0">
+        {onToggleChecked && (
+          <button
+            type="button"
+            onClick={onToggleChecked}
+            className={`h-4 w-4 shrink-0 rounded border transition-colors ${
+              isChecked
+                ? "bg-purple border-purple"
+                : "border-gray-300 hover:border-gray-400"
+            }`}
+            aria-label={isChecked ? "Uncheck item" : "Check item"}
+          >
+            {isChecked && <Check className="h-3 w-3 text-white mx-auto" />}
+          </button>
+        )}
+        <span className={`text-sm ${isChecked ? "line-through opacity-50" : ""}`}>{displayText}</span>
+      </div>
       <div className="flex gap-1 ml-2 shrink-0 items-center">
         {item.sourceRecipes.map((recipe) => (
           <Badge

@@ -27,6 +27,8 @@ interface GroceryListSectionProps {
   onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
   perRecipeItems?: Record<string, SmartGroceryItem[]>;
   combineError?: string | null;
+  checkedItems?: Set<string>;
+  onToggleChecked?: (itemName: string) => void;
 }
 
 function groupSmartByCategory(
@@ -58,6 +60,8 @@ const GroceryListSection = ({
   onAddItem,
   perRecipeItems,
   combineError,
+  checkedItems,
+  onToggleChecked,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -222,6 +226,8 @@ const GroceryListSection = ({
                       editable={editable}
                       onEditItem={onEditItem}
                       onRemoveItem={onRemoveItem}
+                      checkedItems={checkedItems}
+                      onToggleChecked={onToggleChecked}
                     />
                   ))}
                 </>
@@ -260,6 +266,8 @@ const GroceryListSection = ({
                         editable={editable}
                         onEditItem={onEditItem}
                         onRemoveItem={onRemoveItem}
+                        checkedItems={checkedItems}
+                        onToggleChecked={onToggleChecked}
                       />
                     ))
                   )}

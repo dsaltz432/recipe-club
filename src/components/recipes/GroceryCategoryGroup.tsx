@@ -10,13 +10,15 @@ interface GroceryCategoryGroupProps {
   editable?: boolean;
   onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemoveItem?: (itemName: string) => void;
+  checkedItems?: Set<string>;
+  onToggleChecked?: (itemName: string) => void;
 }
 
 function getItemKey(item: SmartGroceryItem, index: number): string {
   return `${item.name}-${item.unit ?? ""}-${index}`;
 }
 
-const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onRemoveItem }: GroceryCategoryGroupProps) => {
+const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onRemoveItem, checkedItems, onToggleChecked }: GroceryCategoryGroupProps) => {
   const displayName = GROCERY_CATEGORIES[category];
 
   return (
@@ -35,6 +37,8 @@ const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onRemoveI
             editable={editable}
             onEdit={onEditItem}
             onRemove={onRemoveItem}
+            isChecked={checkedItems?.has(item.name)}
+            onToggleChecked={onToggleChecked ? () => onToggleChecked(item.name) : undefined}
           />
         ))}
       </div>
