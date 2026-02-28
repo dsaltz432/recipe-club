@@ -52,8 +52,9 @@ describe("groceryCache", () => {
       expect(result).toEqual({
         items: cachedData.items,
         recipeIds: ["r1", "r2"],
+        perRecipeItems: undefined,
       });
-      expect(mockSelect).toHaveBeenCalledWith("items, recipe_ids");
+      expect(mockSelect).toHaveBeenCalledWith("*");
       expect(mockEq).toHaveBeenCalledWith("context_type", "event");
     });
 
@@ -63,6 +64,26 @@ describe("groceryCache", () => {
       const result = await loadGroceryCache("event", "event-1", "user-1");
 
       expect(result).toBeNull();
+    });
+
+    it("returns perRecipeItems when present in cached data", async () => {
+      const perRecipeItems = {
+        "Recipe A": [{ name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"], displayName: "2 onions" }],
+      };
+      const cachedData = {
+        items: [{ name: "onion", totalQuantity: 2, category: "produce", sourceRecipes: ["Recipe A"] }],
+        recipe_ids: ["r1"],
+        per_recipe_items: perRecipeItems,
+      };
+      mockMaybeSingle.mockResolvedValue({ data: cachedData, error: null });
+
+      const result = await loadGroceryCache("event", "event-1", "user-1");
+
+      expect(result).toEqual({
+        items: cachedData.items,
+        recipeIds: ["r1"],
+        perRecipeItems,
+      });
     });
 
     it("returns null on error", async () => {
@@ -100,6 +121,27 @@ describe("groceryCache", () => {
       const callArg = mockUpsert.mock.calls[0][0];
       expect(callArg.updated_at).toBeDefined();
       expect(new Date(callArg.updated_at).toISOString()).toBe(callArg.updated_at);
+    });
+
+    it("saves perRecipeItems when provided", async () => {
+      const items = [
+        { name: "onion", totalQuantity: 2, category: "produce" as const, sourceRecipes: ["Recipe A"] },
+      ];
+      const perRecipeItems = {
+        "Recipe A": [{ name: "onion", totalQuantity: 2, category: "produce" as const, sourceRecipes: ["Recipe A"], displayName: "2 onions" }],
+      };
+
+      await saveGroceryCache("event", "event-1", "user-1", items, ["r1"], perRecipeItems);
+
+      const callArg = mockUpsert.mock.calls[0][0];
+      expect(callArg.per_recipe_items).toEqual(perRecipeItems);
+    });
+
+    it("defaults per_recipe_items to empty object when not provided", async () => {
+      await saveGroceryCache("event", "event-1", "user-1", [], ["r1"]);
+
+      const callArg = mockUpsert.mock.calls[0][0];
+      expect(callArg.per_recipe_items).toEqual({});
     });
 
     it("handles errors gracefully", async () => {
@@ -154,6 +196,7 @@ describe("groceryCache", () => {
       expect(result).toEqual({
         items: cachedData.items,
         recipeIds: ["r3"],
+        perRecipeItems: undefined,
       });
       expect(mockEq).toHaveBeenCalledWith("context_type", "meal_plan");
     });

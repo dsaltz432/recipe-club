@@ -73,7 +73,7 @@ describe("AddMealDialog", () => {
     render(<AddMealDialog {...defaultProps} />);
 
     expect(screen.getByLabelText("Meal Name *")).toBeInTheDocument();
-    expect(screen.getByLabelText("Recipe URL or Photo/PDF")).toBeInTheDocument();
+    expect(screen.getByLabelText("Recipe URL *")).toBeInTheDocument();
     expect(screen.getByText("Add to Meal")).toBeInTheDocument();
   });
 
@@ -115,20 +115,11 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/tacos" },
+    });
 
     expect(screen.getByText("Add to Meal")).not.toBeDisabled();
-  });
-
-  it("submits custom meal with name only", () => {
-    render(<AddMealDialog {...defaultProps} />);
-
-    fireEvent.change(screen.getByLabelText("Meal Name *"), {
-      target: { value: "Tacos" },
-    });
-    fireEvent.click(screen.getByText("Add to Meal"));
-
-    expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", undefined, false);
-    expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it("submits custom meal with name and URL", () => {
@@ -137,7 +128,22 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
-    fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/tacos" },
+    });
+    fireEvent.click(screen.getByText("Add to Meal"));
+
+    expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", "https://example.com/tacos", true);
+    expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("submits custom meal with name and different URL", () => {
+    render(<AddMealDialog {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText("Meal Name *"), {
+      target: { value: "Tacos" },
+    });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
       target: { value: "https://example.com/tacos" },
     });
     fireEvent.click(screen.getByText("Add to Meal"));
@@ -149,7 +155,7 @@ describe("AddMealDialog", () => {
   it("shows URL validation error for invalid URL", () => {
     render(<AddMealDialog {...defaultProps} />);
 
-    fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
       target: { value: "not-a-url" },
     });
 
@@ -162,7 +168,7 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
-    fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
       target: { value: "not-a-url" },
     });
 
@@ -175,7 +181,7 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
-    fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
       target: { value: "bad-url" },
     });
 
@@ -211,11 +217,14 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Tacos" },
     });
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
+      target: { value: "https://example.com/tacos" },
+    });
     fireEvent.click(screen.getByText("Add to Meal"));
 
     // Dialog closes
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
-    expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", undefined, false);
+    expect(defaultProps.onAddCustomMeal).toHaveBeenCalledWith("Tacos", "https://example.com/tacos", true);
   });
 
   it("searches recipes with debounce", async () => {
@@ -480,7 +489,7 @@ describe("AddMealDialog", () => {
     fireEvent.change(screen.getByLabelText("Meal Name *"), {
       target: { value: "Test" },
     });
-    fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+    fireEvent.change(screen.getByLabelText("Recipe URL *"), {
       target: { value: "http://example.com" },
     });
 
@@ -560,14 +569,100 @@ describe("AddMealDialog", () => {
     });
   });
 
+  describe("Manual Entry Mode", () => {
+    const propsWithManual = {
+      ...defaultProps,
+      onAddManualMeal: vi.fn(),
+    };
+
+    it("shows Enter Manually button when onAddManualMeal is provided", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      expect(screen.getByText("Enter Manually")).toBeInTheDocument();
+    });
+
+    it("does not show Enter Manually button when onAddManualMeal is not provided", () => {
+      render(<AddMealDialog {...defaultProps} />);
+
+      expect(screen.queryByText("Enter Manually")).not.toBeInTheDocument();
+    });
+
+    it("switches to manual mode and shows ingredient rows", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Should show ingredient form rows (IngredientFormRows renders inputs)
+      expect(screen.getByText("Ingredients")).toBeInTheDocument();
+    });
+
+    it("switches from manual back to URL mode", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Enter URL"));
+
+      expect(screen.getByLabelText("Recipe URL *")).toBeInTheDocument();
+    });
+
+    it("submits manual meal with ingredients", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      // Fill name
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Pasta" },
+      });
+
+      // Switch to manual mode
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Fill ingredient name in the first row
+      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
+      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
+
+      // Fill quantity
+      const quantityInputs = screen.getAllByPlaceholderText("1");
+      fireEvent.change(quantityInputs[0], { target: { value: "1" } });
+
+      // Submit
+      fireEvent.click(screen.getByText("Add to Meal"));
+
+      expect(propsWithManual.onAddManualMeal).toHaveBeenCalledWith("Pasta", [
+        expect.objectContaining({
+          name: "spaghetti",
+          quantity: 1,
+          sort_order: 0,
+        }),
+      ]);
+    });
+
+    it("disables submit in manual mode when no ingredients are entered", () => {
+      render(<AddMealDialog {...propsWithManual} />);
+
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "Pasta" },
+      });
+
+      fireEvent.click(screen.getByText("Enter Manually"));
+
+      // Submit should be disabled — no ingredient names filled
+      expect(screen.getByText("Add to Meal")).toBeDisabled();
+    });
+  });
+
   describe("File Upload", () => {
     const createFile = (name: string, type: string, size = 1024) => {
       const file = new File(["x".repeat(size)], name, { type });
       return file;
     };
 
+    const switchToUploadMode = () => {
+      fireEvent.click(screen.getByText("Upload File"));
+    };
+
     it("renders upload button with text label in Custom tab", () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       expect(screen.getByLabelText("Upload photo or PDF")).toBeInTheDocument();
       expect(screen.getByText("Upload")).toBeInTheDocument();
@@ -580,6 +675,7 @@ describe("AddMealDialog", () => {
       );
 
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("my-recipe-photo.jpg", "image/jpeg");
@@ -605,6 +701,7 @@ describe("AddMealDialog", () => {
 
     it("triggers file input when upload button is clicked", () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const clickSpy = vi.spyOn(fileInput, "click");
@@ -616,6 +713,7 @@ describe("AddMealDialog", () => {
 
     it("uploads a file and sets URL", async () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("recipe.jpg", "image/jpeg");
@@ -627,13 +725,14 @@ describe("AddMealDialog", () => {
         expect(toast.success).toHaveBeenCalledWith("File uploaded!");
       });
 
-      // URL field should be filled
-      const urlInput = screen.getByLabelText("Recipe URL or Photo/PDF") as HTMLInputElement;
-      expect(urlInput.value).toBe("https://storage.example.com/recipe-images/mock-uuid-123.jpg");
+      // URL field should be filled (read-only input in upload mode)
+      const urlInput = screen.getByDisplayValue("https://storage.example.com/recipe-images/mock-uuid-123.jpg") as HTMLInputElement;
+      expect(urlInput).toBeInTheDocument();
     });
 
     it("auto-fills meal name from file name when name is empty", async () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("chicken-tikka.jpg", "image/jpeg");
@@ -655,6 +754,8 @@ describe("AddMealDialog", () => {
         target: { value: "My Recipe" },
       });
 
+      switchToUploadMode();
+
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("photo.jpg", "image/jpeg");
 
@@ -670,6 +771,7 @@ describe("AddMealDialog", () => {
 
     it("passes shouldParse=true when file was uploaded", async () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       // Upload a file first
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -693,17 +795,11 @@ describe("AddMealDialog", () => {
     it("passes shouldParse=true when URL is manually typed", async () => {
       render(<AddMealDialog {...defaultProps} />);
 
-      // Upload a file
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      const file = createFile("recipe.jpg", "image/jpeg");
-      fireEvent.change(fileInput, { target: { files: [file] } });
-
-      await waitFor(() => {
-        expect(mockUploadRecipeFile).toHaveBeenCalled();
+      // Type a URL in URL mode
+      fireEvent.change(screen.getByLabelText("Meal Name *"), {
+        target: { value: "recipe" },
       });
-
-      // Manually change URL — shouldParse still true since URL is present
-      fireEvent.change(screen.getByLabelText("Recipe URL or Photo/PDF"), {
+      fireEvent.change(screen.getByLabelText("Recipe URL *"), {
         target: { value: "https://example.com/other" },
       });
 
@@ -723,6 +819,7 @@ describe("AddMealDialog", () => {
       );
 
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("doc.txt", "text/plain");
@@ -740,6 +837,7 @@ describe("AddMealDialog", () => {
       );
 
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("big.jpg", "image/jpeg", 6 * 1024 * 1024);
@@ -755,6 +853,7 @@ describe("AddMealDialog", () => {
       mockUploadRecipeFile.mockRejectedValueOnce(new Error("Upload failed"));
 
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("recipe.jpg", "image/jpeg");
@@ -768,6 +867,7 @@ describe("AddMealDialog", () => {
 
     it("accepts PDF files", async () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("recipe.pdf", "application/pdf");
@@ -782,6 +882,7 @@ describe("AddMealDialog", () => {
 
     it("does nothing when no file is selected", () => {
       render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(fileInput, { target: { files: [] } });
@@ -796,6 +897,7 @@ describe("AddMealDialog", () => {
       );
 
       const { unmount } = render(<AddMealDialog {...defaultProps} />);
+      switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile("recipe.jpg", "image/jpeg");

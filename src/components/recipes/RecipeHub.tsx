@@ -34,9 +34,11 @@ import { Search, BookOpen, Loader2 } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
+import EditRecipeIngredientsDialog from "./EditRecipeIngredientsDialog";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
 import { getPantryItems, DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
+import { saveRecipeEdit } from "@/lib/recipeActions";
 
 export interface RecipeWithNotes extends Recipe {
   notes: RecipeNote[];
@@ -96,6 +98,18 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [recipeIngredientsMap, setRecipeIngredientsMap] = useState<Record<string, RecipeIngredient[]>>({});
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
+  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<RecipeWithNotes | null>(null);
+
+
+  const handleEditIngredients = (recipe: RecipeWithNotes) => {
+    setEditIngredientsRecipe(recipe);
+  };
+
+  const handleIngredientsSaved = () => {
+    setEditIngredientsRecipe(null);
+    setIsLoading(true);
+    loadRecipes();
+  };
 
   const loadRecipes = async () => {
     try {
@@ -439,22 +453,19 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   };
 
   const handleSaveEdit = async () => {
-    if (editUrl.trim() && !isValidUrl(editUrl)) {
-      toast.error("Please enter a valid URL starting with http:// or https://");
-      return;
-    }
-
     setIsEditing(true);
     try {
-      const { error } = await supabase
-        .from("recipes")
-        .update({
-          name: editName.trim(),
-          url: editUrl.trim() || null,
-        })
-        .eq("id", editingRecipe!.id);
+      const result = await saveRecipeEdit(
+        editingRecipe!.id,
+        editName,
+        editUrl,
+        editingRecipe!.url || ""
+      );
 
-      if (error) throw error;
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
 
       toast.success("Recipe updated!");
       setEditingRecipe(null);
@@ -517,6 +528,14 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   };
 
   const handleAddNote = (recipe: RecipeWithNotes) => {
+    // If user already has a note, open it for editing instead
+    const existingNote = recipe.notes.find((n) => n.userId === userId);
+    if (existingNote) {
+      setNoteRecipe(recipe);
+      setNoteText(existingNote.notes || "");
+      setNotePhotos(existingNote.photos || []);
+      return;
+    }
     setNoteRecipe(recipe);
     setNoteText("");
     setNotePhotos([]);
@@ -525,18 +544,29 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const handleSaveNote = async () => {
     setIsSavingNote(true);
     try {
-      const { error } = await supabase
-        .from("recipe_notes")
-        .insert({
-          recipe_id: noteRecipe!.id,
-          user_id: userId!,
-          notes: noteText.trim() || null,
-          photos: notePhotos.length > 0 ? notePhotos : null,
-        });
+      const existingNote = noteRecipe!.notes.find((n) => n.userId === userId);
+      if (existingNote) {
+        const { error } = await supabase
+          .from("recipe_notes")
+          .update({
+            notes: noteText.trim() || null,
+            photos: notePhotos.length > 0 ? notePhotos : null,
+          })
+          .eq("id", existingNote.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("recipe_notes")
+          .insert({
+            recipe_id: noteRecipe!.id,
+            user_id: userId!,
+            notes: noteText.trim() || null,
+            photos: notePhotos.length > 0 ? notePhotos : null,
+          });
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-
-      toast.success("Note added!");
+      toast.success(existingNote ? "Note updated!" : "Note added!");
       setNoteRecipe(null);
       setIsLoading(true);
       loadRecipes();
@@ -606,6 +636,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   useEffect(() => {
     setIsLoading(true);
     loadRecipes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subTab]);
 
   // Filter recipes based on search and ingredient
@@ -678,6 +709,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                name="recipe-search"
                 placeholder="Search recipes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -737,10 +769,11 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
-                onEdit={subTab === "personal" ? handleEditRecipe : undefined}
-                onDelete={recipe.eventId && !recipe.isPersonal ? undefined : handleDeleteRecipe}
+                onEdit={handleEditRecipe}
+                onDelete={handleDeleteRecipe}
                 onEditRating={userId ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
+                onEditIngredients={recipe.createdBy === userId ? handleEditIngredients : undefined}
                 ingredients={recipeIngredientsMap[recipe.id]}
                 pantryItems={pantryItemNames}
                 contentStatus={recipeContentMap[recipe.id]?.status}
@@ -858,16 +891,20 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Add Note Dialog */}
+      {/* Add/Edit Note Dialog */}
       <Dialog
         open={!!noteRecipe}
         onOpenChange={() => setNoteRecipe(null)}
       >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Add Note</DialogTitle>
+            <DialogTitle className="font-display text-xl">
+              {noteRecipe?.notes.some((n) => n.userId === userId) ? "Edit Note" : "Add Note"}
+            </DialogTitle>
             <DialogDescription>
-              Add notes and photos for &quot;{noteRecipe?.name}&quot;.
+              {noteRecipe?.notes.some((n) => n.userId === userId)
+                ? <>Update your notes and photos for &quot;{noteRecipe?.name}&quot;.</>
+                : <>Add notes and photos for &quot;{noteRecipe?.name}&quot;.</>}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -911,6 +948,18 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Ingredients Dialog */}
+      {editIngredientsRecipe && (
+        <EditRecipeIngredientsDialog
+          open={!!editIngredientsRecipe}
+          onOpenChange={() => setEditIngredientsRecipe(null)}
+          recipeId={editIngredientsRecipe.id}
+          recipeName={editIngredientsRecipe.name}
+          ingredients={recipeIngredientsMap[editIngredientsRecipe.id] || []}
+          onSaved={handleIngredientsSaved}
+        />
+      )}
 
       {/* Edit Rating Dialog */}
       {ratingDialogOpen && ratingRecipe && ratingRecipe.eventId && userId && (

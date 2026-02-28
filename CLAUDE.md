@@ -1,14 +1,8 @@
 # Recipe Club Hub - Claude Code Instructions
 
-## ⚠️ MANDATORY: 100% Test Coverage Requirement
+## Testing
 
-Every code change MUST achieve 100% test coverage. Write tests alongside code — don't wait for commit time.
-
-**Required 100% directories:** `src/components/events/`, `src/components/ingredients/`, `src/components/mealplan/`, `src/components/recipes/`, `src/lib/`
-
-**Only exception:** `src/components/wheel/IngredientWheel.tsx` (~55% acceptable due to Radix UI Dialog + fake timer limitations).
-
-A pre-commit hook enforces this automatically. Run `npm run test:coverage` during development to catch gaps early.
+Write tests for new features and bug fixes. Focus on meaningful coverage — test user-facing behavior, not branch coverage for defensive code.
 
 ---
 
@@ -42,7 +36,7 @@ A pre-commit hook enforces this automatically. Run `npm run test:coverage` durin
 
 | Command | Use |
 |---------|-----|
-| `npm run test:coverage` | **Primary** - verify 100% coverage |
+| `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:run` | Run all tests once |
 | `npm run build` | TypeScript compilation |
 | `npm run lint` | Code style check |

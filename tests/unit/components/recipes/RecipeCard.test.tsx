@@ -173,15 +173,12 @@ describe("RecipeCard - Expandable Details", () => {
     expect(screen.getByRole("button", { name: /show less/i })).toBeInTheDocument();
   });
 
-  it("shows recipe URL link when expanded", () => {
+  it("shows recipe URL icon in header when recipe has URL", () => {
     const recipe = createMockRecipe({ url: "https://example.com/salmon-recipe" });
 
     render(<RecipeCard recipe={recipe} />);
 
-    // Expand
-    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-
-    const link = screen.getByRole("link", { name: /view recipe/i });
+    const link = screen.getByLabelText(/Open recipe URL/);
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "https://example.com/salmon-recipe");
     expect(link).toHaveAttribute("target", "_blank");
@@ -241,17 +238,18 @@ describe("RecipeCard - Expandable Details", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
+    // URL icon always visible in header
+    expect(screen.getByLabelText(/Open recipe URL/)).toBeInTheDocument();
+
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-    expect(screen.getByText("View recipe")).toBeInTheDocument();
 
     // Collapse
     fireEvent.click(screen.getByRole("button", { name: /show less/i }));
-    expect(screen.queryByText("View recipe")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /show more/i })).toBeInTheDocument();
   });
 
-  it("does not show URL link when recipe has no URL", () => {
+  it("does not show URL icon when recipe has no URL", () => {
     const recipe = createMockRecipe({
       url: undefined,
       notes: [createMockNote({ notes: "Some notes" })],
@@ -259,10 +257,7 @@ describe("RecipeCard - Expandable Details", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    // Expand
-    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
-
-    expect(screen.queryByRole("link", { name: /view recipe/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Open recipe URL/)).not.toBeInTheDocument();
   });
 
   it("does not show notes section when note has no notes or photos", () => {
@@ -365,7 +360,7 @@ describe("RecipeCard - Edge Cases", () => {
     render(<RecipeCard recipe={recipe} />);
 
     // Should show total photo count (1 + 0 = 1)
-    expect(screen.getByText("1 photos")).toBeInTheDocument();
+    expect(screen.getByText("1 photo")).toBeInTheDocument();
   });
 
   it("does not show photo count when no notes have photos", () => {
@@ -395,19 +390,19 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
-    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
   });
 
-  it("shows delete but not edit button when not personal", () => {
+  it("shows edit and delete buttons for non-personal recipes with callbacks", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     const recipe = createMockRecipe({ isPersonal: false });
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
   });
 
   it("does not show edit/delete buttons when callbacks are not provided", () => {
@@ -415,8 +410,8 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit recipe/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Delete recipe/)).not.toBeInTheDocument();
   });
 
   it("calls onEdit with recipe when edit button is clicked", () => {
@@ -426,7 +421,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     expect(onEdit).toHaveBeenCalledWith(recipe);
   });
@@ -438,20 +433,20 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     expect(onDelete).toHaveBeenCalledWith("recipe-42");
   });
 
-  it("shows delete but not edit when isPersonal is undefined", () => {
+  it("shows edit and delete when isPersonal is undefined", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     const recipe = createMockRecipe({ isPersonal: undefined });
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
   });
 
   it("shows delete button for club recipe when only onDelete provided", () => {
@@ -460,8 +455,8 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onDelete={onDelete} />);
 
-    expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit recipe/)).not.toBeInTheDocument();
   });
 
   it("calls onDelete with club recipe id when delete button is clicked", () => {
@@ -470,7 +465,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     expect(onDelete).toHaveBeenCalledWith("club-recipe-42");
   });
@@ -483,7 +478,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
     expect(screen.getByText("Personal")).toBeInTheDocument();
-    expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
   });
 });
 
@@ -586,8 +581,7 @@ describe("RecipeCard - Add Note Button", () => {
 
     render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
 
-    expect(screen.getByLabelText("Add note")).toBeInTheDocument();
-    expect(screen.getByText("Add Note")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
   });
 
   it("does not show Add Note button when onAddNote is not provided", () => {
@@ -595,7 +589,7 @@ describe("RecipeCard - Add Note Button", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Add note/)).not.toBeInTheDocument();
   });
 
   it("calls onAddNote with recipe when Add Note button is clicked", () => {
@@ -604,7 +598,7 @@ describe("RecipeCard - Add Note Button", () => {
 
     render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     expect(onAddNote).toHaveBeenCalledWith(recipe);
   });
@@ -630,7 +624,7 @@ describe("RecipeCard - Edit Rating Button", () => {
 
     render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
 
-    expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
   });
 
   it("does not show edit rating button when onEditRating is not provided", () => {
@@ -647,7 +641,7 @@ describe("RecipeCard - Edit Rating Button", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit rating/)).not.toBeInTheDocument();
   });
 
   it("does not show edit rating button when recipe has no eventId", () => {
@@ -665,7 +659,7 @@ describe("RecipeCard - Edit Rating Button", () => {
 
     render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
 
-    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit rating/)).not.toBeInTheDocument();
   });
 
   it("does not show edit rating button when there are no ratings", () => {
@@ -677,7 +671,7 @@ describe("RecipeCard - Edit Rating Button", () => {
 
     render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
 
-    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit rating/)).not.toBeInTheDocument();
   });
 
   it("calls onEditRating with recipe when edit rating button is clicked", () => {
@@ -695,7 +689,7 @@ describe("RecipeCard - Edit Rating Button", () => {
 
     render(<RecipeCard recipe={recipe} onEditRating={onEditRating} />);
 
-    fireEvent.click(screen.getByLabelText("Edit rating"));
+    fireEvent.click(screen.getByLabelText(/Edit rating/));
 
     expect(onEditRating).toHaveBeenCalledWith(recipe);
   });
@@ -750,7 +744,7 @@ describe("RecipeCard - Ingredients Section", () => {
 
     render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
 
-    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    fireEvent.click(screen.getByLabelText(/Expand ingredients/));
 
     // Category headings
     expect(screen.getByText("Produce")).toBeInTheDocument();
@@ -770,12 +764,12 @@ describe("RecipeCard - Ingredients Section", () => {
     render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
 
     // Expand
-    fireEvent.click(screen.getByLabelText("Expand ingredients"));
-    expect(screen.getByLabelText("Collapse ingredients")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Expand ingredients/));
+    expect(screen.getByLabelText(/Collapse ingredients/)).toBeInTheDocument();
 
     // Collapse
-    fireEvent.click(screen.getByLabelText("Collapse ingredients"));
-    expect(screen.getByLabelText("Expand ingredients")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Collapse ingredients/));
+    expect(screen.getByLabelText(/Expand ingredients/)).toBeInTheDocument();
   });
 
   it("shows parsing spinner when contentStatus is parsing", () => {
@@ -877,7 +871,7 @@ describe("RecipeCard - Ingredients Section", () => {
 
     render(<RecipeCard recipe={recipe} ingredients={[]} />);
 
-    expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Expand ingredients/)).not.toBeInTheDocument();
   });
 
   it("does not show Parse Ingredients when content status is pending", () => {
@@ -904,7 +898,7 @@ describe("RecipeCard - Ingredients Section", () => {
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
 
     // Expand and verify pantry items are not shown
-    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    fireEvent.click(screen.getByLabelText(/Expand ingredients/));
     expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
     expect(screen.queryByText("salt")).not.toBeInTheDocument();
     expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
@@ -921,7 +915,7 @@ describe("RecipeCard - Ingredients Section", () => {
     render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
 
     // No ingredient count should be shown since all are filtered out
-    expect(screen.queryByLabelText("Expand ingredients")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Expand ingredients/)).not.toBeInTheDocument();
   });
 
   it("filters custom pantryItems in addition to defaults", () => {
@@ -936,7 +930,7 @@ describe("RecipeCard - Ingredients Section", () => {
     render(<RecipeCard recipe={recipe} ingredients={ingredients} pantryItems={["butter", "olive oil"]} />);
 
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("Expand ingredients"));
+    fireEvent.click(screen.getByLabelText(/Expand ingredients/));
     expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
     expect(screen.queryByText(/salt/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/butter/i)).not.toBeInTheDocument();
@@ -949,5 +943,142 @@ describe("RecipeCard - Ingredients Section", () => {
     render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
 
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - Edit Ingredients", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit ingredients button when onEditIngredients is provided", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onEditIngredients={onEditIngredients} />);
+
+    expect(screen.getByLabelText(/Edit ingredients/)).toBeInTheDocument();
+  });
+
+  it("does not show edit ingredients button when onEditIngredients is not provided", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText(/Edit ingredients/)).not.toBeInTheDocument();
+  });
+
+  it("calls onEditIngredients with recipe when edit ingredients button is clicked", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} onEditIngredients={onEditIngredients} />);
+
+    fireEvent.click(screen.getByLabelText(/Edit ingredients/));
+
+    expect(onEditIngredients).toHaveBeenCalledWith(recipe);
+  });
+
+  it("shows edit ingredients alongside edit and delete buttons", () => {
+    const onEditIngredients = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true });
+
+    render(
+      <RecipeCard
+        recipe={recipe}
+        onEditIngredients={onEditIngredients}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+
+    expect(screen.getByLabelText(/Edit ingredients/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - Layout Structure", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders all action buttons in header for personal recipe with all callbacks", () => {
+    const onAddNote = vi.fn();
+    const onEditIngredients = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ isPersonal: true, ingredientName: "Salmon" });
+
+    render(
+      <RecipeCard
+        recipe={recipe}
+        onAddNote={onAddNote}
+        onEditIngredients={onEditIngredients}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+
+    // All action buttons should be present
+    expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit ingredients/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    // Badges should be in a separate row (both present)
+    expect(screen.getByText("Personal")).toBeInTheDocument();
+    expect(screen.getByText("Salmon")).toBeInTheDocument();
+  });
+
+  it("renders club recipe with rating and no edit/add buttons when no callbacks", () => {
+    const recipe = createMockRecipe({
+      isPersonal: false,
+      ingredientName: "Salmon",
+      ratingSummary: {
+        recipeId: "recipe-1",
+        averageRating: 4.0,
+        wouldCookAgainPercent: 75,
+        totalRatings: 2,
+        memberRatings: [
+          { initial: "S", wouldCookAgain: true },
+          { initial: "D", wouldCookAgain: false },
+        ],
+      },
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Rating visible
+    expect(screen.getByText("4/5")).toBeInTheDocument();
+    expect(screen.getByText("Make again:")).toBeInTheDocument();
+    // No action buttons in header
+    expect(screen.queryByLabelText(/Add note/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit recipe/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Delete recipe/)).not.toBeInTheDocument();
+    // Ingredient badge present, no Personal badge
+    expect(screen.getByText("Salmon")).toBeInTheDocument();
+    expect(screen.queryByText("Personal")).not.toBeInTheDocument();
+  });
+
+  it("renders recipe with no notes, no ingredients, and no badges cleanly", () => {
+    const recipe = createMockRecipe({
+      notes: [],
+      ingredientName: undefined,
+      isPersonal: undefined,
+      url: undefined,
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Recipe name still renders
+    expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    // No badges row
+    expect(screen.queryByText("Personal")).not.toBeInTheDocument();
+    // Stats show 0 notes
+    expect(screen.getByText("0 notes")).toBeInTheDocument();
+    // No expand button (no URL, no notes content)
+    expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
   });
 });

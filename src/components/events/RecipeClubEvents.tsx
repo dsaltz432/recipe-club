@@ -23,7 +23,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
+import { cancelEvent as cancelEventAction, completeEvent as completeEventAction, updateEvent as updateEventAction } from "@/lib/eventActions";
 import {
   Dialog,
   DialogContent,
@@ -195,40 +195,12 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
   }, []);
 
   const cancelEvent = async (eventId: string) => {
-    try {
-      // Find the event
-      const { data: eventData, error: findError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (*)")
-        .eq("id", eventId)
-        .single();
-
-      if (findError) throw findError;
-
-      // Delete the Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const deleteResult = await deleteCalendarEvent(eventData.calendar_event_id);
-        // Only warn for actual errors, not for expected "not available" cases
-        if (!deleteResult.success && !deleteResult.error?.includes("not available")) {
-          console.warn("Failed to delete calendar event:", deleteResult.error);
-        }
-      }
-
-      // Note: Recipes cascade delete with the event (ON DELETE CASCADE)
-      // Note: We do NOT reset the ingredient's used_count when cancelling
-      // The count tracks how many times it was used historically
-
-      // Delete the event row
-      await supabase
-        .from("scheduled_events")
-        .delete()
-        .eq("id", eventData.id);
-
+    const result = await cancelEventAction(eventId);
+    if (result.success) {
       toast.success("Event cancelled and calendar invite removed!");
       loadEvents();
       onEventChange?.();
-    } catch (error) {
-      console.error("Error cancelling event:", error);
+    } else {
       toast.error("Failed to cancel event");
     }
   };
@@ -330,34 +302,14 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
 
   const handleRatingsComplete = async () => {
     // After ratings are submitted, complete the event and increment used_count
-    try {
-      // Update event status to completed
-      const { error: statusError } = await supabase
-        .from("scheduled_events")
-        .update({ status: "completed" })
-        .eq("id", event.eventId);
-
-      if (statusError) throw statusError;
-
-      // Atomically increment the ingredient's used_count via RPC
-      if (event.ingredientId) {
-        const { error: rpcError } = await supabase.rpc(
-          "increment_ingredient_used_count",
-          {
-            p_ingredient_id: event.ingredientId,
-            p_user_id: userId,
-          }
-        );
-
-        if (rpcError) throw rpcError;
-      }
-
+    const result = await completeEventAction(event.eventId, event.ingredientId || "", userId || "");
+    if (result.success) {
       toast.success("Event marked as completed!");
       setShowRatingDialog(false);
       onRecipesChanged?.();
       onEventChange?.();
-    } catch (error) {
-      console.error("Error completing event:", error);
+    } else {
+      console.error("Error completing event:", result.error);
       toast.error("Failed to complete event");
     }
   };
@@ -365,48 +317,14 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
   const handleSaveEdit = async () => {
     setIsUpdating(true);
     try {
-      const newEventDate = format(editDate!, "yyyy-MM-dd");
-
-      // Get the event details including calendar_event_id and ingredient name
-      const { data: eventData, error: fetchError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (name)")
-        .eq("id", event.eventId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the scheduled event
-      const { error: updateError } = await supabase
-        .from("scheduled_events")
-        .update({
-          event_date: newEventDate,
-          event_time: editTime,
-        })
-        .eq("id", event.eventId);
-
-      if (updateError) throw updateError;
-
-      // Update Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const calendarResult = await updateCalendarEvent({
-          calendarEventId: eventData.calendar_event_id,
-          date: editDate!,
-          time: editTime,
-          ingredientName: eventData.ingredients?.name || "Unknown",
-        });
-
-        if (!calendarResult.success) {
-          console.warn("Failed to update calendar event:", calendarResult.error);
-        }
+      const result = await updateEventAction(event.eventId, editDate!, editTime);
+      if (result.success) {
+        toast.success("Event updated!");
+        setShowEditDialog(false);
+        onEdit?.();
+      } else {
+        toast.error("Failed to update event");
       }
-
-      toast.success("Event updated!");
-      setShowEditDialog(false);
-      onEdit?.();
-    } catch (error) {
-      console.error("Error updating event:", error);
-      toast.error("Failed to update event");
     } finally {
       setIsUpdating(false);
     }

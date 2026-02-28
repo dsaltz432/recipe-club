@@ -805,3 +805,98 @@ describe("renderStars", () => {
     expect(stars).toHaveLength(5);
   });
 });
+
+describe("EventRecipesTab - Edit Ingredients", () => {
+  const user = createMockUser();
+
+  const defaultProps = {
+    recipesWithNotes: [] as EventRecipeWithRatings[],
+    user,
+    userIsAdmin: false,
+    expandedRecipeNotes: new Set<string>(),
+    deletingNoteId: null,
+    onToggleRecipeNotes: vi.fn(),
+    onAddRecipeClick: vi.fn(),
+    onEditRecipeClick: vi.fn(),
+    onAddNotesClick: vi.fn(),
+    onEditNoteClick: vi.fn(),
+    onDeleteNoteClick: vi.fn(),
+    onDeleteRecipeClick: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows edit ingredients button for recipe created by current user", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    render(
+      <EventRecipesTab
+        {...defaultProps}
+        recipesWithNotes={recipesWithNotes}
+        onEditIngredients={onEditIngredients}
+      />
+    );
+
+    expect(screen.getByLabelText("Edit ingredients for My Recipe")).toBeInTheDocument();
+  });
+
+  it("does not show edit ingredients button for recipe created by other user", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe({ createdBy: "other-user", name: "Other Recipe" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    render(
+      <EventRecipesTab
+        {...defaultProps}
+        recipesWithNotes={recipesWithNotes}
+        onEditIngredients={onEditIngredients}
+      />
+    );
+
+    expect(screen.queryByLabelText("Edit ingredients for Other Recipe")).not.toBeInTheDocument();
+  });
+
+  it("does not show edit ingredients button when onEditIngredients is not provided", () => {
+    const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    render(
+      <EventRecipesTab
+        {...defaultProps}
+        recipesWithNotes={recipesWithNotes}
+      />
+    );
+
+    expect(screen.queryByLabelText("Edit ingredients for My Recipe")).not.toBeInTheDocument();
+  });
+
+  it("calls onEditIngredients with recipe when clicked", () => {
+    const onEditIngredients = vi.fn();
+    const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    render(
+      <EventRecipesTab
+        {...defaultProps}
+        recipesWithNotes={recipesWithNotes}
+        onEditIngredients={onEditIngredients}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Edit ingredients for My Recipe"));
+
+    expect(onEditIngredients).toHaveBeenCalledWith(recipe);
+  });
+});

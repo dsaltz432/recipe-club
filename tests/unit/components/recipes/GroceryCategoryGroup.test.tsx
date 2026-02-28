@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
-import type { CombinedGroceryItem, SmartGroceryItem } from "@/types";
+import type { SmartGroceryItem } from "@/types";
 
 // Mock supabase client (imported transitively by groceryList)
 vi.mock("@/integrations/supabase/client", () => ({
@@ -14,9 +14,9 @@ vi.mock("@/integrations/supabase/client", () => ({
 import GroceryCategoryGroup from "@/components/recipes/GroceryCategoryGroup";
 
 describe("GroceryCategoryGroup", () => {
-  const items: CombinedGroceryItem[] = [
-    { name: "tomato", totalQuantity: 3, category: "produce", sourceRecipes: ["Salad"] },
-    { name: "lettuce", totalQuantity: 1, unit: "head", category: "produce", sourceRecipes: ["Salad"] },
+  const items: SmartGroceryItem[] = [
+    { name: "tomato", displayName: "tomatoes", totalQuantity: 3, category: "produce", sourceRecipes: ["Salad"] },
+    { name: "lettuce", displayName: "lettuce", totalQuantity: 1, unit: "head", category: "produce", sourceRecipes: ["Salad"] },
   ];
 
   it("renders category display name", () => {
@@ -39,8 +39,8 @@ describe("GroceryCategoryGroup", () => {
   });
 
   it("renders meat_seafood display name as Protein", () => {
-    const meatItems: CombinedGroceryItem[] = [
-      { name: "chicken", totalQuantity: 1, unit: "lb", category: "meat_seafood", sourceRecipes: ["Curry"] },
+    const meatItems: SmartGroceryItem[] = [
+      { name: "chicken", displayName: "chicken", totalQuantity: 1, unit: "lb", category: "meat_seafood", sourceRecipes: ["Curry"] },
     ];
 
     render(<GroceryCategoryGroup category="meat_seafood" items={meatItems} />);
@@ -50,7 +50,7 @@ describe("GroceryCategoryGroup", () => {
 
   it("renders SmartGroceryItem items", () => {
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
     ];
 
     render(<GroceryCategoryGroup category="produce" items={smartItems} />);

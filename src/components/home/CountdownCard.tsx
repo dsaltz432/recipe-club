@@ -25,9 +25,8 @@ import type { ScheduledEvent } from "@/types";
 import { format, parseISO, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
 import { Calendar as CalendarIcon, Clock, ChefHat, Pencil, X, CheckCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/googleCalendar";
+import { cancelEvent, completeEvent, updateEvent } from "@/lib/eventActions";
 
 interface CountdownCardProps {
   event: ScheduledEvent;
@@ -94,27 +93,15 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
     setIsCompleting(true);
     try {
-      const { error: statusError } = await supabase
-        .from("scheduled_events")
-        .update({ status: "completed" })
-        .eq("id", event.id);
-
-      if (statusError) throw statusError;
-
-      if (event.ingredientId) {
-        const { error: rpcError } = await supabase.rpc(
-          "increment_ingredient_used_count",
-          { p_ingredient_id: event.ingredientId, p_user_id: userId }
-        );
-        if (rpcError) throw rpcError;
+      const result = await completeEvent(event.id, event.ingredientId || "", userId || "");
+      if (result.success) {
+        toast.success("Event marked as completed!");
+        setShowCompleteConfirm(false);
+        onEventUpdated?.();
+      } else {
+        console.error("Error completing event:", result.error);
+        toast.error("Failed to complete event");
       }
-
-      toast.success("Event marked as completed!");
-      setShowCompleteConfirm(false);
-      onEventUpdated?.();
-    } catch (error) {
-      console.error("Error completing event:", error);
-      toast.error("Failed to complete event");
     } finally {
       setIsCompleting(false);
     }
@@ -139,48 +126,14 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
     setIsUpdatingEvent(true);
     try {
-      const newEventDate = format(editEventDate, "yyyy-MM-dd");
-
-      // Get the event details including calendar_event_id
-      const { data: eventData, error: fetchError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (name)")
-        .eq("id", event.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the scheduled event
-      const { error: updateError } = await supabase
-        .from("scheduled_events")
-        .update({
-          event_date: newEventDate,
-          event_time: editEventTime,
-        })
-        .eq("id", event.id);
-
-      if (updateError) throw updateError;
-
-      // Update Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const calendarResult = await updateCalendarEvent({
-          calendarEventId: eventData.calendar_event_id,
-          date: editEventDate,
-          time: editEventTime,
-          ingredientName: eventData.ingredients?.name || "Unknown",
-        });
-
-        if (!calendarResult.success) {
-          console.warn("Failed to update calendar event:", calendarResult.error);
-        }
+      const result = await updateEvent(event.id, editEventDate, editEventTime);
+      if (result.success) {
+        toast.success("Event updated!");
+        setShowEditEventDialog(false);
+        onEventUpdated?.();
+      } else {
+        toast.error("Failed to update event");
       }
-
-      toast.success("Event updated!");
-      setShowEditEventDialog(false);
-      onEventUpdated?.();
-    } catch (error) {
-      console.error("Error updating event:", error);
-      toast.error("Failed to update event");
     } finally {
       setIsUpdatingEvent(false);
     }
@@ -191,39 +144,14 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
     setIsCanceling(true);
     try {
-      // Get the event data including calendar_event_id
-      const { data: eventData, error: findError } = await supabase
-        .from("scheduled_events")
-        .select("*, ingredients (*)")
-        .eq("id", event.id)
-        .single();
-
-      if (findError) throw findError;
-
-      // Delete the Google Calendar event if it exists
-      if (eventData.calendar_event_id) {
-        const deleteResult = await deleteCalendarEvent(eventData.calendar_event_id);
-        // Only warn for actual errors, not for expected "not available" cases
-        if (!deleteResult.success && !deleteResult.error?.includes("not available")) {
-          console.warn("Failed to delete calendar event:", deleteResult.error);
-        }
+      const result = await cancelEvent(event.id);
+      if (result.success) {
+        toast.success("Event canceled");
+        setShowCancelConfirm(false);
+        onEventCanceled?.();
+      } else {
+        toast.error("Failed to cancel event");
       }
-
-      // Note: Recipes cascade delete with the event (ON DELETE CASCADE)
-      // Note: We do NOT reset the ingredient's used_count when cancelling
-
-      // Delete the event row
-      await supabase
-        .from("scheduled_events")
-        .delete()
-        .eq("id", eventData.id);
-
-      toast.success("Event canceled");
-      setShowCancelConfirm(false);
-      onEventCanceled?.();
-    } catch (error) {
-      console.error("Error canceling event:", error);
-      toast.error("Failed to cancel event");
     } finally {
       setIsCanceling(false);
     }

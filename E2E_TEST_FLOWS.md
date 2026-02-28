@@ -206,7 +206,7 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 7. **Verify:** No errors (especially no 400 upsert error)
 8. **Verify:** Event status changes to completed
 9. **Verify:** Ingredient `used_count` incremented (atomic — no race condition)
-10. **Verify:** Ratings displayed on recipe cards (stars + "Make again: Yes/No")
+10. **Verify:** Ratings displayed on recipe cards — average stars (with half-star support) + "Make again:" with member initials in green/red
 
 ### 5.6 Rate Completed Event (Member)
 1. Navigate to an already-completed event
@@ -230,7 +230,10 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 ### 6.2 Recipes Tab
 1. **Verify:** Recipes tab shows recipe count in heading ("Recipes (N)")
 2. **Verify:** Each recipe card shows: name, author email, link, rating (if rated), note count
-3. **Verify:** "Add Recipe" button visible
+3. **Verify:** Rating display shows average stars (with half-star support) and "Make again:" with member initials in green (Yes) or red (No)
+4. **Verify:** "Add Recipe" button visible
+5. **Verify:** Recipe cards with parsed ingredients show expandable ingredient list grouped by category
+6. **Verify:** Edit Ingredients button (ListChecks icon) visible on recipe cards you created
 
 ### 6.3 Add Recipe via URL (with Parsing)
 1. Click "Add Recipe"
@@ -240,8 +243,8 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
    - Step 1: Saving recipe to database
    - Step 2: Parsing ingredients & instructions (via edge function)
    - Step 3: Loading recipe data
-   - Step 4: Combining with other recipes (if 2+ parsed)
-   - Step 5: Notifying club members (via email edge function)
+   - Step 4: Notifying club members (via email edge function)
+   - Note: Combining runs in the background (Groceries tab shows spinner if still in progress)
 5. **Verify:** All steps complete successfully
 6. **Verify:** Recipe appears in the list with parsed ingredients
 7. **Verify:** Grocery tab updated with new ingredients
@@ -276,6 +279,27 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 2. Enter recipe name only (no URL, no upload)
 3. **Verify:** Recipe created without parsed ingredients
 
+### 6.7a Add Recipe Manually with Ingredients
+1. Click "Add Recipe"
+2. Click "Enter Manually" input mode button
+3. Enter recipe name
+4. **Verify:** Ingredient entry grid appears with columns: Qty, Unit, Name, Category
+5. Enter ingredient details (e.g., "2", "cup", "flour")
+6. **Verify:** Category auto-detects based on ingredient name (e.g., "olive oil" → Pantry, "tofu" → Protein)
+7. Press Enter on last row's Name field
+8. **Verify:** New blank row auto-added
+9. Click "Add Ingredient" button to add more rows manually
+10. Click X button on a row to remove it
+11. Click "Add Recipe"
+12. **Verify:** Recipe created with manually entered ingredients (visible in grocery tab)
+
+### 6.7b Recipe Parse Status Indicators
+1. Add a recipe with a URL
+2. **Verify:** While parsing, recipe card shows animated spinner with "Parsing ingredients..." text
+3. If parsing fails: **Verify:** Card shows "Parsing failed" with alert icon and "Retry" button
+4. Click "Retry" - **Verify:** Parsing restarts
+5. For recipes without parsed content: **Verify:** "Parse Ingredients" button visible on card (when `SHOW_PARSE_BUTTONS` feature flag is enabled)
+
 ### 6.8 Edit Recipe
 1. Find an existing recipe on event detail page
 2. Click the edit button
@@ -284,7 +308,8 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 5. Change name and/or URL
 6. Save changes
 7. **Verify:** Recipe updated
-8. Save with empty URL - **Verify:** Saves successfully (URL cleared)
+8. If URL changed: **Verify:** Recipe re-parsed in background (new ingredients fetched)
+9. Save with empty URL - **Verify:** Saves successfully (URL cleared)
 
 ### 6.9 Delete Recipe
 1. Find an existing recipe on event detail page
@@ -294,16 +319,38 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 5. **Verify:** Recipe removed from list
 6. **Verify:** Associated notes and ratings cascade-deleted
 7. **Verify:** Grocery list updated (ingredients removed)
+8. **Verify:** Club members notified of recipe removal (via email edge function)
+
+### 6.9a Edit Recipe Ingredients
+1. Find a recipe you created on the event detail page
+2. Click the Edit Ingredients button (ListChecks icon) on the recipe card
+3. **Verify:** Edit Ingredients dialog opens with existing ingredients pre-loaded in grid
+4. **Verify:** Grid shows columns: Qty, Unit, Name, Category, Delete
+5. Modify an ingredient (change quantity, unit, or name)
+6. Add a new ingredient row via "Add Ingredient" button
+7. Remove an ingredient row via X button
+8. **Verify:** Category auto-detects when changing ingredient name
+9. Click "Save"
+10. **Verify:** Spinner shown while saving
+11. **Verify:** Ingredients updated (calls `replace_recipe_ingredients` RPC)
+12. **Verify:** Grocery cache invalidated — grocery tab refreshes with updated ingredients
 
 ### 6.10 View Recipe (External Link)
-1. Click "View recipe" link on a recipe card
-2. **Verify:** Opens original recipe URL in new tab
+1. Find a recipe card with a URL
+2. **Verify:** External link icon (ExternalLink) visible in the header icon row (top right of card)
+3. Click the external link icon
+4. **Verify:** Opens original recipe URL in new tab
+5. **Verify:** Icon has aria-label "Open recipe URL"
 
 ### 6.11 Grocery Tab - Combined List
 1. Click "Grocery" tab on event detail
-2. **Verify:** Combined grocery list shown (ingredients merged from all recipes)
-3. **Verify:** Items grouped by category (produce, meat, dairy, etc.)
-4. **Verify:** Each item shows quantity, unit, and source recipe(s)
+2. **Verify:** "Combined" sub-tab is active by default
+3. **Verify:** Combined grocery list shown (ingredients merged from all recipes)
+4. **Verify:** Items grouped by category (Produce, Protein, Dairy, Pantry, Spices, Frozen, Bakery, Beverages, Condiments, Other)
+5. **Verify:** Each item shows quantity, unit, and source recipe(s)
+6. **Verify:** Per-recipe sub-tabs shown (one tab per recipe with parsed ingredients)
+7. Click a per-recipe tab - **Verify:** Only that recipe's ingredients shown, still grouped by category
+8. **Verify:** Pantry filtering applies to both combined view AND per-recipe tabs
 
 ### 6.12 Grocery Tab - Smart Combined List
 1. Ensure 2+ recipes are parsed for this event
@@ -312,6 +359,15 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 4. Click "Smart Combined"
 5. **Verify:** AI-deduplicated list shown (e.g., "broccoli floret" + "broccoli" merged)
 6. **Verify:** Quantities summed across recipes
+7. **Verify:** Results cached — subsequent visits load from cache without re-combining
+
+### 6.12a Grocery Tab - Editable Items
+1. On Grocery tab (when editable mode is enabled)
+2. **Verify:** Each grocery item has edit and remove buttons
+3. Click remove (X) on an item - **Verify:** Item removed from the list
+4. Find the "Add item" form at the bottom of a category group
+5. Enter quantity, unit, and item name
+6. Press Enter or click Add - **Verify:** New item added to the list under the correct category
 
 ### 6.13 Grocery Tab - Pantry Filtering
 1. On Grocery tab, note items that are in your pantry
@@ -343,13 +399,14 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 1. Navigate to Recipes tab on dashboard
 2. **Verify:** "Club (N)" tab shows recipe count
 3. **Verify:** Recipes from club events listed
-4. **Verify:** Recipe cards show: name, creator, ingredient tag, rating, notes count
+4. **Verify:** Recipe cards show: name, creator, ingredient tag, rating (stars + member initials), notes count
+5. **Verify:** Recipe cards with parsed ingredients show expandable ingredient list (pantry items filtered out)
 
 ### 7.2 Personal Recipes Tab
 1. Click "My Recipes (N)" tab
 2. **Verify:** Shows personal recipes (created by you, not tied to events)
 3. **Verify:** Each personal recipe card shows "Personal" badge
-4. **Verify:** Edit (pencil) and Delete (trash) icon buttons visible on personal recipe cards
+4. **Verify:** Edit (pencil) and Delete (trash) icon buttons visible on all recipe cards (both club and personal)
 
 ### 7.3 Search - By Recipe Name
 1. Type a recipe name in the search bar
@@ -379,20 +436,30 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 2. Enter recipe name and optional URL
 3. **Verify:** Recipe added and appears in personal recipes list
 
-### 7.9 Edit Personal Recipe
-1. Click the edit (pencil) button on a personal recipe card
+### 7.9 Edit Recipe (from Hub)
+1. Click the edit (pencil) button on any recipe card (club or personal)
 2. **Verify:** Edit dialog opens with current name and URL pre-filled
 3. Change name and/or URL (URL is optional)
 4. Click "Save Changes"
 5. **Verify:** Recipe updated, toast shown, list refreshed
+6. If URL changed: **Verify:** Recipe re-parsed in background (new ingredients fetched)
 
-### 7.10 Delete Personal Recipe
-1. Click the delete (trash) button on a personal recipe card
-2. **Verify:** Confirmation dialog shown
-3. Confirm deletion
-4. **Verify:** Recipe removed, toast shown, list refreshed
+### 7.10 Delete Recipe (from Hub)
+1. Click the delete (trash) button on any recipe card
+2. If the recipe is used in a meal plan: **Verify:** Error toast "This recipe is used in a meal plan. Remove it from the meal plan first." and deletion is blocked
+3. If the recipe is not in a meal plan: **Verify:** Confirmation dialog shown
+4. Confirm deletion
+5. **Verify:** Recipe removed, toast shown, list refreshed
 
-### 7.11 Empty States
+### 7.11 Edit Recipe Ingredients (from Hub)
+1. On a recipe card you created, click the Edit Ingredients button (ListChecks icon)
+2. **Verify:** Only visible on recipes where you are the creator (`createdBy === userId`)
+3. **Verify:** EditRecipeIngredientsDialog opens with current ingredients
+4. Edit, add, or remove ingredient rows
+5. Click "Save"
+6. **Verify:** Ingredients updated via RPC, recipe card refreshes
+
+### 7.12 Empty States
 1. With no personal recipes: **Verify:** Message says "No personal recipes yet. Add one using the button above!" (no mention of "save a club recipe")
 2. With no club recipes: **Verify:** Appropriate empty state message
 
@@ -497,6 +564,18 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 5. Click "Add Meal"
 6. **Verify:** Meal appears in the slot with name displayed
 
+### 9.3a Add Meal - Custom with Manual Ingredients
+1. Click "+" on an empty meal slot
+2. On "Custom" tab, click "Enter Manually" input mode button
+3. Enter a meal name
+4. **Verify:** Ingredient entry grid appears (Qty, Unit, Name, Category columns)
+5. Enter ingredient details for the meal
+6. **Verify:** Category auto-detects from ingredient name
+7. Press Enter on last row to auto-add new rows
+8. Click "Add Meal"
+9. **Verify:** Meal created with linked recipe and manually entered ingredients
+10. **Verify:** Ingredients appear in the Groceries tab for this week
+
 ### 9.4 Add Meal - From Recipes
 1. Click "+" on an empty slot
 2. Click "Recipes" tab in the dialog
@@ -569,6 +648,24 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 3. **Verify:** Rating dialog opens
 4. Submit ratings
 5. **Verify:** Ratings saved
+
+### 10.5 Edit Recipe Ingredients (from Meal Detail)
+1. Navigate to a personal meal detail page (`/meals/{eventId}`)
+2. Find a recipe you created with parsed ingredients
+3. Click the Edit Ingredients button (ListChecks icon)
+4. **Verify:** EditRecipeIngredientsDialog opens with current ingredients
+5. Modify ingredients
+6. Click "Save"
+7. **Verify:** Ingredients updated, grocery cache invalidated (meal_plan context)
+8. **Verify:** Grocery list reflects changes
+
+### 10.6 Edit Recipe Name/URL (from Meal Detail)
+1. On a personal meal detail page, find a recipe you created
+2. Click the edit (pencil) button
+3. **Verify:** Edit dialog opens with current name and URL pre-filled
+4. Change name and/or URL
+5. Save changes
+6. **Verify:** Recipe updated; if URL changed, re-parse triggered in background
 
 ---
 
@@ -666,9 +763,9 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 1. On Users page, find the add user form
 2. Enter email address
 3. Select role (admin or viewer)
-4. Toggle club member status
+4. Toggle "Include in Club" switch (description: "Club members participate in events and receive calendar invites")
 5. Submit
-6. **Verify:** New user appears in the list
+6. **Verify:** New user appears in the list with correct role and club member status
 
 ### 13.3 Manage Users - Add User (Expired Session)
 1. If session has expired, try adding a user
@@ -682,8 +779,10 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 
 ### 13.5 Manage Users - Toggle Club Member
 1. Find an existing user
-2. Toggle club member status
-3. **Verify:** Status updated (club members can rate recipes)
+2. Toggle the "In Club" switch on their row
+3. **Verify:** Status updated
+4. **Verify:** "Club Member" badge with ChefHat icon appears/disappears on the user row
+5. **Verify:** Club members participate in events and receive calendar invites
 
 ### 13.6 Manage Users - Delete User
 1. Find an existing user (not yourself)
@@ -783,7 +882,14 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 1. Edit a recipe and change its URL
 2. **Verify:** Club members notified of the update
 
-### 17.3 Dev Mode - Notifications Skipped
+### 17.3 Recipe Deleted Notification
+1. Delete a recipe from a club event (via event detail page)
+2. **Verify:** All club members (except you) receive email notification
+3. **Verify:** Email subject: "Recipe removed from [ingredient] event"
+4. **Verify:** Email includes recipe name, ingredient, and event date
+5. **Verify:** Email CTA: "Head to the event to see the latest lineup."
+
+### 17.4 Dev Mode - Notifications Skipped
 1. In dev mode (without `RESEND_API_KEY`)
 2. Add a recipe
 3. **Verify:** No error; notification step silently succeeds
@@ -821,6 +927,9 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 | Responsive badges disappear below 768px | By design | Uses Tailwind `hidden md:flex`; stats in mobile dropdown |
 | Meal plan grid requires horizontal scroll on mobile | Known | Grid has `min-w-[700px]`; future improvement to add day/list view |
 | PantryContent branch coverage at 94.44% | Accepted | `if (active)` false branch uncovered; not in required coverage directory |
+| Grocery cache not invalidated when pantry items change | Known | Pantry changes update filter display but cached combined items remain stale until next combine |
+| Edit Ingredients only visible to recipe creator | By design | `createdBy === userId` check determines button visibility |
+| Editing a club recipe from RecipeHub or personal meal plan does not notify club members | Known | Notification only fires from EventDetailPage; RecipeHub and PersonalMealDetailPage edits are silent |
 
 ---
 
@@ -830,6 +939,9 @@ Manual E2E testing flows for the Recipe Club Hub application. Run against `http:
 - **Google Calendar**: Returns mock data in dev mode
 - **Email notifications**: Skipped in dev mode when `RESEND_API_KEY` is missing
 - **Edge functions**: Gracefully skip when API keys are missing
-- **Feature flag**: `SHOW_PARSE_BUTTONS` in `src/lib/constants.ts` - currently `false` (hides per-recipe parse/re-parse buttons)
+- **Feature flag**: `SHOW_PARSE_BUTTONS` in `src/lib/constants.ts` - currently `false` (hides per-recipe parse/re-parse buttons on grocery list; recipe card parse status indicators still visible)
 - **File uploads**: Max 5MB, accepts images (JPG, PNG, WebP, HEIC) and PDF. Uploaded to `recipe-images` Supabase storage bucket.
 - **Parse-recipe**: Detects file type from URL extension/Content-Type header. PDFs use `type: "document"` in Claude API. Files over 10MB rejected with 413 error.
+- **Grocery cache**: Combined grocery lists are cached per context (event or meal_plan). Cache is invalidated when recipe ingredients are edited via `EditRecipeIngredientsDialog`. Smart combine results are stored with per-recipe breakdowns.
+- **Category overrides**: AI parser category corrections applied via `CATEGORY_OVERRIDES` map (e.g., olive oil → pantry, tofu → protein).
+- **Pantry matching**: Matches items via exact match, plural handling ("olive" ↔ "olives"), name+unit combos ("garlic" + "clove" ↔ "garlic cloves"), and qualifier prefixes ("kosher salt" matches pantry "salt").

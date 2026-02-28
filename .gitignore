@@ -37,7 +37,9 @@ E2E_TEST_RESULTS_*.md
 # Claude Code
 .claude/
 
-# Ralph loop
-ralph/
+# Ralph loop - track activity/prd but ignore screenshots and archives
+ralph/screenshots/
+ralph/*.png
+ralph/archive/
 .vercel
 .env*.local

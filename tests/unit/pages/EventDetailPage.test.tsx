@@ -91,10 +91,14 @@ vi.mock("@/lib/upload", () => ({
 }));
 
 // GroceryList mock
-const mockSmartCombineIngredients = vi.fn().mockResolvedValue(null);
-vi.mock("@/lib/groceryList", () => ({
-  smartCombineIngredients: (...args: unknown[]) => mockSmartCombineIngredients(...args),
-}));
+const mockSmartCombineIngredients = vi.fn().mockRejectedValue(new Error("not configured"));
+vi.mock("@/lib/groceryList", async () => {
+  const actual = await vi.importActual("@/lib/groceryList");
+  return {
+    ...actual,
+    smartCombineIngredients: (...args: unknown[]) => mockSmartCombineIngredients(...args),
+  };
+});
 
 // GroceryCache mock
 const mockLoadGroceryCache = vi.fn().mockResolvedValue(null);
@@ -159,6 +163,7 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
     onDeleteNoteClick,
     onDeleteRecipeClick,
     onToggleRecipeNotes,
+    onEditIngredients,
     recipesWithNotes,
   }: {
     onAddRecipeClick: () => void;
@@ -168,6 +173,7 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
     onDeleteNoteClick: (note: unknown) => void;
     onDeleteRecipeClick: (recipe: unknown) => void;
     onToggleRecipeNotes: (id: string) => void;
+    onEditIngredients?: (recipe: unknown) => void;
     recipesWithNotes: Array<{ recipe: { id: string; name: string; url?: string; createdBy?: string } }>;
   }) => (
     <div data-testid="recipes-tab">
@@ -182,6 +188,9 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
           <button onClick={() => onDeleteNoteClick({ id: "note-1" })}>Delete Note</button>
           <button onClick={() => onDeleteRecipeClick(r.recipe)}>Delete {r.recipe.name}</button>
           <button onClick={() => onToggleRecipeNotes(r.recipe.id)}>Toggle Notes {r.recipe.name}</button>
+          {onEditIngredients && (
+            <button onClick={() => onEditIngredients(r.recipe)}>Edit Ingredients {r.recipe.name}</button>
+          )}
         </div>
       ))}
     </div>
@@ -716,7 +725,7 @@ describe("EventDetailPage", () => {
     });
 
     // URL validation is shown for invalid URL
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(urlInput, { target: { value: "not-a-url" } });
 
     expect(screen.getByText("URL must start with http:// or https://")).toBeInTheDocument();
@@ -754,7 +763,7 @@ describe("EventDetailPage", () => {
     });
 
     // Set URL but not name
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(urlInput, { target: { value: "https://example.com" } });
 
     // Add Recipe button should be disabled since name is empty
@@ -1013,7 +1022,7 @@ describe("EventDetailPage", () => {
 
     // Fill in name and URL
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "New Chicken Recipe" } });
     fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
 
@@ -1042,7 +1051,7 @@ describe("EventDetailPage", () => {
     });
 
     // Set URL but leave name empty
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(urlInput, { target: { value: "https://example.com" } });
 
     // The button should be disabled
@@ -1066,7 +1075,7 @@ describe("EventDetailPage", () => {
     // Fill name and set an invalid URL
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
     fireEvent.change(nameInput, { target: { value: "Test Recipe" } });
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(urlInput, { target: { value: "not-a-valid-url" } });
 
     // Button should be disabled since URL is invalid
@@ -1684,7 +1693,7 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(urlInput, { target: { value: "http://example.com" } });
 
     // Should not show URL validation error
@@ -2354,6 +2363,9 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
+
     // Find hidden file input and trigger change
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).toBeTruthy();
@@ -2386,6 +2398,9 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
+
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 
     const file = new File(["test content"], "test.txt", { type: "text/plain" });
@@ -2413,6 +2428,9 @@ describe("EventDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
+
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 
@@ -2442,6 +2460,9 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
+
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
     Object.defineProperty(file, "size", { value: 1024 }); // 1KB
@@ -2467,6 +2488,9 @@ describe("EventDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
+
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [] } });
@@ -2497,7 +2521,7 @@ describe("EventDetailPage", () => {
 
     // Fill in name and URL
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Test Recipe" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/recipe" } });
 
     // Click Add Recipe
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
@@ -2538,7 +2562,7 @@ describe("EventDetailPage", () => {
     });
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Test Recipe" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/recipe" } });
 
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(addBtn);
@@ -2612,7 +2636,7 @@ describe("EventDetailPage", () => {
     });
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Test Recipe" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/recipe" } });
 
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(addBtn);
@@ -2902,6 +2926,9 @@ describe("EventDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
+
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["pdf content"], "recipe.pdf", { type: "application/pdf" });
@@ -3346,7 +3373,7 @@ describe("EventDetailPage", () => {
     });
 
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "My Recipe" } });
     fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
 
@@ -3418,7 +3445,7 @@ describe("EventDetailPage", () => {
     });
 
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "Bad Recipe" } });
     fireEvent.change(urlInput, { target: { value: "https://example.com/bad" } });
 
@@ -3448,7 +3475,7 @@ describe("EventDetailPage", () => {
     });
 
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "Fail Recipe" } });
     fireEvent.change(urlInput, { target: { value: "https://example.com/fail" } });
 
@@ -3485,7 +3512,7 @@ describe("EventDetailPage", () => {
     });
 
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "Fail Recipe" } });
     fireEvent.change(urlInput, { target: { value: "https://example.com/fail" } });
 
@@ -3521,7 +3548,7 @@ describe("EventDetailPage", () => {
     });
 
     // Only fill URL, name is empty - button should be disabled (guard unreachable)
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
 
     const addBtns = screen.getAllByRole("button").filter(b => b.textContent === "Add Recipe");
@@ -3543,7 +3570,7 @@ describe("EventDetailPage", () => {
     });
 
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "Good Name" } });
     fireEvent.change(urlInput, { target: { value: "not-a-url" } });
 
@@ -3572,7 +3599,7 @@ describe("EventDetailPage", () => {
     });
 
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
-    const urlInput = screen.getByPlaceholderText("https://... or upload a file");
+    const urlInput = screen.getByPlaceholderText("https://...");
     fireEvent.change(nameInput, { target: { value: "Good Name" } });
     fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
 
@@ -3908,15 +3935,12 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
+    // Switch to Upload File mode to reveal the upload button
+    fireEvent.click(screen.getByText("Upload File"));
+
     // Find the upload button (has Upload icon)
-    const uploadBtns = screen.getAllByRole("button").filter(b =>
-      b.querySelector(".lucide-upload") || b.getAttribute("type") === "button"
-    );
-    // The upload button is in the dialog
-    const uploadBtn = uploadBtns.find(b => b.closest("[role='dialog']"));
-    if (uploadBtn) {
-      fireEvent.click(uploadBtn);
-    }
+    const uploadBtn = screen.getByRole("button", { name: /upload photo or pdf/i });
+    fireEvent.click(uploadBtn);
   });
 
   // ---- PANTRY CHANGE HANDLER ----
@@ -3959,6 +3983,8 @@ describe("EventDetailPage", () => {
   });
 
   it("handles confirm delete recipe when recipeToDelete is set", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
     render(<EventDetailPage />);
 
     await waitFor(() => {
@@ -3977,6 +4003,16 @@ describe("EventDetailPage", () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe deleted");
+    });
+
+    // Should send deletion notification to club members
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("notify-recipe-change", {
+        body: expect.objectContaining({
+          type: "deleted",
+          recipeName: "Chicken Parm",
+        }),
+      });
     });
   });
 
@@ -4089,7 +4125,7 @@ describe("EventDetailPage", () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to update recipe");
+      expect(toast.error).toHaveBeenCalledWith("Update failed");
     });
 
     consoleSpy.mockRestore();
@@ -4270,7 +4306,7 @@ describe("EventDetailPage", () => {
 
     // Fill in name and URL
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Parse Test" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/parse" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/parse" } });
 
     // Click Add Recipe — this sets parseStatus to "parsing" and starts the insert + parse flow
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
@@ -4311,7 +4347,7 @@ describe("EventDetailPage", () => {
 
     // Fill in name and URL
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Parse Test" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/parse" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/parse" } });
 
     // Click Add Recipe
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
@@ -4976,7 +5012,7 @@ describe("EventDetailPage", () => {
 
   it("runs smart combine on cache miss with 2+ parsed recipes", async () => {
     mockLoadGroceryCache.mockResolvedValue(null);
-    mockSmartCombineIngredients.mockResolvedValue([{ name: "Combined ingredient" }]);
+    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "Combined ingredient", displayName: "Combined ingredient" }], perRecipeItems: {} });
 
     const twoRecipes = [
       ...recipesData,
@@ -5037,6 +5073,74 @@ describe("EventDetailPage", () => {
     });
 
     // Smart combine should be called with the ingredients
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+
+    // Cache should be saved after combine
+    await waitFor(() => {
+      expect(mockSaveGroceryCache).toHaveBeenCalled();
+    });
+  });
+
+  // ---- GROCERY CACHE MISS WITH SMART COMBINE — SINGLE RECIPE ----
+
+  it("runs smart combine on cache miss with 1 parsed recipe", async () => {
+    mockLoadGroceryCache.mockResolvedValue(null);
+    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "chicken", displayName: "Chicken" }], perRecipeItems: {} });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Smart combine IS called even with just 1 parsed recipe (single-recipe grocery fix)
     await waitFor(() => {
       expect(mockSmartCombineIngredients).toHaveBeenCalled();
     });
@@ -5257,7 +5361,7 @@ describe("EventDetailPage", () => {
     });
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Retry Recipe" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/retry" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/retry" } });
 
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(addBtn);
@@ -5342,7 +5446,7 @@ describe("EventDetailPage", () => {
     });
 
     mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
-    mockSmartCombineIngredients.mockResolvedValue([{ name: "Combined" }]);
+    mockSmartCombineIngredients.mockResolvedValue({ items: [{ name: "Combined", displayName: "Combined" }], perRecipeItems: {} });
 
     render(<EventDetailPage />);
 
@@ -5357,7 +5461,7 @@ describe("EventDetailPage", () => {
     });
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Second Recipe" } });
-    fireEvent.change(screen.getByPlaceholderText("https://... or upload a file"), { target: { value: "https://example.com/second" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/second" } });
 
     const addBtn = screen.getByRole("button", { name: /add recipe/i });
     fireEvent.click(addBtn);
@@ -6201,84 +6305,13 @@ describe("EventDetailPage", () => {
 
   // ---- GROCERY CACHE STALE (covers line 530 false branch) ----
 
-  it("runs smart combine when cache exists but is stale", async () => {
-    // Cache has recipe IDs that don't match current parsed recipes
+  it("uses cached items when cache exists without re-combining", async () => {
+    // Cache exists with items — should be used directly without calling smartCombineIngredients
+    const cachedItems = [{ name: "Cached Onion", quantity: "2", recipes: ["recipe-1"] }];
     mockLoadGroceryCache.mockResolvedValue({
-      items: [{ name: "Stale Item", quantity: "1", recipes: ["old-recipe"] }],
-      recipeIds: ["old-recipe"],
-    });
-    mockSmartCombineIngredients.mockResolvedValue([{ name: "Combined" }]);
-
-    const twoRecipes = [
-      ...recipesData,
-      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
-    ];
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
-            }),
-          }),
-        };
-      }
-      if (table === "recipes") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
-            }),
-          }),
-        };
-      }
-      if (table === "recipe_ingredients") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: [
-                { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
-                { id: "ri-2", recipe_id: "recipe-2", name: "broth", quantity: "4", unit: "cups", category: "other", raw_text: "4 cups broth", sort_order: 1, created_at: "2026-01-01" },
-              ],
-              error: null,
-            }),
-          }),
-        };
-      }
-      if (table === "recipe_content") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: [
-                { id: "rc-1", recipe_id: "recipe-1", description: "test", servings: "4", prep_time: null, cook_time: null, total_time: null, instructions: [], source_title: null, parsed_at: "2026-01-01", status: "completed", error_message: null, created_at: "2026-01-01" },
-                { id: "rc-2", recipe_id: "recipe-2", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, status: "completed", error_message: null, created_at: "2026-01-01" },
-              ],
-              error: null,
-            }),
-          }),
-        };
-      }
-      if (table === "recipe_notes") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        };
-      }
-      if (table === "recipe_ratings") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        };
-      }
-      return {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({ data: [], error: null }),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      };
+      items: cachedItems,
+      recipeIds: ["recipe-1"],
+      perRecipeItems: { "Chicken Parm": [{ name: "onion", displayName: "Onion", totalQuantity: 1, category: "produce", sourceRecipes: ["Chicken Parm"] }] },
     });
 
     render(<EventDetailPage />);
@@ -6287,10 +6320,11 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
     });
 
-    // Cache was checked but stale (recipe IDs don't match), so smart combine should run
+    // Cache was loaded and used — smart combine should NOT run
     await waitFor(() => {
-      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      expect(mockLoadGroceryCache).toHaveBeenCalled();
     });
+    expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
   });
 
   // ---- BACK BUTTON WITH HISTORY (covers line 1130 both branches) ----
@@ -6625,9 +6659,11 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
-    // Fill in recipe name and submit — the insert rejects with Error instance
+    // Fill in recipe name and URL, then submit — the insert rejects with Error instance
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
     fireEvent.change(nameInput, { target: { value: "Test Recipe" } });
+    const urlInput = screen.getByPlaceholderText("https://...");
+    fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
     fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
 
     await waitFor(() => {
@@ -6742,9 +6778,9 @@ describe("EventDetailPage", () => {
     });
   });
 
-  // ---- HANDLE SUBMIT RECIPE WITH EMPTY URL (covers line 639 recipeUrl.trim() || null) ----
+  // ---- HANDLE SUBMIT RECIPE WITH NO URL (manual mode covers url: null path) ----
 
-  it("submits recipe with empty URL", async () => {
+  it("submits recipe with no URL via manual mode", async () => {
     mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
 
     render(<EventDetailPage />);
@@ -6759,11 +6795,16 @@ describe("EventDetailPage", () => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
 
-    // Fill in recipe name only, no URL
+    // Fill in recipe name
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
     fireEvent.change(nameInput, { target: { value: "No URL Recipe" } });
 
-    // Submit — URL field is empty, so url becomes null via || null
+    // Switch to manual mode and add an ingredient so submit is enabled
+    fireEvent.click(screen.getByText("Enter Manually"));
+    const ingredientInput = screen.getByPlaceholderText("Ingredient name");
+    fireEvent.change(ingredientInput, { target: { value: "chicken" } });
+
+    // Submit — manual mode sets url to null
     fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
 
     await waitFor(() => {
@@ -6789,6 +6830,9 @@ describe("EventDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
     });
+
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
 
     // Trigger file upload via the hidden file input
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -6826,6 +6870,9 @@ describe("EventDetailPage", () => {
     // Type a recipe name BEFORE uploading
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
     fireEvent.change(nameInput, { target: { value: "My Recipe" } });
+
+    // Switch to Upload File mode
+    fireEvent.click(screen.getByText("Upload File"));
 
     // Upload file — name should NOT be overwritten
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -6883,6 +6930,37 @@ describe("EventDetailPage", () => {
     // Dialog should close without window.confirm
     await waitFor(() => {
       expect(screen.queryByText("Add a Recipe")).not.toBeInTheDocument();
+    });
+  });
+
+  it("opens edit ingredients dialog and saves", async () => {
+    setupDefaultMocks();
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Click "Edit Ingredients" button in the mocked EventRecipesTab
+    fireEvent.click(screen.getByText("Edit Ingredients Chicken Parm"));
+
+    // The EditRecipeIngredientsDialog should now be rendered
+    await waitFor(() => {
+      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+    });
+
+    // Add an ingredient name so we can save
+    fireEvent.change(screen.getByLabelText("Name for row 1"), {
+      target: { value: "Salt" },
+    });
+
+    // Click save
+    fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
+
+    // Dialog should close after save
+    await waitFor(() => {
+      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
     });
   });
 });

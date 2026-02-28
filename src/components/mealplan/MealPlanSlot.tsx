@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Plus, Check } from "lucide-react";
 import type { MealPlanItem } from "@/types";
 
@@ -28,27 +27,27 @@ const MealPlanSlot = ({
 
   if (items.length === 0) {
     return (
-      <Button
-        variant="ghost"
-        className="w-full h-full min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple"
+      <button
+        className="w-full h-full min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent"
         onClick={() => onAddMeal(dayOfWeek, mealType)}
       >
-        <Plus className="h-3 w-3 mr-1" />
+        <Plus className="h-3 w-3" />
         <span className="text-xs">{mealTypeLabels[mealType]}</span>
-      </Button>
+      </button>
     );
   }
 
   return (
     <div
-      className={`relative w-full min-h-[60px] p-2 rounded-lg border transition-colors ${
+      className={`relative w-full min-h-[60px] p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm ${
         isCooked
-          ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
-          : "bg-purple/5 border-purple/20 hover:bg-purple/10 hover:border-purple/40"
-      }${onViewMealEvent ? " cursor-pointer" : ""}`}
-      onClick={onViewMealEvent ? () => onViewMealEvent(dayOfWeek, mealType) : undefined}
-      role={onViewMealEvent ? "button" : undefined}
-      aria-label={onViewMealEvent ? "View meal details" : undefined}
+          ? "bg-green-50 border-green-200"
+          : "bg-purple/5 border-purple/20"
+      }`}
+      onClick={() => onViewMealEvent?.(dayOfWeek, mealType)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onViewMealEvent?.(dayOfWeek, mealType); }}
     >
       {isCooked && <span className="sr-only">Cooked</span>}
       <div className="space-y-1">
@@ -68,16 +67,14 @@ const MealPlanSlot = ({
         })}
       </div>
       <div className="flex items-center justify-end mt-1">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
-            className="text-muted-foreground hover:text-purple transition-colors p-1"
-            title="Add another meal"
-            aria-label="Add another meal"
-          >
-            <Plus className="h-3 w-3" />
-          </button>
-        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
+          className="text-muted-foreground hover:text-purple transition-colors p-1"
+          title="Add another meal"
+          aria-label="Add another meal"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
       </div>
     </div>
   );

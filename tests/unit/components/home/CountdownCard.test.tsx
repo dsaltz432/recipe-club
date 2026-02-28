@@ -374,6 +374,7 @@ describe("CountdownCard", () => {
       delete: vi.fn().mockReturnThis(),
     };
     mockFrom.mockReturnValue(selectChain);
+    mockRpc.mockResolvedValue({ error: null });
     mockDeleteCalendarEvent.mockResolvedValue({ success: true });
 
     render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
@@ -406,6 +407,7 @@ describe("CountdownCard", () => {
       delete: vi.fn().mockReturnThis(),
     };
     mockFrom.mockReturnValue(selectChain);
+    mockRpc.mockResolvedValue({ error: null });
 
     render(<CountdownCard {...defaultProps} isAdmin={true} userId="user-1" />);
     fireEvent.click(screen.getByText("Cancel"));
@@ -432,6 +434,7 @@ describe("CountdownCard", () => {
       delete: vi.fn().mockReturnThis(),
     };
     mockFrom.mockReturnValue(selectChain);
+    mockRpc.mockResolvedValue({ error: null });
     mockDeleteCalendarEvent.mockResolvedValue({ success: false, error: "Real error" });
 
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -463,6 +466,7 @@ describe("CountdownCard", () => {
       delete: vi.fn().mockReturnThis(),
     };
     mockFrom.mockReturnValue(selectChain);
+    mockRpc.mockResolvedValue({ error: null });
     mockDeleteCalendarEvent.mockResolvedValue({ success: false, error: "Calendar not available" });
 
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});

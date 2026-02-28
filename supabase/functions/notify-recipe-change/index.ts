@@ -15,9 +15,9 @@ function isLocalMode(): boolean {
 }
 
 interface NotifyRequest {
-  type: "added" | "updated";
+  type: "added" | "updated" | "deleted";
   recipeName: string;
-  recipeUrl: string;
+  recipeUrl?: string;
   ingredientName?: string;
   eventDate?: string;
   excludeUserId?: string;
@@ -104,24 +104,41 @@ serve(async (req) => {
       : null;
 
     // Build email content
-    const isAdded = type === "added";
-    const subject = isAdded
-      ? `New recipe added for ${ingredientName || "Recipe Club"}!`
-      : `Recipe updated for ${ingredientName || "Recipe Club"}!`;
+    const subjectMap: Record<string, string> = {
+      added: `New recipe added for ${ingredientName || "Recipe Club"}!`,
+      updated: `Recipe updated for ${ingredientName || "Recipe Club"}!`,
+      deleted: `Recipe removed from ${ingredientName || "Recipe Club"} event`,
+    };
+    const subject = subjectMap[type];
+
+    const headingMap: Record<string, string> = {
+      added: "New Recipe Added!",
+      updated: "Recipe Updated!",
+      deleted: "Recipe Removed",
+    };
+
+    const messageMap: Record<string, string> = {
+      added: `A new recipe has been added for the <strong style="color: #F97316;">${ingredientName || "upcoming"}</strong> event${formattedDate ? ` on ${formattedDate}` : ""}!`,
+      updated: `A recipe has been updated for the <strong style="color: #F97316;">${ingredientName || "upcoming"}</strong> event${formattedDate ? ` on ${formattedDate}` : ""}!`,
+      deleted: `A recipe has been removed from the <strong style="color: #F97316;">${ingredientName || "upcoming"}</strong> event${formattedDate ? ` on ${formattedDate}` : ""}.`,
+    };
+
+    const ctaMap: Record<string, string> = {
+      added: "Check it out and get inspired!",
+      updated: "The recipe link has been updated - check out the new version!",
+      deleted: "Head to the event to see the latest lineup.",
+    };
 
     const bodyHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #9b87f5;">${isAdded ? "New Recipe Added!" : "Recipe Updated!"}</h1>
+        <h1 style="color: #9b87f5;">${headingMap[type]}</h1>
         <p>Hey there!</p>
-        ${isAdded
-          ? `<p>A new recipe has been added for the <strong style="color: #F97316;">${ingredientName || "upcoming"}</strong> event${formattedDate ? ` on ${formattedDate}` : ""}!</p>`
-          : `<p>A recipe has been updated for the <strong style="color: #F97316;">${ingredientName || "upcoming"}</strong> event${formattedDate ? ` on ${formattedDate}` : ""}!</p>`
-        }
+        <p>${messageMap[type]}</p>
         <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
           <p style="margin: 0 0 8px 0;"><strong>${recipeName}</strong></p>
           ${recipeUrl ? `<a href="${recipeUrl}" style="color: #9b87f5;">View Recipe</a>` : ""}
         </div>
-        <p>${isAdded ? "Check it out and get inspired!" : "The recipe link has been updated - check out the new version!"}</p>
+        <p>${ctaMap[type]}</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="color: #666; font-size: 12px;">Recipe Club Hub</p>
       </div>

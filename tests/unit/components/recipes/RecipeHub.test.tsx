@@ -2377,8 +2377,8 @@ describe("RecipeHub - Edit Personal Recipe", () => {
 
     await waitFor(() => {
       expect(screen.getByText("My Home Recipe")).toBeInTheDocument();
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
   });
 
@@ -2391,14 +2391,14 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
       expect(screen.getByLabelText(/recipe name/i)).toHaveValue("My Home Recipe");
-      expect(screen.getByLabelText(/recipe url/i)).toHaveValue("https://example.com/home");
+      expect(screen.getByDisplayValue("https://example.com/home")).toBeInTheDocument();
     });
   });
 
@@ -2425,9 +2425,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
@@ -2470,9 +2470,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
@@ -2494,9 +2494,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
@@ -2520,15 +2520,15 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/recipe url/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("https://example.com/home")).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText(/recipe url/i), {
+    fireEvent.change(screen.getByDisplayValue("https://example.com/home"), {
       target: { value: "not-a-url" },
     });
 
@@ -2555,9 +2555,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
@@ -2579,9 +2579,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
@@ -2595,7 +2595,7 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     });
   });
 
-  it("does not show edit or delete buttons on club event recipe cards", async () => {
+  it("shows edit and delete buttons on club event recipe cards", async () => {
     const clubRecipesData = [
       {
         id: "recipe-1",
@@ -2623,9 +2623,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
       expect(screen.getByText("Club Recipe")).toBeInTheDocument();
     });
 
-    // Club event recipes should not show edit or delete
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
+    // Club event recipes now show edit and delete like personal recipes
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
   });
 
   it("opens edit dialog with empty URL for recipe without URL", async () => {
@@ -2657,9 +2657,9 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/recipe url/i)).toHaveValue("");
@@ -2689,16 +2689,16 @@ describe("RecipeHub - Edit Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Edit recipe"));
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/recipe url/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("https://example.com/home")).toBeInTheDocument();
     });
 
     // Clear the URL
-    fireEvent.change(screen.getByLabelText(/recipe url/i), {
+    fireEvent.change(screen.getByDisplayValue("https://example.com/home"), {
       target: { value: "" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -2759,7 +2759,7 @@ describe("RecipeHub - Edit Rating", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Rated Club Recipe")).toBeInTheDocument();
-      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
     });
   });
 
@@ -2770,17 +2770,17 @@ describe("RecipeHub - Edit Rating", () => {
       expect(screen.getByText("Rated Club Recipe")).toBeInTheDocument();
     });
 
-    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit rating/)).not.toBeInTheDocument();
   });
 
   it("opens rating dialog when edit rating button is clicked", async () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Edit rating"));
+    fireEvent.click(screen.getByLabelText(/Edit rating/));
 
     await waitFor(() => {
       expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
@@ -2791,10 +2791,10 @@ describe("RecipeHub - Edit Rating", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Edit rating"));
+    fireEvent.click(screen.getByLabelText(/Edit rating/));
 
     await waitFor(() => {
       expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
@@ -2824,10 +2824,10 @@ describe("RecipeHub - Edit Rating", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Edit rating"));
+    fireEvent.click(screen.getByLabelText(/Edit rating/));
 
     await waitFor(() => {
       expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
@@ -2872,10 +2872,10 @@ describe("RecipeHub - Edit Rating", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Edit rating")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Edit rating"));
+    fireEvent.click(screen.getByLabelText(/Edit rating/));
 
     await waitFor(() => {
       expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
@@ -2914,7 +2914,7 @@ describe("RecipeHub - Edit Rating", () => {
       expect(screen.getByText("Personal Recipe")).toBeInTheDocument();
     });
 
-    expect(screen.queryByLabelText("Edit rating")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit rating/)).not.toBeInTheDocument();
   });
 });
 
@@ -2951,9 +2951,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
@@ -2987,9 +2987,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
@@ -3028,9 +3028,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
@@ -3052,9 +3052,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Delete Recipe")).toBeInTheDocument();
@@ -3090,9 +3090,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     await waitFor(() => {
       expect(screen.getByText("Cannot Delete Recipe")).toBeInTheDocument();
@@ -3139,9 +3139,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     // Should show delete confirmation, not guard dialog (eventId no longer blocks deletion)
     await waitFor(() => {
@@ -3181,9 +3181,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Delete recipe")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText("Delete recipe"));
+    fireEvent.click(screen.getByLabelText(/Delete recipe/));
 
     // Guard fails, so deletion should still proceed — delete dialog should appear
     await waitFor(() => {
@@ -3197,7 +3197,7 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     });
   });
 
-  it("does not show delete button on club event recipes", async () => {
+  it("shows delete and edit buttons on club event recipes", async () => {
     const clubRecipesData = [
       {
         id: "club-recipe-1",
@@ -3226,9 +3226,9 @@ describe("RecipeHub - Delete Personal Recipe", () => {
       expect(screen.getByText("Club Event Recipe")).toBeInTheDocument();
     });
 
-    // Club event recipes should not show delete or edit buttons
-    expect(screen.queryByLabelText("Delete recipe")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Edit recipe")).not.toBeInTheDocument();
+    // Club event recipes now show edit and delete like personal recipes
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
   });
 });
 
@@ -3429,15 +3429,16 @@ describe("RecipeHub - Add Note", () => {
     },
   ];
 
+  // Note belongs to a different user so clicking "+" opens "Add" dialog
   const mockNotesData = [
     {
       id: "note-1",
       recipe_id: "recipe-1",
-      user_id: "user-123",
+      user_id: "other-user-456",
       notes: "Test notes",
       photos: null,
       created_at: "2025-01-15T10:00:00Z",
-      profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      profiles: { name: "Other User", avatar_url: "avatar.jpg" },
     },
   ];
 
@@ -3456,7 +3457,7 @@ describe("RecipeHub - Add Note", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
   });
 
@@ -3467,17 +3468,17 @@ describe("RecipeHub - Add Note", () => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
     });
 
-    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Add note/)).not.toBeInTheDocument();
   });
 
   it("opens note dialog when Add Note button is clicked", async () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByText(/Add notes and photos for "Grilled Salmon"/)).toBeInTheDocument();
@@ -3489,10 +3490,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByText(/Add notes and photos for/)).toBeInTheDocument();
@@ -3510,10 +3511,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /save note/i })).toBeDisabled();
@@ -3524,10 +3525,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -3558,10 +3559,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -3602,10 +3603,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -3626,10 +3627,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByText(/Add notes and photos for/)).toBeInTheDocument();
@@ -3664,7 +3665,7 @@ describe("RecipeHub - Add Note", () => {
     });
 
     // No Add Note button should appear
-    expect(screen.queryByLabelText("Add note")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Add note/)).not.toBeInTheDocument();
   });
 
   it("saves note with photos and empty text", async () => {
@@ -3685,10 +3686,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -3717,10 +3718,10 @@ describe("RecipeHub - Add Note", () => {
     render(<RecipeHub userId="user-123" />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Add note")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText("Add note"));
+    fireEvent.click(screen.getByLabelText(/Add note/));
 
     await waitFor(() => {
       expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -3731,6 +3732,69 @@ describe("RecipeHub - Add Note", () => {
     });
 
     expect(screen.getByRole("button", { name: /save note/i })).toBeDisabled();
+  });
+
+  it("opens edit dialog with existing note when user already has a note", async () => {
+    const { toast } = await import("sonner");
+    const mockUpdate = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    // Note belongs to the current user (user-123)
+    const notesWithCurrentUser = [
+      {
+        id: "note-1",
+        recipe_id: "recipe-1",
+        user_id: "user-123",
+        notes: "My existing notes",
+        photos: null,
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: "avatar.jpg" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") {
+        const builder = createMockQueryBuilder(notesWithCurrentUser);
+        builder.update = mockUpdate;
+        return builder;
+      }
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText(/Add note/));
+
+    // Should open Edit dialog (not Add) with existing content
+    await waitFor(() => {
+      expect(screen.getByText(/Edit Note/)).toBeInTheDocument();
+      expect(screen.getByText(/Update your notes and photos/)).toBeInTheDocument();
+    });
+
+    // Text area should be pre-filled with existing note
+    expect(screen.getByLabelText("Notes")).toHaveValue("My existing notes");
+
+    // Update the note text
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Updated notes" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save note/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith({
+        notes: "Updated notes",
+        photos: null,
+      });
+      expect(toast.success).toHaveBeenCalledWith("Note updated!");
+    });
   });
 });
 
@@ -4015,5 +4079,110 @@ describe("RecipeHub - Parse Recipe", () => {
     // No parse button should appear for recipe without URL
     expect(screen.queryByRole("button", { name: /parse ingredients/i })).not.toBeInTheDocument();
     expect(mockFunctionsInvoke).not.toHaveBeenCalled();
+  });
+
+  it("shows edit ingredients button for personal recipes and opens dialog", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "My Editable Recipe",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("My Editable Recipe")).toBeInTheDocument();
+    });
+
+    // Click edit ingredients button
+    fireEvent.click(screen.getByLabelText(/Edit ingredients/));
+
+    // Edit Ingredients Dialog should open
+    await waitFor(() => {
+      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+    });
+  });
+
+  it("reloads recipes after saving ingredients", async () => {
+    const personalRecipesData = [
+      {
+        id: "personal-1",
+        name: "Recipe To Edit",
+        url: null,
+        event_id: null,
+        ingredient_id: null,
+        created_by: "user-123",
+        created_at: "2025-01-15T10:00:00Z",
+        profiles: { name: "Test User", avatar_url: null },
+        scheduled_events: null,
+      },
+    ];
+
+    // Mock rpc for saving ingredients
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    // Need to also mock rpc on supabase for the EditRecipeIngredientsDialog save
+    const { supabase } = await import("@/integrations/supabase/client");
+    (supabase as unknown as Record<string, unknown>).rpc = vi.fn().mockResolvedValue({ error: null });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Switch to personal tab
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe To Edit")).toBeInTheDocument();
+    });
+
+    // Click edit ingredients button
+    fireEvent.click(screen.getByLabelText(/Edit ingredients/));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+    });
+
+    // Add an ingredient name so save will work
+    fireEvent.change(screen.getByLabelText("Name for row 1"), {
+      target: { value: "Flour" },
+    });
+
+    // Click save
+    fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
+
+    // The dialog should close and recipes should reload
+    await waitFor(() => {
+      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
+    });
   });
 });

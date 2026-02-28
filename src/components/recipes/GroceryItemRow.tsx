@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, Check, X } from "lucide-react";
-import type { CombinedGroceryItem, SmartGroceryItem } from "@/types";
+import type { SmartGroceryItem } from "@/types";
 import { formatGroceryItem } from "@/lib/groceryList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ export interface GroceryItemEdit {
 }
 
 interface GroceryItemRowProps {
-  item: CombinedGroceryItem | SmartGroceryItem;
+  item: SmartGroceryItem;
   editable?: boolean;
   onEdit?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemove?: (itemName: string) => void;
@@ -68,6 +68,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
     return (
       <div className="flex items-center gap-2 py-1.5 px-2 bg-gray-50 rounded">
         <Input
+          name="edit-grocery-qty"
           value={editQuantity}
           onChange={(e) => setEditQuantity(e.target.value)}
           placeholder="Qty"
@@ -76,6 +77,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           aria-label="Quantity"
         />
         <Input
+          name="edit-grocery-unit"
           value={editUnit}
           onChange={(e) => setEditUnit(e.target.value)}
           placeholder="Unit"
@@ -84,6 +86,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove }: GroceryItemRowProp
           aria-label="Unit"
         />
         <Input
+          name="edit-grocery-name"
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
           placeholder="Item name"

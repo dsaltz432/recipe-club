@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, ListChecks } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
-import { GROCERY_CATEGORIES, CATEGORY_ORDER } from "@/lib/groceryList";
+import { GROCERY_CATEGORIES, CATEGORY_ORDER, isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 
@@ -48,13 +48,14 @@ interface RecipeCardProps {
   onDelete?: (recipeId: string) => void;
   onEditRating?: (recipe: RecipeWithNotes) => void;
   onAddNote?: (recipe: RecipeWithNotes) => void;
+  onEditIngredients?: (recipe: RecipeWithNotes) => void;
   ingredients?: RecipeIngredient[];
   pantryItems?: string[];
   contentStatus?: RecipeContent["status"];
   onParseRecipe?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditIngredients, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
@@ -62,10 +63,10 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
     ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
     : DEFAULT_PANTRY_ITEMS;
   const filteredIngredients = ingredients?.filter(
-    (ing) => !allPantryItems.includes(ing.name.toLowerCase())
+    (ing) => !isPantryItem(ing.name, allPantryItems, ing.unit)
   );
   const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
-  const hasDetails = recipe.url || recipe.notes.length > 0;
+  const hasDetails = recipe.notes.length > 0;
 
   // Get colors from ingredient
   const bgColor = recipe.ingredientColor ? getLightBackgroundColor(recipe.ingredientColor) : undefined;
@@ -100,7 +101,69 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             </Avatar>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-display text-lg font-semibold truncate">{recipe.name}</h3>
+            <div className="flex items-center gap-1">
+              <h3 className="font-display text-lg font-semibold truncate flex-1">{recipe.name}</h3>
+              {/* Action buttons in header */}
+              {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {recipe.url && (
+                    <a
+                      href={recipe.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
+                      aria-label={`Open recipe URL for ${recipe.name}`}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
+                    </a>
+                  )}
+                  {onAddNote && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => onAddNote(recipe)}
+                      aria-label={`Add note for ${recipe.name}`}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {onEditIngredients && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      aria-label={`Edit ingredients for ${recipe.name}`}
+                      onClick={() => onEditIngredients(recipe)}
+                    >
+                      <ListChecks className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {onEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      aria-label={`Edit recipe ${recipe.name}`}
+                      onClick={() => onEdit(recipe)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      aria-label={`Delete recipe ${recipe.name}`}
+                      onClick={() => onDelete(recipe.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               {recipe.createdByName && (
                 <span className="text-xs text-muted-foreground">
@@ -114,53 +177,27 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
 
       <CardContent className="pt-0">
         {/* Badges row */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          {recipe.isPersonal && (
-            <Badge variant="outline" className="border-purple text-purple bg-purple/5">
-              Personal
-            </Badge>
-          )}
-
-          {(onDelete || (recipe.isPersonal && onEdit)) && (
-            <div className="flex items-center gap-1 ml-auto">
-              {recipe.isPersonal && onEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  aria-label="Edit recipe"
-                  onClick={() => onEdit(recipe)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                  aria-label="Delete recipe"
-                  onClick={() => onDelete(recipe.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          )}
-
-          {recipe.ingredientName && (
-            <Badge
-              variant="outline"
-              style={{
-                borderColor: themeColor,
-                color: themeColor,
-                backgroundColor: bgColor || undefined,
-              }}
-            >
-              {recipe.ingredientName}
-            </Badge>
-          )}
-        </div>
+        {(recipe.isPersonal || recipe.ingredientName) && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {recipe.isPersonal && (
+              <Badge variant="outline" className="border-purple text-purple bg-purple/5">
+                Personal
+              </Badge>
+            )}
+            {recipe.ingredientName && (
+              <Badge
+                variant="outline"
+                style={{
+                  borderColor: themeColor,
+                  color: themeColor,
+                  backgroundColor: bgColor || undefined,
+                }}
+              >
+                {recipe.ingredientName}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Rating display */}
         {recipe.ratingSummary && recipe.ratingSummary.totalRatings > 0 && (
@@ -179,7 +216,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 ml-1"
-                  aria-label="Edit rating"
+                  aria-label={`Edit rating for ${recipe.name}`}
                   onClick={() => onEditRating(recipe)}
                 >
                   <Pencil className="h-3 w-3" />
@@ -209,20 +246,8 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
           {recipe.notes.some((n) => n.photos && n.photos.length > 0) && (
             <span className="flex items-center gap-1">
               <Camera className="h-3 w-3" />
-              {recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0)} photos
+              {(() => { const count = recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0); return `${count} ${count !== 1 ? "photos" : "photo"}`; })()}
             </span>
-          )}
-          {onAddNote && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs"
-              onClick={() => onAddNote(recipe)}
-              aria-label="Add note"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Add Note
-            </Button>
           )}
         </div>
 
@@ -251,7 +276,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             <button
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
               onClick={() => setIngredientsExpanded(!ingredientsExpanded)}
-              aria-label={ingredientsExpanded ? "Collapse ingredients" : "Expand ingredients"}
+              aria-label={ingredientsExpanded ? `Collapse ingredients for ${recipe.name}` : `Expand ingredients for ${recipe.name}`}
             >
               {ingredientsExpanded ? (
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -301,19 +326,6 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
           <>
             {isExpanded && (
               <div className="space-y-3 mt-3 pt-3 border-t">
-                {recipe.url && (
-                  <a
-                    href={recipe.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm hover:underline flex items-center gap-1"
-                    style={{ color: themeColor }}
-                  >
-                    View recipe
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-
                 {/* Notes from contributors */}
                 {recipe.notes.some((n) => n.notes || (n.photos && n.photos.length > 0)) && (
                   <div className="space-y-3">

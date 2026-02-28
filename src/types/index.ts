@@ -115,14 +115,6 @@ export interface RecipeIngredient {
   createdAt?: string;
 }
 
-export interface CombinedGroceryItem {
-  name: string;
-  totalQuantity?: number;
-  unit?: string;
-  category: GroceryCategory;
-  sourceRecipes: string[];
-}
-
 export interface PantryItem {
   id: string;
   userId: string;
@@ -132,26 +124,12 @@ export interface PantryItem {
 
 export interface SmartGroceryItem {
   name: string;
+  displayName: string;
   totalQuantity?: number;
   unit?: string;
   category: GroceryCategory;
   sourceRecipes: string[];
 }
-
-export interface CookingStep {
-  time: string;
-  action: string;
-  recipe: string;
-  equipment?: string;
-  duration?: string;
-}
-
-export interface CombinedCookPlan {
-  totalTime: string;
-  steps: CookingStep[];
-  tips: string[];
-}
-
 
 export interface MealPlan {
   id: string;

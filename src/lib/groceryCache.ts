@@ -7,6 +7,7 @@ export type GroceryCacheContextType = "event" | "meal_plan";
 export interface GroceryCacheResult {
   items: SmartGroceryItem[];
   recipeIds: string[];
+  perRecipeItems?: Record<string, SmartGroceryItem[]>;
 }
 
 export async function loadGroceryCache(
@@ -17,7 +18,7 @@ export async function loadGroceryCache(
   try {
     const { data, error } = await supabase
       .from("combined_grocery_items")
-      .select("items, recipe_ids")
+      .select("*")
       .eq("context_type", contextType)
       .eq("context_id", contextId)
       .eq("user_id", userId)
@@ -26,9 +27,12 @@ export async function loadGroceryCache(
     if (error) throw error;
     if (!data) return null;
 
+    // per_recipe_items column added by migration; access via cast
+    const row = data as unknown as Record<string, unknown>;
     return {
-      items: data.items as unknown as SmartGroceryItem[],
-      recipeIds: data.recipe_ids,
+      items: row.items as SmartGroceryItem[],
+      recipeIds: row.recipe_ids as string[],
+      perRecipeItems: (row.per_recipe_items as Record<string, SmartGroceryItem[]>) ?? undefined,
     };
   } catch (error) {
     console.error("Error loading grocery cache:", error);
@@ -41,21 +45,25 @@ export async function saveGroceryCache(
   contextId: string,
   userId: string,
   items: SmartGroceryItem[],
-  recipeIds: string[]
+  recipeIds: string[],
+  perRecipeItems?: Record<string, SmartGroceryItem[]>
 ): Promise<void> {
   try {
     const sortedIds = [...recipeIds].sort();
+    // per_recipe_items column added by migration; cast to satisfy generated types
+    const upsertPayload = {
+      context_type: contextType,
+      context_id: contextId,
+      user_id: userId,
+      items: items as unknown as Json,
+      recipe_ids: sortedIds,
+      per_recipe_items: (perRecipeItems || {}) as unknown as Json,
+      updated_at: new Date().toISOString(),
+    };
     const { error } = await supabase
       .from("combined_grocery_items")
       .upsert(
-        {
-          context_type: contextType,
-          context_id: contextId,
-          user_id: userId,
-          items: items as unknown as Json,
-          recipe_ids: sortedIds,
-          updated_at: new Date().toISOString(),
-        },
+        upsertPayload as typeof upsertPayload & { context_type: string },
         { onConflict: "context_type,context_id,user_id" }
       );
 

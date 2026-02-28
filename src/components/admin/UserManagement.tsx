@@ -94,6 +94,7 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
       const selfUser = users.find(u => u.email.toLowerCase() === currentUserEmail.toLowerCase())!;
       setUserToDelete(selfUser);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_testForceDeleteSelf, users]);
 
   useEffect(() => {
@@ -101,14 +102,17 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
       const selfUser = users.find(u => u.email.toLowerCase() === currentUserEmail.toLowerCase())!;
       handleUpdateRole(selfUser, selfUser.role === "admin" ? "viewer" : "admin");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_testForceRoleChangeSelf, users]);
 
   useEffect(() => {
     if (_testForceEmptyEmailSubmit) handleAddUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_testForceEmptyEmailSubmit]);
 
   useEffect(() => {
     if (_testForceDeleteNull) handleDeleteUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_testForceDeleteNull]);
 
   const handleAddUser = async () => {

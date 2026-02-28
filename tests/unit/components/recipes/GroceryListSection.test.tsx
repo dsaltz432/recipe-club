@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@tests/utils";
+import userEvent from "@testing-library/user-event";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import type { Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
 import { createMockRecipe, createMockRecipeIngredient, createMockRecipeContent } from "@tests/utils";
@@ -245,7 +246,12 @@ describe("GroceryListSection", () => {
     expect(screen.getByText("Parsing...")).toBeInTheDocument();
   });
 
-  it("renders combined view with grouped ingredients", () => {
+  it("renders combined view with grouped smart ingredients", () => {
+    const smartItems: SmartGroceryItem[] = [
+      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      { name: "chicken", displayName: "chicken", totalQuantity: 2, unit: "lb", category: "meat_seafood", sourceRecipes: ["Caesar Salad"] },
+    ];
+
     render(
       <GroceryListSection
         recipes={recipes}
@@ -253,11 +259,11 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-
+        smartGroceryItems={smartItems}
       />
     );
 
-    // Should show category groups
+    // Should show category groups from smart items
     expect(screen.getByText("Produce")).toBeInTheDocument();
     expect(screen.getByText("Protein")).toBeInTheDocument();
   });
@@ -281,6 +287,14 @@ describe("GroceryListSection", () => {
   });
 
   it("shows recipe-specific ingredients when per-recipe tab is clicked", async () => {
+    const user = userEvent.setup();
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+        { name: "onion", displayName: "onion", totalQuantity: 1, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
+
     render(
       <GroceryListSection
         recipes={recipes}
@@ -288,15 +302,13 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-
+        perRecipeItems={perRecipeItems}
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
-    await waitFor(() => {
-      expect(screen.getByText("Produce")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Produce")).toBeInTheDocument();
   });
 
   it("shows export buttons when ingredients exist", () => {
@@ -329,10 +341,17 @@ describe("GroceryListSection", () => {
     expect(screen.queryByText("CSV")).not.toBeInTheDocument();
   });
 
-  it("handles ingredients without quantity/unit in per-recipe tab", async () => {
+  it("handles items without quantity/unit in per-recipe tab", async () => {
+    const user = userEvent.setup();
     const ingredientsWithNulls: RecipeIngredient[] = [
       createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
     ];
+
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "salt", displayName: "salt", category: "spices", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
 
     render(
       <GroceryListSection
@@ -341,123 +360,21 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-
+        perRecipeItems={perRecipeItems}
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
-    await waitFor(() => {
-      expect(screen.getByText("Spices")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Spices")).toBeInTheDocument();
   });
 
-  it("filters pantry items and shows excluded count", () => {
-    const ingredientsWithSalt: RecipeIngredient[] = [
-      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
-      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
-      createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "pepper", quantity: undefined, unit: undefined, category: "spices" }),
+  it("does not show excluded message (pantry excluded UI removed)", () => {
+    const smartItems: SmartGroceryItem[] = [
+      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      { name: "salt", displayName: "salt", category: "spices", sourceRecipes: ["Tomato Soup"] },
     ];
 
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredientsWithSalt}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-        pantryItems={["salt", "pepper"]}
-      />
-    );
-
-    expect(screen.getByText("2 pantry items excluded from this list")).toBeInTheDocument();
-  });
-
-  it("shows singular 'item' when one pantry item excluded", () => {
-    const ingredientsWithSalt: RecipeIngredient[] = [
-      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
-      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
-    ];
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredientsWithSalt}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-        pantryItems={["salt"]}
-      />
-    );
-
-    expect(screen.getByText("1 pantry item excluded from this list")).toBeInTheDocument();
-  });
-
-  it("shows excluded pantry items when toggle is expanded", () => {
-    const ingredientsWithSalt: RecipeIngredient[] = [
-      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
-      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
-      createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "pepper", quantity: undefined, unit: undefined, category: "spices" }),
-    ];
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredientsWithSalt}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        pantryItems={["salt", "pepper"]}
-      />
-    );
-
-    // Collapsed by default - excluded item names not visible
-    expect(screen.queryByText("Salt")).not.toBeInTheDocument();
-    expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
-
-    // Click to expand
-    const toggleButton = screen.getByRole("button", { name: /2 pantry items excluded/i });
-    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(toggleButton);
-
-    // Expanded - excluded item names visible (capitalized)
-    expect(toggleButton).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Salt")).toBeInTheDocument();
-    expect(screen.getByText("Pepper")).toBeInTheDocument();
-  });
-
-  it("collapses excluded pantry items when toggle is clicked again", () => {
-    const ingredientsWithSalt: RecipeIngredient[] = [
-      createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
-      createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
-    ];
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredientsWithSalt}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        pantryItems={["salt"]}
-      />
-    );
-
-    const toggleButton = screen.getByRole("button", { name: /1 pantry item excluded/i });
-
-    // Expand
-    fireEvent.click(toggleButton);
-    expect(screen.getByText("Salt")).toBeInTheDocument();
-
-    // Collapse
-    fireEvent.click(toggleButton);
-    expect(screen.queryByText("Salt")).not.toBeInTheDocument();
-    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("does not show excluded message when no pantry items match", () => {
     render(
       <GroceryListSection
         recipes={recipes}
@@ -465,11 +382,12 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-
-        pantryItems={["sugar"]}
+        smartGroceryItems={smartItems}
+        pantryItems={["salt"]}
       />
     );
 
+    // No excluded items message — pantry items are simply filtered out
     expect(screen.queryByText(/pantry.*excluded/)).not.toBeInTheDocument();
   });
 
@@ -497,7 +415,7 @@ describe("GroceryListSection", () => {
 
   it("shows smart grocery items in combined view when provided", () => {
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry", "Salad"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry", "Salad"] },
     ];
 
     render(
@@ -517,8 +435,8 @@ describe("GroceryListSection", () => {
 
   it("filters pantry items from smart grocery items", () => {
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
-      { name: "salt", category: "spices", sourceRecipes: ["Stir Fry"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+      { name: "salt", displayName: "salt", category: "spices", sourceRecipes: ["Stir Fry"] },
     ];
 
     render(
@@ -555,11 +473,20 @@ describe("GroceryListSection", () => {
   });
 
   it("filters pantry items from per-recipe tabs", async () => {
+    const user = userEvent.setup();
     const ingredientsWithPantry: RecipeIngredient[] = [
       createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
       createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
       createMockRecipeIngredient({ id: "i3", recipeId: "recipe-1", name: "olive oil", quantity: 2, unit: "tbsp", category: "pantry" }),
     ];
+
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+        { name: "salt", displayName: "salt", category: "spices", sourceRecipes: ["Tomato Soup"] },
+        { name: "olive oil", displayName: "olive oil", totalQuantity: 2, unit: "tbsp", category: "pantry", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
 
     render(
       <GroceryListSection
@@ -569,27 +496,33 @@ describe("GroceryListSection", () => {
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
         pantryItems={["salt", "olive oil"]}
+        perRecipeItems={perRecipeItems}
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
-    await waitFor(() => {
-      // Tomato should still be visible
-      expect(screen.getByText("Produce")).toBeInTheDocument();
-    });
+    // Tomato should still be visible
+    expect(screen.getByText("Produce")).toBeInTheDocument();
 
     // Salt and olive oil (pantry items) should not appear in per-recipe tab
     expect(screen.queryByText("Spices")).not.toBeInTheDocument();
-    // The Pantry category for olive oil should also be filtered
     expect(screen.queryByText("Pantry")).not.toBeInTheDocument();
   });
 
   it("shows all per-recipe items when no pantry items provided", async () => {
+    const user = userEvent.setup();
     const ingredientsWithSpices: RecipeIngredient[] = [
       createMockRecipeIngredient({ id: "i1", recipeId: "recipe-1", name: "tomato", quantity: 4, category: "produce" }),
       createMockRecipeIngredient({ id: "i2", recipeId: "recipe-1", name: "salt", quantity: undefined, unit: undefined, category: "spices" }),
     ];
+
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+        { name: "salt", displayName: "salt", category: "spices", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
 
     render(
       <GroceryListSection
@@ -598,18 +531,17 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
+        perRecipeItems={perRecipeItems}
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
-    await waitFor(() => {
-      expect(screen.getByText("Produce")).toBeInTheDocument();
-      expect(screen.getByText("Spices")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Produce")).toBeInTheDocument();
+    expect(screen.getByText("Spices")).toBeInTheDocument();
   });
 
-  it("falls back to naive combine when smartGroceryItems is null", () => {
+  it("shows error message when combineError is set", () => {
     render(
       <GroceryListSection
         recipes={recipes}
@@ -617,13 +549,31 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-
-        smartGroceryItems={null}
+        combineError="AI service unavailable"
       />
     );
 
-    // Should show regular combined view
-    expect(screen.getByText("Produce")).toBeInTheDocument();
+    expect(screen.getByText(/Failed to combine ingredients\. Please try again later or contact your administrator\./)).toBeInTheDocument();
+  });
+
+  it("renders empty per-recipe tab when perRecipeItems not provided for recipe", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        perRecipeItems={{}}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    // No category groups rendered for this recipe
+    expect(screen.queryByText("Produce")).not.toBeInTheDocument();
   });
 
   // ---- Editable mode tests ----
@@ -854,7 +804,7 @@ describe("GroceryListSection", () => {
     const onEditItem = vi.fn();
     const onRemoveItem = vi.fn();
     const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
+      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
     ];
 
     render(

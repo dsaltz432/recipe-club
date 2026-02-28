@@ -103,6 +103,7 @@ const PantryContent = ({ userId, onPantryChange, active }: PantryContentProps) =
     <>
       <div className="flex gap-2">
         <Input
+          name="new-pantry-item"
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
           onKeyDown={handleKeyDown}

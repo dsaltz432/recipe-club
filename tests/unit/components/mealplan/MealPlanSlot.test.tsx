@@ -194,7 +194,7 @@ describe("MealPlanSlot", () => {
     expect(defaultProps.onAddMeal).toHaveBeenCalledWith(1, "dinner");
   });
 
-  it("navigates on card click when onViewMealEvent is provided", () => {
+  it("clicking filled card calls onViewMealEvent", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -209,12 +209,12 @@ describe("MealPlanSlot", () => {
     const onViewMealEvent = vi.fn();
     render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "View meal details" }));
+    fireEvent.click(screen.getByText("Grilled Salmon"));
 
     expect(onViewMealEvent).toHaveBeenCalledWith(1, "dinner");
   });
 
-  it("does not have card-level click handler when onViewMealEvent is not provided", () => {
+  it("has aria-label on add-another-meal button", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -228,90 +228,10 @@ describe("MealPlanSlot", () => {
 
     render(<MealPlanSlot {...defaultProps} items={items} />);
 
-    expect(screen.queryByRole("button", { name: "View meal details" })).not.toBeInTheDocument();
-  });
-
-  it("has cursor-pointer class when onViewMealEvent is provided", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    const onViewMealEvent = vi.fn();
-    render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
-
-    const card = screen.getByRole("button", { name: "View meal details" });
-    expect(card.className).toContain("cursor-pointer");
-  });
-
-  it("does not have cursor-pointer class when onViewMealEvent is not provided", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
-
-    const outerDiv = container.firstChild as HTMLElement;
-    expect(outerDiv.className).not.toContain("cursor-pointer");
-  });
-
-  it("does not show standalone View button", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    const onViewMealEvent = vi.fn();
-    render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
-
-    expect(screen.queryByText("View")).not.toBeInTheDocument();
-  });
-
-  it("has aria-labels on action buttons", () => {
-    const items: MealPlanItem[] = [
-      {
-        id: "item-1",
-        planId: "plan-1",
-        dayOfWeek: 1,
-        mealType: "dinner",
-        sortOrder: 0,
-        recipeName: "Grilled Salmon",
-      },
-    ];
-
-    const onViewMealEvent = vi.fn();
-    render(
-      <MealPlanSlot
-        {...defaultProps}
-        items={items}
-        onViewMealEvent={onViewMealEvent}
-      />
-    );
-
-    expect(screen.getByLabelText("View meal details")).toBeInTheDocument();
     expect(screen.getByLabelText("Add another meal")).toBeInTheDocument();
   });
 
-  it("does not show Done or Undo buttons on filled tiles", () => {
+  it("does not show Done or Undo buttons on card", () => {
     const items: MealPlanItem[] = [
       {
         id: "item-1",
@@ -325,14 +245,13 @@ describe("MealPlanSlot", () => {
 
     render(<MealPlanSlot {...defaultProps} items={items} />);
 
-    expect(screen.queryByText("Done")).not.toBeInTheDocument();
-    expect(screen.queryByText("Undo")).not.toBeInTheDocument();
-    expect(screen.queryByTitle("Mark as cooked")).not.toBeInTheDocument();
-    expect(screen.queryByTitle("Undo cook")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Mark as cooked")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Undo cook")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("View meal details")).not.toBeInTheDocument();
   });
 
-  describe("stopPropagation on child buttons", () => {
-    it("add-more button stops propagation", () => {
+  describe("action buttons call correct handlers", () => {
+    it("add-more button calls onAddMeal", () => {
       const items: MealPlanItem[] = [
         {
           id: "item-1",
@@ -344,18 +263,16 @@ describe("MealPlanSlot", () => {
         },
       ];
 
-      const onViewMealEvent = vi.fn();
-      render(<MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />);
+      render(<MealPlanSlot {...defaultProps} items={items} />);
 
       fireEvent.click(screen.getByTitle("Add another meal"));
 
       expect(defaultProps.onAddMeal).toHaveBeenCalledWith(1, "dinner");
-      expect(onViewMealEvent).not.toHaveBeenCalled();
     });
   });
 
-  describe("hover effects on filled tiles", () => {
-    it("has hover classes on uncooked filled tile", () => {
+  describe("styling on filled tiles", () => {
+    it("has purple styling on uncooked filled tile", () => {
       const items: MealPlanItem[] = [
         {
           id: "item-1",
@@ -370,12 +287,12 @@ describe("MealPlanSlot", () => {
       const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
 
       const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv.className).toContain("hover:bg-purple/10");
-      expect(outerDiv.className).toContain("hover:border-purple/40");
+      expect(outerDiv.className).toContain("bg-purple/5");
+      expect(outerDiv.className).toContain("border-purple/20");
       expect(outerDiv.className).toContain("transition-colors");
     });
 
-    it("has hover classes on cooked filled tile", () => {
+    it("has green styling on cooked filled tile", () => {
       const items: MealPlanItem[] = [
         {
           id: "item-1",
@@ -391,8 +308,8 @@ describe("MealPlanSlot", () => {
       const { container } = render(<MealPlanSlot {...defaultProps} items={items} />);
 
       const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv.className).toContain("hover:bg-green-100");
-      expect(outerDiv.className).toContain("hover:border-green-300");
+      expect(outerDiv.className).toContain("bg-green-50");
+      expect(outerDiv.className).toContain("border-green-200");
       expect(outerDiv.className).toContain("transition-colors");
     });
   });

@@ -58,12 +58,13 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
   const [pendingParseName, setPendingParseName] = useState<string>("");
-  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "combining" | "done">("saving");
-  const [showCombineStep, setShowCombineStep] = useState(false);
+  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "done">("saving");
 
   // Smart grocery combine state
   const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
+  const [perRecipeItems, setPerRecipeItems] = useState<Record<string, SmartGroceryItem[]> | undefined>(undefined);
   const [isCombining, setIsCombining] = useState(false);
+  const [combineError, setCombineError] = useState<string | null>(null);
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const viewTabRef = useRef(viewTab);
   viewTabRef.current = viewTab;
@@ -267,8 +268,9 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     currentRecipes: Recipe[]
   ) => {
     const parsedRecipes = currentRecipes.filter((r) => currentContentMap[r.id]?.status === "completed");
-    if (parsedRecipes.length < 2) {
+    if (parsedRecipes.length < 1) {
       setSmartGroceryItems(null);
+      setCombineError(null);
       return;
     }
 
@@ -281,22 +283,25 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
 
     setIsCombining(true);
+    setCombineError(null);
     try {
       const recipeNameMap: Record<string, string> = {};
       for (const r of currentRecipes) {
         recipeNameMap[r.id] = r.name;
       }
       const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
-      setSmartGroceryItems(result);
+      setSmartGroceryItems(result.items);
+      setPerRecipeItems(result.perRecipeItems);
       lastCombinedRecipeIds.current = sortedRecipeIds;
 
       // Persist to cache
-      if (result) {
-        const weekStartStr = weekStart.toISOString().split("T")[0];
-        saveGroceryCache("meal_plan", weekStartStr, userId, result, sortedRecipeIds);
-      }
-    } catch {
+      const weekStartStr = weekStart.toISOString().split("T")[0];
+      saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.perRecipeItems);
+    } catch (err) {
+      console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
+      setPerRecipeItems(undefined);
+      setCombineError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsCombining(false);
     }
@@ -322,6 +327,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           currentParsedIds.every((id, i) => id === cachedIds[i])
         ) {
           setSmartGroceryItems(cached.items);
+          setPerRecipeItems(cached.perRecipeItems);
           lastCombinedRecipeIds.current = cachedIds;
           return;
         }
@@ -338,11 +344,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
     const doParse = async () => {
       try {
-        // Calculate whether to show combine step using current items state
-        const recipesWithUrls = items.filter(i => i.recipeId && (i.recipeUrl || i.customUrl));
-        const shouldCombine = recipesWithUrls.length >= 2;
-        setShowCombineStep(shouldCombine);
-
         setParseStep("saving");
         await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -359,13 +360,12 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
 
         setParseStep("loading");
-        // Always load grocery data after parse so we can combine
+        // Load grocery data after parse, then fire off combining in background
         const groceryData = await loadGroceryData();
 
-        if (shouldCombine && groceryData) {
-          setParseStep("combining");
-          await runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
-          await new Promise(resolve => setTimeout(resolve, 200));
+        // Fire off combining in background (don't await — Groceries tab shows spinner)
+        if (groceryData) {
+          runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
         }
 
         setParseStep("done");
@@ -441,6 +441,30 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     // pendingSlot is always set when the dialog is mounted
     for (const recipe of recipes) {
       await addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
+    }
+    setPendingSlot(null);
+  };
+
+  const handleAddManualMeal = async (
+    name: string,
+    ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>
+  ) => {
+    const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType);
+    if (recipeId && ingredients.length > 0) {
+      try {
+        const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+          p_recipe_id: recipeId,
+          p_ingredients: ingredients,
+        });
+        if (rpcError) throw rpcError;
+        await supabase.from("recipe_content").insert({
+          recipe_id: recipeId,
+          status: "completed",
+        });
+      } catch (error) {
+        console.error("Error saving manual ingredients:", error);
+        toast.error("Recipe added but failed to save ingredients");
+      }
     }
     setPendingSlot(null);
   };
@@ -588,8 +612,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold">Meals</h2>
+      <div className="flex items-center justify-end">
         <div className="flex gap-1 bg-muted rounded-lg p-1">
           <button
             onClick={() => setViewTab("plan")}
@@ -650,6 +673,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               mealType={pendingSlot.mealType}
               onAddCustomMeal={handleAddCustomMeal}
               onAddRecipeMeal={handleAddRecipeMeal}
+              onAddManualMeal={handleAddManualMeal}
             />
           )}
         </>
@@ -668,6 +692,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               pantryItems={pantryItems}
               smartGroceryItems={smartGroceryItems}
               isCombining={isCombining}
+              combineError={combineError}
+              perRecipeItems={perRecipeItems}
             />
           ) : items.length > 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -690,7 +716,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       {viewTab === "pantry" && (
         <PantrySection userId={userId} onPantryChange={loadPantryItems} />
       )}
-
 
       {/* Parse progress dialog */}
       <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {
@@ -715,7 +740,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
                 { key: "saving", label: "Adding recipe" },
                 { key: "parsing", label: "Parsing ingredients & instructions" },
                 { key: "loading", label: "Loading recipe data" },
-                ...(showCombineStep ? [{ key: "combining", label: "Combining with other recipes" }] : []),
               ]}
               currentStep={parseStep}
             />

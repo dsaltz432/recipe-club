@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays } from "lucide-react";
+import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed, DollarSign } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import RecipeClubEvents from "@/components/events/RecipeClubEvents";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
+import PantryDialog from "@/components/pantry/PantryDialog";
 
 const VALID_TABS = ["home", "events", "recipes", "meals"] as const;
 type TabValue = typeof VALID_TABS[number];
@@ -39,6 +40,7 @@ const Dashboard = () => {
   const [activeEvent, setActiveEvent] = useState<ScheduledEvent | null>(null);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
+  const [showPantryDialog, setShowPantryDialog] = useState(false);
   const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
 
   const loadActiveEvent = async () => {
@@ -208,14 +210,23 @@ const Dashboard = () => {
               Recipe Club Hub
             </h1>
             <div className="hidden md:flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5 bg-purple/5 px-3 py-1 rounded-full">
+              <div className="flex items-center gap-1.5 bg-purple/5 border border-purple/20 px-3 py-1 rounded-full">
                 <span className="font-bold text-purple">{completedEventsCount}</span>
                 <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-orange/5 px-3 py-1 rounded-full">
+              <div className="flex items-center gap-1.5 bg-orange/5 border border-orange/20 px-3 py-1 rounded-full">
                 <span className="font-bold text-orange">{userRecipesCount}</span>
                 <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
               </div>
+              <a
+                href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 bg-green-50 border border-green-300 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+              >
+                <DollarSign className="h-3.5 w-3.5 text-green-600" />
+                <span className="text-muted-foreground">Deposit</span>
+              </a>
             </div>
           </div>
           <DropdownMenu>
@@ -234,6 +245,24 @@ const Dashboard = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <div className="md:hidden px-2 py-1.5 space-y-1">
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span className="font-bold text-purple">{completedEventsCount}</span>
+                  <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span className="font-bold text-orange">{userRecipesCount}</span>
+                  <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Club Recipe' : 'Club Recipes'}</span>
+                </div>
+              </div>
+              <DropdownMenuSeparator className="md:hidden" />
+              <DropdownMenuItem asChild className="md:hidden cursor-pointer">
+                <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer">
+                  <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+                  Deposit
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="md:hidden" />
               {userIsAdmin && (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
@@ -243,6 +272,11 @@ const Dashboard = () => {
                   <DropdownMenuSeparator />
                 </>
               )}
+              <DropdownMenuItem onClick={() => setShowPantryDialog(true)} className="cursor-pointer">
+                <UtensilsCrossed className="h-4 w-4 mr-2" />
+                My Pantry
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -309,6 +343,13 @@ const Dashboard = () => {
         </Tabs>
       </main>
 
+      {user?.id && (
+        <PantryDialog
+          open={showPantryDialog}
+          onOpenChange={setShowPantryDialog}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };

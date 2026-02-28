@@ -115,6 +115,18 @@ describe("Index", () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it("renders a privacy policy link", async () => {
+    mockIsAuthenticated.mockResolvedValue(false);
+    render(<Index />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    const link = screen.getByRole("link", { name: /privacy policy/i });
+    expect(link).toHaveAttribute("href", "/privacy");
+  });
+
   it("renders largeArc=1 when a single segment spans more than 180 degrees", async () => {
     wheelColorsRef.colors = ["#FF0000"];
     mockIsAuthenticated.mockResolvedValue(false);

@@ -8,12 +8,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Check, Loader2, Search, Upload } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { uploadRecipeFile, FileValidationError } from "@/lib/upload";
+import RecipeInputForm, {
+  createInitialFormData,
+  canSubmitRecipeForm,
+  buildIngredientPayload,
+  type RecipeFormData,
+} from "@/components/recipes/RecipeInputForm";
 
 interface RecipeResult {
   id: string;
@@ -29,13 +32,10 @@ interface AddMealDialogProps {
   mealType: string;
   onAddCustomMeal: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal: (recipes: Array<{ id: string; name: string; url?: string }>) => void;
+  onAddManualMeal?: (name: string, ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>) => void;
 }
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const isValidUrl = (value: string) => {
-  return value.trim().startsWith("http://") || value.trim().startsWith("https://");
-};
 
 const AddMealDialog = ({
   open,
@@ -44,56 +44,25 @@ const AddMealDialog = ({
   mealType,
   onAddCustomMeal,
   onAddRecipeMeal,
+  onAddManualMeal,
 }: AddMealDialogProps) => {
   const [activeTab, setActiveTab] = useState<"custom" | "recipes">("custom");
-  const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
+  const [formData, setFormData] = useState<RecipeFormData>(createInitialFormData());
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<RecipeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [uploadingFileName, setUploadingFileName] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setActiveTab("custom");
-    setName("");
-    setUrl("");
+    setFormData(createInitialFormData());
+    setIsUploadingFile(false);
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
     setSelectedRecipes([]);
-    setIsUploadingFile(false);
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploadingFile(true);
-    setUploadingFileName(file.name);
-    try {
-      const publicUrl = await uploadRecipeFile(file);
-      setUrl(publicUrl);
-      if (!name.trim()) {
-        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        setName(baseName);
-      }
-      toast.success("File uploaded!");
-    } catch (error) {
-      if (error instanceof FileValidationError) {
-        toast.error(error.message);
-      } else {
-        console.error("Error uploading file:", error);
-        toast.error("Failed to upload file");
-      }
-    } finally {
-      setIsUploadingFile(false);
-      setUploadingFileName("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
   };
 
   const handleClose = () => {
@@ -142,7 +111,13 @@ const AddMealDialog = ({
   }, [searchQuery]);
 
   const handleCustomSubmit = () => {
-    onAddCustomMeal(name.trim(), url.trim() || undefined, !!url.trim());
+    if (formData.inputMode === "manual" && onAddManualMeal) {
+      const ingredientData = buildIngredientPayload(formData.ingredientRows);
+      onAddManualMeal(formData.name.trim(), ingredientData);
+    } else {
+      // In url/upload mode, form validation ensures URL is always present
+      onAddCustomMeal(formData.name.trim(), formData.url.trim(), true);
+    }
     handleClose();
   };
 
@@ -169,7 +144,10 @@ const AddMealDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => handleClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={cn(
+        "max-h-[85vh] overflow-y-auto",
+        activeTab === "custom" && formData.inputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
+      )}>
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Add Meal
@@ -202,61 +180,15 @@ const AddMealDialog = ({
 
         {activeTab === "custom" && (
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="meal-name">Meal Name *</Label>
-              <Input
-                id="meal-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter meal name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="meal-url">Recipe URL or Photo/PDF</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="meal-url"
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://..."
-                  className={url.trim() && !isValidUrl(url) ? "border-red-500" : ""}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingFile}
-                  className="shrink-0"
-                  aria-label="Upload photo or PDF"
-                >
-                  {isUploadingFile ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                      <span className="text-xs truncate max-w-[100px]">{uploadingFileName}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-1" />
-                      Upload
-                    </>
-                  )}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf,application/pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-              {url.trim() && !isValidUrl(url) && (
-                <p className="text-sm text-red-500">
-                  URL must start with http:// or https://
-                </p>
-              )}
-            </div>
+            <RecipeInputForm
+              formData={formData}
+              onFormDataChange={setFormData}
+              isUploading={isUploadingFile}
+              onUploadingChange={setIsUploadingFile}
+              nameLabel="Meal Name *"
+              namePlaceholder="Enter meal name"
+              showManualMode={!!onAddManualMeal}
+            />
 
             <div className="flex justify-end gap-2">
               <Button
@@ -267,7 +199,7 @@ const AddMealDialog = ({
               </Button>
               <Button
                 onClick={handleCustomSubmit}
-                disabled={!name.trim() || (!!url.trim() && !isValidUrl(url))}
+                disabled={!canSubmitRecipeForm(formData, false)}
                 className="bg-purple hover:bg-purple-dark"
               >
                 Add to Meal
@@ -281,6 +213,7 @@ const AddMealDialog = ({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                name="meal-recipe-search"
                 value={searchQuery}
                 onChange={(e) => handleSearchQueryChange(e.target.value)}
                 placeholder="Search recipes..."

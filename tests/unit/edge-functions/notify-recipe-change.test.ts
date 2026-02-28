@@ -240,6 +240,34 @@ describe("notify-recipe-change edge function", () => {
     expect(emailBody.html).not.toContain("<a href=");
   });
 
+  it("sends 'deleted' notification with correct subject and body", async () => {
+    mockSupabase.from.mockReturnValue(
+      createMembersBuilder([{ email: "member@example.com" }]),
+    );
+    const mockFetch = vi.fn().mockResolvedValue(createResendResponse(true));
+    globalThis.fetch = mockFetch;
+
+    const req = createEdgeRequest({
+      type: "deleted",
+      recipeName: "Removed Recipe",
+      ingredientName: "Broccoli",
+      eventDate: "2026-03-01",
+      excludeUserId: "user-123",
+    });
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true, message: "Sent 1 notification" });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const emailBody = JSON.parse(fetchCall[1].body);
+    expect(emailBody.subject).toContain("Recipe removed from Broccoli event");
+    expect(emailBody.html).toContain("Recipe Removed");
+    expect(emailBody.html).toContain("Removed Recipe");
+    expect(emailBody.html).toContain("has been removed from");
+    expect(emailBody.html).not.toContain("<a href=");
+  });
+
   it("sends 'updated' notification without eventDate or ingredientName", async () => {
     mockSupabase.from.mockReturnValue(
       createMembersBuilder([{ email: "member@example.com" }]),

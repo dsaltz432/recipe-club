@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Info, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { RecipeIngredient, RecipeContent, CombinedGroceryItem, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
-import { combineIngredients, groupByCategory, filterPantryItems, filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
+import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
+import { filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
 import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
@@ -25,6 +25,8 @@ interface GroceryListSectionProps {
   onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
   onRemoveItem?: (itemName: string) => void;
   onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
+  perRecipeItems?: Record<string, SmartGroceryItem[]>;
+  combineError?: string | null;
 }
 
 function groupSmartByCategory(
@@ -54,28 +56,14 @@ const GroceryListSection = ({
   onEditItem,
   onRemoveItem,
   onAddItem,
+  perRecipeItems,
+  combineError,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
-  const [showExcluded, setShowExcluded] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [newItemUnit, setNewItemUnit] = useState("");
-
-  const recipeNameMap: Record<string, string> = {};
-  for (const recipe of recipes) {
-    recipeNameMap[recipe.id] = recipe.name;
-  }
-
-  const combinedItems = combineIngredients(recipeIngredients, recipeNameMap);
-  const filteredItems = pantryItems.length > 0
-    ? filterPantryItems(combinedItems, pantryItems)
-    : combinedItems;
-  const excludedItems = combinedItems.filter(
-    (item) => !filteredItems.includes(item)
-  );
-  const pantryExcludedCount = excludedItems.length;
-  const groupedItems = groupByCategory(filteredItems);
 
   // Smart grocery grouping (with pantry filtering)
   const filteredSmartItems = smartGroceryItems && pantryItems.length > 0
@@ -138,7 +126,7 @@ const GroceryListSection = ({
           </div>
           {hasAnyIngredients && (
             <GroceryExportMenu
-              items={filteredItems}
+              items={filteredSmartItems || []}
               eventName={eventName}
             />
           )}
@@ -246,48 +234,42 @@ const GroceryListSection = ({
                 </>
               )}
 
-              {!isCombining && !smartGrouped && (
-                <>
-                  {Array.from(groupedItems.entries()).map(([category, items]) => (
-                    <GroceryCategoryGroup
-                      key={category}
-                      category={category}
-                      items={items}
-                      editable={editable}
-                      onEditItem={onEditItem}
-                      onRemoveItem={onRemoveItem}
-                    />
-                  ))}
-                </>
+              {!isCombining && !smartGrouped && combineError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-md border border-red-200">
+                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                  <p className="text-sm text-red-700">
+                    Failed to combine ingredients. Please try again later or contact your administrator.
+                  </p>
+                </div>
               )}
             </TabsContent>
 
             {recipesWithIngredients.map((recipe) => {
-              const recipeIngs = ingredientsByRecipe.get(recipe.id)!;
-              const recipeItems: CombinedGroceryItem[] = recipeIngs.map((ing) => ({
-                name: ing.name,
-                totalQuantity: ing.quantity ?? undefined,
-                unit: ing.unit ?? undefined,
-                category: ing.category,
-                sourceRecipes: [recipe.name],
-              }));
+              const recipeItems = perRecipeItems?.[recipe.name] ?? [];
               const filteredRecipeItems = pantryItems.length > 0
-                ? filterPantryItems(recipeItems, pantryItems)
+                ? filterSmartPantryItems(recipeItems, pantryItems)
                 : recipeItems;
-              const recipeGrouped = groupByCategory(filteredRecipeItems);
+              const recipeGrouped = groupSmartByCategory(filteredRecipeItems);
 
               return (
                 <TabsContent key={recipe.id} value={recipe.id}>
-                  {Array.from(recipeGrouped.entries()).map(([category, items]) => (
-                    <GroceryCategoryGroup
-                      key={`${recipe.id}-${category}`}
-                      category={category}
-                      items={items}
-                      editable={editable}
-                      onEditItem={onEditItem}
-                      onRemoveItem={onRemoveItem}
-                    />
-                  ))}
+                  {isCombining && recipeItems.length === 0 ? (
+                    <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Combining ingredients...</span>
+                    </div>
+                  ) : (
+                    Array.from(recipeGrouped.entries()).map(([category, items]) => (
+                      <GroceryCategoryGroup
+                        key={`${recipe.id}-${category}`}
+                        category={category}
+                        items={items}
+                        editable={editable}
+                        onEditItem={onEditItem}
+                        onRemoveItem={onRemoveItem}
+                      />
+                    ))
+                  )}
                 </TabsContent>
               );
             })}
@@ -309,6 +291,7 @@ const GroceryListSection = ({
             ) : (
               <div className="flex items-center gap-2">
                 <Input
+                  name="new-grocery-qty"
                   value={newItemQuantity}
                   onChange={(e) => setNewItemQuantity(e.target.value)}
                   placeholder="Qty"
@@ -317,6 +300,7 @@ const GroceryListSection = ({
                   aria-label="New item quantity"
                 />
                 <Input
+                  name="new-grocery-unit"
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value)}
                   placeholder="Unit"
@@ -325,6 +309,7 @@ const GroceryListSection = ({
                   aria-label="New item unit"
                 />
                 <Input
+                  name="new-grocery-name"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   placeholder="Item name"
@@ -353,33 +338,6 @@ const GroceryListSection = ({
           </div>
         )}
 
-        {!isLoading && pantryExcludedCount > 0 && (
-          <div className="mt-3 bg-purple-50 rounded-md border border-purple-100">
-            <button
-              type="button"
-              className="flex items-center gap-2 w-full p-2 text-left"
-              onClick={() => setShowExcluded((prev) => !prev)}
-              aria-expanded={showExcluded}
-            >
-              <Info className="h-4 w-4 text-purple shrink-0" />
-              <p className="text-sm text-purple-700 flex-1">
-                {pantryExcludedCount} pantry {pantryExcludedCount === 1 ? "item" : "items"} excluded from this list
-              </p>
-              {showExcluded ? (
-                <ChevronUp className="h-4 w-4 text-purple shrink-0" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-purple shrink-0" />
-              )}
-            </button>
-            {showExcluded && (
-              <ul className="px-8 pb-2 text-sm text-purple-700 list-disc">
-                {excludedItems.map((item) => (
-                  <li key={item.name}>{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );

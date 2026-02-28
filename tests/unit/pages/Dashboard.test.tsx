@@ -554,7 +554,7 @@ describe("Dashboard", () => {
     expect(menuBtn).toBeInTheDocument();
   });
 
-  it("does not show My Pantry in hamburger menu (pantry moved to Meals tab)", async () => {
+  it("shows My Pantry in hamburger menu", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Test",
@@ -569,8 +569,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // My Pantry should no longer appear in the dropdown
-    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
+    // My Pantry should appear in the dropdown
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
   });
 
   // --- loadStats error ---
@@ -629,9 +629,9 @@ describe("Dashboard", () => {
     consoleSpy.mockRestore();
   });
 
-  // --- No My Pantry when user has no id ---
+  // --- My Pantry menu item always renders, dialog gated by userId ---
 
-  it("does not show My Pantry menu item when user has no id", async () => {
+  it("shows My Pantry menu item even when user has no id (dialog is gated)", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: null,
       name: "Test",
@@ -646,7 +646,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
+    // Menu item is always rendered; dialog opening is gated by user.id
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
   });
 
   // --- onEventChange passed to RecipeClubEvents ---
@@ -792,7 +793,7 @@ describe("Dashboard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/users");
   });
 
-  it("hamburger menu does not contain My Pantry entry", async () => {
+  it("hamburger menu contains My Pantry entry", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Test",
@@ -807,8 +808,8 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // My Pantry has been removed from the hamburger menu
-    expect(screen.queryByText("My Pantry")).not.toBeInTheDocument();
+    // My Pantry is accessible from the hamburger menu
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
   });
 
   // --- handleTabChange (lines 31-33) ---
@@ -908,12 +909,15 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // Desktop header only (mobile stats removed from dropdown)
+    // Desktop header + mobile dropdown (both rendered, CSS controls visibility)
     const eventLabels = screen.getAllByText("Club Event");
-    expect(eventLabels).toHaveLength(1);
+    expect(eventLabels).toHaveLength(2);
 
+    // "Total Recipe" in header only, "Club Recipe" in mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipe");
     expect(recipeLabels).toHaveLength(1);
+    const mobileRecipeLabels = screen.getAllByText("Club Recipe");
+    expect(mobileRecipeLabels).toHaveLength(1);
   });
 
   it("shows plural 'Club Events' and 'Total Recipes' when counts are 2+", async () => {
@@ -944,12 +948,15 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // Desktop header only (mobile stats removed from dropdown)
+    // Desktop header + mobile dropdown (both rendered, CSS controls visibility)
     const eventLabels = screen.getAllByText("Club Events");
-    expect(eventLabels).toHaveLength(1);
+    expect(eventLabels).toHaveLength(2);
 
+    // "Total Recipes" in header only, "Club Recipes" in mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipes");
     expect(recipeLabels).toHaveLength(1);
+    const mobileRecipeLabels = screen.getAllByText("Club Recipes");
+    expect(mobileRecipeLabels).toHaveLength(1);
   });
 
   it("shows plural labels when counts are 0", async () => {
@@ -980,12 +987,15 @@ describe("Dashboard", () => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
 
-    // 0 is plural, desktop header only (mobile stats removed from dropdown)
+    // 0 is plural, desktop header + mobile dropdown (both rendered, CSS controls visibility)
     const eventLabels = screen.getAllByText("Club Events");
-    expect(eventLabels).toHaveLength(1);
+    expect(eventLabels).toHaveLength(2);
 
+    // "Total Recipes" in header only, "Club Recipes" in mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipes");
     expect(recipeLabels).toHaveLength(1);
+    const mobileRecipeLabels = screen.getAllByText("Club Recipes");
+    expect(mobileRecipeLabels).toHaveLength(1);
   });
 
   // --- loadStats count || 0 fallback branches (lines 150-151) ---

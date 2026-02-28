@@ -583,6 +583,12 @@ export type Database = {
         };
         Returns: undefined;
       };
+      detach_meal_plan_recipes: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {};
     CompositeTypes: {};
