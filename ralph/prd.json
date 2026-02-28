@@ -129,7 +129,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Create migration at supabase/migrations/20260228000002_create_general_grocery_items.sql. Follow the same RLS pattern as user_pantry_items (20260207000000_create_user_pantry.sql) and combined_grocery_items. The context_type/context_id pattern matches the existing grocery cache table. quantity is TEXT (not NUMERIC) because users type freeform values like '1/2' or 'a few'. The service role automatically bypasses RLS so no extra policy is needed for it — just document this. Apply via Supabase MCP tool."
     },
     {

@@ -26,8 +26,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 5
-**Current Task:** US-005 completed
+**Tasks Completed:** 7
+**Current Task:** US-007 completed
 
 ---
 
@@ -199,5 +199,31 @@
 - `Set<string>` works well for checked items — `has()` for checking, `add()`/`delete()` for toggling
 - Reset checked items in `runSmartCombine` callback ensures cross-off state doesn't persist across recipe changes
 - Checkbox renders conditionally via `onToggleChecked &&` guard — keeps the component backward-compatible for contexts that don't need cross-off
+
+---
+
+## 2026-02-28 09:30 — US-007: Create general_grocery_items database table
+
+### What was implemented
+- Created migration at `supabase/migrations/20260228000002_create_general_grocery_items.sql`
+- Table: `general_grocery_items` with columns: id (UUID PK), user_id (UUID FK to auth.users), context_type (TEXT with CHECK for 'meal_plan'/'event'), context_id (TEXT), name (TEXT), quantity (TEXT nullable), unit (TEXT nullable), created_at (TIMESTAMPTZ)
+- UNIQUE constraint on (user_id, context_type, context_id, name) — prevents duplicate items within same user/week
+- RLS enabled with 4 policies (SELECT, INSERT, UPDATE, DELETE) using `auth.uid() = user_id`
+- Service role bypasses RLS automatically — no extra policy needed for external API edge function (US-010)
+- Applied migration via `execute_sql` (apply_migration permission was blocked)
+
+### Files changed
+- `supabase/migrations/20260228000002_create_general_grocery_items.sql` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1607/1607, 58 files)
+- Lint: N/A (migration-only change)
+
+### Learnings for future iterations
+- The `general_grocery_items` table mirrors the context_type/context_id pattern from `combined_grocery_items` — same 'meal_plan'/'event' check constraint
+- `quantity` is TEXT (not NUMERIC) because users type freeform values like '1/2' or 'a few'
+- No service role policy needed — Supabase service role key inherently bypasses RLS
+- Follow the `combined_grocery_items` RLS pattern (separate policies for SELECT/INSERT/UPDATE/DELETE) rather than the simpler `user_pantry_items` pattern (FOR ALL)
 
 ---
