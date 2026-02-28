@@ -173,7 +173,7 @@
         "Tests pass"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "This is the most complex story — it wires everything together. Key changes:\n\n1. MealPlanPage.tsx: Add generalItems state. Load via loadGeneralItems() alongside grocery data (in loadGroceryData or adjacent). When running smartCombineIngredients(), concat general items (via toRawIngredients()) with recipe rawIngredients before calling the edge function. When a general item is added/removed, call deleteGroceryCache() to invalidate, then re-run combine.\n\n2. GroceryListSection.tsx: Add a 'General' tab alongside the per-recipe tabs. The General tab content is special — it's not just a display of SmartGroceryItems, it also needs add/edit/remove controls. The perRecipeItems['General'] from the AI response shows the AI-processed general items. Create a new component GeneralItemsTab (or inline in GroceryListSection) that shows the AI-combined items from perRecipeItems['General'] AND has add/edit/remove controls for the raw general_grocery_items.\n\n3. New props on GroceryListSection: generalItems?: GeneralGroceryItem[], onAddGeneralItem?, onRemoveGeneralItem?, onUpdateGeneralItem?.\n\n4. The add input can reuse styling from GroceryItemRow's edit mode (Input components for qty, unit, name).\n\n5. Cache invalidation: when general items change, delete grocery cache and re-run combine. Use the same pattern as when recipes change in MealPlanPage.\n\nFor tests: mock the new props, test General tab renders, test add/remove callbacks fire."
     },
     {

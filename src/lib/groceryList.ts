@@ -230,16 +230,20 @@ export function filterSmartPantryItems(
 
 export async function smartCombineIngredients(
   ingredients: RecipeIngredient[],
-  recipeNameMap: Record<string, string>
+  recipeNameMap: Record<string, string>,
+  extraRawIngredients?: Array<{ name: string; quantity: string | null; unit: string | null; category: string; recipeName: string }>
 ): Promise<SmartCombineResult> {
   // Map raw ingredients for the AI edge function
-  const rawIngredients = ingredients.map((ing) => ({
-    name: ing.name,
-    quantity: ing.quantity != null ? decimalToFraction(ing.quantity) : null,
-    unit: ing.unit ?? null,
-    category: ing.category,
-    recipeName: recipeNameMap[ing.recipeId] ?? "Unknown Recipe",
-  }));
+  const rawIngredients = [
+    ...ingredients.map((ing) => ({
+      name: ing.name,
+      quantity: ing.quantity != null ? decimalToFraction(ing.quantity) : null,
+      unit: ing.unit ?? null,
+      category: ing.category,
+      recipeName: recipeNameMap[ing.recipeId] ?? "Unknown Recipe",
+    })),
+    ...(extraRawIngredients ?? []),
+  ];
 
   try {
     const { data, error } = await supabase.functions.invoke("combine-ingredients", {

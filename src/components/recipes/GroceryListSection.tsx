@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe } from "@/types";
+import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
 import { filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
 import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
@@ -29,6 +29,10 @@ interface GroceryListSectionProps {
   combineError?: string | null;
   checkedItems?: Set<string>;
   onToggleChecked?: (itemName: string) => void;
+  generalItems?: GeneralGroceryItem[];
+  onAddGeneralItem?: (item: { name: string; quantity?: string; unit?: string }) => void;
+  onRemoveGeneralItem?: (itemId: string) => void;
+  onUpdateGeneralItem?: (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => void;
 }
 
 function groupSmartByCategory(
@@ -62,12 +66,24 @@ const GroceryListSection = ({
   combineError,
   checkedItems,
   onToggleChecked,
+  generalItems = [],
+  onAddGeneralItem,
+  onRemoveGeneralItem,
+  onUpdateGeneralItem,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [newItemUnit, setNewItemUnit] = useState("");
+  // General tab state
+  const [newGeneralName, setNewGeneralName] = useState("");
+  const [newGeneralQty, setNewGeneralQty] = useState("");
+  const [newGeneralUnit, setNewGeneralUnit] = useState("");
+  const [editingGeneralId, setEditingGeneralId] = useState<string | null>(null);
+  const [editGeneralName, setEditGeneralName] = useState("");
+  const [editGeneralQty, setEditGeneralQty] = useState("");
+  const [editGeneralUnit, setEditGeneralUnit] = useState("");
 
   // Smart grocery grouping (with pantry filtering)
   const filteredSmartItems = smartGroceryItems && pantryItems.length > 0
@@ -104,8 +120,52 @@ const GroceryListSection = ({
     }
   };
 
+  const handleAddGeneral = () => {
+    const trimmedName = newGeneralName.trim();
+    if (!trimmedName) return;
+    onAddGeneralItem?.({
+      name: trimmedName,
+      quantity: newGeneralQty.trim() || undefined,
+      unit: newGeneralUnit.trim() || undefined,
+    });
+    setNewGeneralName("");
+    setNewGeneralQty("");
+    setNewGeneralUnit("");
+  };
+
+  const handleAddGeneralKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleAddGeneral();
+  };
+
+  const startEditGeneral = (item: GeneralGroceryItem) => {
+    setEditingGeneralId(item.id);
+    setEditGeneralName(item.name);
+    setEditGeneralQty(item.quantity ?? "");
+    setEditGeneralUnit(item.unit ?? "");
+  };
+
+  const saveEditGeneral = () => {
+    if (!editingGeneralId || !editGeneralName.trim()) return;
+    onUpdateGeneralItem?.(editingGeneralId, {
+      name: editGeneralName.trim(),
+      quantity: editGeneralQty.trim() || undefined,
+      unit: editGeneralUnit.trim() || undefined,
+    });
+    setEditingGeneralId(null);
+  };
+
+  const cancelEditGeneral = () => {
+    setEditingGeneralId(null);
+  };
+
+  const handleEditGeneralKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") saveEditGeneral();
+    else if (e.key === "Escape") cancelEditGeneral();
+  };
+
   const recipesWithUrl = recipes.filter((r) => r.url);
   const hasAnyIngredients = recipeIngredients.length > 0;
+  const hasGeneralTab = !!onAddGeneralItem;
 
   // Group ingredients by recipe for per-recipe tabs
   const ingredientsByRecipe = new Map<string, RecipeIngredient[]>();
@@ -183,23 +243,24 @@ const GroceryListSection = ({
           </div>
         )}
 
-        {!isLoading && !hasAnyIngredients && (
+        {!isLoading && !hasAnyIngredients && !hasGeneralTab && (
           <p className="text-sm text-gray-500 text-center py-4">
             No ingredients parsed yet. Click "Parse" on a recipe above to generate the grocery list.
           </p>
         )}
 
-        {!isLoading && hasAnyIngredients && (
-          <Tabs defaultValue="combined" className="w-full">
+        {!isLoading && (hasAnyIngredients || hasGeneralTab) && (
+          <Tabs defaultValue={hasAnyIngredients ? "combined" : "general"} className="w-full">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="overflow-x-auto">
                 <TabsList className="inline-flex w-auto">
-                  <TabsTrigger value="combined">Combined</TabsTrigger>
+                  {hasAnyIngredients && <TabsTrigger value="combined">Combined</TabsTrigger>}
                   {recipesWithIngredients.map((recipe) => (
                     <TabsTrigger key={recipe.id} value={recipe.id} className="whitespace-nowrap max-w-[120px] truncate sm:max-w-none">
                       {recipe.name}
                     </TabsTrigger>
                   ))}
+                  {hasGeneralTab && <TabsTrigger value="general">General</TabsTrigger>}
                 </TabsList>
               </div>
               <GroceryExportMenu
@@ -274,6 +335,135 @@ const GroceryListSection = ({
                 </TabsContent>
               );
             })}
+
+            {hasGeneralTab && (
+              <TabsContent value="general">
+                {generalItems.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No items yet. Add items below to include them in your grocery list.
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {generalItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 py-1 px-1 rounded hover:bg-gray-50 group">
+                        {editingGeneralId === item.id ? (
+                          <>
+                            <Input
+                              value={editGeneralQty}
+                              onChange={(e) => setEditGeneralQty(e.target.value)}
+                              placeholder="Qty"
+                              className="w-16 h-7 text-sm"
+                              onKeyDown={handleEditGeneralKeyDown}
+                              aria-label="Edit quantity"
+                            />
+                            <Input
+                              value={editGeneralUnit}
+                              onChange={(e) => setEditGeneralUnit(e.target.value)}
+                              placeholder="Unit"
+                              className="w-20 h-7 text-sm"
+                              onKeyDown={handleEditGeneralKeyDown}
+                              aria-label="Edit unit"
+                            />
+                            <Input
+                              value={editGeneralName}
+                              onChange={(e) => setEditGeneralName(e.target.value)}
+                              placeholder="Item name"
+                              className="flex-1 h-7 text-sm"
+                              onKeyDown={handleEditGeneralKeyDown}
+                              aria-label="Edit name"
+                            />
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600" onClick={saveEditGeneral} aria-label="Save edit">
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400" onClick={cancelEditGeneral} aria-label="Cancel edit">
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            {onToggleChecked && (
+                              <button
+                                type="button"
+                                onClick={() => onToggleChecked(item.name)}
+                                className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                                  checkedItems?.has(item.name) ? "bg-purple border-purple" : "border-gray-300 hover:border-gray-400"
+                                }`}
+                                aria-label={checkedItems?.has(item.name) ? "Uncheck item" : "Check item"}
+                              >
+                                {checkedItems?.has(item.name) && <Check className="h-3 w-3 text-white" />}
+                              </button>
+                            )}
+                            <span className={`flex-1 text-sm ${checkedItems?.has(item.name) ? "line-through opacity-50" : ""}`}>
+                              {item.quantity && <span>{item.quantity} </span>}
+                              {item.unit && <span>{item.unit} </span>}
+                              {item.name}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-gray-400 opacity-0 group-hover:opacity-100 md:opacity-0"
+                              onClick={() => startEditGeneral(item)}
+                              aria-label="Edit general item"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-500 opacity-0 group-hover:opacity-100 md:opacity-0"
+                              onClick={() => onRemoveGeneralItem?.(item.id)}
+                              aria-label="Remove general item"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add general item input */}
+                <div className="mt-3 border-t pt-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newGeneralQty}
+                      onChange={(e) => setNewGeneralQty(e.target.value)}
+                      placeholder="Qty"
+                      className="w-16 h-9 sm:h-7 text-sm"
+                      onKeyDown={handleAddGeneralKeyDown}
+                      aria-label="General item quantity"
+                    />
+                    <Input
+                      value={newGeneralUnit}
+                      onChange={(e) => setNewGeneralUnit(e.target.value)}
+                      placeholder="Unit"
+                      className="w-20 h-9 sm:h-7 text-sm"
+                      onKeyDown={handleAddGeneralKeyDown}
+                      aria-label="General item unit"
+                    />
+                    <Input
+                      value={newGeneralName}
+                      onChange={(e) => setNewGeneralName(e.target.value)}
+                      placeholder="Add item..."
+                      className="flex-1 h-9 sm:h-7 text-sm"
+                      onKeyDown={handleAddGeneralKeyDown}
+                      aria-label="General item name"
+                    />
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleAddGeneral}
+                      className="h-9 sm:h-7 text-xs"
+                      disabled={!newGeneralName.trim()}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         )}
 

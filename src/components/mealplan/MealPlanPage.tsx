@@ -19,8 +19,9 @@ import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
-import { loadGroceryCache, saveGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
-import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
+import { loadGroceryCache, saveGroceryCache, deleteGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
+import { loadGeneralItems, addGeneralItem, removeGeneralItem, updateGeneralItem, toRawIngredients } from "@/lib/generalGrocery";
+import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem, GeneralGroceryItem } from "@/types";
 
 interface MealPlanPageProps {
   userId: string;
@@ -66,7 +67,9 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [isCombining, setIsCombining] = useState(false);
   const [combineError, setCombineError] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [generalItems, setGeneralItems] = useState<GeneralGroceryItem[]>([]);
   const lastCombinedRecipeIds = useRef<string[]>([]);
+  const lastCombinedGeneralCount = useRef<number>(0);
   const viewTabRef = useRef(viewTab);
   viewTabRef.current = viewTab;
   const groceryDirtyRef = useRef(true);
@@ -266,21 +269,23 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const runSmartCombine = useCallback(async (
     currentIngredients: RecipeIngredient[],
     currentContentMap: Record<string, RecipeContent>,
-    currentRecipes: Recipe[]
+    currentRecipes: Recipe[],
+    currentGeneralItems?: GeneralGroceryItem[]
   ) => {
     const parsedRecipes = currentRecipes.filter((r) => currentContentMap[r.id]?.status === "completed");
-    if (parsedRecipes.length < 1) {
+    const genItems = currentGeneralItems ?? [];
+    if (parsedRecipes.length < 1 && genItems.length === 0) {
       setSmartGroceryItems(null);
       setCombineError(null);
       return;
     }
 
     const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
-    if (
-      sortedRecipeIds.length === lastCombinedRecipeIds.current.length &&
-      sortedRecipeIds.every((id, i) => id === lastCombinedRecipeIds.current[i])
-    ) {
-      return; // Same recipes, skip re-combine
+    const sameRecipes = sortedRecipeIds.length === lastCombinedRecipeIds.current.length &&
+      sortedRecipeIds.every((id, i) => id === lastCombinedRecipeIds.current[i]);
+    const sameGeneral = genItems.length === lastCombinedGeneralCount.current;
+    if (sameRecipes && sameGeneral) {
+      return; // Same recipes + same general count, skip re-combine
     }
 
     setIsCombining(true);
@@ -290,10 +295,12 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       for (const r of currentRecipes) {
         recipeNameMap[r.id] = r.name;
       }
-      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
+      const extraRaw = genItems.length > 0 ? toRawIngredients(genItems) : undefined;
+      const result = await smartCombineIngredients(currentIngredients, recipeNameMap, extraRaw);
       setSmartGroceryItems(result.items);
       setPerRecipeItems(result.perRecipeItems);
       lastCombinedRecipeIds.current = sortedRecipeIds;
+      lastCombinedGeneralCount.current = genItems.length;
 
       // Reset checked items when recipes change (new combine = new list)
       setCheckedItems(new Set());
@@ -327,18 +334,83 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     });
   }, [weekStart, userId]);
 
+  const handleAddGeneralItem = useCallback(async (item: { name: string; quantity?: string; unit?: string }) => {
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    await addGeneralItem("meal_plan", weekStartStr, userId, item);
+    const updated = await loadGeneralItems("meal_plan", weekStartStr, userId);
+    setGeneralItems(updated);
+    // Invalidate cache and re-combine to include new general item
+    await deleteGroceryCache("meal_plan", weekStartStr, userId);
+    lastCombinedRecipeIds.current = [];
+    lastCombinedGeneralCount.current = 0;
+    groceryDirtyRef.current = true;
+    // Trigger re-combine immediately if on groceries tab
+    if (viewTabRef.current === "groceries") {
+      const groceryData = await loadGroceryData();
+      if (groceryData) {
+        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, updated);
+      }
+    }
+  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+
+  const handleRemoveGeneralItem = useCallback(async (itemId: string) => {
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    await removeGeneralItem(itemId);
+    const updated = await loadGeneralItems("meal_plan", weekStartStr, userId);
+    setGeneralItems(updated);
+    // Invalidate cache and re-combine
+    await deleteGroceryCache("meal_plan", weekStartStr, userId);
+    lastCombinedRecipeIds.current = [];
+    lastCombinedGeneralCount.current = 0;
+    groceryDirtyRef.current = true;
+    if (viewTabRef.current === "groceries") {
+      const groceryData = await loadGroceryData();
+      if (groceryData) {
+        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, updated);
+      }
+    }
+  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+
+  const handleUpdateGeneralItem = useCallback(async (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => {
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    await updateGeneralItem(itemId, updates);
+    const updated = await loadGeneralItems("meal_plan", weekStartStr, userId);
+    setGeneralItems(updated);
+    // Invalidate cache and re-combine
+    await deleteGroceryCache("meal_plan", weekStartStr, userId);
+    lastCombinedRecipeIds.current = [];
+    lastCombinedGeneralCount.current = 0;
+    groceryDirtyRef.current = true;
+    if (viewTabRef.current === "groceries") {
+      const groceryData = await loadGroceryData();
+      if (groceryData) {
+        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, updated);
+      }
+    }
+  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+
   useEffect(() => {
     if (viewTab !== "groceries") return;
     if (!groceryDirtyRef.current) return;
     groceryDirtyRef.current = false;
+
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    // Load general items alongside grocery data
+    loadGeneralItems("meal_plan", weekStartStr, userId).then(setGeneralItems);
+
     loadGroceryData().then(async (groceryData) => {
-      if (!groceryData) return;
-      // Load checked items alongside grocery data
-      const weekStartStr = weekStart.toISOString().split("T")[0];
+      // Load checked items
       loadCheckedItems("meal_plan", weekStartStr, userId).then(setCheckedItems);
+
+      // Load general items for combine pipeline
+      const genItems = await loadGeneralItems("meal_plan", weekStartStr, userId);
+      setGeneralItems(genItems);
+
+      if (!groceryData && genItems.length === 0) return;
+
       // Check cache before running AI combine
       const cached = await loadGroceryCache("meal_plan", weekStartStr, userId);
-      if (cached) {
+      if (cached && groceryData) {
         const currentParsedIds = groceryData.recipes
           .filter((r) => groceryData.contentMap[r.id]?.status === "completed")
           .map((r) => r.id)
@@ -351,11 +423,15 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           setSmartGroceryItems(cached.items);
           setPerRecipeItems(cached.perRecipeItems);
           lastCombinedRecipeIds.current = cachedIds;
+          lastCombinedGeneralCount.current = genItems.length;
           return;
         }
       }
       // Cache miss or stale — run smart combine
-      runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
+      const ingredients = groceryData?.ingredients ?? [];
+      const contentMap = groceryData?.contentMap ?? {};
+      const recipes = groceryData?.recipes ?? [];
+      runSmartCombine(ingredients, contentMap, recipes, genItems);
     });
     loadPantryItems();
   }, [viewTab, loadGroceryData, loadPantryItems, weekStart, userId, runSmartCombine]);
@@ -387,7 +463,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
         // Fire off combining in background (don't await — Groceries tab shows spinner)
         if (groceryData) {
-          runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes);
+          runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, generalItems);
         }
 
         setParseStep("done");
@@ -703,7 +779,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       {viewTab === "groceries" && (
         <>
-          {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) ? (
+          {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) || generalItems.length > 0 ? (
             <GroceryListSection
               recipes={groceryRecipes}
               recipeIngredients={recipeIngredients}
@@ -718,6 +794,10 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               perRecipeItems={perRecipeItems}
               checkedItems={checkedItems}
               onToggleChecked={handleToggleChecked}
+              generalItems={generalItems}
+              onAddGeneralItem={handleAddGeneralItem}
+              onRemoveGeneralItem={handleRemoveGeneralItem}
+              onUpdateGeneralItem={handleUpdateGeneralItem}
             />
           ) : items.length > 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -727,12 +807,19 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-sm">
-                No meals planned this week. Add meals to see a grocery list.
-              </p>
-            </div>
+            <GroceryListSection
+              recipes={[]}
+              recipeIngredients={[]}
+              recipeContentMap={{}}
+              onParseRecipe={handleParseRecipe}
+              eventName={getWeekLabel(weekStart)}
+              generalItems={generalItems}
+              onAddGeneralItem={handleAddGeneralItem}
+              onRemoveGeneralItem={handleRemoveGeneralItem}
+              onUpdateGeneralItem={handleUpdateGeneralItem}
+              checkedItems={checkedItems}
+              onToggleChecked={handleToggleChecked}
+            />
           )}
         </>
       )}

@@ -23,6 +23,15 @@
 - Cast returned `data` with `(data as Record<string, unknown>[])` for type-safe row mapping
 - Map snake_case DB columns to camelCase TypeScript properties in the mapping function
 
+### General Items Integration Pattern
+- General items feed into AI combine pipeline via `toRawIngredients()` → `extraRawIngredients` param on `smartCombineIngredients()`
+- `smartCombineIngredients` accepts optional `extraRawIngredients` array that gets concatenated with recipe-derived raw ingredients
+- General items use `recipeName: 'General'` and `category: 'other'` — the AI re-categorizes and merges them with recipe ingredients
+- Cache invalidation flow: add/remove/update general item → `deleteGroceryCache()` → reset `lastCombinedRecipeIds` + `lastCombinedGeneralCount` → re-run `runSmartCombine()`
+- `hasGeneralTab` flag is derived from `!!onAddGeneralItem` prop — components render General tab only when this callback is provided
+- The General tab uses inline add/edit/remove UI (not GroceryItemRow component) since general items have different shape than SmartGroceryItem
+- When no recipe ingredients exist but `hasGeneralTab` is true, the tabs still render with General as the default tab
+
 ### Database Migration Pattern
 - Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for additive migrations
 - JSONB columns with array defaults: `DEFAULT '[]'::jsonb`
@@ -263,5 +272,45 @@
 - `toRawIngredients()` sets `category: 'other'` for all general items — the AI combine pipeline will re-categorize them during processing
 - General items with `recipeName: 'General'` will appear as a source recipe badge in the Combined view (handled by UI in US-009)
 - The mock pattern for `select -> eq -> eq -> eq -> order` chain: mock each step in the chain, with `mockOrder` being the terminal that resolves the promise
+
+---
+
+## 2026-02-28 10:00 — US-009: Integrate general items into AI combine pipeline and grocery UI
+
+### What was implemented
+- Added `extraRawIngredients` parameter to `smartCombineIngredients()` in `groceryList.ts` — general items are concatenated with recipe-derived raw ingredients before sending to the combine-ingredients edge function
+- Added `generalItems` state to MealPlanPage.tsx with full CRUD handlers (`handleAddGeneralItem`, `handleRemoveGeneralItem`, `handleUpdateGeneralItem`)
+- General items are loaded from database when grocery tab is opened, alongside recipe ingredients
+- General items are included in the AI combine pipeline via `toRawIngredients()` — they get merged, deduplicated, and categorized by the same AI that handles recipe ingredients
+- Cache invalidation: adding/removing/updating a general item calls `deleteGroceryCache()`, resets combine tracking refs, and triggers re-combine
+- Added 'General' tab to GroceryListSection alongside 'Combined' and per-recipe tabs
+- General tab shows list of general items with inline edit/delete controls and an always-visible add input at the bottom
+- General tab items support cross-off checkboxes (same mechanism as recipe items)
+- Empty state on General tab shows "No items yet" with the add input
+- When no recipe ingredients exist, GroceryListSection still renders with General as the default tab
+- All exports (CSV, clipboard, Instacart) automatically include general items because they use the AI-combined result
+- Added 12 new tests to GroceryListSection test file for General tab functionality
+- Updated 2 MealPlanPage tests that expected old empty state behavior (now show General tab instead)
+- Added `generalGrocery` module mock and `deleteGroceryCache` mock to MealPlanPage test file
+
+### Files changed
+- `src/lib/groceryList.ts` (modified — added `extraRawIngredients` parameter to `smartCombineIngredients`)
+- `src/components/mealplan/MealPlanPage.tsx` (modified — added general items state, CRUD handlers, cache invalidation, General tab props)
+- `src/components/recipes/GroceryListSection.tsx` (modified — added General tab with add/edit/remove UI, new props)
+- `tests/unit/components/recipes/GroceryListSection.test.tsx` (modified — added 12 General tab tests)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (modified — added generalGrocery mock, deleteGroceryCache mock, updated 2 tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1634/1634, 59 files)
+- Lint: N/A
+
+### Learnings for future iterations
+- `smartCombineIngredients` now accepts `extraRawIngredients` — any future source of ingredients (e.g., from an external API) can plug in the same way
+- Cache invalidation for general items requires resetting BOTH `lastCombinedRecipeIds` and `lastCombinedGeneralCount` refs to force re-combine
+- When `hasAnyIngredients` is false but `hasGeneralTab` is true, the tabs still render with General as the default tab — this required updating the `Tabs defaultValue` to be conditional
+- The `hasGeneralTab` flag is derived from `!!onAddGeneralItem` rather than checking `generalItems.length`, so the tab is always available for adding items
+- When MealPlanPage has no meals at all, we now render GroceryListSection with general items support instead of the old "No meals planned" empty state — this means users can always add general grocery items
+- Tests that click Radix UI tabs need `userEvent.setup()` + `await user.click()` rather than `fireEvent.click()` to properly trigger tab content changes
 
 ---

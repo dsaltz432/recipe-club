@@ -70,13 +70,29 @@ vi.mock("@/lib/groceryList", async () => {
 // Mock grocery cache
 const mockLoadGroceryCache = vi.fn();
 const mockSaveGroceryCache = vi.fn();
+const mockDeleteGroceryCache = vi.fn().mockResolvedValue(undefined);
 const mockLoadCheckedItems = vi.fn().mockResolvedValue(new Set());
 const mockSaveCheckedItems = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/groceryCache", () => ({
   loadGroceryCache: (...args: unknown[]) => mockLoadGroceryCache(...args),
   saveGroceryCache: (...args: unknown[]) => mockSaveGroceryCache(...args),
+  deleteGroceryCache: (...args: unknown[]) => mockDeleteGroceryCache(...args),
   loadCheckedItems: (...args: unknown[]) => mockLoadCheckedItems(...args),
   saveCheckedItems: (...args: unknown[]) => mockSaveCheckedItems(...args),
+}));
+
+// Mock general grocery module
+const mockLoadGeneralItems = vi.fn().mockResolvedValue([]);
+const mockAddGeneralItem = vi.fn().mockResolvedValue(undefined);
+const mockRemoveGeneralItem = vi.fn().mockResolvedValue(undefined);
+const mockUpdateGeneralItem = vi.fn().mockResolvedValue(undefined);
+const mockToRawIngredients = vi.fn().mockReturnValue([]);
+vi.mock("@/lib/generalGrocery", () => ({
+  loadGeneralItems: (...args: unknown[]) => mockLoadGeneralItems(...args),
+  addGeneralItem: (...args: unknown[]) => mockAddGeneralItem(...args),
+  removeGeneralItem: (...args: unknown[]) => mockRemoveGeneralItem(...args),
+  updateGeneralItem: (...args: unknown[]) => mockUpdateGeneralItem(...args),
+  toRawIngredients: (...args: unknown[]) => mockToRawIngredients(...args),
 }));
 
 // Mock constants to show parse buttons in tests
@@ -1113,9 +1129,11 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
-      expect(
-        screen.getByText("No meals planned this week. Add meals to see a grocery list.")
-      ).toBeInTheDocument();
+      // With general items support, the grocery section always renders
+      // showing the General tab instead of the old empty state
+      await waitFor(() => {
+        expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+      });
     });
 
     it("shows Pantry tab and renders PantrySection on click", async () => {
@@ -2148,11 +2166,10 @@ describe("MealPlanPage", () => {
       );
       fireEvent.click(iconOnlyButtons[0]); // Previous week
 
-      // Should show empty state since no meals
+      // With general items support, the grocery section always renders
+      // with the General tab instead of the old empty state
       await waitFor(() => {
-        expect(
-          screen.getByText("No meals planned this week. Add meals to see a grocery list.")
-        ).toBeInTheDocument();
+        expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
       });
     });
 

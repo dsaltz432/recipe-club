@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@tests/utils";
 import userEvent from "@testing-library/user-event";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
-import type { Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
+import type { Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem, GeneralGroceryItem } from "@/types";
 import { createMockRecipe, createMockRecipeIngredient, createMockRecipeContent } from "@tests/utils";
 
 // Mock supabase client (required by GroceryExportMenu)
@@ -928,5 +928,286 @@ describe("GroceryListSection", () => {
     );
 
     expect(screen.queryByLabelText("Check item")).not.toBeInTheDocument();
+  });
+
+  // ---- General tab tests ----
+
+  const generalItems: GeneralGroceryItem[] = [
+    { id: "gen-1", userId: "user-1", contextType: "meal_plan", contextId: "2026-03-02", name: "paper towels", quantity: "2", unit: "roll" },
+    { id: "gen-2", userId: "user-1", contextType: "meal_plan", contextId: "2026-03-02", name: "dish soap" },
+  ];
+
+  it("renders General tab when onAddGeneralItem is provided", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        generalItems={[]}
+      />
+    );
+
+    expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+  });
+
+  it("does not render General tab when onAddGeneralItem is not provided", () => {
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+      />
+    );
+
+    expect(screen.queryByRole("tab", { name: "General" })).not.toBeInTheDocument();
+  });
+
+  it("shows empty state on General tab when no items", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        generalItems={[]}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    expect(screen.getByText(/No items yet/)).toBeInTheDocument();
+  });
+
+  it("shows general items on the General tab", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        generalItems={generalItems}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    expect(screen.getByText(/paper towels/)).toBeInTheDocument();
+    expect(screen.getByText(/dish soap/)).toBeInTheDocument();
+  });
+
+  it("calls onAddGeneralItem when adding a general item", async () => {
+    const user = userEvent.setup();
+    const onAddGeneralItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={onAddGeneralItem}
+        generalItems={[]}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    fireEvent.change(screen.getByLabelText("General item name"), { target: { value: "toilet paper" } });
+    fireEvent.change(screen.getByLabelText("General item quantity"), { target: { value: "4" } });
+    fireEvent.change(screen.getByLabelText("General item unit"), { target: { value: "pack" } });
+
+    fireEvent.click(screen.getByText("Add"));
+
+    expect(onAddGeneralItem).toHaveBeenCalledWith({
+      name: "toilet paper",
+      quantity: "4",
+      unit: "pack",
+    });
+  });
+
+  it("calls onAddGeneralItem on Enter key in general add form", async () => {
+    const user = userEvent.setup();
+    const onAddGeneralItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={onAddGeneralItem}
+        generalItems={[]}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    fireEvent.change(screen.getByLabelText("General item name"), { target: { value: "napkins" } });
+    fireEvent.keyDown(screen.getByLabelText("General item name"), { key: "Enter" });
+
+    expect(onAddGeneralItem).toHaveBeenCalledWith({
+      name: "napkins",
+      quantity: undefined,
+      unit: undefined,
+    });
+  });
+
+  it("calls onRemoveGeneralItem when delete button is clicked", async () => {
+    const user = userEvent.setup();
+    const onRemoveGeneralItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        onRemoveGeneralItem={onRemoveGeneralItem}
+        generalItems={generalItems}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    const removeButtons = screen.getAllByLabelText("Remove general item");
+    fireEvent.click(removeButtons[0]);
+
+    expect(onRemoveGeneralItem).toHaveBeenCalledWith("gen-1");
+  });
+
+  it("shows edit mode when edit button is clicked", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        onUpdateGeneralItem={vi.fn()}
+        generalItems={generalItems}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    const editButtons = screen.getAllByLabelText("Edit general item");
+    fireEvent.click(editButtons[0]);
+
+    expect(screen.getByLabelText("Edit name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Save edit")).toBeInTheDocument();
+    expect(screen.getByLabelText("Cancel edit")).toBeInTheDocument();
+  });
+
+  it("calls onUpdateGeneralItem when edit is saved", async () => {
+    const user = userEvent.setup();
+    const onUpdateGeneralItem = vi.fn();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        onUpdateGeneralItem={onUpdateGeneralItem}
+        generalItems={generalItems}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    const editButtons = screen.getAllByLabelText("Edit general item");
+    fireEvent.click(editButtons[0]);
+
+    fireEvent.change(screen.getByLabelText("Edit name"), { target: { value: "paper plates" } });
+    fireEvent.click(screen.getByLabelText("Save edit"));
+
+    expect(onUpdateGeneralItem).toHaveBeenCalledWith("gen-1", {
+      name: "paper plates",
+      quantity: "2",
+      unit: "roll",
+    });
+  });
+
+  it("shows cross-off checkboxes on General tab items when onToggleChecked is provided", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        generalItems={generalItems}
+        checkedItems={new Set<string>()}
+        onToggleChecked={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    expect(screen.getAllByLabelText("Check item").length).toBe(2);
+  });
+
+  it("shows General tab with add input even when no recipe ingredients exist", () => {
+    render(
+      <GroceryListSection
+        recipes={[]}
+        recipeIngredients={[]}
+        recipeContentMap={{}}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        generalItems={[]}
+      />
+    );
+
+    // General tab should be the default when no ingredients
+    expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+    expect(screen.getByLabelText("General item name")).toBeInTheDocument();
+  });
+
+  it("disables Add button when general item name is empty", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        onAddGeneralItem={vi.fn()}
+        generalItems={[]}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    const addButton = screen.getAllByText("Add").find(el => el.tagName === "BUTTON") as HTMLButtonElement;
+    expect(addButton.disabled).toBe(true);
   });
 });
