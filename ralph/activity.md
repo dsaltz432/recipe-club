@@ -17,6 +17,12 @@
 - Validation errors return status 400
 - All responses include `{ ...corsHeaders, "Content-Type": "application/json" }`
 
+### Tables Not in Generated Supabase Types
+- Tables added by migration (e.g., `general_grocery_items`) are not in `src/integrations/supabase/types.ts` generated types
+- Use `const db = supabase as any;` at module level, then `db.from("table_name")` for queries
+- Cast returned `data` with `(data as Record<string, unknown>[])` for type-safe row mapping
+- Map snake_case DB columns to camelCase TypeScript properties in the mapping function
+
 ### Database Migration Pattern
 - Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for additive migrations
 - JSONB columns with array defaults: `DEFAULT '[]'::jsonb`
@@ -26,8 +32,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 7
-**Current Task:** US-007 completed
+**Tasks Completed:** 8
+**Current Task:** US-008 completed
 
 ---
 
@@ -225,5 +231,37 @@
 - `quantity` is TEXT (not NUMERIC) because users type freeform values like '1/2' or 'a few'
 - No service role policy needed — Supabase service role key inherently bypasses RLS
 - Follow the `combined_grocery_items` RLS pattern (separate policies for SELECT/INSERT/UPDATE/DELETE) rather than the simpler `user_pantry_items` pattern (FOR ALL)
+
+---
+
+## 2026-02-28 09:40 — US-008: Create general grocery items lib module
+
+### What was implemented
+- Created `src/lib/generalGrocery.ts` with five exports:
+  - `loadGeneralItems(contextType, contextId, userId): Promise<GeneralGroceryItem[]>` — fetches from `general_grocery_items` table, ordered by `created_at`
+  - `addGeneralItem(contextType, contextId, userId, item): Promise<void>` — inserts new row with name, optional quantity/unit
+  - `removeGeneralItem(itemId): Promise<void>` — deletes by id
+  - `updateGeneralItem(itemId, updates): Promise<void>` — updates name/quantity/unit fields
+  - `toRawIngredients(items): RawIngredientInput[]` — converts general items to combine-ingredients edge function format with `recipeName: 'General'` and `category: 'other'`
+- Added `GeneralGroceryItem` type to `src/types/index.ts`: `{ id, userId, contextType, contextId, name, quantity?, unit?, createdAt? }`
+- All CRUD functions handle errors gracefully with `console.error` (same pattern as groceryCache.ts)
+- Created comprehensive tests at `tests/unit/lib/generalGrocery.test.ts` (15 tests)
+
+### Files changed
+- `src/types/index.ts` (modified — added GeneralGroceryItem interface)
+- `src/lib/generalGrocery.ts` (new)
+- `tests/unit/lib/generalGrocery.test.ts` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1622/1622, 59 files)
+- Lint: N/A
+
+### Learnings for future iterations
+- Tables created by migration but not in generated Supabase types need `const db = supabase as any;` to bypass TypeScript's `.from()` overload checking
+- The `RawIngredientInput` interface is defined locally in `generalGrocery.ts` — it matches the shape used by `combine-ingredients/index.ts` edge function
+- `toRawIngredients()` sets `category: 'other'` for all general items — the AI combine pipeline will re-categorize them during processing
+- General items with `recipeName: 'General'` will appear as a source recipe badge in the Combined view (handled by UI in US-009)
+- The mock pattern for `select -> eq -> eq -> eq -> order` chain: mock each step in the chain, with `mockOrder` being the terminal that resolves the promise
 
 ---

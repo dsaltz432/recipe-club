@@ -149,7 +149,7 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the same Supabase query patterns as src/lib/groceryCache.ts. The key function is toRawIngredients() — it converts general items to RawIngredientInput format (the same shape fed to the combine-ingredients edge function). RawIngredientInput is: { name: string, quantity: string | null, unit: string | null, category: string, recipeName: string }. Set recipeName to 'General' and category to 'other'. This means general items get processed by the SAME AI that handles recipe ingredients — they'll be deduplicated, pluralized, and merged with recipe items automatically. If a user adds 'olive oil' to their general list and it's also in a recipe, the AI will merge them into one entry with sourceRecipes: ['Recipe Name', 'General']. Tests at tests/unit/lib/generalGrocery.test.ts — mock supabase client."
     },
     {

@@ -156,6 +156,17 @@ export interface MealPlanItem {
   recipeUrl?: string;
 }
 
+export interface GeneralGroceryItem {
+  id: string;
+  userId: string;
+  contextType: string;
+  contextId: string;
+  name: string;
+  quantity?: string;
+  unit?: string;
+  createdAt?: string;
+}
+
 export interface ScheduledEvent {
   id: string;
   ingredientId?: string;
