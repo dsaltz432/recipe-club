@@ -50,8 +50,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 9
-**Current Task:** US-010 completed
+**Tasks Completed:** 10
+**Current Task:** US-011 completed
 
 ---
 
@@ -358,5 +358,36 @@
 - For external API functions, add `x-api-key` to CORS `Access-Control-Allow-Headers`
 - GET requests use URL query params (`new URL(req.url).searchParams`), POST/PUT/DELETE use `req.json()` body
 - The `profiles` table may not have email column — prefer `auth.admin.listUsers()` fallback for user lookup
+
+---
+
+## 2026-02-28 11:00 — US-011: Create AI grocery text parser edge function
+
+### What was implemented
+- Created Supabase edge function at `supabase/functions/parse-grocery-text/index.ts`
+- Accepts POST with `{ text: string }` body containing freeform grocery list text
+- Uses Anthropic API (`claude-haiku-4-5-20251001`) to parse text into structured items with name, quantity, unit, and category
+- Handles any input format: comma-separated, line-separated, natural language, messy notes, or mixed
+- AI assigns categories from the 10 GroceryCategory values (produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other)
+- Category guidelines in prompt include CATEGORY_OVERRIDES logic (oils → pantry, tofu → meat_seafood, etc.)
+- Items without explicit quantities get null for quantity and unit
+- Validates and sanitizes AI output: ensures valid categories, filters empty names, normalizes types
+- Graceful fallback when ANTHROPIC_API_KEY not configured (returns `{ success: true, skipped: true }`)
+- Returns 400 for empty/missing text
+- Follows same CORS, OPTIONS, try-catch patterns as combine-ingredients/index.ts
+
+### Files changed
+- `supabase/functions/parse-grocery-text/index.ts` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1633/1634, 59 files — 1 pre-existing flaky test in MealPlanPage)
+- Lint: N/A (edge function is Deno, not part of frontend lint)
+
+### Learnings for future iterations
+- Used `claude-haiku-4-5-20251001` instead of claude-sonnet for this simpler parsing task — faster and cheaper
+- The parse function is simpler than combine-ingredients: it just parses text into items, no merging/deduplication needed
+- Output validation is important: sanitize AI output by checking category values against a Set, normalizing types, and filtering empty names
+- The same parse-grocery-text function will be reused by both US-012 (bulk paste on General tab) and US-013 (bulk paste in recipe editing)
 
 ---

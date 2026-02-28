@@ -220,7 +220,7 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Use combine-ingredients/index.ts as the template for CORS, OPTIONS, Anthropic API call pattern. The AI prompt should be simpler than combine-ingredients — it just needs to parse text into items, not merge/deduplicate. Prompt should instruct: 'Parse this grocery list text into individual items. The text may be comma-separated, line-separated, or natural language. Extract name (clean product name), quantity (number or null), unit (string or null), and category (one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other). Return JSON array.' Use the same CATEGORY_OVERRIDES logic from src/lib/groceryList.ts as guidance in the prompt (oils → pantry, tofu → meat_seafood, etc). Use claude-haiku or claude-sonnet for speed since this is a simpler task than combine-ingredients."
     },
     {
