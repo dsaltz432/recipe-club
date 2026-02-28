@@ -893,14 +893,15 @@ describe("Dashboard", () => {
     // Events count = 1
     mockFromResult.in.mockResolvedValue({ count: 1, error: null });
 
-    // Recipes count = 1: override from() to return a chainable mock for the recipes table
+    // 1 club recipe + 0 personal recipes = 1 total
     mockFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
-        const recipeMock = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockResolvedValue({ count: 1, error: null }),
+        return {
+          select: vi.fn().mockReturnValue({
+            not: vi.fn().mockResolvedValue({ data: [{ id: "r1", scheduled_events: { type: "club" } }], error: null }),
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         };
-        return recipeMock;
       }
       return mockFromResult;
     });
@@ -932,12 +933,21 @@ describe("Dashboard", () => {
     // Events count = 3
     mockFromResult.in.mockResolvedValue({ count: 3, error: null });
 
-    // Recipes count = 5
+    // 3 club recipes + 2 personal recipes = 5 total
     mockFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
         return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
+          select: vi.fn().mockReturnValue({
+            not: vi.fn().mockResolvedValue({ data: [
+              { id: "r1", scheduled_events: { type: "club" } },
+              { id: "r2", scheduled_events: { type: "club" } },
+              { id: "r3", scheduled_events: { type: "club" } },
+            ], error: null }),
+            eq: vi.fn().mockResolvedValue({ data: [
+              { id: "r4", event_id: null, scheduled_events: null },
+              { id: "r5", event_id: null, scheduled_events: null },
+            ], error: null }),
+          }),
         };
       }
       return mockFromResult;
@@ -970,12 +980,14 @@ describe("Dashboard", () => {
     // Events count = 0
     mockFromResult.in.mockResolvedValue({ count: 0, error: null });
 
-    // Recipes count = 0
+    // 0 club + 0 personal = 0 total
     mockFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
         return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          select: vi.fn().mockReturnValue({
+            not: vi.fn().mockResolvedValue({ data: [], error: null }),
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         };
       }
       return mockFromResult;
@@ -996,7 +1008,49 @@ describe("Dashboard", () => {
     expect(recipeLabels).toHaveLength(2);
   });
 
-  // --- loadStats count || 0 fallback branches (lines 150-151) ---
+  it("excludes personal-event recipes from club count and club-event recipes from personal count", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    mockFromResult.in.mockResolvedValue({ count: 1, error: null });
+
+    // Club query returns 2 recipes: 1 club + 1 personal-event (should be filtered out)
+    // Personal query returns 2 recipes: 1 no-event + 1 club-event (should be filtered out)
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            not: vi.fn().mockResolvedValue({ data: [
+              { id: "r1", scheduled_events: { type: "club" } },
+              { id: "r2", scheduled_events: { type: "personal" } },
+            ], error: null }),
+            eq: vi.fn().mockResolvedValue({ data: [
+              { id: "r3", event_id: null, scheduled_events: null },
+              { id: "r4", event_id: "e1", scheduled_events: { type: "club" } },
+            ], error: null }),
+          }),
+        };
+      }
+      return mockFromResult;
+    });
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    // 1 club recipe (r2 filtered out) + 1 personal recipe (r4 filtered out) = 2
+    const recipeLabels = screen.getAllByText("Total Recipes");
+    expect(recipeLabels).toHaveLength(2);
+  });
+
+  // --- loadStats count || 0 fallback branches ---
 
   it("loadStats handles null count with || 0 fallback", async () => {
     mockGetCurrentUser.mockResolvedValue({

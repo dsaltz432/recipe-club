@@ -134,8 +134,9 @@ const Dashboard = () => {
 
   const loadStats = async (userId: string) => {
     try {
-      // Count events (scheduled + completed) and user's recipes in parallel
-      const [eventsResult, recipesResult] = await Promise.all([
+      // Count events and recipes in parallel
+      // Total recipes = all club event recipes + user's personal recipes (no overlap)
+      const [eventsResult, clubRecipesResult, personalRecipesResult] = await Promise.all([
         supabase
           .from("scheduled_events")
           .select("*", { count: "exact", head: true })
@@ -143,12 +144,27 @@ const Dashboard = () => {
           .in("status", ["scheduled", "completed"]),
         supabase
           .from("recipes")
-          .select("*", { count: "exact", head: true })
+          .select("id, scheduled_events!event_id (type)")
+          .not("event_id", "is", null),
+        supabase
+          .from("recipes")
+          .select("id, event_id, scheduled_events!event_id (type)")
           .eq("created_by", userId)
       ]);
 
       setCompletedEventsCount(eventsResult.count || 0);
-      setUserRecipesCount(recipesResult.count || 0);
+
+      // Club recipes: have an event_id and event type is not 'personal'
+      const clubCount = (clubRecipesResult.data || []).filter(
+        (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
+      ).length;
+
+      // Personal recipes: created by user, with no event_id or event type is 'personal'
+      const personalCount = (personalRecipesResult.data || []).filter(
+        (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+      ).length;
+
+      setUserRecipesCount(clubCount + personalCount);
     } catch (error) {
       console.error("Error loading stats:", error);
     }
