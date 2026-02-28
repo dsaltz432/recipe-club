@@ -2364,7 +2364,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     // Find hidden file input and trigger change
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -2399,7 +2399,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 
@@ -2430,7 +2430,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 
@@ -2461,7 +2461,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
@@ -2490,7 +2490,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [] } });
@@ -2928,7 +2928,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["pdf content"], "recipe.pdf", { type: "application/pdf" });
@@ -3936,7 +3936,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode to reveal the upload button
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     // Find the upload button (has Upload icon)
     const uploadBtn = screen.getByRole("button", { name: /upload photo or pdf/i });
@@ -6800,7 +6800,7 @@ describe("EventDetailPage", () => {
     fireEvent.change(nameInput, { target: { value: "No URL Recipe" } });
 
     // Switch to manual mode and add an ingredient so submit is enabled
-    fireEvent.click(screen.getByText("Enter Manually"));
+    fireEvent.click(screen.getByText("Manual"));
     const ingredientInput = screen.getByPlaceholderText("Ingredient name");
     fireEvent.change(ingredientInput, { target: { value: "chicken" } });
 
@@ -6832,7 +6832,7 @@ describe("EventDetailPage", () => {
     });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     // Trigger file upload via the hidden file input
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -6872,7 +6872,7 @@ describe("EventDetailPage", () => {
     fireEvent.change(nameInput, { target: { value: "My Recipe" } });
 
     // Switch to Upload File mode
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     // Upload file — name should NOT be overwritten
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;

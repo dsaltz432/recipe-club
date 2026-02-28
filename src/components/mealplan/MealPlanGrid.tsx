@@ -34,24 +34,33 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent }: MealPlan
 
   return (
     <>
-      {/* Mobile: vertical day cards */}
-      <div className="md:hidden space-y-3">
-        {DAY_LABELS.map((day, dayIndex) => (
-          <div key={day} className="border rounded-lg p-3 bg-white/80">
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b">
-              <span className="text-sm font-semibold">{day}</span>
-              <span className="text-sm text-muted-foreground">{getDateLabel(dayIndex)}</span>
+      {/* Mobile: compact rows with B/L/D columns */}
+      <div className="md:hidden">
+        {/* Header */}
+        <div className="grid grid-cols-[56px_1fr_1fr_1fr] gap-1 mb-1">
+          <div />
+          {MEAL_TYPES.map((mt) => (
+            <div key={mt} className="text-center text-xs font-medium text-muted-foreground capitalize py-1">
+              {mt.charAt(0).toUpperCase()}
             </div>
-            <div className="space-y-2">
+          ))}
+        </div>
+        {/* Day rows */}
+        <div className="space-y-1">
+          {DAY_LABELS.map((day, dayIndex) => (
+            <div key={day} className="grid grid-cols-[56px_1fr_1fr_1fr] gap-1 items-stretch">
+              <div className="flex flex-col justify-center py-1">
+                <span className="text-xs font-semibold">{day}</span>
+                <span className="text-[10px] text-muted-foreground">{getDateLabel(dayIndex)}</span>
+              </div>
               {MEAL_TYPES.map((mealType) => (
-                <div key={mealType}>
-                  <span className="text-xs font-medium text-muted-foreground capitalize block mb-1">{mealType}</span>
+                <div key={mealType} className="min-h-[48px]">
                   {renderSlot(dayIndex, mealType)}
                 </div>
               ))}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Desktop: 8-column grid */}

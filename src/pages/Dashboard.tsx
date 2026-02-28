@@ -88,7 +88,7 @@ const Dashboard = () => {
         setUserIsAdmin(isAdmin(allowed));
 
         if (allowed && currentUser.id) {
-          loadStats();
+          loadStats(currentUser.id);
         }
       } else {
         setIsAllowed(false);
@@ -132,9 +132,9 @@ const Dashboard = () => {
     }
   };
 
-  const loadStats = async () => {
+  const loadStats = async (userId: string) => {
     try {
-      // Count events (scheduled + completed) and recipes in parallel
+      // Count events (scheduled + completed) and user's recipes in parallel
       const [eventsResult, recipesResult] = await Promise.all([
         supabase
           .from("scheduled_events")
@@ -144,6 +144,7 @@ const Dashboard = () => {
         supabase
           .from("recipes")
           .select("*", { count: "exact", head: true })
+          .eq("created_by", userId)
       ]);
 
       setCompletedEventsCount(eventsResult.count || 0);
@@ -160,7 +161,7 @@ const Dashboard = () => {
 
   const handleRecipeAdded = () => {
     if (user?.id) {
-      loadStats();
+      loadStats(user.id);
     }
   };
 
@@ -252,7 +253,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="font-bold text-orange">{userRecipesCount}</span>
-                  <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Club Recipe' : 'Club Recipes'}</span>
+                  <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
                 </div>
               </div>
               <DropdownMenuSeparator className="md:hidden" />

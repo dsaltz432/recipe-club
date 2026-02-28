@@ -145,19 +145,19 @@ const AddMealDialog = ({
   return (
     <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className={cn(
-        "max-h-[85vh] overflow-y-auto",
+        "max-h-[90vh] overflow-y-auto p-4 sm:p-6 gap-3 sm:gap-4",
         activeTab === "custom" && formData.inputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
       )}>
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="font-display text-lg sm:text-xl">
             Add Meal
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             {`Add a meal for ${DAY_NAMES[dayOfWeek]} ${mealType}.`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+        <div className="inline-flex h-9 sm:h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
           <button
             className={cn(
               "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
@@ -179,7 +179,7 @@ const AddMealDialog = ({
         </div>
 
         {activeTab === "custom" && (
-          <div className="space-y-4 py-2">
+          <div className="space-y-3 sm:space-y-4 py-1 sm:py-2">
             <RecipeInputForm
               formData={formData}
               onFormDataChange={setFormData}

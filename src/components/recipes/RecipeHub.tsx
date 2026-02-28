@@ -30,7 +30,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2 } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
@@ -99,6 +99,7 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<RecipeWithNotes | null>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
 
   const handleEditIngredients = (recipe: RecipeWithNotes) => {
@@ -705,21 +706,65 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
         {/* Header with Search and Add */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full sm:w-auto">
-            {/* Search */}
-            <div className="relative flex-1 max-w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                name="recipe-search"
-                placeholder="Search recipes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            {/* Search + mobile filter button */}
+            <div className="flex gap-2 w-full sm:flex-1 sm:max-w-md">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  name="recipe-search"
+                  placeholder="Search recipes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="sm:hidden relative shrink-0"
+                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {(sortOption !== "newest" || ingredientFilter !== "all") && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-purple" />
+                )}
+              </Button>
             </div>
 
-            {/* Sort */}
+            {/* Mobile filters (collapsible) */}
+            {mobileFiltersOpen && (
+              <div className="flex flex-col gap-3 w-full sm:hidden">
+                <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="alphabetical">Alphabetical (A-Z)</SelectItem>
+                    <SelectItem value="highest_rated">Highest Rated</SelectItem>
+                  </SelectContent>
+                </Select>
+                {subTab === "club" && (
+                  <Select value={ingredientFilter} onValueChange={setIngredientFilter}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Ingredients" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Ingredients</SelectItem>
+                      {usedIngredients.map((ingredient) => (
+                        <SelectItem key={ingredient.id} value={ingredient.id}>
+                          {ingredient.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
+            {/* Desktop filters (always visible) */}
             <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
-              <SelectTrigger className="w-full sm:w-44">
+              <SelectTrigger className="hidden sm:flex w-44">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -728,11 +773,9 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
                 <SelectItem value="highest_rated">Highest Rated</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Ingredient Filter (only for club tab) */}
             {subTab === "club" && (
               <Select value={ingredientFilter} onValueChange={setIngredientFilter}>
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="hidden sm:flex w-48">
                   <SelectValue placeholder="All Ingredients" />
                 </SelectTrigger>
                 <SelectContent>
@@ -746,7 +789,6 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
               </Select>
             )}
           </div>
-
         </div>
 
         {/* Recipe Grid */}

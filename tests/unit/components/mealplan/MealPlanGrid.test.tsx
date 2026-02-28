@@ -58,15 +58,16 @@ describe("MealPlanGrid", () => {
     expect(buttons.length).toBe(42);
   });
 
-  it("renders mobile card layout with 7 day containers", () => {
+  it("renders mobile compact grid with B/L/D column headers", () => {
     const { container } = render(<MealPlanGrid {...defaultProps} />);
 
-    // Mobile layout: 7 day cards inside the md:hidden container
+    // Mobile layout: compact grid inside the md:hidden container
     const mobileContainer = container.querySelector(".md\\:hidden");
     expect(mobileContainer).toBeInTheDocument();
-    // Each day gets a card with a border
-    const dayCards = mobileContainer!.querySelectorAll(".border.rounded-lg");
-    expect(dayCards.length).toBe(7);
+    // Column headers show single-letter meal type abbreviations
+    expect(screen.getByText("B")).toBeInTheDocument();
+    expect(screen.getByText("L")).toBeInTheDocument();
+    expect(screen.getByText("D")).toBeInTheDocument();
   });
 
   it("renders items in correct slots", () => {

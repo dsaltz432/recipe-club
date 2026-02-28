@@ -893,12 +893,14 @@ describe("Dashboard", () => {
     // Events count = 1
     mockFromResult.in.mockResolvedValue({ count: 1, error: null });
 
-    // Recipes count = 1: override from() to return a mock that resolves .select() for the recipes table
+    // Recipes count = 1: override from() to return a chainable mock for the recipes table
     mockFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
-        return {
-          select: vi.fn().mockResolvedValue({ count: 1, error: null }),
+        const recipeMock = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 1, error: null }),
         };
+        return recipeMock;
       }
       return mockFromResult;
     });
@@ -913,11 +915,9 @@ describe("Dashboard", () => {
     const eventLabels = screen.getAllByText("Club Event");
     expect(eventLabels).toHaveLength(2);
 
-    // "Total Recipe" in header only, "Club Recipe" in mobile dropdown
+    // "Total Recipe" in both desktop header and mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipe");
-    expect(recipeLabels).toHaveLength(1);
-    const mobileRecipeLabels = screen.getAllByText("Club Recipe");
-    expect(mobileRecipeLabels).toHaveLength(1);
+    expect(recipeLabels).toHaveLength(2);
   });
 
   it("shows plural 'Club Events' and 'Total Recipes' when counts are 2+", async () => {
@@ -936,7 +936,8 @@ describe("Dashboard", () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
         return {
-          select: vi.fn().mockResolvedValue({ count: 5, error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
         };
       }
       return mockFromResult;
@@ -952,11 +953,9 @@ describe("Dashboard", () => {
     const eventLabels = screen.getAllByText("Club Events");
     expect(eventLabels).toHaveLength(2);
 
-    // "Total Recipes" in header only, "Club Recipes" in mobile dropdown
+    // "Total Recipes" in both desktop header and mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipes");
-    expect(recipeLabels).toHaveLength(1);
-    const mobileRecipeLabels = screen.getAllByText("Club Recipes");
-    expect(mobileRecipeLabels).toHaveLength(1);
+    expect(recipeLabels).toHaveLength(2);
   });
 
   it("shows plural labels when counts are 0", async () => {
@@ -975,7 +974,8 @@ describe("Dashboard", () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === "recipes") {
         return {
-          select: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
         };
       }
       return mockFromResult;
@@ -991,11 +991,9 @@ describe("Dashboard", () => {
     const eventLabels = screen.getAllByText("Club Events");
     expect(eventLabels).toHaveLength(2);
 
-    // "Total Recipes" in header only, "Club Recipes" in mobile dropdown
+    // "Total Recipes" in both desktop header and mobile dropdown
     const recipeLabels = screen.getAllByText("Total Recipes");
-    expect(recipeLabels).toHaveLength(1);
-    const mobileRecipeLabels = screen.getAllByText("Club Recipes");
-    expect(mobileRecipeLabels).toHaveLength(1);
+    expect(recipeLabels).toHaveLength(2);
   });
 
   // --- loadStats count || 0 fallback branches (lines 150-151) ---

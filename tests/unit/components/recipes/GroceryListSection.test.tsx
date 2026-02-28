@@ -55,21 +55,6 @@ describe("GroceryListSection", () => {
     vi.clearAllMocks();
   });
 
-  it("renders grocery list heading", () => {
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    expect(screen.getByText("Grocery List")).toBeInTheDocument();
-  });
-
   it("shows loading spinner when isLoading is true", () => {
     render(
       <GroceryListSection

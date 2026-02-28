@@ -28,18 +28,18 @@ const MealPlanSlot = ({
   if (items.length === 0) {
     return (
       <button
-        className="w-full h-full min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent"
+        className="w-full h-full min-h-[48px] md:min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent"
         onClick={() => onAddMeal(dayOfWeek, mealType)}
       >
-        <Plus className="h-4 w-4" />
-        <span className="text-xs">{mealTypeLabels[mealType]}</span>
+        <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+        <span className="text-xs hidden md:inline">{mealTypeLabels[mealType]}</span>
       </button>
     );
   }
 
   return (
     <div
-      className={`relative w-full min-h-[60px] p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm ${
+      className={`relative w-full min-h-[48px] md:min-h-[60px] p-1.5 md:p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm ${
         isCooked
           ? "bg-green-50 border-green-200"
           : "bg-purple/5 border-purple/20"
@@ -66,7 +66,7 @@ const MealPlanSlot = ({
           );
         })}
       </div>
-      <div className="flex items-center justify-end mt-1">
+      <div className="hidden md:flex items-center justify-end mt-1">
         <button
           onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
           className="text-muted-foreground hover:text-purple transition-colors p-2"

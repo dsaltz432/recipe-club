@@ -30,13 +30,13 @@ const GroceryExportMenu = ({ items, eventName }: GroceryExportMenuProps) => {
 
   return (
     <div className="flex gap-1">
-      <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
-        <Copy className="h-4 w-4 mr-1" />
-        Copy
+      <Button variant="outline" size="sm" onClick={handleCopyToClipboard} className="px-2 sm:px-3">
+        <Copy className="h-4 w-4 sm:mr-1" />
+        <span className="hidden sm:inline">Copy</span>
       </Button>
-      <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
-        <Download className="h-4 w-4 mr-1" />
-        CSV
+      <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="px-2 sm:px-3">
+        <Download className="h-4 w-4 sm:mr-1" />
+        <span className="hidden sm:inline">CSV</span>
       </Button>
     </div>
   );

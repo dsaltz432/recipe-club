@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShoppingCart, Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,19 +119,6 @@ const GroceryListSection = ({
   return (
     <Card className="bg-white/90 backdrop-blur-sm border border-purple/10">
       <CardContent className="pt-4 sm:pt-6 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-purple" />
-            <h2 className="font-display text-lg sm:text-xl font-semibold">Grocery List</h2>
-          </div>
-          {hasAnyIngredients && (
-            <GroceryExportMenu
-              items={filteredSmartItems || []}
-              eventName={eventName}
-            />
-          )}
-        </div>
-
         {/* Parse buttons for unparsed recipes */}
         {SHOW_PARSE_BUTTONS && recipesWithUrl.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
@@ -200,15 +187,21 @@ const GroceryListSection = ({
 
         {!isLoading && hasAnyIngredients && (
           <Tabs defaultValue="combined" className="w-full">
-            <div className="overflow-x-auto">
-              <TabsList className="mb-3 inline-flex w-auto">
-                <TabsTrigger value="combined">Combined</TabsTrigger>
-                {recipesWithIngredients.map((recipe) => (
-                  <TabsTrigger key={recipe.id} value={recipe.id} className="whitespace-nowrap max-w-[120px] truncate sm:max-w-none">
-                    {recipe.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="overflow-x-auto">
+                <TabsList className="inline-flex w-auto">
+                  <TabsTrigger value="combined">Combined</TabsTrigger>
+                  {recipesWithIngredients.map((recipe) => (
+                    <TabsTrigger key={recipe.id} value={recipe.id} className="whitespace-nowrap max-w-[120px] truncate sm:max-w-none">
+                      {recipe.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+              <GroceryExportMenu
+                items={filteredSmartItems || []}
+                eventName={eventName}
+              />
             </div>
 
             <TabsContent value="combined">

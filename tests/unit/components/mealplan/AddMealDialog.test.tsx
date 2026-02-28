@@ -575,22 +575,22 @@ describe("AddMealDialog", () => {
       onAddManualMeal: vi.fn(),
     };
 
-    it("shows Enter Manually button when onAddManualMeal is provided", () => {
+    it("shows Manual button when onAddManualMeal is provided", () => {
       render(<AddMealDialog {...propsWithManual} />);
 
-      expect(screen.getByText("Enter Manually")).toBeInTheDocument();
+      expect(screen.getByText("Manual")).toBeInTheDocument();
     });
 
-    it("does not show Enter Manually button when onAddManualMeal is not provided", () => {
+    it("does not show Manual button when onAddManualMeal is not provided", () => {
       render(<AddMealDialog {...defaultProps} />);
 
-      expect(screen.queryByText("Enter Manually")).not.toBeInTheDocument();
+      expect(screen.queryByText("Manual")).not.toBeInTheDocument();
     });
 
     it("switches to manual mode and shows ingredient rows", () => {
       render(<AddMealDialog {...propsWithManual} />);
 
-      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Manual"));
 
       // Should show ingredient form rows (IngredientFormRows renders inputs)
       expect(screen.getByText("Ingredients")).toBeInTheDocument();
@@ -599,8 +599,8 @@ describe("AddMealDialog", () => {
     it("switches from manual back to URL mode", () => {
       render(<AddMealDialog {...propsWithManual} />);
 
-      fireEvent.click(screen.getByText("Enter Manually"));
-      fireEvent.click(screen.getByText("Enter URL"));
+      fireEvent.click(screen.getByText("Manual"));
+      fireEvent.click(screen.getByText("URL"));
 
       expect(screen.getByLabelText("Recipe URL *")).toBeInTheDocument();
     });
@@ -614,7 +614,7 @@ describe("AddMealDialog", () => {
       });
 
       // Switch to manual mode
-      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Manual"));
 
       // Fill ingredient name in the first row
       const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
@@ -643,7 +643,7 @@ describe("AddMealDialog", () => {
         target: { value: "Pasta" },
       });
 
-      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Manual"));
 
       // Submit should be disabled — no ingredient names filled
       expect(screen.getByText("Add to Meal")).toBeDisabled();
@@ -657,7 +657,7 @@ describe("AddMealDialog", () => {
     };
 
     const switchToUploadMode = () => {
-      fireEvent.click(screen.getByText("Upload File"));
+      fireEvent.click(screen.getByText("Upload"));
     };
 
     it("renders upload button with text label in Custom tab", () => {
@@ -665,7 +665,6 @@ describe("AddMealDialog", () => {
       switchToUploadMode();
 
       expect(screen.getByLabelText("Upload photo or PDF")).toBeInTheDocument();
-      expect(screen.getByText("Upload")).toBeInTheDocument();
     });
 
     it("shows filename during upload", async () => {
@@ -687,15 +686,16 @@ describe("AddMealDialog", () => {
         expect(screen.getByText("my-recipe-photo.jpg")).toBeInTheDocument();
       });
 
-      // "Upload" text should be gone during upload
-      expect(screen.queryByText("Upload")).not.toBeInTheDocument();
+      // Upload button should be disabled and show filename instead of "Upload" text
+      const uploadBtn = screen.getByLabelText("Upload photo or PDF");
+      expect(uploadBtn).toBeDisabled();
 
       // Resolve the upload
       resolveUpload("https://storage.example.com/test.jpg");
 
-      // After upload completes, "Upload" text returns
+      // After upload completes, button re-enables
       await waitFor(() => {
-        expect(screen.getByText("Upload")).toBeInTheDocument();
+        expect(screen.getByLabelText("Upload photo or PDF")).not.toBeDisabled();
       });
     });
 

@@ -67,12 +67,12 @@ describe("RecipeInputForm", () => {
     );
 
     expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
-    expect(screen.getByText("Enter URL")).toBeInTheDocument();
-    expect(screen.getByText("Upload File")).toBeInTheDocument();
-    expect(screen.getByText("Enter Manually")).toBeInTheDocument();
+    expect(screen.getByText("URL")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+    expect(screen.getByText("Manual")).toBeInTheDocument();
   });
 
-  it("hides Enter Manually button when showManualMode is false", () => {
+  it("hides Manual button when showManualMode is false", () => {
     render(
       <RecipeInputForm
         formData={defaultFormData}
@@ -81,9 +81,9 @@ describe("RecipeInputForm", () => {
       />
     );
 
-    expect(screen.getByText("Enter URL")).toBeInTheDocument();
-    expect(screen.getByText("Upload File")).toBeInTheDocument();
-    expect(screen.queryByText("Enter Manually")).not.toBeInTheDocument();
+    expect(screen.getByText("URL")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+    expect(screen.queryByText("Manual")).not.toBeInTheDocument();
   });
 
   it("renders URL input by default", () => {
@@ -177,7 +177,7 @@ describe("RecipeInputForm - Mode Switching", () => {
       <RecipeInputForm formData={data} onFormDataChange={onFormDataChange} />
     );
 
-    fireEvent.click(screen.getByText("Upload File"));
+    fireEvent.click(screen.getByText("Upload"));
 
     expect(onFormDataChange).toHaveBeenCalledWith(
       expect.objectContaining({ inputMode: "upload" })
@@ -190,7 +190,7 @@ describe("RecipeInputForm - Mode Switching", () => {
       <RecipeInputForm formData={data} onFormDataChange={onFormDataChange} />
     );
 
-    fireEvent.click(screen.getByText("Enter Manually"));
+    fireEvent.click(screen.getByText("Manual"));
 
     expect(onFormDataChange).toHaveBeenCalledWith(
       expect.objectContaining({ inputMode: "manual", url: "" })
@@ -207,7 +207,7 @@ describe("RecipeInputForm - Mode Switching", () => {
       <RecipeInputForm formData={data} onFormDataChange={onFormDataChange} />
     );
 
-    fireEvent.click(screen.getByText("Enter URL"));
+    fireEvent.click(screen.getByText("URL"));
 
     const call = onFormDataChange.mock.calls[0][0];
     expect(call.inputMode).toBe("url");

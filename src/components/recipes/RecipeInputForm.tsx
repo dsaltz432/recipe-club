@@ -117,9 +117,9 @@ const RecipeInputForm = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="recipe-input-name">{nameLabel}</Label>
+    <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label htmlFor="recipe-input-name" className="text-sm">{nameLabel}</Label>
         <Input
           id="recipe-input-name"
           value={formData.name}
@@ -129,36 +129,36 @@ const RecipeInputForm = ({
       </div>
 
       {/* Mode selection */}
-      <div className="space-y-2">
-        <Label>Ingredient Source</Label>
-        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label className="text-sm">Ingredient Source</Label>
+        <div className="inline-flex h-9 sm:h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
           <button
             className={cn(
-              "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+              "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all",
               formData.inputMode === "url" && "bg-background text-foreground shadow-sm"
             )}
             onClick={() => handleModeChange("url")}
           >
-            Enter URL
+            URL
           </button>
           <button
             className={cn(
-              "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+              "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all",
               formData.inputMode === "upload" && "bg-background text-foreground shadow-sm"
             )}
             onClick={() => handleModeChange("upload")}
           >
-            Upload File
+            Upload
           </button>
           {showManualMode && (
             <button
               className={cn(
-                "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+                "inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all",
                 formData.inputMode === "manual" && "bg-background text-foreground shadow-sm"
               )}
               onClick={() => handleModeChange("manual")}
             >
-              Enter Manually
+              Manual
             </button>
           )}
         </div>
@@ -166,8 +166,8 @@ const RecipeInputForm = ({
 
       {/* URL mode */}
       {formData.inputMode === "url" && (
-        <div className="space-y-2">
-          <Label htmlFor="recipe-input-url">Recipe URL *</Label>
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label htmlFor="recipe-input-url" className="text-sm">Recipe URL *</Label>
           <Input
             id="recipe-input-url"
             type="url"
@@ -186,8 +186,8 @@ const RecipeInputForm = ({
 
       {/* Upload mode */}
       {formData.inputMode === "upload" && (
-        <div className="space-y-2">
-          <Label>Upload Photo or PDF</Label>
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-sm">Upload Photo or PDF</Label>
           <div className="flex gap-2">
             <Input
               type="url"
@@ -230,8 +230,8 @@ const RecipeInputForm = ({
 
       {/* Manual mode */}
       {formData.inputMode === "manual" && (
-        <div className="space-y-2">
-          <Label>Ingredients</Label>
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-sm">Ingredients</Label>
           <IngredientFormRows
             rows={formData.ingredientRows}
             onRowsChange={(rows) => update({ ingredientRows: rows })}

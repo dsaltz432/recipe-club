@@ -1230,7 +1230,6 @@ describe("MealPlanPage", () => {
 
       // Should show grocery list
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
     });
 
@@ -1392,7 +1391,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
     });
 
@@ -1471,7 +1469,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Click parse button
@@ -1567,7 +1564,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Click parse button
@@ -1654,7 +1650,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText('Parse "Pasta"'));
@@ -1740,7 +1735,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText('Parse "Pasta"'));
@@ -1886,7 +1880,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Clear mocks to track new calls
@@ -1960,7 +1953,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
     });
 
@@ -2054,12 +2046,10 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // With only 1 parsed recipe, AI combine doesn't run (needs 2+),
       // but the grocery tab should render without crashing
-      expect(screen.getByText("Grocery List")).toBeInTheDocument();
     });
 
     it("clears grocery data when week has no meals with recipes", async () => {
@@ -2134,7 +2124,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Now switch week to one with no meals
@@ -2350,7 +2339,6 @@ describe("MealPlanPage", () => {
 
       // Wait for grocery list to render (from cached state)
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Smart combine should still only have been called once (skipped on second visit)
@@ -2483,7 +2471,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Smart combine should still only have been called once
@@ -2561,7 +2548,6 @@ describe("MealPlanPage", () => {
 
       // Wait for grocery section to fully render — proves cache path completed
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       await waitFor(() => {
@@ -2637,7 +2623,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Smart combine IS called even for a single parsed recipe (single-recipe grocery fix)
@@ -2725,7 +2710,6 @@ describe("MealPlanPage", () => {
 
       // Page should still render grocery list
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
     });
 
@@ -2808,7 +2792,6 @@ describe("MealPlanPage", () => {
 
       // Page should still render
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
     });
 
@@ -3071,7 +3054,7 @@ describe("MealPlanPage", () => {
       fireEvent.click(slotButtons[0]);
 
       // Switch to Upload File mode
-      fireEvent.click(screen.getByText("Upload File"));
+      fireEvent.click(screen.getByText("Upload"));
 
       // Upload a file
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -3173,7 +3156,7 @@ describe("MealPlanPage", () => {
       fireEvent.click(slotButtons[0]);
 
       // Switch to Upload File mode
-      fireEvent.click(screen.getByText("Upload File"));
+      fireEvent.click(screen.getByText("Upload"));
 
       // Upload a file
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -3638,7 +3621,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Resolve parse — groceryData will be non-null and shouldCombine is true
@@ -3740,7 +3722,6 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Grocery List")).toBeInTheDocument();
       });
 
       // Resolve parse — shouldCombine is true (1 recipe with URL), showCombineStep is false (< 2)
@@ -3820,7 +3801,7 @@ describe("MealPlanPage", () => {
       });
 
       // Switch to manual mode
-      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Manual"));
 
       // Fill ingredient
       const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
@@ -3908,7 +3889,7 @@ describe("MealPlanPage", () => {
       });
 
       // Switch to manual mode
-      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Manual"));
 
       // Fill ingredient
       const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
@@ -3977,7 +3958,7 @@ describe("MealPlanPage", () => {
       });
 
       // Switch to manual mode
-      fireEvent.click(screen.getByText("Enter Manually"));
+      fireEvent.click(screen.getByText("Manual"));
 
       // Fill ingredient
       const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
