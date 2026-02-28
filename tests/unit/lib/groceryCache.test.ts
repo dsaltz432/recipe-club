@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockSelect = vi.fn();
 const mockUpsert = vi.fn();
+const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 const mockEq = vi.fn();
 const mockMaybeSingle = vi.fn();
@@ -11,12 +12,13 @@ vi.mock("@/integrations/supabase/client", () => ({
     from: vi.fn(() => ({
       select: mockSelect,
       upsert: mockUpsert,
+      update: mockUpdate,
       delete: mockDelete,
     })),
   },
 }));
 
-import { loadGroceryCache, saveGroceryCache, deleteGroceryCache } from "@/lib/groceryCache";
+import { loadGroceryCache, saveGroceryCache, deleteGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
 
 describe("groceryCache", () => {
   beforeEach(() => {
@@ -31,6 +33,12 @@ describe("groceryCache", () => {
 
     // Default chain: upsert
     mockUpsert.mockResolvedValue({ error: null });
+
+    // Default chain: update -> eq -> eq -> eq
+    const updEq3 = vi.fn().mockResolvedValue({ error: null });
+    const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+    const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+    mockUpdate.mockReturnValue({ eq: updEq1 });
 
     // Default chain: delete -> eq -> eq -> eq
     const delEq3 = vi.fn().mockResolvedValue({ error: null });
@@ -179,6 +187,93 @@ describe("groceryCache", () => {
       await deleteGroceryCache("event", "event-1", "user-1");
 
       expect(consoleSpy).toHaveBeenCalledWith("Error deleting grocery cache:", expect.any(Error));
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe("loadCheckedItems", () => {
+    it("returns checked items as a Set when found", async () => {
+      const cachedData = { checked_items: ["onion", "garlic", "tomato"] };
+      mockMaybeSingle.mockResolvedValue({ data: cachedData, error: null });
+
+      const result = await loadCheckedItems("meal_plan", "2026-02-15", "user-1");
+
+      expect(result).toEqual(new Set(["onion", "garlic", "tomato"]));
+      expect(mockSelect).toHaveBeenCalledWith("checked_items");
+      expect(mockEq).toHaveBeenCalledWith("context_type", "meal_plan");
+    });
+
+    it("returns empty Set when no cache row exists", async () => {
+      mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+      const result = await loadCheckedItems("event", "event-1", "user-1");
+
+      expect(result).toEqual(new Set());
+    });
+
+    it("returns empty Set when checked_items is null", async () => {
+      mockMaybeSingle.mockResolvedValue({ data: { checked_items: null }, error: null });
+
+      const result = await loadCheckedItems("meal_plan", "2026-02-15", "user-1");
+
+      expect(result).toEqual(new Set());
+    });
+
+    it("returns empty Set on error", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockMaybeSingle.mockResolvedValue({ data: null, error: new Error("DB error") });
+
+      const result = await loadCheckedItems("meal_plan", "2026-02-15", "user-1");
+
+      expect(result).toEqual(new Set());
+      expect(consoleSpy).toHaveBeenCalledWith("Error loading checked items:", expect.any(Error));
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe("saveCheckedItems", () => {
+    it("updates checked items with correct params", async () => {
+      const updEq3 = vi.fn().mockResolvedValue({ error: null });
+      const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+      const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+      mockUpdate.mockReturnValue({ eq: updEq1 });
+
+      const checkedItems = new Set(["onion", "garlic"]);
+      await saveCheckedItems("meal_plan", "2026-02-15", "user-1", checkedItems);
+
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          checked_items: expect.arrayContaining(["onion", "garlic"]),
+        })
+      );
+      expect(updEq1).toHaveBeenCalledWith("context_type", "meal_plan");
+      expect(updEq2).toHaveBeenCalledWith("context_id", "2026-02-15");
+      expect(updEq3).toHaveBeenCalledWith("user_id", "user-1");
+    });
+
+    it("updates with empty array when Set is empty", async () => {
+      const updEq3 = vi.fn().mockResolvedValue({ error: null });
+      const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+      const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+      mockUpdate.mockReturnValue({ eq: updEq1 });
+
+      await saveCheckedItems("event", "event-1", "user-1", new Set());
+
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ checked_items: [] })
+      );
+    });
+
+    it("handles errors gracefully", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const updEq3 = vi.fn().mockResolvedValue({ error: new Error("Update failed") });
+      const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+      const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+      mockUpdate.mockReturnValue({ eq: updEq1 });
+
+      await saveCheckedItems("meal_plan", "2026-02-15", "user-1", new Set(["onion"]));
+
+      expect(consoleSpy).toHaveBeenCalledWith("Error saving checked items:", expect.any(Error));
       consoleSpy.mockRestore();
     });
   });

@@ -91,3 +91,52 @@ export async function deleteGroceryCache(
     console.error("Error deleting grocery cache:", error);
   }
 }
+
+export async function loadCheckedItems(
+  contextType: GroceryCacheContextType,
+  contextId: string,
+  userId: string
+): Promise<Set<string>> {
+  try {
+    const { data, error } = await supabase
+      .from("combined_grocery_items")
+      .select("checked_items")
+      .eq("context_type", contextType)
+      .eq("context_id", contextId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return new Set();
+
+    const row = data as unknown as Record<string, unknown>;
+    const checkedItems = row.checked_items as string[] | null;
+    return new Set(checkedItems ?? []);
+  } catch (error) {
+    console.error("Error loading checked items:", error);
+    return new Set();
+  }
+}
+
+export async function saveCheckedItems(
+  contextType: GroceryCacheContextType,
+  contextId: string,
+  userId: string,
+  checkedItems: Set<string>
+): Promise<void> {
+  try {
+    // checked_items column added by migration; cast to bypass generated types
+    const { error } = await supabase
+      .from("combined_grocery_items")
+      .update({
+        checked_items: Array.from(checkedItems) as unknown as Json,
+      } as Record<string, Json>)
+      .eq("context_type", contextType)
+      .eq("context_id", contextId)
+      .eq("user_id", userId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error saving checked items:", error);
+  }
+}
