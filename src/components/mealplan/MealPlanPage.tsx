@@ -21,6 +21,7 @@ import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache, deleteGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
 import { loadGeneralItems, addGeneralItem, removeGeneralItem, updateGeneralItem, toRawIngredients } from "@/lib/generalGrocery";
+import type { ParsedGroceryItem } from "@/components/recipes/GroceryListSection";
 import type { MealPlanItem, Recipe, RecipeIngredient, RecipeContent, SmartGroceryItem, GeneralGroceryItem } from "@/types";
 
 interface MealPlanPageProps {
@@ -388,6 +389,16 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       }
     }
   }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+
+  const handleBulkParseGroceryText = useCallback(async (text: string): Promise<ParsedGroceryItem[]> => {
+    const { data, error } = await supabase.functions.invoke("parse-grocery-text", {
+      body: { text },
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error ?? "Failed to parse grocery text");
+    if (data.skipped) return [];
+    return data.items as ParsedGroceryItem[];
+  }, []);
 
   useEffect(() => {
     if (viewTab !== "groceries") return;
@@ -798,6 +809,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               onAddGeneralItem={handleAddGeneralItem}
               onRemoveGeneralItem={handleRemoveGeneralItem}
               onUpdateGeneralItem={handleUpdateGeneralItem}
+              onBulkParseGroceryText={handleBulkParseGroceryText}
             />
           ) : items.length > 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -817,6 +829,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               onAddGeneralItem={handleAddGeneralItem}
               onRemoveGeneralItem={handleRemoveGeneralItem}
               onUpdateGeneralItem={handleUpdateGeneralItem}
+              onBulkParseGroceryText={handleBulkParseGroceryText}
               checkedItems={checkedItems}
               onToggleChecked={handleToggleChecked}
             />

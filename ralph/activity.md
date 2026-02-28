@@ -48,10 +48,21 @@
 - Duplicate item constraint violation (PostgreSQL error code `23505`) returns 409 status
 - `verify_jwt: false` when deploying since external APIs authenticate via API key, not Supabase JWT
 
+### Bulk Paste UI Pattern
+- Flow: "Paste list" button → textarea → Parse button → preview list → "Add all" confirm → items added
+- `onBulkParseGroceryText` callback prop invokes the `parse-grocery-text` edge function from MealPlanPage
+- Preview shows parsed items with category badge, quantity, unit, and name; duplicates flagged with "duplicate" label and yellow styling
+- Duplicate detection: compare `item.name.toLowerCase()` against `existingGeneralNames` Set built from current `generalItems`
+- Duplicates are visually flagged but automatically skipped during confirm (no error, just silent skip)
+- `ParsedGroceryItem` type exported from `GroceryListSection.tsx`: `{ name, quantity: number|null, unit: string|null, category }`
+- Preview items can be individually removed via X button using `removedPreviewIndices` Set (by index)
+- After confirm, all bulk paste state resets (textarea, preview, removed indices)
+- Each parsed item calls `onAddGeneralItem` sequentially — MealPlanPage handler invalidates cache and re-combines on each call
+
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 10
-**Current Task:** US-011 completed
+**Tasks Completed:** 11
+**Current Task:** US-012 completed
 
 ---
 
@@ -389,5 +400,42 @@
 - The parse function is simpler than combine-ingredients: it just parses text into items, no merging/deduplication needed
 - Output validation is important: sanitize AI output by checking category values against a Set, normalizing types, and filtering empty names
 - The same parse-grocery-text function will be reused by both US-012 (bulk paste on General tab) and US-013 (bulk paste in recipe editing)
+
+---
+
+## 2026-02-28 12:00 — US-012: Add bulk paste UI to General tab
+
+### What was implemented
+- Added "Paste list" button to General tab alongside the existing Add button
+- Clicking "Paste list" opens a textarea for pasting freeform grocery text
+- "Parse" button sends text to `parse-grocery-text` edge function via new `onBulkParseGroceryText` callback
+- Loading spinner shown during parsing, toast error on failure
+- On success, shows preview list with parsed items including name, quantity, unit, and category badge
+- Duplicate items (already in user's general list) are flagged with "duplicate" label and yellow styling, automatically skipped on confirm
+- Users can remove individual preview items via X button before confirming
+- "Add all" button adds all non-duplicate, non-removed items via `onAddGeneralItem()` calls
+- After adding, bulk paste state resets and "Paste list" button reappears
+- Cancel button available in both textarea and preview states
+- Added `handleBulkParseGroceryText` callback in MealPlanPage that invokes `supabase.functions.invoke("parse-grocery-text")`
+- Exported `ParsedGroceryItem` type from GroceryListSection for use by MealPlanPage
+- Cache invalidation handled automatically since each `onAddGeneralItem` call triggers MealPlanPage's existing cache invalidation logic
+- Added 12 new tests covering: button renders/hides, textarea opens, parse disabled when empty, successful parse shows preview, error shows toast, remove preview item, confirm adds items, duplicate handling, state clears after add, cancel from textarea, cancel from preview
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx` (modified — added bulk paste UI, state, handlers, new prop, exported ParsedGroceryItem type)
+- `src/components/mealplan/MealPlanPage.tsx` (modified — added handleBulkParseGroceryText callback, passed to GroceryListSection)
+- `tests/unit/components/recipes/GroceryListSection.test.tsx` (modified — added 12 bulk paste tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1645/1646, 59 files — 1 pre-existing flaky test in MealPlanPage)
+- Lint: N/A
+
+### Learnings for future iterations
+- The `ParsedGroceryItem` type (from the edge function) uses `quantity: number | null` while `GeneralGroceryItem` uses `quantity?: string` — conversion needed: `String(item.quantity)` for non-null, `undefined` for null
+- Duplicate detection uses `Set` of lowercased existing item names for case-insensitive comparison
+- Preview items tracked by index, removed items tracked via `removedPreviewIndices: Set<number>` — simpler than maintaining a filtered array
+- The `onBulkParseGroceryText` callback is a clean abstraction: GroceryListSection doesn't need to know about supabase client, MealPlanPage owns the edge function invocation
+- Each `onAddGeneralItem` call in the confirm loop triggers MealPlanPage's full invalidation + re-combine cycle — this is correct for data consistency but means N API calls for N items. A batch add function could optimize this in the future.
 
 ---

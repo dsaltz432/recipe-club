@@ -243,7 +243,7 @@
         "Tests pass"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Add this to the General tab UI built in US-009. The bulk paste flow: textarea → parse → preview → confirm → add. The preview step is important — it lets users verify the AI parsed correctly before committing. Show each parsed item with its detected category badge. If an item already exists in the user's general list for this week, show it dimmed or with a 'duplicate' label and skip it on confirm. The textarea can be a Dialog/modal or an expandable section on the General tab. Use supabase.functions.invoke('parse-grocery-text', { body: { text } }) to call the edge function. After confirming, loop through parsed items and call addGeneralItem() for each. Then invalidate cache and re-combine. For tests: mock the edge function, test the preview renders parsed items, test confirm adds items, test duplicate handling."
     },
     {
