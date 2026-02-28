@@ -102,69 +102,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
             </Avatar>
           )}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <h3 className="font-display text-base sm:text-lg font-semibold truncate flex-1">{recipe.name}</h3>
-              {/* Action buttons - desktop only inline */}
-              {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
-                <div className="hidden sm:flex items-center gap-0.5 flex-shrink-0">
-                  {recipe.url && (
-                    <a
-                      href={recipe.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
-                      aria-label={`Open recipe URL for ${recipe.name}`}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
-                    </a>
-                  )}
-                  {onAddNote && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => onAddNote(recipe)}
-                      aria-label={`Add note for ${recipe.name}`}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {onEditIngredients && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      aria-label={`Edit ingredients for ${recipe.name}`}
-                      onClick={() => onEditIngredients(recipe)}
-                    >
-                      <ListChecks className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {onEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      aria-label={`Edit recipe ${recipe.name}`}
-                      onClick={() => onEdit(recipe)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                      aria-label={`Delete recipe ${recipe.name}`}
-                      onClick={() => onDelete(recipe.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
+            <h3 className="font-display text-base sm:text-lg font-semibold truncate">{recipe.name}</h3>
             <div className="flex items-center gap-2 flex-wrap">
               {recipe.createdByName && (
                 <span className="text-xs text-muted-foreground">
@@ -172,9 +110,9 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                 </span>
               )}
             </div>
-            {/* Action buttons - mobile only, below name */}
+            {/* Action buttons - below name on all screen sizes */}
             {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
-              <div className="flex sm:hidden items-center gap-0 -ml-1">
+              <div className="flex items-center gap-0 -ml-1 mt-0.5">
                 {recipe.url && (
                   <a
                     href={recipe.url}
