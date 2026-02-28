@@ -224,4 +224,94 @@ describe("MealPlanGrid", () => {
     });
   });
 
+  describe("weekStartDay prop", () => {
+    it("defaults to Sunday-first when weekStartDay is not provided", () => {
+      render(<MealPlanGrid {...defaultProps} />);
+
+      // First day label in the grid should be Sun
+      const dayLabels = screen.getAllByText("Sun");
+      expect(dayLabels.length).toBeGreaterThan(0);
+    });
+
+    it("reorders day labels to Mon-Sun when weekStartDay=1", () => {
+      // weekStart is Monday Feb 9 for Monday-start week
+      render(<MealPlanGrid {...defaultProps} weekStart={new Date(2026, 1, 9)} weekStartDay={1} />);
+
+      // Mon should appear before Sun in the DOM
+      const allText = document.body.textContent || "";
+      const monPos = allText.indexOf("Mon");
+      const sunPos = allText.indexOf("Sun");
+      expect(monPos).toBeLessThan(sunPos);
+    });
+
+    it("maps items to correct reordered slots with weekStartDay=1", () => {
+      const items: MealPlanItem[] = [
+        {
+          id: "item-1",
+          planId: "plan-1",
+          dayOfWeek: 1, // Monday (stored as 1, meaning JS Date Monday)
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Monday Dinner",
+        },
+        {
+          id: "item-2",
+          planId: "plan-1",
+          dayOfWeek: 0, // Sunday (stored as 0, meaning JS Date Sunday)
+          mealType: "dinner",
+          sortOrder: 0,
+          recipeName: "Sunday Dinner",
+        },
+      ];
+
+      // weekStart is Monday Feb 9 for Monday-start week
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          items={items}
+          weekStart={new Date(2026, 1, 9)}
+          weekStartDay={1}
+        />
+      );
+
+      // Both items should appear
+      expect(screen.getAllByText("Monday Dinner").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Sunday Dinner").length).toBeGreaterThan(0);
+    });
+
+    it("renders correct date labels with weekStartDay=1", () => {
+      // Monday Feb 9, 2026 as week start
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          weekStart={new Date(2026, 1, 9)}
+          weekStartDay={1}
+        />
+      );
+
+      // First date should be Feb 9 (Mon), last should be Feb 15 (Sun)
+      expect(screen.getAllByText("2/9").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("2/15").length).toBeGreaterThan(0);
+    });
+
+    it("passes correct dayOfWeek to onAddMeal with weekStartDay=1", () => {
+      const onAddMeal = vi.fn();
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          onAddMeal={onAddMeal}
+          weekStart={new Date(2026, 1, 9)}
+          weekStartDay={1}
+        />
+      );
+
+      // Click the first button (Mon Breakfast in mobile layout)
+      const buttons = screen.getAllByRole("button");
+      fireEvent.click(buttons[0]);
+
+      // First day displayed is Monday (dayOfWeek=1)
+      expect(onAddMeal).toHaveBeenCalledWith(1, "breakfast");
+    });
+  });
+
 });

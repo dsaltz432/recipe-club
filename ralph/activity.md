@@ -59,6 +59,15 @@
 - After confirm, all bulk paste state resets (textarea, preview, removed indices)
 - Each parsed item calls `onAddGeneralItem` sequentially — MealPlanPage handler invalidates cache and re-combines on each call
 
+### Week Start Day Pattern
+- `getWeekStart(date, weekStartDay)` — Sunday-start: `d.getDay()` offset, Monday-start: `(d.getDay() + 6) % 7` offset
+- MealPlanGrid uses `dayOrder = Array.from({length: 7}, (_, i) => (i + weekStartDay) % 7)` to map display positions to stored dayOfWeek values
+- `dayLabels = dayOrder.map(dow => ALL_DAY_LABELS[dow])` for display-ordered day names
+- `renderSlot(dayOrder[displayIndex], mealType)` passes actual dayOfWeek, not display index
+- `getDateLabel(displayIndex)` uses display index directly (offset from weekStart date)
+- `handleViewMealEvent` converts dayOfWeek → date offset via `(dayOfWeek - weekStartDay + 7) % 7`
+- Storage is always Sunday-indexed (0=Sun..6=Sat) — display reordering is purely UI-level
+
 ### Settings Page Pattern
 - Settings page is a standalone route `/settings` (not a Dashboard tab) with AuthGuard
 - Uses `loadUserPreferences(userId)` / `saveUserPreferences(userId, prefs)` in `src/lib/userPreferences.ts`
@@ -70,8 +79,8 @@
 
 ## Current Status
 **Last Updated:** 2026-02-28
-**Tasks Completed:** 15
-**Current Task:** US-016 completed
+**Tasks Completed:** 16
+**Current Task:** US-017 completed
 
 ---
 
@@ -590,5 +599,45 @@
 - `userPreferences?.mealTypes` passes `undefined` when preferences haven't loaded yet, which correctly falls back to the default 3 meal types in MealPlanGrid
 - AddMealDialog doesn't have a meal type selector — it just displays the mealType passed from the slot, so no filtering logic needed there
 - The `userPreferences` state in MealPlanPage will also be used by US-017 for `weekStartDay`
+
+---
+
+## 2026-02-28 17:00 — US-017: Apply week start day preference to meal plan
+
+### What was implemented
+- Modified `getWeekStart()` in MealPlanPage to accept `weekStartDay` parameter — for Monday-start, uses `(dayOfWeek + 6) % 7` offset calculation
+- MealPlanPage recalculates `weekStart` when user preferences load and `weekStartDay !== 0`
+- `handleCurrentWeek` uses `weekStartDay` from user preferences to navigate to the correct current week
+- MealPlanGrid accepts optional `weekStartDay` prop — builds `dayOrder` array and `dayLabels` dynamically
+  - `dayOrder` maps display position → actual dayOfWeek value (0=Sun..6=Sat)
+  - Sunday-start: `[0,1,2,3,4,5,6]` → Mon-start: `[1,2,3,4,5,6,0]`
+  - `renderSlot` uses `dayOrder[displayIndex]` to pass correct dayOfWeek to `MealPlanSlot`
+  - `getDateLabel` uses display index (offset from weekStart) so dates are always correct
+- WeekNavigation accepts optional `weekStartDay` prop — `isCurrentWeek()` uses the same `(dayOfWeek + 6) % 7` offset to compute current week's Monday
+- `handleViewMealEvent` uses `(dayOfWeek - weekStartDay + 7) % 7` to compute correct date offset from weekStart
+- All props flow: MealPlanPage → MealPlanGrid (`weekStartDay`) and → WeekNavigation (`weekStartDay`)
+- Added 5 new MealPlanGrid tests: Sunday default, Monday reorder, item mapping, date labels, onAddMeal dayOfWeek
+- Added 3 new WeekNavigation tests: hide Today on current Monday week, show Today on different week, Monday-start week range
+
+### Files changed
+- `src/components/mealplan/MealPlanPage.tsx` (modified — updated getWeekStart, handleCurrentWeek, useEffect for prefs, handleViewMealEvent, passed weekStartDay props)
+- `src/components/mealplan/MealPlanGrid.tsx` (modified — added weekStartDay prop, dayOrder/dayLabels, updated all DAY_LABELS references)
+- `src/components/mealplan/WeekNavigation.tsx` (modified — added weekStartDay prop, updated isCurrentWeek)
+- `tests/unit/components/mealplan/MealPlanGrid.test.tsx` (modified — added 5 weekStartDay prop tests)
+- `tests/unit/components/mealplan/WeekNavigation.test.tsx` (modified — added 3 weekStartDay prop tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (1691/1692, 61 files — 1 pre-existing flaky test in MealPlanPage full suite, passes in isolation)
+- Lint: N/A
+
+### Learnings for future iterations
+- This story only changes display order, NOT how dayOfWeek values are stored — `meal_plan_items.day_of_week` always uses JS convention (0=Sunday through 6=Saturday)
+- The `dayOrder` array is the key abstraction: it maps display position → stored dayOfWeek value, used consistently in both mobile and desktop layouts
+- `getDateLabel(displayIndex)` works correctly because it adds `displayIndex` (position from start of week) to `weekStart` date — no dayOfWeek mapping needed there
+- For `handleViewMealEvent`, the formula `(dayOfWeek - weekStartDay + 7) % 7` converts a stored dayOfWeek back to a display offset from weekStart
+- When user preferences load with `weekStartDay !== 0`, the initial `weekStart` state (computed with default Sunday) must be recalculated — this is handled in the useEffect that loads preferences
+- `(dayOfWeek + 6) % 7` is the standard formula to convert Sunday-based day (0=Sun) to Monday-based offset (Mon=0, Tue=1, ..., Sun=6)
+- The `ALL_DAY_LABELS` constant (renamed from `DAY_LABELS`) is the canonical Sunday-indexed array; `dayLabels` is the display-ordered version computed from `dayOrder`
 
 ---

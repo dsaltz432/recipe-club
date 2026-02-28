@@ -349,7 +349,7 @@
         "Tests pass"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "This story changes how days are ordered in the display, NOT how they're stored. meal_plan_items always store dayOfWeek as 0=Sunday through 6=Saturday (matching JS Date.getDay()). The display just reorders.\n\nKey changes:\n\n1. MealPlanPage.tsx: Modify getWeekStart() to accept weekStartDay parameter. Currently: d.setDate(d.getDate() - d.getDay()) which subtracts to Sunday. For Monday start: d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) which subtracts to Monday. Use the loaded userPreferences.weekStartDay.\n\n2. MealPlanGrid.tsx: Add weekStartDay?: number prop. Create reordered day labels: if weekStartDay=1, DAY_LABELS becomes ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] and day indices become [1,2,3,4,5,6,0]. The dayIndex passed to getItemsForSlot must map to the actual dayOfWeek value (0-6). Create a dayOrder array: weekStartDay=0 → [0,1,2,3,4,5,6], weekStartDay=1 → [1,2,3,4,5,6,0]. Iterate dayOrder instead of DAY_LABELS.map((_, i)).\n\n3. WeekNavigation.tsx: Add weekStartDay?: number prop. Update isCurrentWeek() to compute current week start using the same logic as getWeekStart(). Update formatWeekRange() — no change needed since it uses weekStart date directly.\n\nTests: Test that Monday-start reorders day labels, test getWeekStart with different weekStartDay values, test week navigation moves correctly."
     }
   ]

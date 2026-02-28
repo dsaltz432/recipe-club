@@ -29,10 +29,13 @@ interface MealPlanPageProps {
   userId: string;
 }
 
-const getWeekStart = (date: Date): Date => {
+const getWeekStart = (date: Date, weekStartDay: number = 0): Date => {
   const d = new Date(date);
   const dayOfWeek = d.getDay();
-  d.setDate(d.getDate() - dayOfWeek);
+  const diff = weekStartDay === 1
+    ? (dayOfWeek + 6) % 7  // Monday-start: Mon=0, Tue=1, ..., Sun=6
+    : dayOfWeek;            // Sunday-start: Sun=0, Mon=1, ..., Sat=6
+  d.setDate(d.getDate() - diff);
   d.setHours(0, 0, 0, 0);
   return d;
 };
@@ -157,9 +160,14 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     loadPlan();
   }, [loadPlan]);
 
-  // Load user preferences once
+  // Load user preferences once, and recalculate weekStart if weekStartDay differs from default
   useEffect(() => {
-    loadUserPreferences(userId).then(setUserPreferences);
+    loadUserPreferences(userId).then((prefs) => {
+      setUserPreferences(prefs);
+      if (prefs.weekStartDay !== 0) {
+        setWeekStart(getWeekStart(new Date(), prefs.weekStartDay));
+      }
+    });
   }, [userId]);
 
   const handlePreviousWeek = () => {
@@ -179,7 +187,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   };
 
   const handleCurrentWeek = () => {
-    setWeekStart(getWeekStart(new Date()));
+    setWeekStart(getWeekStart(new Date(), userPreferences?.weekStartDay ?? 0));
   };
 
   const loadGroceryData = useCallback(async (): Promise<{
@@ -676,8 +684,10 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
     // Create a personal event for this meal slot
     try {
+      const wsd = userPreferences?.weekStartDay ?? 0;
+      const dayOffset = (dayOfWeek - wsd + 7) % 7;
       const slotDate = new Date(weekStart);
-      slotDate.setDate(slotDate.getDate() + dayOfWeek);
+      slotDate.setDate(slotDate.getDate() + dayOffset);
       const dateStr = slotDate.toISOString().split("T")[0];
 
       const insertPayload = {
@@ -770,6 +780,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         onPreviousWeek={handlePreviousWeek}
         onNextWeek={handleNextWeek}
         onCurrentWeek={handleCurrentWeek}
+        weekStartDay={userPreferences?.weekStartDay}
       />
 
       {viewTab === "plan" && (
@@ -780,6 +791,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             onAddMeal={handleAddMeal}
             onViewMealEvent={handleViewMealEvent}
             mealTypes={userPreferences?.mealTypes}
+            weekStartDay={userPreferences?.weekStartDay}
           />
 
           {pendingSlot && (

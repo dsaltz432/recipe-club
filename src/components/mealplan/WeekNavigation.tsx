@@ -6,6 +6,7 @@ interface WeekNavigationProps {
   onPreviousWeek: () => void;
   onNextWeek: () => void;
   onCurrentWeek: () => void;
+  weekStartDay?: number;
 }
 
 const formatWeekRange = (weekStart: Date): string => {
@@ -21,11 +22,14 @@ const formatWeekRange = (weekStart: Date): string => {
   return `${startMonth} ${weekStart.getDate()} - ${endMonth} ${weekEnd.getDate()}`;
 };
 
-const isCurrentWeek = (weekStart: Date): boolean => {
+const isCurrentWeek = (weekStart: Date, weekStartDay: number = 0): boolean => {
   const now = new Date();
   const currentWeekStart = new Date(now);
   const dayOfWeek = currentWeekStart.getDay();
-  currentWeekStart.setDate(currentWeekStart.getDate() - dayOfWeek);
+  const diff = weekStartDay === 1
+    ? (dayOfWeek + 6) % 7
+    : dayOfWeek;
+  currentWeekStart.setDate(currentWeekStart.getDate() - diff);
   currentWeekStart.setHours(0, 0, 0, 0);
 
   const compareDate = new Date(weekStart);
@@ -39,6 +43,7 @@ const WeekNavigation = ({
   onPreviousWeek,
   onNextWeek,
   onCurrentWeek,
+  weekStartDay = 0,
 }: WeekNavigationProps) => {
   return (
     <div className="flex items-center justify-between mb-4">
@@ -49,7 +54,7 @@ const WeekNavigation = ({
         <span className="font-display text-lg font-semibold">
           {formatWeekRange(weekStart)}
         </span>
-        {!isCurrentWeek(weekStart) && (
+        {!isCurrentWeek(weekStart, weekStartDay) && (
           <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={onCurrentWeek}>
             Today
           </Button>

@@ -115,4 +115,51 @@ describe("WeekNavigation", () => {
 
     expect(screen.queryByText("Today")).not.toBeInTheDocument();
   });
+
+  describe("weekStartDay prop", () => {
+    it("hides Today button when on current week with weekStartDay=1", () => {
+      // Calculate current week's Monday
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = (dayOfWeek + 6) % 7; // Monday-start offset
+      const currentMonday = new Date(now);
+      currentMonday.setDate(currentMonday.getDate() - diff);
+      currentMonday.setHours(0, 0, 0, 0);
+
+      render(
+        <WeekNavigation
+          {...defaultProps}
+          weekStart={currentMonday}
+          weekStartDay={1}
+        />
+      );
+
+      expect(screen.queryByText("Today")).not.toBeInTheDocument();
+    });
+
+    it("shows Today button when on a different week with weekStartDay=1", () => {
+      render(
+        <WeekNavigation
+          {...defaultProps}
+          weekStart={makeLocalDate(2025, 1, 6)} // Monday Jan 6, 2025
+          weekStartDay={1}
+        />
+      );
+
+      expect(screen.getByText("Today")).toBeInTheDocument();
+    });
+
+    it("displays correct week range with Monday-start", () => {
+      // Monday Feb 9 to Sunday Feb 15
+      render(
+        <WeekNavigation
+          {...defaultProps}
+          weekStart={makeLocalDate(2026, 2, 9)}
+          weekStartDay={1}
+        />
+      );
+
+      expect(screen.getByText("Feb 9 - 15")).toBeInTheDocument();
+    });
+  });
 });
