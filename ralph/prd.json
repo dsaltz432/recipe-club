@@ -281,7 +281,7 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Create migration at supabase/migrations/20260228000003_add_meal_settings_to_user_preferences.sql. The user_preferences table already exists (created in 20260214000002_meal_planning.sql) with columns: dietary_restrictions, cuisine_preferences, disliked_ingredients, household_size, cooking_skill, max_cook_time_minutes. It has RLS with 'Users can manage their own preferences' policy for ALL using auth.uid() = user_id. Use ALTER TABLE to add the two new columns. meal_types stores which meals the user wants in their grid (any subset of breakfast/lunch/dinner, minimum 1). week_start_day: 0=Sunday (default, current behavior), 1=Monday. Apply via Supabase MCP tool."
     },
     {
