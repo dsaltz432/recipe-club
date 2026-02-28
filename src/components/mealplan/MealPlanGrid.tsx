@@ -37,10 +37,16 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
       mealType={mealType}
       onAddMeal={onAddMeal}
       onViewMealEvent={onViewMealEvent}
+      slotMinH={slotMinH}
     />
   );
 
   const mobileGridCols = `grid-cols-[56px_${"1fr_".repeat(activeMealTypes.length).trim()}]`;
+  // Expand slot heights when fewer meal types are shown
+  const mealCount = activeMealTypes.length;
+  const mobileMinH = mealCount === 1 ? "min-h-[96px]" : mealCount === 2 ? "min-h-[64px]" : "min-h-[48px]";
+  const desktopMinH = mealCount === 1 ? "md:min-h-[120px]" : mealCount === 2 ? "md:min-h-[80px]" : "md:min-h-[60px]";
+  const slotMinH = `${mobileMinH} ${desktopMinH}`;
 
   return (
     <>
@@ -64,7 +70,7 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
                 <span className="text-[10px] text-muted-foreground">{getDateLabel(displayIndex)}</span>
               </div>
               {activeMealTypes.map((mealType) => (
-                <div key={mealType} className="min-h-[48px]">
+                <div key={mealType} className={mobileMinH}>
                   {renderSlot(dayOrder[displayIndex], mealType)}
                 </div>
               ))}
@@ -94,7 +100,7 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
                 <span className="text-xs font-medium text-muted-foreground capitalize">{mealType}</span>
               </div>
               {dayLabels.map((_, displayIndex) => (
-                <div key={displayIndex} className="p-0.5">
+                <div key={displayIndex} className={`p-0.5 ${desktopMinH}`}>
                   {renderSlot(dayOrder[displayIndex], mealType)}
                 </div>
               ))}

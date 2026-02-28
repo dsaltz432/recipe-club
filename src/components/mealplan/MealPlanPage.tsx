@@ -330,7 +330,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       console.error("Smart combine error:", err);
       setSmartGroceryItems(null);
       setPerRecipeItems(undefined);
-      setCombineError(err instanceof Error ? err.message : "Unknown error");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setCombineError(msg.includes("skipped") ? "AI grocery service is not configured. Please set the ANTHROPIC_API_KEY in your Supabase edge function secrets." : msg);
     } finally {
       setIsCombining(false);
     }

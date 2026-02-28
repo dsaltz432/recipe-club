@@ -7,6 +7,7 @@ interface MealPlanSlotProps {
   mealType: string;
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  slotMinH?: string;
 }
 
 const mealTypeLabels: Record<string, string> = {
@@ -22,13 +23,15 @@ const MealPlanSlot = ({
   mealType,
   onAddMeal,
   onViewMealEvent,
+  slotMinH,
 }: MealPlanSlotProps) => {
   const isCooked = items.length > 0 && items.every((i) => i.cookedAt);
+  const minH = slotMinH || "min-h-[48px] md:min-h-[60px]";
 
   if (items.length === 0) {
     return (
       <button
-        className="w-full h-full min-h-[48px] md:min-h-[60px] border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent"
+        className={`w-full h-full ${minH} border border-dashed border-gray-200 text-muted-foreground hover:border-purple/50 hover:text-purple rounded-md flex items-center justify-center gap-1 bg-transparent`}
         onClick={() => onAddMeal(dayOfWeek, mealType)}
       >
         <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -39,7 +42,7 @@ const MealPlanSlot = ({
 
   return (
     <div
-      className={`relative w-full min-h-[48px] md:min-h-[60px] p-1.5 md:p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm ${
+      className={`relative w-full ${minH} p-1.5 md:p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm ${
         isCooked
           ? "bg-green-50 border-green-200"
           : "bg-purple/5 border-purple/20"

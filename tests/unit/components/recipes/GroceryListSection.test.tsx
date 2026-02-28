@@ -543,7 +543,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText(/Failed to combine ingredients\. Please try again later or contact your administrator\./)).toBeInTheDocument();
+    expect(screen.getByText("AI service unavailable")).toBeInTheDocument();
   });
 
   it("renders empty per-recipe tab when perRecipeItems not provided for recipe", async () => {

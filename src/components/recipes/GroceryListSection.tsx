@@ -371,7 +371,7 @@ const GroceryListSection = ({
                 <div className="flex items-center gap-2 p-3 bg-red-50 rounded-md border border-red-200">
                   <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
                   <p className="text-sm text-red-700">
-                    Failed to combine ingredients. Please try again later or contact your administrator.
+                    {combineError}
                   </p>
                 </div>
               )}
