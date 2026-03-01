@@ -14,11 +14,6 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Mock instacart module (imported by GroceryExportMenu)
-vi.mock("@/lib/instacart", () => ({
-  sendToInstacart: vi.fn().mockResolvedValue("https://www.instacart.com"),
-}));
-
 // Mock devMode
 vi.mock("@/lib/devMode", () => ({
   isDevMode: () => false,
