@@ -3,11 +3,15 @@ import { render, screen, fireEvent, waitFor } from "@tests/utils";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { toast } from "sonner";
 
-// Mock Supabase (still needed for recipe search)
+// Mock Supabase (still needed for recipe search + ingredient parsing)
 const mockSupabaseFrom = vi.fn();
+const mockInvoke = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
+    functions: {
+      invoke: (...args: unknown[]) => mockInvoke(...args),
+    },
   },
 }));
 
@@ -587,13 +591,14 @@ describe("AddMealDialog", () => {
       expect(screen.queryByText("Manual")).not.toBeInTheDocument();
     });
 
-    it("switches to manual mode and shows ingredient rows", () => {
+    it("switches to manual mode and shows paste textarea", () => {
       render(<AddMealDialog {...propsWithManual} />);
 
       fireEvent.click(screen.getByText("Manual"));
 
-      // Should show ingredient form rows (IngredientFormRows renders inputs)
-      expect(screen.getByText("Ingredients")).toBeInTheDocument();
+      // Should show paste textarea instead of ingredient rows
+      expect(screen.getByText("Paste Ingredients")).toBeInTheDocument();
+      expect(screen.getByLabelText("Paste ingredients text")).toBeInTheDocument();
     });
 
     it("switches from manual back to URL mode", () => {
@@ -605,7 +610,17 @@ describe("AddMealDialog", () => {
       expect(screen.getByLabelText("Recipe URL *")).toBeInTheDocument();
     });
 
-    it("submits manual meal with ingredients", () => {
+    it("submits manual meal with pasted ingredients via AI parse", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: {
+          success: true,
+          items: [
+            { name: "spaghetti", quantity: 1, unit: "lb", category: "pantry" },
+          ],
+        },
+        error: null,
+      });
+
       render(<AddMealDialog {...propsWithManual} />);
 
       // Fill name
@@ -616,27 +631,30 @@ describe("AddMealDialog", () => {
       // Switch to manual mode
       fireEvent.click(screen.getByText("Manual"));
 
-      // Fill ingredient name in the first row
-      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
-      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
-
-      // Fill quantity
-      const quantityInputs = screen.getAllByPlaceholderText("Qty");
-      fireEvent.change(quantityInputs[0], { target: { value: "1" } });
+      // Paste ingredients text
+      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+        target: { value: "1 lb spaghetti" },
+      });
 
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      expect(propsWithManual.onAddManualMeal).toHaveBeenCalledWith("Pasta", [
-        expect.objectContaining({
-          name: "spaghetti",
-          quantity: 1,
-          sort_order: 0,
-        }),
-      ]);
+      await waitFor(() => {
+        expect(propsWithManual.onAddManualMeal).toHaveBeenCalledWith("Pasta", [
+          expect.objectContaining({
+            name: "spaghetti",
+            quantity: 1,
+            sort_order: 0,
+          }),
+        ]);
+      });
+
+      expect(mockInvoke).toHaveBeenCalledWith("parse-grocery-text", {
+        body: { text: "1 lb spaghetti" },
+      });
     });
 
-    it("disables submit in manual mode when no ingredients are entered", () => {
+    it("disables submit in manual mode when no ingredients are pasted", () => {
       render(<AddMealDialog {...propsWithManual} />);
 
       fireEvent.change(screen.getByLabelText("Meal Name *"), {
@@ -645,7 +663,7 @@ describe("AddMealDialog", () => {
 
       fireEvent.click(screen.getByText("Manual"));
 
-      // Submit should be disabled — no ingredient names filled
+      // Submit should be disabled — no paste text entered
       expect(screen.getByText("Add to Meal")).toBeDisabled();
     });
   });

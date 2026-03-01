@@ -3767,7 +3767,18 @@ describe("MealPlanPage", () => {
   });
 
   describe("manual meal entry", () => {
-    it("adds manual meal with ingredients via handleAddManualMeal", async () => {
+    it("adds manual meal with pasted ingredients via AI parse", async () => {
+      // Mock the AI parse response
+      mockInvoke.mockResolvedValueOnce({
+        data: {
+          success: true,
+          items: [
+            { name: "spaghetti", quantity: 1, unit: "lb", category: "pantry" },
+          ],
+        },
+        error: null,
+      });
+
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
           return createPlanMock(null);
@@ -3834,14 +3845,15 @@ describe("MealPlanPage", () => {
       // Switch to manual mode
       fireEvent.click(screen.getByText("Manual"));
 
-      // Fill ingredient
-      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
-      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
+      // Paste ingredients
+      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+        target: { value: "1 lb spaghetti" },
+      });
 
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      // Should call rpc to save ingredients
+      // Should call rpc to save ingredients after AI parse
       await waitFor(() => {
         expect(mockRpc).toHaveBeenCalledWith("replace_recipe_ingredients", expect.objectContaining({
           p_recipe_id: "recipe-manual-1",
@@ -3854,6 +3866,17 @@ describe("MealPlanPage", () => {
 
     it("handles rpc error when saving manual meal ingredients", async () => {
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      // Mock the AI parse response
+      mockInvoke.mockResolvedValueOnce({
+        data: {
+          success: true,
+          items: [
+            { name: "spaghetti", quantity: 1, unit: "lb", category: "pantry" },
+          ],
+        },
+        error: null,
+      });
       mockRpc.mockResolvedValueOnce({ error: new Error("RPC failed") });
 
       mockSupabaseFrom.mockImplementation((table: string) => {
@@ -3922,9 +3945,10 @@ describe("MealPlanPage", () => {
       // Switch to manual mode
       fireEvent.click(screen.getByText("Manual"));
 
-      // Fill ingredient
-      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
-      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
+      // Paste ingredients
+      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+        target: { value: "1 lb spaghetti" },
+      });
 
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
@@ -3936,20 +3960,16 @@ describe("MealPlanPage", () => {
       consoleSpy.mockRestore();
     });
 
-    it("skips ingredient save when addItemToPlan fails for manual meal", async () => {
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    it("shows error when AI parse fails for manual meal", async () => {
+      // Mock the AI parse to fail
+      mockInvoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error("Parse failed"),
+      });
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
           return createPlanMock(null);
-        }
-        if (table === "recipes") {
-          return createMockQueryBuilder({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: new Error("Insert failed"),
-            }),
-          });
         }
         if (table === "meal_plan_items") {
           return createMockQueryBuilder({
@@ -3991,20 +4011,19 @@ describe("MealPlanPage", () => {
       // Switch to manual mode
       fireEvent.click(screen.getByText("Manual"));
 
-      // Fill ingredient
-      const ingredientInputs = screen.getAllByPlaceholderText("Ingredient name");
-      fireEvent.change(ingredientInputs[0], { target: { value: "spaghetti" } });
+      // Paste ingredients
+      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+        target: { value: "1 lb spaghetti" },
+      });
 
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      // addItemToPlan fails → shows error, rpc is NOT called
+      // AI parse fails → shows error toast, rpc is NOT called
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to add meal");
+        expect(toast.error).toHaveBeenCalledWith("Failed to parse ingredients. Please try again.");
       });
       expect(mockRpc).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
     });
   });
 });

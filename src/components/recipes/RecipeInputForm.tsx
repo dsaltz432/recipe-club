@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export interface RecipeFormData {
   url: string;
   inputMode: InputMode;
   ingredientRows: IngredientRow[];
+  pasteText: string;
 }
 
 interface RecipeInputFormProps {
@@ -28,6 +30,8 @@ interface RecipeInputFormProps {
   nameLabel?: string;
   namePlaceholder?: string;
   showManualMode?: boolean;
+  /** When true, manual mode shows only a paste textarea instead of row-by-row entry */
+  manualPasteOnly?: boolean;
 }
 
 export function createInitialFormData(): RecipeFormData {
@@ -36,14 +40,21 @@ export function createInitialFormData(): RecipeFormData {
     url: "",
     inputMode: "url",
     ingredientRows: [createBlankRow()],
+    pasteText: "",
   };
 }
 
-export function canSubmitRecipeForm(data: RecipeFormData, isSubmitting: boolean): boolean {
+export function canSubmitRecipeForm(data: RecipeFormData, isSubmitting: boolean, pasteOnly?: boolean): boolean {
   if (!data.name.trim() || isSubmitting) return false;
   if (data.inputMode === "url" && (!data.url.trim() || !isValidUrl(data.url))) return false;
   if (data.inputMode === "upload" && (!data.url.trim() || !isValidUrl(data.url))) return false;
-  if (data.inputMode === "manual" && !data.ingredientRows.some((r) => r.name.trim())) return false;
+  if (data.inputMode === "manual") {
+    if (pasteOnly) {
+      if (!data.pasteText.trim()) return false;
+    } else {
+      if (!data.ingredientRows.some((r) => r.name.trim())) return false;
+    }
+  }
   return true;
 }
 
@@ -71,6 +82,7 @@ const RecipeInputForm = ({
   nameLabel = "Recipe Name *",
   namePlaceholder = "Enter recipe name",
   showManualMode = true,
+  manualPasteOnly = false,
 }: RecipeInputFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingFile = externalUploading ?? false;
@@ -83,7 +95,10 @@ const RecipeInputForm = ({
   const handleModeChange = (mode: InputMode) => {
     const changes: Partial<RecipeFormData> = { inputMode: mode };
     if (mode !== "url" && mode !== "upload") changes.url = "";
-    if (mode !== "manual") changes.ingredientRows = [createBlankRow()];
+    if (mode !== "manual") {
+      changes.ingredientRows = [createBlankRow()];
+      changes.pasteText = "";
+    }
     onFormDataChange({ ...formData, ...changes });
   };
 
@@ -229,7 +244,19 @@ const RecipeInputForm = ({
       )}
 
       {/* Manual mode */}
-      {formData.inputMode === "manual" && (
+      {formData.inputMode === "manual" && manualPasteOnly && (
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-sm">Paste Ingredients</Label>
+          <Textarea
+            value={formData.pasteText}
+            onChange={(e) => update({ pasteText: e.target.value })}
+            placeholder={"Paste your ingredients here, e.g.:\n2 cups flour\n1 lb chicken breast\n4 garlic cloves\n1 tbsp olive oil"}
+            className="min-h-[120px] text-sm"
+            aria-label="Paste ingredients text"
+          />
+        </div>
+      )}
+      {formData.inputMode === "manual" && !manualPasteOnly && (
         <div className="space-y-1.5 sm:space-y-2">
           <Label className="text-sm">Ingredients</Label>
           <IngredientFormRows

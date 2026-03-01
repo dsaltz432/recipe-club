@@ -62,7 +62,6 @@ import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
-import { cn } from "@/lib/utils";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
@@ -71,7 +70,7 @@ import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache, deleteGroceryCache } from "@/lib/groceryCache";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
-import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, buildIngredientPayload, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
+import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
 
 interface EventData {
   eventId: string;
@@ -632,9 +631,22 @@ const EventDetailPage = () => {
       const savedRecipeUrl = recipeFormData.inputMode === "manual" ? "" : recipeFormData.url.trim();
 
       if (recipeFormData.inputMode === "manual") {
-        // Manual mode: save ingredients directly, skip parsing
+        // Manual mode: parse pasted text via AI, then save ingredients
         setParseStep("parsing");
-        const ingredientData = buildIngredientPayload(recipeFormData.ingredientRows);
+        const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-grocery-text", {
+          body: { text: recipeFormData.pasteText },
+        });
+        if (parseError) throw parseError;
+        if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse ingredients");
+        const ingredientData = (parseData.items as Array<{ name: string; quantity: number | null; unit: string | null; category: string }>).map(
+          (item, i) => ({
+            name: item.name || "",
+            quantity: item.quantity,
+            unit: item.unit,
+            category: item.category || "other",
+            sort_order: i,
+          })
+        );
 
         if (ingredientData.length > 0) {
           const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
@@ -1218,10 +1230,7 @@ const EventDetailPage = () => {
           }
         }}
       >
-        <DialogContent className={cn(
-          "max-h-[85vh] overflow-y-auto",
-          recipeFormData.inputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
-        )}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
               Add a Recipe
@@ -1267,6 +1276,7 @@ const EventDetailPage = () => {
                   onFormDataChange={setRecipeFormData}
                   isUploading={isUploadingRecipeImage}
                   onUploadingChange={setIsUploadingRecipeImage}
+                  manualPasteOnly
                 />
               </div>
 
@@ -1283,7 +1293,7 @@ const EventDetailPage = () => {
                 </Button>
                 <Button
                   onClick={handleSubmitRecipe}
-                  disabled={!canSubmitRecipeForm(recipeFormData, isSubmitting)}
+                  disabled={!canSubmitRecipeForm(recipeFormData, isSubmitting, true)}
                   className="bg-purple hover:bg-purple-dark"
                 >
                   Add Recipe

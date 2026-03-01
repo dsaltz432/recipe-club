@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import RecipeInputForm, {
   createInitialFormData,
   canSubmitRecipeForm,
-  buildIngredientPayload,
   type RecipeFormData,
 } from "@/components/recipes/RecipeInputForm";
+import { detectCategory } from "@/lib/groceryList";
 
 interface RecipeResult {
   id: string;
@@ -53,12 +54,14 @@ const AddMealDialog = ({
   const [searchResults, setSearchResults] = useState<RecipeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
+  const [isParsingIngredients, setIsParsingIngredients] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetForm = () => {
     setActiveTab("custom");
     setFormData(createInitialFormData());
     setIsUploadingFile(false);
+    setIsParsingIngredients(false);
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
@@ -110,15 +113,40 @@ const AddMealDialog = ({
     };
   }, [searchQuery]);
 
-  const handleCustomSubmit = () => {
+  const handleCustomSubmit = async () => {
     if (formData.inputMode === "manual" && onAddManualMeal) {
-      const ingredientData = buildIngredientPayload(formData.ingredientRows);
-      onAddManualMeal(formData.name.trim(), ingredientData);
+      setIsParsingIngredients(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("parse-grocery-text", {
+          body: { text: formData.pasteText },
+        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error ?? "Failed to parse ingredients");
+        if (data.skipped) {
+          toast.error("Ingredient parsing is not available.");
+          return;
+        }
+        const ingredientData = (data.items as Array<{ name: string; quantity: number | null; unit: string | null; category: string }>).map(
+          (item, i) => ({
+            name: item.name || "",
+            quantity: item.quantity,
+            unit: item.unit,
+            category: item.category || detectCategory(item.name || ""),
+            sort_order: i,
+          })
+        );
+        onAddManualMeal(formData.name.trim(), ingredientData);
+        handleClose();
+      } catch {
+        toast.error("Failed to parse ingredients. Please try again.");
+      } finally {
+        setIsParsingIngredients(false);
+      }
     } else {
       // In url/upload mode, form validation ensures URL is always present
       onAddCustomMeal(formData.name.trim(), formData.url.trim(), true);
+      handleClose();
     }
-    handleClose();
   };
 
   const toggleRecipeSelection = (recipe: RecipeResult) => {
@@ -144,10 +172,7 @@ const AddMealDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => handleClose()}>
-      <DialogContent className={cn(
-        "max-h-[90vh] overflow-y-auto p-4 sm:p-6 gap-3 sm:gap-4",
-        activeTab === "custom" && formData.inputMode === "manual" ? "sm:max-w-2xl" : "sm:max-w-lg"
-      )}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:p-6 gap-3 sm:gap-4 sm:max-w-lg">
         <DialogHeader className="space-y-1">
           <DialogTitle className="font-display text-lg sm:text-xl">
             Add Meal
@@ -188,6 +213,7 @@ const AddMealDialog = ({
               nameLabel="Meal Name *"
               namePlaceholder="Enter meal name"
               showManualMode={!!onAddManualMeal}
+              manualPasteOnly
             />
 
             <div className="flex justify-end gap-2">
@@ -199,10 +225,17 @@ const AddMealDialog = ({
               </Button>
               <Button
                 onClick={handleCustomSubmit}
-                disabled={!canSubmitRecipeForm(formData, false)}
+                disabled={!canSubmitRecipeForm(formData, isParsingIngredients, true)}
                 className="bg-purple hover:bg-purple-dark"
               >
-                Add to Meal
+                {isParsingIngredients ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Parsing...
+                  </>
+                ) : (
+                  "Add to Meal"
+                )}
               </Button>
             </div>
           </div>

@@ -6781,7 +6781,13 @@ describe("EventDetailPage", () => {
   // ---- HANDLE SUBMIT RECIPE WITH NO URL (manual mode covers url: null path) ----
 
   it("submits recipe with no URL via manual mode", async () => {
-    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    mockFunctionsInvoke.mockResolvedValue({
+      data: {
+        success: true,
+        items: [{ name: "chicken", quantity: 1, unit: "lb", category: "meat_seafood" }],
+      },
+      error: null,
+    });
 
     render(<EventDetailPage />);
 
@@ -6799,10 +6805,10 @@ describe("EventDetailPage", () => {
     const nameInput = screen.getByPlaceholderText("Enter recipe name");
     fireEvent.change(nameInput, { target: { value: "No URL Recipe" } });
 
-    // Switch to manual mode and add an ingredient so submit is enabled
+    // Switch to manual mode and paste ingredients
     fireEvent.click(screen.getByText("Manual"));
-    const ingredientInput = screen.getByPlaceholderText("Ingredient name");
-    fireEvent.change(ingredientInput, { target: { value: "chicken" } });
+    const pasteInput = screen.getByLabelText("Paste ingredients text");
+    fireEvent.change(pasteInput, { target: { value: "1 lb chicken" } });
 
     // Submit — manual mode sets url to null
     fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));

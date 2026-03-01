@@ -506,6 +506,26 @@ describe("canSubmitRecipeForm", () => {
     };
     expect(canSubmitRecipeForm(data, false)).toBe(false);
   });
+
+  it("returns false in manual pasteOnly mode without paste text", () => {
+    const data: RecipeFormData = {
+      ...createInitialFormData(),
+      name: "Test",
+      inputMode: "manual",
+      pasteText: "",
+    };
+    expect(canSubmitRecipeForm(data, false, true)).toBe(false);
+  });
+
+  it("returns true in manual pasteOnly mode with paste text", () => {
+    const data: RecipeFormData = {
+      ...createInitialFormData(),
+      name: "Test",
+      inputMode: "manual",
+      pasteText: "1 lb spaghetti",
+    };
+    expect(canSubmitRecipeForm(data, false, true)).toBe(true);
+  });
 });
 
 describe("buildIngredientPayload", () => {
