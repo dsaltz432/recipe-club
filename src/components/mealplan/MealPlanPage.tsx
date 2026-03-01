@@ -318,14 +318,18 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       lastCombinedRecipeIds.current = sortedRecipeIds;
       lastCombinedGeneralCount.current = genItems.length;
 
-      // Reset checked items when recipes change (new combine = new list)
-      setCheckedItems(new Set());
+      // Preserve checked items that still exist in the new combined list
+      const newItemNames = new Set(result.items.map((i) => i.name));
+      setCheckedItems((prev) => {
+        const kept = new Set([...prev].filter((name) => newItemNames.has(name)));
+        const weekStartStr = weekStart.toISOString().split("T")[0];
+        saveCheckedItems("meal_plan", weekStartStr, userId, kept);
+        return kept;
+      });
 
       // Persist to cache
       const weekStartStr = weekStart.toISOString().split("T")[0];
       saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.perRecipeItems);
-      // Clear persisted checked items since the list changed
-      saveCheckedItems("meal_plan", weekStartStr, userId, new Set());
     } catch (err) {
       console.error("Smart combine error:", err);
       setSmartGroceryItems(null);

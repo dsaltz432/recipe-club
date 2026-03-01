@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, RefreshCw, AlertCircle, Plus, Pencil, Trash2, Check, X, ClipboardPaste } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, Plus, X, ClipboardPaste } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,8 +78,6 @@ const GroceryListSection = ({
   onToggleChecked,
   generalItems = [],
   onAddGeneralItem,
-  onRemoveGeneralItem,
-  onUpdateGeneralItem,
   onBulkParseGroceryText,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
@@ -91,10 +89,6 @@ const GroceryListSection = ({
   const [newGeneralName, setNewGeneralName] = useState("");
   const [newGeneralQty, setNewGeneralQty] = useState("");
   const [newGeneralUnit, setNewGeneralUnit] = useState("");
-  const [editingGeneralId, setEditingGeneralId] = useState<string | null>(null);
-  const [editGeneralName, setEditGeneralName] = useState("");
-  const [editGeneralQty, setEditGeneralQty] = useState("");
-  const [editGeneralUnit, setEditGeneralUnit] = useState("");
   // Bulk paste state
   const [showBulkPaste, setShowBulkPaste] = useState(false);
   const [bulkPasteText, setBulkPasteText] = useState("");
@@ -155,33 +149,14 @@ const GroceryListSection = ({
     if (e.key === "Enter") handleAddGeneral();
   };
 
-  const startEditGeneral = (item: GeneralGroceryItem) => {
-    setEditingGeneralId(item.id);
-    setEditGeneralName(item.name);
-    setEditGeneralQty(item.quantity ?? "");
-    setEditGeneralUnit(item.unit ?? "");
-  };
-
-  const saveEditGeneral = () => {
-    if (!editingGeneralId || !editGeneralName.trim()) return;
-    onUpdateGeneralItem?.(editingGeneralId, {
-      name: editGeneralName.trim(),
-      quantity: editGeneralQty.trim() || undefined,
-      unit: editGeneralUnit.trim() || undefined,
-    });
-    setEditingGeneralId(null);
-  };
-
-  const cancelEditGeneral = () => {
-    setEditingGeneralId(null);
-  };
-
-  const handleEditGeneralKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") saveEditGeneral();
-    else if (e.key === "Escape") cancelEditGeneral();
-  };
-
   const existingGeneralNames = new Set(generalItems.map((item) => item.name.toLowerCase()));
+
+  // AI-processed General items — render these just like a recipe tab
+  const generalSmartItems = perRecipeItems?.["General"] ?? [];
+  const filteredGeneralItems = pantryItems.length > 0
+    ? filterSmartPantryItems(generalSmartItems, pantryItems)
+    : generalSmartItems;
+  const generalGrouped = groupSmartByCategory(filteredGeneralItems);
 
   const handleBulkParse = async () => {
     if (!bulkPasteText.trim() || !onBulkParseGroceryText) return;
@@ -416,84 +391,22 @@ const GroceryListSection = ({
                     No items yet. Add items below to include them in your grocery list.
                   </p>
                 ) : (
-                  <div className="space-y-1">
-                    {generalItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 py-1 px-1 rounded hover:bg-gray-50 group">
-                        {editingGeneralId === item.id ? (
-                          <>
-                            <Input
-                              value={editGeneralQty}
-                              onChange={(e) => setEditGeneralQty(e.target.value)}
-                              placeholder="Qty"
-                              className="w-16 h-7 text-sm"
-                              onKeyDown={handleEditGeneralKeyDown}
-                              aria-label="Edit quantity"
-                            />
-                            <Input
-                              value={editGeneralUnit}
-                              onChange={(e) => setEditGeneralUnit(e.target.value)}
-                              placeholder="Unit"
-                              className="w-20 h-7 text-sm"
-                              onKeyDown={handleEditGeneralKeyDown}
-                              aria-label="Edit unit"
-                            />
-                            <Input
-                              value={editGeneralName}
-                              onChange={(e) => setEditGeneralName(e.target.value)}
-                              placeholder="Item name"
-                              className="flex-1 h-7 text-sm"
-                              onKeyDown={handleEditGeneralKeyDown}
-                              aria-label="Edit name"
-                            />
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600" onClick={saveEditGeneral} aria-label="Save edit">
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400" onClick={cancelEditGeneral} aria-label="Cancel edit">
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            {onToggleChecked && (
-                              <button
-                                type="button"
-                                onClick={() => onToggleChecked(item.name)}
-                                className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                  checkedItems?.has(item.name) ? "bg-purple border-purple" : "border-gray-300 hover:border-gray-400"
-                                }`}
-                                aria-label={checkedItems?.has(item.name) ? "Uncheck item" : "Check item"}
-                              >
-                                {checkedItems?.has(item.name) && <Check className="h-3 w-3 text-white" />}
-                              </button>
-                            )}
-                            <span className={`flex-1 text-sm ${checkedItems?.has(item.name) ? "line-through opacity-50" : ""}`}>
-                              {item.quantity && <span>{item.quantity} </span>}
-                              {item.unit && <span>{item.unit} </span>}
-                              {item.name}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-gray-400 opacity-0 group-hover:opacity-100 md:opacity-0"
-                              onClick={() => startEditGeneral(item)}
-                              aria-label="Edit general item"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-red-500 opacity-0 group-hover:opacity-100 md:opacity-0"
-                              onClick={() => onRemoveGeneralItem?.(item.id)}
-                              aria-label="Remove general item"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  isCombining && generalSmartItems.length === 0 ? (
+                    <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Combining ingredients...</span>
+                    </div>
+                  ) : (
+                    Array.from(generalGrouped.entries()).map(([category, items]) => (
+                      <GroceryCategoryGroup
+                        key={`general-${category}`}
+                        category={category}
+                        items={items}
+                        checkedItems={checkedItems}
+                        onToggleChecked={onToggleChecked}
+                      />
+                    ))
+                  )
                 )}
 
                 {/* Bulk paste UI */}

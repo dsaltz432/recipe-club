@@ -985,6 +985,13 @@ describe("GroceryListSection", () => {
   it("shows general items on the General tab", async () => {
     const user = userEvent.setup();
 
+    const generalPerRecipeItems: Record<string, SmartGroceryItem[]> = {
+      General: [
+        { name: "paper towels", displayName: "paper towels", totalQuantity: 2, unit: "roll", category: "other", sourceRecipes: ["General"] },
+        { name: "dish soap", displayName: "dish soap", category: "other", sourceRecipes: ["General"] },
+      ],
+    };
+
     render(
       <GroceryListSection
         recipes={recipes}
@@ -994,6 +1001,7 @@ describe("GroceryListSection", () => {
         eventName="Test Event"
         onAddGeneralItem={vi.fn()}
         generalItems={generalItems}
+        perRecipeItems={generalPerRecipeItems}
       />
     );
 
@@ -1062,92 +1070,16 @@ describe("GroceryListSection", () => {
     });
   });
 
-  it("calls onRemoveGeneralItem when delete button is clicked", async () => {
-    const user = userEvent.setup();
-    const onRemoveGeneralItem = vi.fn();
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
-        onRemoveGeneralItem={onRemoveGeneralItem}
-        generalItems={generalItems}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-
-    const removeButtons = screen.getAllByLabelText("Remove general item");
-    fireEvent.click(removeButtons[0]);
-
-    expect(onRemoveGeneralItem).toHaveBeenCalledWith("gen-1");
-  });
-
-  it("shows edit mode when edit button is clicked", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
-        onUpdateGeneralItem={vi.fn()}
-        generalItems={generalItems}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-
-    const editButtons = screen.getAllByLabelText("Edit general item");
-    fireEvent.click(editButtons[0]);
-
-    expect(screen.getByLabelText("Edit name")).toBeInTheDocument();
-    expect(screen.getByLabelText("Save edit")).toBeInTheDocument();
-    expect(screen.getByLabelText("Cancel edit")).toBeInTheDocument();
-  });
-
-  it("calls onUpdateGeneralItem when edit is saved", async () => {
-    const user = userEvent.setup();
-    const onUpdateGeneralItem = vi.fn();
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
-        onUpdateGeneralItem={onUpdateGeneralItem}
-        generalItems={generalItems}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-
-    const editButtons = screen.getAllByLabelText("Edit general item");
-    fireEvent.click(editButtons[0]);
-
-    fireEvent.change(screen.getByLabelText("Edit name"), { target: { value: "paper plates" } });
-    fireEvent.click(screen.getByLabelText("Save edit"));
-
-    expect(onUpdateGeneralItem).toHaveBeenCalledWith("gen-1", {
-      name: "paper plates",
-      quantity: "2",
-      unit: "roll",
-    });
-  });
-
   it("shows cross-off checkboxes on General tab items when onToggleChecked is provided", async () => {
     const user = userEvent.setup();
 
+    const generalPerRecipeItems: Record<string, SmartGroceryItem[]> = {
+      General: [
+        { name: "paper towels", displayName: "paper towels", totalQuantity: 2, unit: "roll", category: "other", sourceRecipes: ["General"] },
+        { name: "dish soap", displayName: "dish soap", category: "other", sourceRecipes: ["General"] },
+      ],
+    };
+
     render(
       <GroceryListSection
         recipes={recipes}
@@ -1157,6 +1089,7 @@ describe("GroceryListSection", () => {
         eventName="Test Event"
         onAddGeneralItem={vi.fn()}
         generalItems={generalItems}
+        perRecipeItems={generalPerRecipeItems}
         checkedItems={new Set<string>()}
         onToggleChecked={vi.fn()}
       />

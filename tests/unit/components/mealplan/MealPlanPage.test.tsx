@@ -1265,7 +1265,7 @@ describe("MealPlanPage", () => {
       });
     });
 
-    it("shows empty state when meals have no recipeId", async () => {
+    it("shows General tab when meals have no recipeId", async () => {
       // Load plan with a custom meal that has no recipeId
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === "meal_plans") {
@@ -1303,9 +1303,8 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
-      expect(
-        screen.getByText("Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.")
-      ).toBeInTheDocument();
+      // General tab should be available for adding items
+      expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
     });
 
     it("handles grocery data load error", async () => {
@@ -1813,11 +1812,10 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
-      // Meals with recipe_id but no URL now show the "no linked recipes" message
-      // instead of the GroceryListSection
-      expect(
-        screen.getByText("Your planned meals don't have linked recipes. Add a recipe URL to see ingredients here.")
-      ).toBeInTheDocument();
+      // General tab should be available for adding items (wait for loading to finish)
+      await waitFor(() => {
+        expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+      });
 
       // No parse button should be shown since the recipe has no URL
       expect(screen.queryByText('Parse "No URL Recipe"')).not.toBeInTheDocument();
@@ -2577,10 +2575,6 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
-      // Wait for grocery section to fully render — proves cache path completed
-      await waitFor(() => {
-      });
-
       await waitFor(() => {
         expect(mockLoadGroceryCache).toHaveBeenCalledWith(
           "meal_plan",
@@ -2588,6 +2582,9 @@ describe("MealPlanPage", () => {
           "user-123"
         );
       });
+
+      // Wait for all pending promises to settle before checking the negative assertion
+      await new Promise((r) => setTimeout(r, 50));
 
       // Cache hit — smart combine should not have been called
       expect(mockSmartCombineIngredients).not.toHaveBeenCalled();
