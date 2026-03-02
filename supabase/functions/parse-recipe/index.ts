@@ -8,8 +8,10 @@ const corsHeaders = {
 
 interface ParseRequest {
   recipeId: string;
-  recipeUrl: string;
+  recipeUrl?: string;
   recipeName: string;
+  text?: string;
+  model?: string;
 }
 
 interface ParsedIngredient {
@@ -129,12 +131,17 @@ serve(async (req) => {
     recipeId = body.recipeId;
     const { recipeUrl, recipeName } = body;
 
-    if (!recipeId || !recipeUrl) {
+    if (!recipeId || (!recipeUrl && !body.text)) {
       return new Response(
-        JSON.stringify({ success: false, error: "recipeId and recipeUrl are required" }),
+        JSON.stringify({ success: false, error: "recipeId and either recipeUrl or text are required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
+
+    // Model selection: text-only defaults to Haiku (fast/cheap), URL/image defaults to Sonnet
+    const isTextOnly = !!body.text && !recipeUrl;
+    const defaultModel = isTextOnly ? "claude-haiku-4-5-20251001" : "claude-sonnet-4-6";
+    const model = body.model || defaultModel;
 
     // Upsert recipe_content with status 'parsing'
     await supabase
@@ -150,6 +157,14 @@ serve(async (req) => {
     let isImage = false;
     let base64Content = "";
     let detectedMediaType = "image/jpeg";
+
+    if (isTextOnly) {
+      // Text input path — skip all URL fetching
+      recipeText = body.text!;
+    } else if (!recipeUrl) {
+      // Should not reach here due to validation above, but satisfy TS
+      throw new Error("recipeUrl is required when text is not provided");
+    } else {
 
     // BUG-009: Detect storage URLs including local dev (localhost/127.0.0.1) which
     // don't contain "supabase" in the hostname but still use the storage path pattern
@@ -295,6 +310,8 @@ serve(async (req) => {
       }
     }
 
+    } // end: URL/image/PDF fetch block
+
     // Build AI prompt
     const systemPrompt = `You are a recipe parser. Extract structured data from recipe content. Return ONLY valid JSON with no markdown formatting.
 
@@ -356,7 +373,7 @@ For ingredient names:
   YES (different products): "sesame oil", "rice vinegar", "low sodium soy sauce", "romaine lettuce heart"
   YES (distinct product forms): "crushed tomato" (a canned product), "red pepper flakes" (a spice product), "dried apricot" (different from fresh apricot), "dry white wine" (wine classification), "chili oil" (a product), "pickled jalapeño" (a distinct jarred product), "pickled red onion" (a distinct prepared product)
   NO (just preparation state): "fresh broccoli" (same as "broccoli"), "cold water" (same as "water"), "minced garlic" (same as "garlic"), "diced onion" (same as "onion"), "toasted sesame seed" (same as "sesame seed"), "fried shallot" (same as "shallot")
-- Use standard abbreviated units: "tsp", "tbsp", "cup", "oz", "lb". NEVER use metric units (g, kg, ml, L) — always convert to the nearest imperial equivalent (e.g. 200g → 7 oz, 500ml → 2 cups)
+- Use standard abbreviated units: "tsp", "tbsp", "cup", "oz", "lb". NEVER spell out full unit words — "teaspoon"→"tsp", "tablespoon"→"tbsp", "ounce"→"oz", "pound"→"lb". NEVER use metric units (g, kg, ml, L) — always convert to the nearest imperial equivalent (e.g. 200g → 7 oz, 500ml → 2 cups)
 - Use decimal numbers for quantities, not fractions: 0.25 not 1/4, 0.5 not 1/2, 0.33 not 1/3, 0.67 not 2/3. Round to 2 decimal places maximum (0.33 not 0.333, 0.67 not 0.667)
 - For compound ingredients, use the most common single-word form when one exists:
   "cornstarch" not "corn starch"
@@ -379,7 +396,7 @@ For ingredient names:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
+        model,
         max_tokens: 4096,
         system: systemPrompt,
         messages: [

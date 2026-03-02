@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getAllowedUser, isAdmin, signOut } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin, signOut } from "@/lib/auth";
 import type { User, Recipe, RecipeRatingsSummary, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +53,7 @@ import {
   UtensilsCrossed,
   Users,
   CheckCircle,
+  Settings,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { cancelEvent, completeEvent, updateEvent } from "@/lib/eventActions";
@@ -94,6 +95,7 @@ const EventDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [userIsMemberOrAdmin, setUserIsMemberOrAdmin] = useState(false);
   const [userIsMember, setUserIsMember] = useState(false);
 
   // Add Recipe form state
@@ -517,6 +519,7 @@ const EventDetailPage = () => {
         const allowed = await getAllowedUser(currentUser.email);
         setUserIsMember(allowed?.is_club_member ?? false); // Only club members can rate
         setUserIsAdmin(isAdmin(allowed));
+        setUserIsMemberOrAdmin(isMemberOrAdmin(allowed));
       }
 
       if (currentUser?.id) {
@@ -631,35 +634,13 @@ const EventDetailPage = () => {
       const savedRecipeUrl = recipeFormData.inputMode === "manual" ? "" : recipeFormData.url.trim();
 
       if (recipeFormData.inputMode === "manual") {
-        // Manual mode: parse pasted text via AI, then save ingredients
+        // Manual mode: parse pasted text via unified parse-recipe (saves to DB automatically)
         setParseStep("parsing");
-        const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-grocery-text", {
-          body: { text: recipeFormData.pasteText },
+        const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
+          body: { recipeId: newRecipeId, recipeName: savedRecipeName, text: recipeFormData.pasteText },
         });
         if (parseError) throw parseError;
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse ingredients");
-        const ingredientData = (parseData.items as Array<{ name: string; quantity: number | null; unit: string | null; category: string }>).map(
-          (item, i) => ({
-            name: item.name || "",
-            quantity: item.quantity,
-            unit: item.unit,
-            category: item.category || "other",
-            sort_order: i,
-          })
-        );
-
-        if (ingredientData.length > 0) {
-          const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
-            p_recipe_id: newRecipeId,
-            p_ingredients: ingredientData,
-          });
-          if (rpcError) throw rpcError;
-
-          await supabase.from("recipe_content").insert({
-            recipe_id: newRecipeId,
-            status: "completed",
-          });
-        }
 
         // Loading step: reload event and grocery data
         setParseStep("loading");
@@ -1049,7 +1030,7 @@ const EventDetailPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {userIsAdmin && (
+              {userIsMemberOrAdmin && (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
                     <Users className="h-4 w-4 mr-2" />
@@ -1058,6 +1039,11 @@ const EventDetailPage = () => {
                   <DropdownMenuSeparator />
                 </>
               )}
+              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -1103,7 +1089,7 @@ const EventDetailPage = () => {
 
               {/* Event action buttons */}
               <div className="flex gap-1 sm:gap-2 shrink-0">
-                {isUpcoming && userIsAdmin && user?.id === event?.createdBy && (
+                {isUpcoming && userIsMemberOrAdmin && user?.id === event?.createdBy && (
                   <>
                     <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs">
                       <Pencil className="h-3.5 w-3.5 sm:mr-1" />
@@ -1119,7 +1105,7 @@ const EventDetailPage = () => {
                     </Button>
                   </>
                 )}
-                {isUpcoming && userIsAdmin && user?.id !== event?.createdBy && (
+                {isUpcoming && userIsMemberOrAdmin && user?.id !== event?.createdBy && (
                   <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs bg-purple/5 hover:bg-purple/10">
                     <CheckCircle className="h-3.5 w-3.5 sm:mr-1" />
                     <span className="hidden sm:inline">Complete</span>
@@ -1158,6 +1144,7 @@ const EventDetailPage = () => {
               recipesWithNotes={event?.recipesWithNotes || []}
               user={user}
               userIsAdmin={userIsAdmin}
+              canManageRecipes={userIsMemberOrAdmin}
               expandedRecipeNotes={expandedRecipeNotes}
               deletingNoteId={deletingNoteId}
               onToggleRecipeNotes={toggleRecipeNotes}
@@ -1167,7 +1154,7 @@ const EventDetailPage = () => {
               onEditNoteClick={handleEditNoteClick}
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
-              onRateRecipe={handleRateRecipe}
+              onRateRecipe={userIsMember ? handleRateRecipe : undefined}
               onEditIngredients={(recipe) => setEditIngredientsRecipe({ id: recipe.id, name: recipe.name })}
             />
           </TabsContent>

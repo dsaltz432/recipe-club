@@ -139,7 +139,7 @@ describe("parse-recipe edge function", () => {
 
     expect(status).toBe(400);
     expect(data).toMatchObject({ success: false });
-    expect((data as { error: string }).error).toContain("recipeId and recipeUrl are required");
+    expect((data as { error: string }).error).toContain("recipeId and either recipeUrl or text are required");
   });
 
   it("returns 400 when recipeUrl is missing", async () => {
@@ -148,7 +148,7 @@ describe("parse-recipe edge function", () => {
 
     expect(status).toBe(400);
     expect(data).toMatchObject({ success: false });
-    expect((data as { error: string }).error).toContain("recipeId and recipeUrl are required");
+    expect((data as { error: string }).error).toContain("recipeId and either recipeUrl or text are required");
   });
 
   // BUG-001: Media type detection

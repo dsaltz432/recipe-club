@@ -16,29 +16,46 @@ interface GroceryItemRowProps {
   item: SmartGroceryItem;
   editable?: boolean;
   onEdit?: (originalName: string, edits: GroceryItemEdit) => void;
+  onEditText?: (originalName: string, newText: string) => void;
   onRemove?: (itemName: string) => void;
   isChecked?: boolean;
   onToggleChecked?: () => void;
 }
 
-const GroceryItemRow = ({ item, editable, onEdit, onRemove, isChecked, onToggleChecked }: GroceryItemRowProps) => {
+const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecked, onToggleChecked }: GroceryItemRowProps) => {
+  const useSingleField = !!onEditText;
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
   const [editQuantity, setEditQuantity] = useState(
     item.totalQuantity != null ? String(item.totalQuantity) : ""
   );
   const [editUnit, setEditUnit] = useState(item.unit ?? "");
+  const [editText, setEditText] = useState("");
 
   const displayText = formatGroceryItem(item);
 
   const handleStartEdit = () => {
-    setEditName(item.name);
-    setEditQuantity(item.totalQuantity != null ? String(item.totalQuantity) : "");
-    setEditUnit(item.unit ?? "");
+    if (useSingleField) {
+      setEditText(formatGroceryItem(item));
+    } else {
+      setEditName(item.name);
+      setEditQuantity(item.totalQuantity != null ? String(item.totalQuantity) : "");
+      setEditUnit(item.unit ?? "");
+    }
     setIsEditing(true);
   };
 
   const handleSave = () => {
+    if (useSingleField) {
+      const trimmed = editText.trim();
+      if (!trimmed) {
+        setIsEditing(false);
+        return;
+      }
+      onEditText(item.name, trimmed);
+      setIsEditing(false);
+      return;
+    }
     const trimmedName = editName.trim();
     if (!trimmedName) {
       setIsEditing(false);
@@ -69,33 +86,48 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove, isChecked, onToggleC
   if (isEditing) {
     return (
       <div className="flex items-center gap-2 py-1.5 px-2 bg-gray-50 rounded">
-        <Input
-          name="edit-grocery-qty"
-          value={editQuantity}
-          onChange={(e) => setEditQuantity(e.target.value)}
-          placeholder="Qty"
-          className="w-16 h-9 sm:h-7 text-sm"
-          onKeyDown={handleKeyDown}
-          aria-label="Quantity"
-        />
-        <Input
-          name="edit-grocery-unit"
-          value={editUnit}
-          onChange={(e) => setEditUnit(e.target.value)}
-          placeholder="Unit"
-          className="w-20 h-9 sm:h-7 text-sm"
-          onKeyDown={handleKeyDown}
-          aria-label="Unit"
-        />
-        <Input
-          name="edit-grocery-name"
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          placeholder="Item name"
-          className="flex-1 h-9 sm:h-7 text-sm"
-          onKeyDown={handleKeyDown}
-          aria-label="Item name"
-        />
+        {useSingleField ? (
+          <Input
+            name="edit-grocery-text"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            placeholder="e.g. 3 tbsp olive oil"
+            className="flex-1 h-9 sm:h-7 text-sm"
+            onKeyDown={handleKeyDown}
+            aria-label="Edit item text"
+            autoFocus
+          />
+        ) : (
+          <>
+            <Input
+              name="edit-grocery-qty"
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(e.target.value)}
+              placeholder="Qty"
+              className="w-16 h-9 sm:h-7 text-sm"
+              onKeyDown={handleKeyDown}
+              aria-label="Quantity"
+            />
+            <Input
+              name="edit-grocery-unit"
+              value={editUnit}
+              onChange={(e) => setEditUnit(e.target.value)}
+              placeholder="Unit"
+              className="w-20 h-9 sm:h-7 text-sm"
+              onKeyDown={handleKeyDown}
+              aria-label="Unit"
+            />
+            <Input
+              name="edit-grocery-name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Item name"
+              className="flex-1 h-9 sm:h-7 text-sm"
+              onKeyDown={handleKeyDown}
+              aria-label="Item name"
+            />
+          </>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -119,8 +151,8 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove, isChecked, onToggleC
   }
 
   return (
-    <div className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded group">
-      <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center justify-between py-px px-2 hover:bg-gray-50 rounded group">
+      <div className="flex items-center gap-1.5 min-w-0">
         {onToggleChecked && (
           <button
             type="button"
@@ -147,26 +179,30 @@ const GroceryItemRow = ({ item, editable, onEdit, onRemove, isChecked, onToggleC
             {recipe}
           </Badge>
         ))}
-        {editable && (
+        {(editable || onEditText || onRemove) && (
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleStartEdit}
-              className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-              aria-label="Edit item"
-            >
-              <Pencil className="h-4 w-4 text-gray-500" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRemove?.(item.name)}
-              className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-              aria-label="Remove item"
-            >
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
+            {(editable || onEditText) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStartEdit}
+                className="h-6 w-6 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                aria-label="Edit item"
+              >
+                <Pencil className="h-3.5 w-3.5 text-gray-500" />
+              </Button>
+            )}
+            {(editable || onRemove) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRemove?.(item.name)}
+                className="h-6 w-6 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                aria-label="Remove item"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+              </Button>
+            )}
           </>
         )}
       </div>

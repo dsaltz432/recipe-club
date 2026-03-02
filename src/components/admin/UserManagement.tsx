@@ -7,10 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import * as SelectPrimitive from "@radix-ui/react-select";
+import { Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,12 +31,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus, Trash2, Users, Crown, Eye, ChefHat } from "lucide-react";
+import { UserPlus, Trash2, Users, Crown, Eye, Shield } from "lucide-react";
 
 interface AllowedUser {
   id: string;
   email: string;
-  role: "admin" | "viewer";
+  role: "admin" | "member" | "viewer";
   is_club_member: boolean;
   created_at: string;
 }
@@ -48,15 +49,26 @@ interface UserManagementProps {
   _testForceDeleteNull?: boolean;
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  member: "Editor",
+  viewer: "Viewer",
+};
+
 const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRoleChangeSelf, _testForceEmptyEmailSubmit, _testForceDeleteNull }: UserManagementProps) => {
   const [users, setUsers] = useState<AllowedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AllowedUser | null>(null);
 
+  // Pending changes (queued until Save Changes)
+  const [pendingRoles, setPendingRoles] = useState<Record<string, "admin" | "member" | "viewer">>({});
+  const [pendingClubMember, setPendingClubMember] = useState<Record<string, boolean>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   // Add user form state
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "viewer">("viewer");
+  const [newRole, setNewRole] = useState<"admin" | "member" | "viewer">("viewer");
   const [newIsClubMember, setNewIsClubMember] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -72,7 +84,7 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
         (data || []).map((u) => ({
           id: u.id,
           email: u.email,
-          role: u.role as "admin" | "viewer",
+          role: u.role as "admin" | "member" | "viewer",
           is_club_member: u.is_club_member,
           created_at: u.created_at,
         }))
@@ -100,7 +112,7 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
   useEffect(() => {
     if (_testForceRoleChangeSelf && users.length > 0) {
       const selfUser = users.find(u => u.email.toLowerCase() === currentUserEmail.toLowerCase())!;
-      handleUpdateRole(selfUser, selfUser.role === "admin" ? "viewer" : "admin");
+      handleUpdateRole(selfUser, selfUser.role === "viewer" ? "admin" : "viewer");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_testForceRoleChangeSelf, users]);
@@ -191,46 +203,84 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
     }
   };
 
-  const handleUpdateRole = async (user: AllowedUser, newRole: "admin" | "viewer") => {
+  const handleUpdateRole = (user: AllowedUser, newRole: "admin" | "member" | "viewer") => {
     if (user.email.toLowerCase() === currentUserEmail.toLowerCase()) {
       toast.error("You cannot change your own role");
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from("allowed_users")
-        .update({ role: newRole })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      toast.success(`Updated ${user.email} to ${newRole}`);
-      loadUsers();
-    } catch (error) {
-      console.error("Error updating role:", error);
-      toast.error("Failed to update role");
-    }
+    setPendingRoles((prev) => {
+      // If reverting to the original role, remove the pending change
+      if (newRole === user.role) {
+        const rest = { ...prev };
+        delete rest[user.id];
+        return rest;
+      }
+      return { ...prev, [user.id]: newRole };
+    });
   };
 
-  const handleToggleClubMember = async (user: AllowedUser) => {
+  const handleToggleClubMember = (user: AllowedUser) => {
+    const currentValue = pendingClubMember[user.id] ?? user.is_club_member;
+    const newValue = !currentValue;
+
+    setPendingClubMember((prev) => {
+      // If reverting to original, remove the pending change
+      if (newValue === user.is_club_member) {
+        const rest = { ...prev };
+        delete rest[user.id];
+        return rest;
+      }
+      return { ...prev, [user.id]: newValue };
+    });
+  };
+
+  const pendingCount = Object.keys(pendingRoles).length + Object.keys(pendingClubMember).length;
+
+  const handleDiscardChanges = () => {
+    setPendingRoles({});
+    setPendingClubMember({});
+  };
+
+  const handleSaveChanges = async () => {
+    if (pendingCount === 0) return;
+
+    setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("allowed_users")
-        .update({ is_club_member: !user.is_club_member })
-        .eq("id", user.id);
+      for (const [userId, role] of Object.entries(pendingRoles)) {
+        const { error } = await supabase
+          .from("allowed_users")
+          .update({ role })
+          .eq("id", userId);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      toast.success(
-        user.is_club_member
-          ? `Removed ${user.email} from club`
-          : `Added ${user.email} to club`
+      for (const [userId, isClubMember] of Object.entries(pendingClubMember)) {
+        const { error } = await supabase
+          .from("allowed_users")
+          .update({ is_club_member: isClubMember })
+          .eq("id", userId);
+
+        if (error) throw error;
+      }
+
+      toast.success(`Saved ${pendingCount} change${pendingCount !== 1 ? "s" : ""}`);
+      // Optimistically update local state before clearing pending, to avoid flash
+      setUsers((prev) =>
+        prev.map((u) => ({
+          ...u,
+          role: pendingRoles[u.id] || u.role,
+          is_club_member: pendingClubMember[u.id] ?? u.is_club_member,
+        }))
       );
-      loadUsers();
+      setPendingRoles({});
+      setPendingClubMember({});
     } catch (error) {
-      console.error("Error toggling club member:", error);
-      toast.error("Failed to update club membership");
+      console.error("Error saving changes:", error);
+      toast.error("Failed to save changes");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -245,6 +295,7 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
   }
 
   const admins = users.filter((u) => u.role === "admin");
+  const members = users.filter((u) => u.role === "member");
   const viewers = users.filter((u) => u.role === "viewer");
   const clubMembers = users.filter((u) => u.is_club_member);
 
@@ -259,7 +310,7 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
                 User Management
               </CardTitle>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {admins.length} admin{admins.length !== 1 ? "s" : ""} · {viewers.length} viewer{viewers.length !== 1 ? "s" : ""} · {clubMembers.length} club member{clubMembers.length !== 1 ? "s" : ""}
+                {admins.length} admin{admins.length !== 1 ? "s" : ""} · {members.length} editor{members.length !== 1 ? "s" : ""} · {viewers.length} viewer{viewers.length !== 1 ? "s" : ""} · {clubMembers.length} club member{clubMembers.length !== 1 ? "s" : ""}
               </p>
             </div>
             <Button
@@ -281,11 +332,13 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${
-                      user.role === "admin" ? "bg-purple/20" : "bg-gray-100"
+                      user.role === "admin" ? "bg-purple/20" : user.role === "member" ? "bg-blue-100" : "bg-gray-100"
                     }`}
                   >
                     {user.role === "admin" ? (
                       <Crown className="h-5 w-5 text-purple" />
+                    ) : user.role === "member" ? (
+                      <Shield className="h-5 w-5 text-blue-500" />
                     ) : (
                       <Eye className="h-5 w-5 text-gray-500" />
                     )}
@@ -298,15 +351,10 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
                           You
                         </span>
                       )}
-                      {user.is_club_member && (
-                        <span className="text-xs bg-orange/10 text-orange px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
-                          <ChefHat className="h-3 w-3" />
-                          Club Member
-                        </span>
-                      )}
                     </div>
-                    <span className="text-sm text-muted-foreground capitalize">
-                      {user.role}
+                    <span className={`text-sm ${pendingRoles[user.id] ? "text-purple font-medium" : "text-muted-foreground"}`}>
+                      {ROLE_LABELS[pendingRoles[user.id] || user.role]}
+                      {pendingRoles[user.id] && " (unsaved)"}
                     </span>
                   </div>
                 </div>
@@ -319,25 +367,42 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
                     </Label>
                     <Switch
                       id={`club-${user.id}`}
-                      checked={user.is_club_member}
+                      checked={pendingClubMember[user.id] ?? user.is_club_member}
                       onCheckedChange={() => handleToggleClubMember(user)}
                     />
                   </div>
 
                   {/* Role Select */}
                   <Select
-                    value={user.role}
-                    onValueChange={(value: "admin" | "viewer") =>
+                    value={pendingRoles[user.id] || user.role}
+                    onValueChange={(value: "admin" | "member" | "viewer") =>
                       handleUpdateRole(user, value)
                     }
                     disabled={user.email.toLowerCase() === currentUserEmail.toLowerCase()}
                   >
-                    <SelectTrigger className="w-28">
+                    <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
+                      {[
+                        { value: "admin", label: "Admin", desc: "Full access" },
+                        { value: "member", label: "Editor", desc: "Manage content" },
+                        { value: "viewer", label: "Viewer", desc: "View & add notes" },
+                      ].map((role) => (
+                        <SelectPrimitive.Item
+                          key={role.value}
+                          value={role.value}
+                          className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                        >
+                          <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                            <SelectPrimitive.ItemIndicator>
+                              <Check className="h-4 w-4" />
+                            </SelectPrimitive.ItemIndicator>
+                          </span>
+                          <SelectPrimitive.ItemText>{role.label}</SelectPrimitive.ItemText>
+                          <span className="ml-2 text-xs text-muted-foreground">{role.desc}</span>
+                        </SelectPrimitive.Item>
+                      ))}
                     </SelectContent>
                   </Select>
 
@@ -361,6 +426,20 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
               </p>
             )}
           </div>
+
+          {pendingCount > 0 && (
+            <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground mr-auto">
+                {pendingCount} unsaved change{pendingCount !== 1 ? "s" : ""}
+              </span>
+              <Button variant="outline" onClick={handleDiscardChanges} disabled={isSaving}>
+                Discard
+              </Button>
+              <Button onClick={handleSaveChanges} disabled={isSaving} className="bg-purple hover:bg-purple-dark">
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -388,23 +467,30 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select value={newRole} onValueChange={(v: "admin" | "viewer") => setNewRole(v)}>
+              <Select value={newRole} onValueChange={(v: "admin" | "member" | "viewer") => setNewRole(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      Viewer - Can view events and add recipes
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4" />
-                      Admin - Full access to manage everything
-                    </div>
-                  </SelectItem>
+                  {[
+                    { value: "viewer", label: "Viewer", desc: "View events & add notes" },
+                    { value: "member", label: "Editor", desc: "Manage club content" },
+                    { value: "admin", label: "Admin", desc: "Full access" },
+                  ].map((role) => (
+                    <SelectPrimitive.Item
+                      key={role.value}
+                      value={role.value}
+                      className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                    >
+                      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                        <SelectPrimitive.ItemIndicator>
+                          <Check className="h-4 w-4" />
+                        </SelectPrimitive.ItemIndicator>
+                      </span>
+                      <SelectPrimitive.ItemText>{role.label}</SelectPrimitive.ItemText>
+                      <span className="ml-2 text-xs text-muted-foreground">{role.desc}</span>
+                    </SelectPrimitive.Item>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

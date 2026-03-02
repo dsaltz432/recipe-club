@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export interface AllowedUser {
   id: string;
   email: string;
-  role: "admin" | "viewer";
+  role: "admin" | "member" | "viewer";
   is_club_member: boolean;
   access_type: "club";
 }
@@ -29,7 +29,7 @@ export const getAllowedUser = async (email: string): Promise<AllowedUser | null>
   return {
     id: data.id,
     email: data.email,
-    role: data.role as "admin" | "viewer",
+    role: data.role as "admin" | "member" | "viewer",
     is_club_member: data.is_club_member,
     access_type: "club",
   };
@@ -97,6 +97,10 @@ export const getCurrentUser = async (): Promise<User | null> => {
 // Synchronous check - requires allowedUser data to be passed in
 export const isAdmin = (allowedUser: AllowedUser | null): boolean => {
   return allowedUser?.role === "admin";
+};
+
+export const isMemberOrAdmin = (allowedUser: AllowedUser | null): boolean => {
+  return allowedUser?.role === "admin" || allowedUser?.role === "member";
 };
 
 export const signInWithGoogle = async (forceConsent = false): Promise<void> => {

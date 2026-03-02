@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, signOut, getAllowedUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser, signOut, getAllowedUser, isAdmin, isMemberOrAdmin } from "@/lib/auth";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,8 @@ const Dashboard = () => {
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [userIsMemberOrAdmin, setUserIsMemberOrAdmin] = useState(false);
+  const [userIsClubMember, setUserIsClubMember] = useState(false);
   const [activeEvent, setActiveEvent] = useState<ScheduledEvent | null>(null);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
@@ -86,6 +88,8 @@ const Dashboard = () => {
         const allowed = await getAllowedUser(currentUser.email);
         setIsAllowed(allowed !== null);
         setUserIsAdmin(isAdmin(allowed));
+        setUserIsMemberOrAdmin(isMemberOrAdmin(allowed));
+        setUserIsClubMember(allowed?.is_club_member ?? false);
 
         if (allowed && currentUser.id) {
           loadStats(currentUser.id);
@@ -273,7 +277,7 @@ const Dashboard = () => {
                 </div>
               </div>
               <DropdownMenuSeparator className="md:hidden" />
-              {userIsAdmin && (
+              {userIsMemberOrAdmin && (
                 <>
                   <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
                     <Users className="h-4 w-4 mr-2" />
@@ -328,7 +332,7 @@ const Dashboard = () => {
               activeEvent={activeEvent}
               ingredients={ingredients}
               setIngredients={setIngredients}
-              isAdmin={userIsAdmin}
+              isAdmin={userIsMemberOrAdmin}
               onEventCreated={handleEventCreated}
               onRecipeAdded={handleRecipeAdded}
               onEventUpdated={loadActiveEvent}
@@ -338,7 +342,7 @@ const Dashboard = () => {
           <TabsContent value="events">
             <RecipeClubEvents
               userId={user?.id || ""}
-              isAdmin={userIsAdmin}
+              isAdmin={userIsMemberOrAdmin}
               onEventChange={loadActiveEvent}
             />
           </TabsContent>
@@ -346,6 +350,9 @@ const Dashboard = () => {
           <TabsContent value="recipes">
             <RecipeHub
               userId={user?.id}
+              isAdmin={userIsAdmin}
+              canEdit={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
             />
           </TabsContent>
 

@@ -10,8 +10,11 @@ vi.mock("react-router-dom", async () => {
 });
 
 const mockGetCurrentUser = vi.fn();
+const mockGetAllowedUser = vi.fn();
 vi.mock("@/lib/auth", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
+  getAllowedUser: (...args: unknown[]) => mockGetAllowedUser(...args),
+  isAdmin: (user: { role: string } | null) => user?.role === "admin",
 }));
 
 const mockLoadUserPreferences = vi.fn();
@@ -21,6 +24,23 @@ vi.mock("@/lib/userPreferences", () => ({
     mockLoadUserPreferences(...args),
   saveUserPreferences: (...args: unknown[]) =>
     mockSaveUserPreferences(...args),
+}));
+
+// Mock Select to make it testable in jsdom
+vi.mock("@/components/ui/select", () => ({
+  Select: ({ value, onValueChange, children }: { value: string; onValueChange: (v: string) => void; children: React.ReactNode }) => (
+    <div data-testid="select-mock">
+      <select value={value} onChange={(e) => onValueChange(e.target.value)}>
+        <option value="0">Sunday</option>
+        <option value="1">Monday</option>
+      </select>
+      {children}
+    </div>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectValue: () => null,
 }));
 
 vi.mock("sonner", () => ({
@@ -36,6 +56,8 @@ const defaultPrefs = {
   mealTypes: ["breakfast", "lunch", "dinner"],
   weekStartDay: 0,
   householdSize: 2,
+  aiModelParse: "claude-sonnet-4-6",
+  aiModelCombine: "claude-sonnet-4-6",
 };
 
 describe("Settings", () => {
@@ -48,6 +70,7 @@ describe("Settings", () => {
     });
     mockLoadUserPreferences.mockResolvedValue({ ...defaultPrefs });
     mockSaveUserPreferences.mockResolvedValue(undefined);
+    mockGetAllowedUser.mockResolvedValue(null);
   });
 
   it("shows loading spinner initially", () => {
@@ -138,6 +161,8 @@ describe("Settings", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
+        aiModelParse: "claude-sonnet-4-6",
+        aiModelCombine: "claude-sonnet-4-6",
       });
     });
   });
@@ -194,6 +219,131 @@ describe("Settings", () => {
     );
   });
 
+  it("shows Saving... state while saving", async () => {
+    // Make save hang so we can observe the intermediate state
+    mockSaveUserPreferences.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Save Settings")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Save Settings"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Saving...")).toBeInTheDocument();
+    });
+  });
+
+  it("does not save when user has no id", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: null,
+      name: "Test",
+      email: "test@test.com",
+    });
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Save Settings")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Save Settings"));
+
+    expect(mockSaveUserPreferences).not.toHaveBeenCalled();
+  });
+
+  it("toggles a meal type on", async () => {
+    mockLoadUserPreferences.mockResolvedValue({
+      ...defaultPrefs,
+      mealTypes: ["dinner"],
+    });
+
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Breakfast")).toBeInTheDocument();
+    });
+
+    // Enable breakfast
+    const breakfastSwitch = screen.getByRole("switch", { name: "Breakfast" });
+    await user.click(breakfastSwitch);
+
+    await user.click(screen.getByText("Save Settings"));
+
+    await waitFor(() => {
+      expect(mockSaveUserPreferences).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          mealTypes: expect.arrayContaining(["dinner", "breakfast"]),
+        })
+      );
+    });
+  });
+
+  it("changes week start day via select", async () => {
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Week Start Day")).toBeInTheDocument();
+    });
+
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "1" } });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Save Settings"));
+
+    await waitFor(() => {
+      expect(mockSaveUserPreferences).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({ weekStartDay: 1 })
+      );
+    });
+  });
+
+  it("loads preferences when no user id (skips loadUserPreferences)", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: null,
+      name: "Test",
+      email: null,
+    });
+
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Settings")).toBeInTheDocument();
+    });
+
+    expect(mockLoadUserPreferences).not.toHaveBeenCalled();
+  });
+
+  it("disables a meal type when more than one is selected", async () => {
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Breakfast")).toBeInTheDocument();
+    });
+
+    // Default has all 3 types, so disabling one should work
+    const breakfastSwitch = screen.getByRole("switch", { name: "Breakfast" });
+    await user.click(breakfastSwitch);
+
+    await user.click(screen.getByText("Save Settings"));
+
+    await waitFor(() => {
+      expect(mockSaveUserPreferences).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          mealTypes: ["lunch", "dinner"],
+        })
+      );
+    });
+  });
+
   it("updates household size when input changes", async () => {
     const user = userEvent.setup();
     render(<Settings />);
@@ -214,5 +364,28 @@ describe("Settings", () => {
         expect.objectContaining({ householdSize: 6 })
       );
     });
+  });
+
+  it("does not show AI Models section for non-admin users", async () => {
+    mockGetAllowedUser.mockResolvedValue({ role: "member" });
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Meal Types")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("AI Models")).not.toBeInTheDocument();
+  });
+
+  it("shows AI Models section for admin users", async () => {
+    mockGetAllowedUser.mockResolvedValue({ role: "admin" });
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("AI Models")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Recipe Parsing")).toBeInTheDocument();
+    expect(screen.getByText("Grocery Processing")).toBeInTheDocument();
   });
 });

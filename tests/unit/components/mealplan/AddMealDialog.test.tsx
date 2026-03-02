@@ -3,15 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@tests/utils";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { toast } from "sonner";
 
-// Mock Supabase (still needed for recipe search + ingredient parsing)
+// Mock Supabase (still needed for recipe search)
 const mockSupabaseFrom = vi.fn();
-const mockInvoke = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: unknown[]) => mockSupabaseFrom(...args),
-    functions: {
-      invoke: (...args: unknown[]) => mockInvoke(...args),
-    },
   },
 }));
 
@@ -610,17 +606,7 @@ describe("AddMealDialog", () => {
       expect(screen.getByLabelText("Recipe URL *")).toBeInTheDocument();
     });
 
-    it("submits manual meal with pasted ingredients via AI parse", async () => {
-      mockInvoke.mockResolvedValueOnce({
-        data: {
-          success: true,
-          items: [
-            { name: "spaghetti", quantity: 1, unit: "lb", category: "pantry" },
-          ],
-        },
-        error: null,
-      });
-
+    it("submits manual meal with raw paste text", () => {
       render(<AddMealDialog {...propsWithManual} />);
 
       // Fill name
@@ -639,19 +625,11 @@ describe("AddMealDialog", () => {
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      await waitFor(() => {
-        expect(propsWithManual.onAddManualMeal).toHaveBeenCalledWith("Pasta", [
-          expect.objectContaining({
-            name: "spaghetti",
-            quantity: 1,
-            sort_order: 0,
-          }),
-        ]);
-      });
-
-      expect(mockInvoke).toHaveBeenCalledWith("parse-grocery-text", {
-        body: { text: "1 lb spaghetti" },
-      });
+      expect(propsWithManual.onAddManualMeal).toHaveBeenCalledWith(
+        "Pasta",
+        "1 lb spaghetti"
+      );
+      expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
     });
 
     it("disables submit in manual mode when no ingredients are pasted", () => {

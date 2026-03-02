@@ -42,7 +42,7 @@ const MealPlanSlot = ({
 
   return (
     <div
-      className={`relative w-full ${minH} p-1.5 md:p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm ${
+      className={`relative w-full ${minH} p-1.5 md:p-2 rounded-lg border transition-colors cursor-pointer hover:shadow-sm flex flex-col justify-center ${
         isCooked
           ? "bg-green-50 border-green-200"
           : "bg-purple/5 border-purple/20"

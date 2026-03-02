@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getAllowedUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser, isMemberOrAdmin } from "@/lib/auth";
 import type { User } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -10,7 +10,7 @@ const UserManagementPage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [userCanManage, setUserCanManage] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -19,10 +19,10 @@ const UserManagementPage = () => {
 
       if (currentUser?.email) {
         const allowed = await getAllowedUser(currentUser.email);
-        setUserIsAdmin(isAdmin(allowed));
+        setUserCanManage(isMemberOrAdmin(allowed));
 
-        // Redirect non-admins back to dashboard
-        if (!isAdmin(allowed)) {
+        // Redirect viewers back to dashboard
+        if (!isMemberOrAdmin(allowed)) {
           navigate("/dashboard");
         }
       } else {
@@ -43,7 +43,7 @@ const UserManagementPage = () => {
     );
   }
 
-  if (!userIsAdmin) {
+  if (!userCanManage) {
     return null;
   }
 

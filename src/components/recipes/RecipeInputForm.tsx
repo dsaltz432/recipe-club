@@ -246,13 +246,13 @@ const RecipeInputForm = ({
       {/* Manual mode */}
       {formData.inputMode === "manual" && manualPasteOnly && (
         <div className="space-y-1.5 sm:space-y-2">
-          <Label className="text-sm">Paste Ingredients</Label>
+          <Label className="text-sm">Ingredients</Label>
           <Textarea
             value={formData.pasteText}
             onChange={(e) => update({ pasteText: e.target.value })}
-            placeholder={"Paste your ingredients here, e.g.:\n2 cups flour\n1 lb chicken breast\n4 garlic cloves\n1 tbsp olive oil"}
+            placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
             className="min-h-[120px] text-sm"
-            aria-label="Paste ingredients text"
+            aria-label="Ingredients text"
           />
         </div>
       )}

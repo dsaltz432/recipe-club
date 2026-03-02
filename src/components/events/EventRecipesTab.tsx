@@ -45,6 +45,7 @@ interface EventRecipesTabProps {
   recipesWithNotes: EventRecipeWithRatings[];
   user: User | null;
   userIsAdmin: boolean;
+  canManageRecipes?: boolean;
   expandedRecipeNotes: Set<string>;
   deletingNoteId: string | null;
   onToggleRecipeNotes: (recipeId: string) => void;
@@ -62,6 +63,7 @@ const EventRecipesTab = ({
   recipesWithNotes,
   user,
   userIsAdmin,
+  canManageRecipes = userIsAdmin,
   expandedRecipeNotes,
   deletingNoteId,
   onToggleRecipeNotes,
@@ -80,7 +82,7 @@ const EventRecipesTab = ({
         <h2 className="font-display text-lg sm:text-xl font-semibold">
           Recipes ({recipesWithNotes.length})
         </h2>
-        {userIsAdmin && (
+        {canManageRecipes && (
           <Button
             onClick={onAddRecipeClick}
             className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md"
@@ -229,7 +231,7 @@ const EventRecipesTab = ({
                           <span className="text-[10px] sm:text-xs">Ingredients</span>
                         </Button>
                       )}
-                      {(recipe.createdBy === user?.id || userIsAdmin) && (
+                      {(recipe.createdBy === user?.id || canManageRecipes) && (
                         <>
                           <Button
                             variant="ghost"

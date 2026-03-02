@@ -47,6 +47,13 @@ const mockUsers = [
     is_club_member: false,
     created_at: "2024-01-02",
   },
+  {
+    id: "user-3",
+    email: "member@test.com",
+    role: "member",
+    is_club_member: true,
+    created_at: "2024-01-03",
+  },
 ];
 
 describe("UserManagement", () => {
@@ -80,6 +87,7 @@ describe("UserManagement", () => {
     await waitFor(() => {
       expect(screen.getByText("admin@test.com")).toBeInTheDocument();
       expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
+      expect(screen.getByText("member@test.com")).toBeInTheDocument();
     });
 
     expect(screen.getByText("User Management")).toBeInTheDocument();
@@ -94,12 +102,14 @@ describe("UserManagement", () => {
     });
   });
 
-  it("shows 'Club Member' badge for club members", async () => {
+  it("does not show 'Club Member' badge inline (managed via toggle)", async () => {
     render(<UserManagement currentUserEmail="admin@test.com" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Club Member")).toBeInTheDocument();
+      expect(screen.getByText("admin@test.com")).toBeInTheDocument();
     });
+
+    expect(screen.queryByText("Club Member")).not.toBeInTheDocument();
   });
 
   it("shows user stats in header", async () => {
@@ -107,8 +117,9 @@ describe("UserManagement", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/1 admin/)).toBeInTheDocument();
+      expect(screen.getByText(/1 editor(?!s)/)).toBeInTheDocument();
       expect(screen.getByText(/1 viewer/)).toBeInTheDocument();
-      expect(screen.getByText(/1 club member/)).toBeInTheDocument();
+      expect(screen.getByText(/2 club members/)).toBeInTheDocument();
     });
   });
 
@@ -235,6 +246,28 @@ describe("UserManagement", () => {
         const options = screen.getAllByRole("option");
         const adminOption = options.find(o => o.textContent?.includes("Admin"));
         if (adminOption) fireEvent.click(adminOption);
+      });
+    });
+
+    it("shows member option in add dialog role selector", async () => {
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("admin@test.com")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Invite User"));
+
+      const dialog = screen.getByRole("dialog");
+      const selectTriggers = dialog.querySelectorAll("button[role='combobox']");
+      if (selectTriggers.length > 0) {
+        fireEvent.click(selectTriggers[0] as HTMLButtonElement);
+      }
+
+      await waitFor(() => {
+        const options = screen.getAllByRole("option");
+        const memberOption = options.find(o => o.textContent?.includes("Editor"));
+        expect(memberOption).toBeDefined();
       });
     });
 
@@ -478,7 +511,35 @@ describe("UserManagement", () => {
       expect(selectTrigger?.disabled).toBe(true);
     });
 
-    it("updates role successfully for another user", async () => {
+    it("queues role change and shows unsaved indicator", async () => {
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
+      });
+
+      const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
+      const selectTrigger = viewerRow?.querySelector("button[role='combobox']") as HTMLButtonElement;
+      expect(selectTrigger?.disabled).toBeFalsy();
+
+      if (selectTrigger) {
+        fireEvent.click(selectTrigger);
+      }
+
+      await waitFor(() => {
+        const memberOption = screen.getByRole("option", { name: /editor/i });
+        fireEvent.click(memberOption);
+      });
+
+      // Should show unsaved indicator, not fire a toast yet
+      await waitFor(() => {
+        expect(screen.getByText(/1 unsaved change/)).toBeInTheDocument();
+        expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      });
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it("saves queued role changes on Save Changes click", async () => {
       mockChain.eq.mockResolvedValue({ error: null });
 
       render(<UserManagement currentUserEmail="admin@test.com" />);
@@ -487,24 +548,88 @@ describe("UserManagement", () => {
         expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
       });
 
-      // Find the viewer row select trigger (the one that's NOT disabled)
       const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
       const selectTrigger = viewerRow?.querySelector("button[role='combobox']") as HTMLButtonElement;
-      expect(selectTrigger?.disabled).toBeFalsy();
 
-      // Click to open the select
       if (selectTrigger) {
         fireEvent.click(selectTrigger);
       }
 
-      // Wait for the dropdown to appear and click "Admin"
       await waitFor(() => {
-        const adminOption = screen.getByRole("option", { name: /admin/i });
-        fireEvent.click(adminOption);
+        const memberOption = screen.getByRole("option", { name: /editor/i });
+        fireEvent.click(memberOption);
       });
 
       await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith("Updated viewer@test.com to admin");
+        expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Save Changes"));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Saved 1 change");
+      });
+    });
+
+    it("discards queued role changes on Discard click", async () => {
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
+      });
+
+      const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
+      const selectTrigger = viewerRow?.querySelector("button[role='combobox']") as HTMLButtonElement;
+
+      if (selectTrigger) {
+        fireEvent.click(selectTrigger);
+      }
+
+      await waitFor(() => {
+        const memberOption = screen.getByRole("option", { name: /editor/i });
+        fireEvent.click(memberOption);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Discard")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Discard"));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
+        expect(screen.queryByText("Save Changes")).not.toBeInTheDocument();
+      });
+    });
+
+    it("removes pending change when reverting to original role", async () => {
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
+      });
+
+      const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
+      const selectTrigger = viewerRow?.querySelector("button[role='combobox']") as HTMLButtonElement;
+
+      // Change to editor
+      if (selectTrigger) fireEvent.click(selectTrigger);
+      await waitFor(() => {
+        fireEvent.click(screen.getByRole("option", { name: /editor/i }));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/1 unsaved change/)).toBeInTheDocument();
+      });
+
+      // Change back to viewer (original)
+      if (selectTrigger) fireEvent.click(selectTrigger);
+      await waitFor(() => {
+        fireEvent.click(screen.getByRole("option", { name: /viewer/i }));
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
       });
     });
 
@@ -524,7 +649,7 @@ describe("UserManagement", () => {
       });
     });
 
-    it("handles update role error", async () => {
+    it("handles save role error", async () => {
       mockChain.eq.mockResolvedValue({ error: { message: "Update error" } });
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -534,7 +659,6 @@ describe("UserManagement", () => {
         expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
       });
 
-      // Find the viewer row select trigger
       const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
       const selectTrigger = viewerRow?.querySelector("button[role='combobox']") as HTMLButtonElement;
 
@@ -543,12 +667,18 @@ describe("UserManagement", () => {
       }
 
       await waitFor(() => {
-        const adminOption = screen.getByRole("option", { name: /admin/i });
-        fireEvent.click(adminOption);
+        const memberOption = screen.getByRole("option", { name: /editor/i });
+        fireEvent.click(memberOption);
       });
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to update role");
+        expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Save Changes"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to save changes");
       });
 
       consoleSpy.mockRestore();
@@ -556,7 +686,82 @@ describe("UserManagement", () => {
   });
 
   describe("Toggle Club Member", () => {
-    it("handles toggle error", async () => {
+    it("queues club member toggle as unsaved change", async () => {
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
+      });
+
+      // viewer is not a club member (is_club_member: false)
+      const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
+      const viewerSwitch = viewerRow?.querySelector("button[role='switch']") as HTMLButtonElement;
+      if (viewerSwitch) {
+        fireEvent.click(viewerSwitch);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText(/1 unsaved change/)).toBeInTheDocument();
+        expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      });
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it("saves club member toggle on Save Changes click", async () => {
+      mockChain.eq.mockResolvedValue({ error: null });
+
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
+      });
+
+      const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
+      const viewerSwitch = viewerRow?.querySelector("button[role='switch']") as HTMLButtonElement;
+      if (viewerSwitch) {
+        fireEvent.click(viewerSwitch);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Save Changes"));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Saved 1 change");
+      });
+    });
+
+    it("reverts club member toggle when toggled back", async () => {
+      render(<UserManagement currentUserEmail="admin@test.com" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("admin@test.com")).toBeInTheDocument();
+      });
+
+      // admin has is_club_member: true — toggle off
+      const adminRow = screen.getByText("admin@test.com").closest(".rounded-lg");
+      const adminSwitch = adminRow?.querySelector("button[role='switch']") as HTMLButtonElement;
+      if (adminSwitch) {
+        fireEvent.click(adminSwitch); // toggle off
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText(/1 unsaved change/)).toBeInTheDocument();
+      });
+
+      // toggle back on (revert)
+      if (adminSwitch) {
+        fireEvent.click(adminSwitch);
+      }
+
+      await waitFor(() => {
+        expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument();
+      });
+    });
+
+    it("handles save error for club member toggle", async () => {
       mockChain.eq.mockResolvedValue({ error: { message: "Toggle error" } });
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -566,60 +771,23 @@ describe("UserManagement", () => {
         expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
       });
 
-      // Find and click a club member toggle switch
-      const switches = screen.getAllByRole("switch");
-      if (switches.length > 0) {
-        fireEvent.click(switches[switches.length - 1]); // Click the last switch (viewer)
+      const viewerRow = screen.getByText("viewer@test.com").closest(".rounded-lg");
+      const viewerSwitch = viewerRow?.querySelector("button[role='switch']") as HTMLButtonElement;
+      if (viewerSwitch) {
+        fireEvent.click(viewerSwitch);
       }
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to update club membership");
+        expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Save Changes"));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to save changes");
       });
 
       consoleSpy.mockRestore();
-    });
-
-    it("toggles club member on successfully", async () => {
-      mockChain.eq.mockImplementation(() => {
-        return Promise.resolve({ error: null });
-      });
-
-      render(<UserManagement currentUserEmail="admin@test.com" />);
-
-      await waitFor(() => {
-        expect(screen.getByText("viewer@test.com")).toBeInTheDocument();
-      });
-
-      // viewer is not a club member (is_club_member: false)
-      const switches = screen.getAllByRole("switch");
-      if (switches.length > 0) {
-        fireEvent.click(switches[switches.length - 1]);
-      }
-
-      await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith("Added viewer@test.com to club");
-      });
-    });
-
-    it("toggles club member off successfully", async () => {
-      // Make admin the one being toggled (is_club_member: true -> false)
-      mockChain.eq.mockResolvedValue({ error: null });
-
-      render(<UserManagement currentUserEmail="admin@test.com" />);
-
-      await waitFor(() => {
-        expect(screen.getByText("admin@test.com")).toBeInTheDocument();
-      });
-
-      // admin user has is_club_member: true
-      const switches = screen.getAllByRole("switch");
-      if (switches.length > 0) {
-        fireEvent.click(switches[0]); // Click the first switch (admin)
-      }
-
-      await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith("Removed admin@test.com from club");
-      });
     });
   });
 
@@ -648,7 +816,7 @@ describe("UserManagement", () => {
     mockChain.order.mockResolvedValue({
       data: [
         ...mockUsers,
-        { id: "user-3", email: "admin2@test.com", role: "admin", is_club_member: true, created_at: "2024-01-03" },
+        { id: "user-4", email: "admin2@test.com", role: "admin", is_club_member: true, created_at: "2024-01-04" },
       ],
       error: null,
     });
@@ -657,7 +825,7 @@ describe("UserManagement", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/2 admins/)).toBeInTheDocument();
-      expect(screen.getByText(/2 club members/)).toBeInTheDocument();
+      expect(screen.getByText(/3 club members/)).toBeInTheDocument();
     });
   });
 });

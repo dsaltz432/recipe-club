@@ -42,13 +42,13 @@ async function loadHandler() {
     handler = fn;
   });
 
-  await import("@edge/combine-ingredients/index.ts");
+  await import("@edge/process-grocery-list/index.ts");
 }
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-describe("combine-ingredients edge function", () => {
+describe("process-grocery-list edge function", () => {
   beforeEach(async () => {
     vi.restoreAllMocks();
     mockEnvGet.mockImplementation(
@@ -216,7 +216,7 @@ describe("combine-ingredients edge function", () => {
     expect((data as { error: string }).error).toContain("Failed to parse");
   });
 
-  it("falls back to skipped when AI drops an ingredient", async () => {
+  it("warns but proceeds when AI drops an ingredient", async () => {
     // AI returns only "garlic" but input had "garlic" + "onion"
     const aiItems = [
       { name: "garlic", displayName: "garlic", totalQuantity: 5, unit: "clove", category: "produce", sourceRecipes: ["R1"] },
@@ -225,6 +225,8 @@ describe("combine-ingredients edge function", () => {
     globalThis.fetch = vi.fn().mockResolvedValue(
       createAnthropicResponse(JSON.stringify({ items: aiItems, perRecipeItems: {} })),
     );
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const req = createEdgeRequest({
       rawIngredients: [
@@ -236,8 +238,11 @@ describe("combine-ingredients edge function", () => {
     const { data, status } = await parseResponse(await handler(req));
 
     expect(status).toBe(200);
-    expect(data).toMatchObject({ success: true, skipped: true });
-    expect((data as { message: string }).message).toContain("onion");
+    expect(data).toEqual({ success: true, items: aiItems, perRecipeItems: {} });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("onion"),
+    );
+    consoleSpy.mockRestore();
   });
 
   it("allows semantic merges where one name contains the other", async () => {

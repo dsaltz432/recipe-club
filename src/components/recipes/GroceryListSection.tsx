@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, RefreshCw, AlertCircle, Plus, X, ClipboardPaste } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,17 +32,22 @@ interface GroceryListSectionProps {
   isCombining?: boolean;
   editable?: boolean;
   onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
-  onRemoveItem?: (itemName: string) => void;
+  onEditItemText?: (originalName: string, newText: string, sourceRecipeId?: string) => void;
+  onRemoveItem?: (itemName: string, sourceRecipeId?: string) => void;
   onAddItem?: (item: { name: string; totalQuantity?: number; unit?: string }) => void;
   perRecipeItems?: Record<string, SmartGroceryItem[]>;
   combineError?: string | null;
   checkedItems?: Set<string>;
   onToggleChecked?: (itemName: string) => void;
   generalItems?: GeneralGroceryItem[];
-  onAddGeneralItem?: (item: { name: string; quantity?: string; unit?: string }) => void;
+  onAddGeneralItemDirect?: (item: { name: string; quantity?: string; unit?: string }) => Promise<void>;
   onRemoveGeneralItem?: (itemId: string) => void;
   onUpdateGeneralItem?: (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => void;
   onBulkParseGroceryText?: (text: string) => Promise<ParsedGroceryItem[]>;
+  hasPendingChanges?: boolean;
+  onRecombine?: () => Promise<void> | void;
+  isAddingGeneral?: boolean;
+  onAddingGeneralChange?: (v: boolean) => void;
 }
 
 function groupSmartByCategory(
@@ -70,6 +75,7 @@ const GroceryListSection = ({
   isCombining,
   editable,
   onEditItem,
+  onEditItemText,
   onRemoveItem,
   onAddItem,
   perRecipeItems,
@@ -77,8 +83,12 @@ const GroceryListSection = ({
   checkedItems,
   onToggleChecked,
   generalItems = [],
-  onAddGeneralItem,
+  onAddGeneralItemDirect,
   onBulkParseGroceryText,
+  hasPendingChanges,
+  onRecombine,
+  isAddingGeneral: externalIsAdding,
+  onAddingGeneralChange,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -86,16 +96,11 @@ const GroceryListSection = ({
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [newItemUnit, setNewItemUnit] = useState("");
   // General tab state
-  const [newGeneralName, setNewGeneralName] = useState("");
-  const [newGeneralQty, setNewGeneralQty] = useState("");
-  const [newGeneralUnit, setNewGeneralUnit] = useState("");
-  // Bulk paste state
-  const [showBulkPaste, setShowBulkPaste] = useState(false);
   const [bulkPasteText, setBulkPasteText] = useState("");
-  const [isParsing, setIsParsing] = useState(false);
-  const [parsedPreview, setParsedPreview] = useState<ParsedGroceryItem[] | null>(null);
-  const [removedPreviewIndices, setRemovedPreviewIndices] = useState<Set<number>>(new Set());
-  const [isAddingParsed, setIsAddingParsed] = useState(false);
+  const [localIsParsing, setLocalIsParsing] = useState(false);
+  const isParsing = externalIsAdding ?? localIsParsing;
+  const setIsParsing = onAddingGeneralChange ?? setLocalIsParsing;
+  const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
 
   // Smart grocery grouping (with pantry filtering)
   const filteredSmartItems = smartGroceryItems && pantryItems.length > 0
@@ -132,23 +137,6 @@ const GroceryListSection = ({
     }
   };
 
-  const handleAddGeneral = () => {
-    const trimmedName = newGeneralName.trim();
-    if (!trimmedName) return;
-    onAddGeneralItem?.({
-      name: trimmedName,
-      quantity: newGeneralQty.trim() || undefined,
-      unit: newGeneralUnit.trim() || undefined,
-    });
-    setNewGeneralName("");
-    setNewGeneralQty("");
-    setNewGeneralUnit("");
-  };
-
-  const handleAddGeneralKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleAddGeneral();
-  };
-
   const existingGeneralNames = new Set(generalItems.map((item) => item.name.toLowerCase()));
 
   // AI-processed General items — render these just like a recipe tab
@@ -158,62 +146,36 @@ const GroceryListSection = ({
     : generalSmartItems;
   const generalGrouped = groupSmartByCategory(filteredGeneralItems);
 
-  const handleBulkParse = async () => {
-    if (!bulkPasteText.trim() || !onBulkParseGroceryText) return;
+  const handleBulkAdd = async () => {
+    if (!bulkPasteText.trim() || !onBulkParseGroceryText || !onAddGeneralItemDirect) return;
     setIsParsing(true);
     try {
       const items = await onBulkParseGroceryText(bulkPasteText);
-      setParsedPreview(items);
-      setRemovedPreviewIndices(new Set());
-    } catch {
-      toast.error("Failed to parse grocery text. Please try again.");
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
-  const handleRemovePreviewItem = (index: number) => {
-    setRemovedPreviewIndices((prev) => {
-      const next = new Set(prev);
-      next.add(index);
-      return next;
-    });
-  };
-
-  const handleConfirmParsed = async () => {
-    if (!parsedPreview || !onAddGeneralItem) return;
-    setIsAddingParsed(true);
-    try {
-      const itemsToAdd = parsedPreview.filter((_, i) => !removedPreviewIndices.has(i));
-      for (const item of itemsToAdd) {
+      for (const item of items) {
         const isDuplicate = existingGeneralNames.has(item.name.toLowerCase());
         if (isDuplicate) continue;
-        await onAddGeneralItem({
+        await onAddGeneralItemDirect({
           name: item.name,
           quantity: item.quantity != null ? String(item.quantity) : undefined,
           unit: item.unit ?? undefined,
         });
       }
-      // Reset bulk paste state
-      setShowBulkPaste(false);
       setBulkPasteText("");
-      setParsedPreview(null);
-      setRemovedPreviewIndices(new Set());
+      await onRecombine?.();
+    } catch {
+      toast.error("Failed to add items. Please try again.");
     } finally {
-      setIsAddingParsed(false);
+      setIsParsing(false);
     }
-  };
-
-  const handleCancelBulkPaste = () => {
-    setShowBulkPaste(false);
-    setBulkPasteText("");
-    setParsedPreview(null);
-    setRemovedPreviewIndices(new Set());
   };
 
   const recipesWithUrl = recipes.filter((r) => r.url);
   const hasAnyIngredients = recipeIngredients.length > 0;
-  const hasGeneralTab = !!onAddGeneralItem;
+  const hasGeneralTab = !!onBulkParseGroceryText;
+
+  // Controlled tab: use explicit selection if set, otherwise default
+  const defaultTab = hasAnyIngredients ? "combined" : "general";
+  const effectiveTab = activeTab ?? defaultTab;
 
   // Group ingredients by recipe for per-recipe tabs
   const ingredientsByRecipe = new Map<string, RecipeIngredient[]>();
@@ -298,7 +260,7 @@ const GroceryListSection = ({
         )}
 
         {!isLoading && (hasAnyIngredients || hasGeneralTab) && (
-          <Tabs defaultValue={hasAnyIngredients ? "combined" : "general"} className="w-full">
+          <Tabs value={effectiveTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="overflow-x-auto">
                 <TabsList className="inline-flex w-auto">
@@ -311,10 +273,23 @@ const GroceryListSection = ({
                   {hasGeneralTab && <TabsTrigger value="general">General</TabsTrigger>}
                 </TabsList>
               </div>
-              <GroceryExportMenu
-                items={filteredSmartItems || []}
-                eventName={eventName}
-              />
+              <div className="flex items-center gap-2">
+                {hasPendingChanges && !isCombining && !isParsing && onRecombine && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRecombine}
+                    className="text-xs border-purple/30 text-purple hover:bg-purple/5 animate-in fade-in duration-300"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Reprocess
+                  </Button>
+                )}
+                <GroceryExportMenu
+                  items={filteredSmartItems || []}
+                  eventName={eventName}
+                />
+              </div>
             </div>
 
             <TabsContent value="combined">
@@ -334,6 +309,7 @@ const GroceryListSection = ({
                       items={items}
                       editable={editable}
                       onEditItem={onEditItem}
+                      onEditItemText={onEditItemText}
                       onRemoveItem={onRemoveItem}
                       checkedItems={checkedItems}
                       onToggleChecked={onToggleChecked}
@@ -374,7 +350,8 @@ const GroceryListSection = ({
                         items={items}
                         editable={editable}
                         onEditItem={onEditItem}
-                        onRemoveItem={onRemoveItem}
+                        onEditItemText={onEditItemText ? (orig, text) => onEditItemText(orig, text, recipe.id) : undefined}
+                        onRemoveItem={onRemoveItem ? (name) => onRemoveItem(name, recipe.id) : undefined}
                         checkedItems={checkedItems}
                         onToggleChecked={onToggleChecked}
                       />
@@ -386,185 +363,72 @@ const GroceryListSection = ({
 
             {hasGeneralTab && (
               <TabsContent value="general">
-                {generalItems.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No items yet. Add items below to include them in your grocery list.
-                  </p>
-                ) : (
-                  isCombining && generalSmartItems.length === 0 ? (
-                    <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Combining ingredients...</span>
+                <div className="relative">
+                  {/* Loading overlay */}
+                  {isParsing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin text-purple" />
+                        <span className="text-sm font-medium text-muted-foreground">Adding ingredients...</span>
+                      </div>
                     </div>
+                  )}
+
+                  {generalItems.length === 0 && !isParsing ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No items yet. Add items below to include them in your grocery list.
+                    </p>
                   ) : (
-                    Array.from(generalGrouped.entries()).map(([category, items]) => (
-                      <GroceryCategoryGroup
-                        key={`general-${category}`}
-                        category={category}
-                        items={items}
-                        checkedItems={checkedItems}
-                        onToggleChecked={onToggleChecked}
-                      />
-                    ))
-                  )
-                )}
-
-                {/* Bulk paste UI */}
-                {onBulkParseGroceryText && showBulkPaste && (
-                  <div className="mt-3 border-t pt-3 space-y-3">
-                    {!parsedPreview ? (
-                      <>
-                        <Textarea
-                          value={bulkPasteText}
-                          onChange={(e) => setBulkPasteText(e.target.value)}
-                          placeholder="Paste your grocery list here... (comma-separated, line-separated, or natural language)"
-                          className="min-h-[100px] text-sm"
-                          aria-label="Bulk paste textarea"
+                    !isParsing && isCombining && generalSmartItems.length === 0 ? (
+                      <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Combining ingredients...</span>
+                      </div>
+                    ) : !isParsing ? (
+                      Array.from(generalGrouped.entries()).map(([category, items]) => (
+                        <GroceryCategoryGroup
+                          key={`general-${category}`}
+                          category={category}
+                          items={items}
+                          onEditItemText={onEditItemText}
+                          onRemoveItem={onRemoveItem}
+                          checkedItems={checkedItems}
+                          onToggleChecked={onToggleChecked}
                         />
-                        <div className="flex items-center gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCancelBulkPaste}
-                            className="text-xs"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleBulkParse}
-                            disabled={!bulkPasteText.trim() || isParsing}
-                            className="text-xs"
-                          >
-                            {isParsing ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Parsing...
-                              </>
-                            ) : (
-                              "Parse"
-                            )}
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm font-medium text-gray-700">
-                          Parsed items ({parsedPreview.filter((_, i) => !removedPreviewIndices.has(i)).length})
-                        </p>
-                        <div className="space-y-1">
-                          {parsedPreview.map((item, index) => {
-                            if (removedPreviewIndices.has(index)) return null;
-                            const isDuplicate = existingGeneralNames.has(item.name.toLowerCase());
-                            return (
-                              <div
-                                key={index}
-                                className={`flex items-center gap-2 py-1 px-2 rounded text-sm ${
-                                  isDuplicate ? "bg-yellow-50 opacity-60" : "bg-gray-50"
-                                }`}
-                              >
-                                <span className="flex-1">
-                                  {item.quantity != null && <span>{item.quantity} </span>}
-                                  {item.unit && <span>{item.unit} </span>}
-                                  {item.name}
-                                  {isDuplicate && (
-                                    <span className="ml-2 text-xs text-yellow-600 font-medium">duplicate</span>
-                                  )}
-                                </span>
-                                <span className="text-xs text-gray-400">{item.category}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-red-500"
-                                  onClick={() => handleRemovePreviewItem(index)}
-                                  aria-label={`Remove parsed item ${item.name}`}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="flex items-center gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCancelBulkPaste}
-                            className="text-xs"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleConfirmParsed}
-                            disabled={isAddingParsed || parsedPreview.filter((_, i) => !removedPreviewIndices.has(i)).length === 0}
-                            className="text-xs"
-                          >
-                            {isAddingParsed ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Adding...
-                              </>
-                            ) : (
-                              "Add all"
-                            )}
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                      ))
+                    ) : null
+                  )}
 
-                {/* Add general item input */}
-                <div className="mt-3 border-t pt-3">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={newGeneralQty}
-                      onChange={(e) => setNewGeneralQty(e.target.value)}
-                      placeholder="Qty"
-                      className="w-16 h-9 sm:h-7 text-sm"
-                      onKeyDown={handleAddGeneralKeyDown}
-                      aria-label="General item quantity"
+                  {/* Add general items */}
+                  <div className="mt-3 border-t pt-3 space-y-2">
+                    <Textarea
+                      value={bulkPasteText}
+                      onChange={(e) => setBulkPasteText(e.target.value)}
+                      placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
+                      className="min-h-[80px] text-sm"
+                      aria-label="General items textarea"
                     />
-                    <Input
-                      value={newGeneralUnit}
-                      onChange={(e) => setNewGeneralUnit(e.target.value)}
-                      placeholder="Unit"
-                      className="w-20 h-9 sm:h-7 text-sm"
-                      onKeyDown={handleAddGeneralKeyDown}
-                      aria-label="General item unit"
-                    />
-                    <Input
-                      value={newGeneralName}
-                      onChange={(e) => setNewGeneralName(e.target.value)}
-                      placeholder="Add item..."
-                      className="flex-1 h-9 sm:h-7 text-sm"
-                      onKeyDown={handleAddGeneralKeyDown}
-                      aria-label="General item name"
-                    />
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={handleAddGeneral}
-                      className="h-9 sm:h-7 text-xs"
-                      disabled={!newGeneralName.trim()}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add
-                    </Button>
-                    {onBulkParseGroceryText && !showBulkPaste && (
+                    <div className="flex justify-end">
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
-                        onClick={() => setShowBulkPaste(true)}
-                        className="h-9 sm:h-7 text-xs"
+                        onClick={handleBulkAdd}
+                        disabled={!bulkPasteText.trim() || isParsing}
+                        className="text-xs"
                       >
-                        <ClipboardPaste className="h-3 w-3 mr-1" />
-                        Paste list
+                        {isParsing ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Adding ingredients...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </>
+                        )}
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </TabsContent>

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, ClipboardPaste, Loader2 } from "lucide-react";
+import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { GROCERY_CATEGORIES, CATEGORY_ORDER, detectCategory } from "@/lib/groceryList";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,16 +42,29 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
     if (!pasteText.trim()) return;
     setIsParsing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("parse-grocery-text", {
-        body: { text: pasteText },
+      // Create a temporary recipe entry for parsing
+      const { data: tempRecipe, error: recipeError } = await supabase
+        .from("recipes")
+        .insert({ name: "Paste Parse", created_by: null, event_id: null, ingredient_id: null })
+        .select("id")
+        .single();
+      if (recipeError) throw recipeError;
+
+      const { data, error } = await supabase.functions.invoke("parse-recipe", {
+        body: { recipeId: tempRecipe.id, recipeName: "Paste Parse", text: pasteText },
       });
+
+      // Clean up temp recipe
+      supabase.from("recipes").delete().eq("id", tempRecipe.id).then(() => {});
+
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error ?? "Failed to parse ingredients");
       if (data.skipped) {
         toast.error("Ingredient parsing is not available in dev mode.");
         return;
       }
-      const parsedItems: IngredientRow[] = (data.items as Array<{ name: string; quantity: number | null; unit: string | null; category: string }>).map(
+      const ingredients = data.parsed?.ingredients ?? [];
+      const parsedItems: IngredientRow[] = (ingredients as Array<{ name: string; quantity: number | null; unit: string | null; category: string }>).map(
         (item) => ({
           id: `parsed-${crypto.randomUUID()}`,
           name: item.name || "",
@@ -185,7 +198,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
           <Textarea
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            placeholder="Paste your ingredients here (e.g., 2 cups flour, 1 lb chicken, olive oil...)"
+            placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
             className="min-h-[80px] text-sm"
             aria-label="Paste ingredients text"
           />
@@ -199,7 +212,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
               {isParsing ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
               ) : null}
-              {isParsing ? "Parsing..." : "Parse"}
+              {isParsing ? "Adding..." : "Add"}
             </Button>
             <Button
               variant="ghost"
@@ -230,8 +243,8 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
           onClick={() => setShowPasteArea(true)}
           disabled={showPasteArea}
         >
-          <ClipboardPaste className="h-3.5 w-3.5 mr-1" />
-          Paste ingredients
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add ingredients
         </Button>
       </div>
     </div>

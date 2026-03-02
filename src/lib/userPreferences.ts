@@ -9,6 +9,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   mealTypes: ["breakfast", "lunch", "dinner"],
   weekStartDay: 0,
   householdSize: 2,
+  aiModelParse: "claude-sonnet-4-6",
+  aiModelCombine: "claude-sonnet-4-6",
 };
 
 export async function loadUserPreferences(
@@ -17,7 +19,7 @@ export async function loadUserPreferences(
   try {
     const { data, error } = await db
       .from("user_preferences")
-      .select("meal_types, week_start_day, household_size")
+      .select("meal_types, week_start_day, household_size, ai_model_parse, ai_model_combine")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -35,6 +37,14 @@ export async function loadUserPreferences(
         typeof row.household_size === "number"
           ? row.household_size
           : DEFAULT_PREFERENCES.householdSize,
+      aiModelParse:
+        typeof row.ai_model_parse === "string"
+          ? row.ai_model_parse
+          : DEFAULT_PREFERENCES.aiModelParse,
+      aiModelCombine:
+        typeof row.ai_model_combine === "string"
+          ? row.ai_model_combine
+          : DEFAULT_PREFERENCES.aiModelCombine,
     };
   } catch (error) {
     console.error("Error loading user preferences:", error);
@@ -53,6 +63,8 @@ export async function saveUserPreferences(
         meal_types: preferences.mealTypes,
         week_start_day: preferences.weekStartDay,
         household_size: preferences.householdSize,
+        ai_model_parse: preferences.aiModelParse,
+        ai_model_combine: preferences.aiModelCombine,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }

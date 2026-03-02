@@ -33,9 +33,8 @@ describe("INGREDIENT_SUGGESTIONS", () => {
   });
 
   it("should have fruits category with expected items", () => {
-    expect(INGREDIENT_SUGGESTIONS.fruits).toContain("Pomegranate");
-    expect(INGREDIENT_SUGGESTIONS.fruits).toContain("Mango");
-    expect(INGREDIENT_SUGGESTIONS.fruits).toContain("Apple");
+    expect(INGREDIENT_SUGGESTIONS.fruits).toContain("Meyer Lemon");
+    expect(INGREDIENT_SUGGESTIONS.fruits).toContain("Lime");
   });
 
   it("should have proteins category with expected items", () => {

@@ -71,9 +71,12 @@ type SortOption = "newest" | "alphabetical" | "highest_rated";
 
 interface RecipeHubProps {
   userId?: string;
+  isAdmin?: boolean;
+  canEdit?: boolean;
+  isClubMember?: boolean;
 }
 
-const RecipeHub = ({ userId }: RecipeHubProps) => {
+const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeHubProps) => {
   const [recipes, setRecipes] = useState<RecipeWithNotes[]>([]);
   const [usedIngredients, setUsedIngredients] = useState<Ingredient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -811,15 +814,15 @@ const RecipeHub = ({ userId }: RecipeHubProps) => {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
-                onEdit={handleEditRecipe}
-                onDelete={handleDeleteRecipe}
-                onEditRating={userId ? handleEditRating : undefined}
+                onEdit={recipe.createdBy === userId || (recipe.eventId && canEdit) ? handleEditRecipe : undefined}
+                onDelete={recipe.createdBy === userId || (recipe.eventId && canEdit) ? handleDeleteRecipe : undefined}
+                onEditRating={userId && isClubMember ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
                 onEditIngredients={recipe.createdBy === userId ? handleEditIngredients : undefined}
                 ingredients={recipeIngredientsMap[recipe.id]}
                 pantryItems={pantryItemNames}
                 contentStatus={recipeContentMap[recipe.id]?.status}
-                onParseRecipe={handleParseRecipe}
+                onParseRecipe={isAdmin ? handleParseRecipe : undefined}
               />
             ))}
           </div>

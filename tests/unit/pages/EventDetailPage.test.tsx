@@ -19,12 +19,14 @@ vi.mock("react-router-dom", async () => {
 const mockGetCurrentUser = vi.fn();
 const mockGetAllowedUser = vi.fn();
 const mockIsAdmin = vi.fn();
+const mockIsMemberOrAdmin = vi.fn();
 const mockSignOut = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
   getAllowedUser: (...args: unknown[]) => mockGetAllowedUser(...args),
   isAdmin: (...args: unknown[]) => mockIsAdmin(...args),
+  isMemberOrAdmin: (...args: unknown[]) => mockIsMemberOrAdmin(...args),
   signOut: () => mockSignOut(),
 }));
 
@@ -154,6 +156,7 @@ vi.mock("@/components/events/EventRatingDialog", () => ({
   ),
 }));
 
+let capturedRecipesTabProps: { onRateRecipe?: (r: unknown) => void } = {};
 vi.mock("@/components/events/EventRecipesTab", () => ({
   default: ({
     onAddRecipeClick,
@@ -164,6 +167,7 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
     onDeleteRecipeClick,
     onToggleRecipeNotes,
     onEditIngredients,
+    onRateRecipe,
     recipesWithNotes,
   }: {
     onAddRecipeClick: () => void;
@@ -174,8 +178,11 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
     onDeleteRecipeClick: (recipe: unknown) => void;
     onToggleRecipeNotes: (id: string) => void;
     onEditIngredients?: (recipe: unknown) => void;
+    onRateRecipe?: (r: unknown) => void;
     recipesWithNotes: Array<{ recipe: { id: string; name: string; url?: string; createdBy?: string } }>;
-  }) => (
+  }) => {
+    capturedRecipesTabProps = { onRateRecipe };
+    return (
     <div data-testid="recipes-tab">
       <button onClick={onAddRecipeClick}>Add Recipe</button>
       {recipesWithNotes.map((r) => (
@@ -194,7 +201,8 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
         </div>
       ))}
     </div>
-  ),
+    );
+  },
 }));
 
 let capturedGroceryProps: { onParseRecipe?: (recipeId: string) => void } = {};
@@ -255,6 +263,7 @@ const setupDefaultMocks = () => {
   });
   mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
   mockIsAdmin.mockReturnValue(true);
+  mockIsMemberOrAdmin.mockReturnValue(true);
   mockSignOut.mockResolvedValue(undefined);
   mockIsDevMode.mockReturnValue(false);
 
@@ -364,6 +373,7 @@ describe("EventDetailPage", () => {
     capturedPantryProps = {};
     capturedGroceryProps = {};
     capturedPhotoUploadProps = {};
+    capturedRecipesTabProps = {};
     setupDefaultMocks();
   });
 
@@ -2039,6 +2049,17 @@ describe("EventDetailPage", () => {
     // Dropdown is mocked to render content directly
     fireEvent.click(screen.getByText("Sign Out"));
     expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it("navigates to /settings when Settings is clicked", async () => {
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Settings"));
+    expect(mockNavigate).toHaveBeenCalledWith("/settings");
   });
 
   it("navigates to /users when Manage Users is clicked (admin)", async () => {
@@ -6969,4 +6990,791 @@ describe("EventDetailPage", () => {
       expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
     });
   });
+
+  // ---- HANDLE PARSE RECIPE WITH data.success=false (lines 479-480) ----
+
+  it("handles parseRecipe when data returns success=false with error message", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: false, error: "Recipe format not supported" }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Recipe format not supported");
+    });
+  });
+
+  it("handles parseRecipe when data returns success=false with no error message", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: false }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe. Please try again.");
+    });
+  });
+
+  // ---- HANDLE PARSE RECIPE SUCCESS WITH COMBINE STEP (lines 490-496) ----
+
+  it("handles parseRecipe success and runs smart combine after parse", async () => {
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    mockSmartCombineIngredients.mockResolvedValue({ items: [], perRecipeItems: {} });
+
+    const twoRecipes = [
+      ...recipesData,
+      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Clear mocks to isolate the parse call
+    mockSmartCombineIngredients.mockClear();
+
+    await act(async () => {
+      capturedGroceryProps.onParseRecipe?.("recipe-1");
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
+    });
+
+    // After successful parse, loadGroceryData + runSmartCombine should be called
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+  });
+
+  // ---- HANDLE RATE RECIPE (lines 907-909) ----
+
+  it("handles handleRateRecipe for a single recipe via EventRecipesTab", async () => {
+    // Use completed event so rating options appear
+    const completedEvent = { ...eventData, status: "completed" };
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: completedEvent, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // The capturedRecipesTabProps should have onRateRecipe
+    expect(capturedRecipesTabProps.onRateRecipe).toBeDefined();
+
+    // Invoke handleRateRecipe with a mock recipe object
+    act(() => {
+      capturedRecipesTabProps.onRateRecipe!({
+        recipe: { id: "recipe-1", name: "Chicken Parm" },
+        notes: [],
+        ratings: [],
+      });
+    });
+
+    // The rating dialog should appear
+    await waitFor(() => {
+      expect(screen.getByTestId("rating-dialog")).toBeInTheDocument();
+    });
+  });
+
+  // ---- HANDLE PANTRY CHANGE (lines 916-920) ----
+
+  it("handles handlePantryChange reloading pantry items", async () => {
+    mockGetPantryItems.mockResolvedValue([{ name: "olive oil" }]);
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    // Clear to isolate
+    mockGetPantryItems.mockClear();
+    mockEnsureDefaultPantryItems.mockClear();
+
+    // Invoke handlePantryChange
+    expect(capturedPantryProps.onPantryChange).toBeDefined();
+    act(() => {
+      capturedPantryProps.onPantryChange!();
+    });
+
+    await waitFor(() => {
+      expect(mockEnsureDefaultPantryItems).toHaveBeenCalledWith("user-1");
+      expect(mockGetPantryItems).toHaveBeenCalledWith("user-1");
+    });
+  });
+
+  // ---- EDIT INGREDIENTS DIALOG onSaved CALLBACK (line 1578) ----
+
+  it("edit ingredients onSaved callback reloads grocery data and runs combine", async () => {
+    mockSmartCombineIngredients.mockResolvedValue({ items: [], perRecipeItems: {} });
+
+    const twoRecipes = [
+      ...recipesData,
+      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: "recipe-new" }, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Click "Edit Ingredients" to open the dialog
+    fireEvent.click(screen.getByText("Edit Ingredients Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+    });
+
+    // Add an ingredient name
+    fireEvent.change(screen.getByLabelText("Name for row 1"), {
+      target: { value: "Garlic" },
+    });
+
+    // Clear combine mock to isolate the onSaved call
+    mockSmartCombineIngredients.mockClear();
+
+    // Click save
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
+    });
+
+    // Wait for onSaved to complete (it reloads grocery data and runs combine)
+    await waitFor(() => {
+      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
+    });
+
+    // Verify combine was called (the onSaved callback ran loadGroceryData + runSmartCombine)
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+  });
+
+  // ---- HANDLE RETRY PARSE WITH success=false (lines 771-773) ----
+
+  it("handles retry parse when data returns success=false", async () => {
+    // First parse fails with error, then retry returns success=false WITHOUT error field
+    // to trigger the ?? fallback at line 772
+    let parseCallCount = 0;
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "parse-recipe") {
+        parseCallCount++;
+        if (parseCallCount === 1) {
+          return Promise.resolve({ data: null, error: { message: "Parse error" } });
+        }
+        // Retry returns success: false without error field
+        return Promise.resolve({ data: { success: false }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Retry Recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/retry" } });
+
+    const addBtn = screen.getByRole("button", { name: /add recipe/i });
+    fireEvent.click(addBtn);
+
+    // Wait for first parse failure
+    await waitFor(() => {
+      expect(screen.getByText("Try parsing again")).toBeInTheDocument();
+    });
+
+    // Click retry - this time it returns success: false
+    fireEvent.click(screen.getByText("Try parsing again"));
+
+    // Should show failure state again with custom error
+    await waitFor(() => {
+      expect(screen.getByText("Try parsing again")).toBeInTheDocument();
+    });
+  });
+
+  // ---- HANDLE SAVE RECIPE EDIT CATCH BLOCK (lines 823-824) ----
+
+  it("handles save recipe edit unexpected throw hitting catch block", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Chicken Parm"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Recipe")).toBeInTheDocument();
+    });
+
+    // Make toast.success throw to hit the catch block in handleSaveRecipeEdit
+    vi.mocked(toast.success).mockImplementationOnce(() => {
+      throw new Error("Unexpected error");
+    });
+
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update recipe");
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- SMART COMBINE ERROR WITH NON-ERROR VALUE (branch 53[1] at line 461) ----
+
+  it("handles smart combine error with non-Error thrown value", async () => {
+    mockLoadGroceryCache.mockResolvedValue(null);
+    mockSmartCombineIngredients.mockRejectedValue("string error, not an Error object");
+
+    const twoRecipes = [
+      ...recipesData,
+      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
+              { id: "ri-2", recipe_id: "recipe-2", name: "chicken", quantity: "1", unit: "lb", category: "protein", raw_text: "1 lb chicken", sort_order: 1, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [
+              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+              { id: "rc-2", recipe_id: "recipe-2", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
+            ], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    });
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    // Wait for the combine attempt
+    await waitFor(() => {
+      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- MANUAL MODE FULL FLOW (lines 641-691) ----
+
+  it("submits recipe via manual mode with full parse-recipe flow", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "parse-recipe") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            ingredientCount: 2,
+            parsed: {
+              ingredients: [
+                { name: "chicken breast", quantity: 2, unit: "lbs", category: "meat_seafood" },
+                { name: "garlic", quantity: 3, unit: "cloves", category: "produce" },
+              ],
+            },
+          },
+          error: null,
+        });
+      }
+      // notification
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    // Mock smartCombine to succeed
+    mockSmartCombineIngredients.mockResolvedValue({ items: [], perRecipeItems: {} });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { id: "recipe-new", name: "Manual Recipe" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    // Fill in recipe name
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Manual Recipe" } });
+
+    // Switch to manual mode
+    fireEvent.click(screen.getByText("Manual"));
+    const pasteInput = screen.getByLabelText("Paste ingredients text");
+    fireEvent.change(pasteInput, { target: { value: "2 lbs chicken breast\n3 cloves garlic" } });
+
+    // Submit
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    // Wait for parse-recipe to be called with text (manual mode)
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", {
+        body: { recipeId: "recipe-new", recipeName: "Manual Recipe", text: "2 lbs chicken breast\n3 cloves garlic" },
+      });
+    });
+
+    // Advance timers through the loading, notifying, and done steps
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(3000);
+
+    vi.useRealTimers();
+  });
+
+  // ---- MANUAL MODE parse-recipe ERROR (lines 641-642 branches) ----
+
+  it("handles manual mode parse-recipe returning parseError", async () => {
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "parse-recipe") {
+        return Promise.resolve({ data: null, error: { message: "Parse service error" } });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Fail Recipe" } });
+    fireEvent.click(screen.getByText("Manual"));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), { target: { value: "some ingredients" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    // Should hit the error path
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("handles manual mode parse-recipe returning success=false", async () => {
+    // Return success=false WITHOUT error field to trigger the ?? fallback at line 642
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "parse-recipe") {
+        return Promise.resolve({ data: { success: false }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Fail Recipe 2" } });
+    fireEvent.click(screen.getByText("Manual"));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), { target: { value: "some ingredients" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  // ---- MANUAL MODE with items that have empty name/category (branches 83[1], 84[1]) ----
+
+  it("handles manual mode items with empty name and category", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    mockFunctionsInvoke.mockImplementation((fnName: string) => {
+      if (fnName === "parse-recipe") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            ingredientCount: 2,
+            parsed: {
+              ingredients: [
+                { name: "", quantity: 1, unit: "cup", category: "" },
+                { name: "flour", quantity: 2, unit: "cups", category: "" },
+              ],
+            },
+          },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    mockSmartCombineIngredients.mockResolvedValue({ items: [], perRecipeItems: {} });
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { id: "recipe-new", name: "Empty Fields Recipe" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipe_content") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      if (table === "recipe_ingredients") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      };
+    });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Empty Fields Recipe" } });
+    fireEvent.click(screen.getByText("Manual"));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), { target: { value: "1 cup stuff\n2 cups flour" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
+    });
+
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(3000);
+
+    vi.useRealTimers();
+  });
+
+  // ---- URL MODE parse-recipe returns success=false (line 702) ----
+
+  it("handles URL mode parse-recipe returning success=false during submit", async () => {
+    // Return success=false WITHOUT error field to trigger the ?? fallback at line 702
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: false }, error: null });
+
+    render(<EventDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Recipe"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Add a Recipe")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "URL Fail Recipe" } });
+    fireEvent.change(screen.getByPlaceholderText("https://..."), { target: { value: "https://example.com/fail" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    // Parse returns success=false, should show retry options
+    await waitFor(() => {
+      expect(screen.getByText("Continue without ingredients")).toBeInTheDocument();
+    });
+  });
+
 });

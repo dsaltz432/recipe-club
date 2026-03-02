@@ -250,6 +250,91 @@ describe("MealPlanSlot", () => {
     expect(screen.queryByLabelText("View meal details")).not.toBeInTheDocument();
   });
 
+  it("keyboard Enter on filled slot calls onViewMealEvent", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    const { container } = render(
+      <MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />
+    );
+
+    const slot = container.firstChild as HTMLElement;
+    fireEvent.keyDown(slot, { key: "Enter" });
+
+    expect(onViewMealEvent).toHaveBeenCalledWith(1, "dinner");
+  });
+
+  it("keyboard Space on filled slot calls onViewMealEvent", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    const { container } = render(
+      <MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />
+    );
+
+    const slot = container.firstChild as HTMLElement;
+    fireEvent.keyDown(slot, { key: " " });
+
+    expect(onViewMealEvent).toHaveBeenCalledWith(1, "dinner");
+  });
+
+  it("keyboard other key on filled slot does not call onViewMealEvent", () => {
+    const items: MealPlanItem[] = [
+      {
+        id: "item-1",
+        planId: "plan-1",
+        dayOfWeek: 1,
+        mealType: "dinner",
+        sortOrder: 0,
+        recipeName: "Grilled Salmon",
+      },
+    ];
+
+    const onViewMealEvent = vi.fn();
+    const { container } = render(
+      <MealPlanSlot {...defaultProps} items={items} onViewMealEvent={onViewMealEvent} />
+    );
+
+    const slot = container.firstChild as HTMLElement;
+    fireEvent.keyDown(slot, { key: "Tab" });
+
+    expect(onViewMealEvent).not.toHaveBeenCalled();
+  });
+
+  it("uses default minH when slotMinH is not provided", () => {
+    const { container } = render(<MealPlanSlot {...defaultProps} />);
+
+    const button = container.querySelector("button");
+    expect(button?.className).toContain("min-h-[48px]");
+  });
+
+  it("uses custom slotMinH when provided", () => {
+    const { container } = render(
+      <MealPlanSlot {...defaultProps} slotMinH="min-h-[100px]" />
+    );
+
+    const button = container.querySelector("button");
+    expect(button?.className).toContain("min-h-[100px]");
+  });
+
   describe("action buttons call correct handlers", () => {
     it("add-more button calls onAddMeal", () => {
       const items: MealPlanItem[] = [

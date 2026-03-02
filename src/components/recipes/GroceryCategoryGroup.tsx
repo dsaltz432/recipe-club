@@ -9,6 +9,7 @@ interface GroceryCategoryGroupProps {
   items: SmartGroceryItem[];
   editable?: boolean;
   onEditItem?: (originalName: string, edits: GroceryItemEdit) => void;
+  onEditItemText?: (originalName: string, newText: string) => void;
   onRemoveItem?: (itemName: string) => void;
   checkedItems?: Set<string>;
   onToggleChecked?: (itemName: string) => void;
@@ -18,24 +19,25 @@ function getItemKey(item: SmartGroceryItem, index: number): string {
   return `${item.name}-${item.unit ?? ""}-${index}`;
 }
 
-const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onRemoveItem, checkedItems, onToggleChecked }: GroceryCategoryGroupProps) => {
+const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditItemText, onRemoveItem, checkedItems, onToggleChecked }: GroceryCategoryGroupProps) => {
   const displayName = GROCERY_CATEGORIES[category];
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="mb-2">
+      <div className="flex items-center gap-2 mb-1">
         <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wide">
           {displayName}
         </Badge>
         <span className="text-xs text-gray-400">({items.length})</span>
       </div>
-      <div className="space-y-0.5">
+      <div>
         {items.map((item, index) => (
           <GroceryItemRow
             key={getItemKey(item, index)}
             item={item}
             editable={editable}
             onEdit={onEditItem}
+            onEditText={onEditItemText}
             onRemove={onRemoveItem}
             isChecked={checkedItems?.has(item.name)}
             onToggleChecked={onToggleChecked ? () => onToggleChecked(item.name) : undefined}

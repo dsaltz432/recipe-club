@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser } from "@/lib/auth";
 import type { User, Recipe, RecipeRatingsSummary, RecipeIngredient } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +70,7 @@ const PersonalMealDetailPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
 
   const [user, setUser] = useState<User | null>(null);
+  const [isClubMember, setIsClubMember] = useState(false);
   const [event, setEvent] = useState<PersonalEventData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -360,6 +361,10 @@ const PersonalMealDetailPage = () => {
     const loadUser = async () => {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
+      if (currentUser?.email) {
+        const allowed = await getAllowedUser(currentUser.email);
+        setIsClubMember(allowed?.is_club_member ?? false);
+      }
       await loadEventData();
       setIsLoading(false);
     };
@@ -472,10 +477,7 @@ const PersonalMealDetailPage = () => {
     }
   };
 
-  const handleAddManualMeal = async (
-    name: string,
-    ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>
-  ) => {
+  const handleAddManualMeal = async (name: string, text: string) => {
     if (!user?.id || !event) return;
 
     try {
@@ -514,18 +516,13 @@ const PersonalMealDetailPage = () => {
         }
       }
 
-      // Save ingredients via RPC
-      if (ingredients.length > 0) {
-        const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
-          p_recipe_id: insertedRecipe.id,
-          p_ingredients: ingredients,
+      // Parse ingredients via unified parse-recipe (handles DB saves internally)
+      if (text.trim()) {
+        const { data, error } = await supabase.functions.invoke("parse-recipe", {
+          body: { recipeId: insertedRecipe.id, recipeName: name, text },
         });
-        if (rpcError) throw rpcError;
-
-        await supabase.from("recipe_content").insert({
-          recipe_id: insertedRecipe.id,
-          status: "completed",
-        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error ?? "Failed to parse ingredients");
       }
 
       toast.success("Recipe added!");
@@ -877,7 +874,7 @@ const PersonalMealDetailPage = () => {
           onEditNoteClick={handleEditNoteClick}
           onDeleteNoteClick={handleDeleteClick}
           onDeleteRecipeClick={handleDeleteRecipeClick}
-          onRateRecipe={handleRateRecipe}
+          onRateRecipe={isClubMember ? handleRateRecipe : undefined}
           onEditIngredients={handleEditIngredientsClick}
         />
       </main>

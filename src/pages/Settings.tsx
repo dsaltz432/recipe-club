@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser, isAdmin } from "@/lib/auth";
 import { loadUserPreferences, saveUserPreferences } from "@/lib/userPreferences";
 import type { User, UserPreferences } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,24 @@ const MEAL_TYPE_OPTIONS = [
   { value: "dinner", label: "Dinner" },
 ] as const;
 
+const AI_MODEL_OPTIONS = [
+  { value: "claude-haiku-4-5-20251001", label: "Haiku 4.5 — fastest, cheapest ($1/$5)" },
+  { value: "claude-sonnet-4-6", label: "Sonnet 4.6 — balanced, recommended ($3/$15)" },
+  { value: "claude-opus-4-6", label: "Opus 4.6 — most intelligent ($15/$75)" },
+] as const;
+
 const Settings = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
     mealTypes: ["breakfast", "lunch", "dinner"],
     weekStartDay: 0,
     householdSize: 2,
+    aiModelParse: "claude-sonnet-4-6",
+    aiModelCombine: "claude-sonnet-4-6",
   });
 
   useEffect(() => {
@@ -44,6 +53,11 @@ const Settings = () => {
       if (currentUser?.id) {
         const prefs = await loadUserPreferences(currentUser.id);
         setPreferences(prefs);
+      }
+
+      if (currentUser?.email) {
+        const allowed = await getAllowedUser(currentUser.email);
+        setUserIsAdmin(isAdmin(allowed));
       }
 
       setIsLoading(false);
@@ -196,6 +210,65 @@ const Settings = () => {
               />
             </CardContent>
           </Card>
+
+          {/* AI Models — admin only */}
+          {userIsAdmin && (
+            <>
+              <Separator />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">AI Models</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Choose which AI model powers each feature. Faster models are cheaper but may be less accurate.
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="ai-model-parse" className="text-sm">Recipe Parsing</Label>
+                      <Select
+                        value={preferences.aiModelParse}
+                        onValueChange={(value) =>
+                          setPreferences((prev) => ({ ...prev, aiModelParse: value }))
+                        }
+                      >
+                        <SelectTrigger id="ai-model-parse" className="w-full mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AI_MODEL_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="ai-model-combine" className="text-sm">Grocery Processing</Label>
+                      <Select
+                        value={preferences.aiModelCombine}
+                        onValueChange={(value) =>
+                          setPreferences((prev) => ({ ...prev, aiModelCombine: value }))
+                        }
+                      >
+                        <SelectTrigger id="ai-model-combine" className="w-full mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AI_MODEL_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
 
           {/* Save Button */}
           <Button

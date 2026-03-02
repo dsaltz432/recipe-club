@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isAdmin, type AllowedUser } from "@/lib/auth";
+import { isAdmin, isMemberOrAdmin, type AllowedUser } from "@/lib/auth";
 
 // Mock the supabase client module
 vi.mock("@/integrations/supabase/client", () => ({
@@ -51,6 +51,48 @@ describe("isAdmin", () => {
   });
 });
 
+describe("isMemberOrAdmin", () => {
+  it("should return true for admin role", () => {
+    const adminUser: AllowedUser = {
+      id: "user-123",
+      email: "admin@example.com",
+      role: "admin",
+      is_club_member: true,
+      access_type: "club",
+    };
+
+    expect(isMemberOrAdmin(adminUser)).toBe(true);
+  });
+
+  it("should return true for member role", () => {
+    const memberUser: AllowedUser = {
+      id: "user-123",
+      email: "member@example.com",
+      role: "member",
+      is_club_member: true,
+      access_type: "club",
+    };
+
+    expect(isMemberOrAdmin(memberUser)).toBe(true);
+  });
+
+  it("should return false for viewer role", () => {
+    const viewerUser: AllowedUser = {
+      id: "user-123",
+      email: "viewer@example.com",
+      role: "viewer",
+      is_club_member: true,
+      access_type: "club",
+    };
+
+    expect(isMemberOrAdmin(viewerUser)).toBe(false);
+  });
+
+  it("should return false for null user", () => {
+    expect(isMemberOrAdmin(null)).toBe(false);
+  });
+});
+
 describe("AllowedUser type", () => {
   it("should have correct structure", () => {
     const user: AllowedUser = {
@@ -63,7 +105,7 @@ describe("AllowedUser type", () => {
 
     expect(user.id).toBeDefined();
     expect(user.email).toBeDefined();
-    expect(user.role).toMatch(/^(admin|viewer)$/);
+    expect(user.role).toMatch(/^(admin|member|viewer)$/);
     expect(typeof user.is_club_member).toBe("boolean");
     expect(user.access_type).toBe("club");
   });
@@ -77,16 +119,25 @@ describe("AllowedUser type", () => {
       access_type: "club",
     };
 
-    const viewerUser: AllowedUser = {
+    const memberUser: AllowedUser = {
       id: "2",
+      email: "member@test.com",
+      role: "member",
+      is_club_member: true,
+      access_type: "club",
+    };
+
+    const viewerUser: AllowedUser = {
+      id: "3",
       email: "viewer@test.com",
       role: "viewer",
       is_club_member: false,
       access_type: "club",
     };
 
-    expect(["admin", "viewer"]).toContain(adminUser.role);
-    expect(["admin", "viewer"]).toContain(viewerUser.role);
+    expect(["admin", "member", "viewer"]).toContain(adminUser.role);
+    expect(["admin", "member", "viewer"]).toContain(memberUser.role);
+    expect(["admin", "member", "viewer"]).toContain(viewerUser.role);
   });
 });
 

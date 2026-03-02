@@ -3197,7 +3197,41 @@ describe("RecipeHub - Delete Personal Recipe", () => {
     });
   });
 
-  it("shows delete and edit buttons on club event recipes", async () => {
+  it("shows delete and edit buttons on club event recipes for editors", async () => {
+    const clubRecipesData = [
+      {
+        id: "club-recipe-1",
+        name: "Club Event Recipe",
+        url: null,
+        event_id: "event-1",
+        ingredient_id: null,
+        created_by: "user-456",
+        created_at: "2025-01-15T10:00:00Z",
+        ingredients: null,
+        scheduled_events: { type: "club" },
+      },
+    ];
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(clubRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" canEdit={true} />);
+
+    // Club tab is default — wait for recipe to load
+    await waitFor(() => {
+      expect(screen.getByText("Club Event Recipe")).toBeInTheDocument();
+    });
+
+    // Editors/admins can edit and delete club event recipes
+    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+  });
+
+  it("hides edit and delete buttons on club event recipes for viewers", async () => {
     const clubRecipesData = [
       {
         id: "club-recipe-1",
@@ -3221,14 +3255,13 @@ describe("RecipeHub - Delete Personal Recipe", () => {
 
     render(<RecipeHub userId="user-123" />);
 
-    // Club tab is default — wait for recipe to load
     await waitFor(() => {
       expect(screen.getByText("Club Event Recipe")).toBeInTheDocument();
     });
 
-    // Club event recipes now show edit and delete like personal recipes
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    // Viewers cannot edit or delete club recipes they didn't create
+    expect(screen.queryByLabelText(/Delete recipe/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit recipe/)).not.toBeInTheDocument();
   });
 });
 
@@ -3930,7 +3963,7 @@ describe("RecipeHub - Recipe Ingredients & Content", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isAdmin={true} />);
 
     await waitFor(() => {
       expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
@@ -4010,7 +4043,7 @@ describe("RecipeHub - Parse Recipe", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isAdmin={true} />);
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
@@ -4043,7 +4076,7 @@ describe("RecipeHub - Parse Recipe", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isAdmin={true} />);
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();

@@ -10,12 +10,12 @@ vi.mock("react-router-dom", async () => {
 
 const mockGetCurrentUser = vi.fn();
 const mockGetAllowedUser = vi.fn();
-const mockIsAdmin = vi.fn();
+const mockIsMemberOrAdmin = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
   getAllowedUser: (...args: unknown[]) => mockGetAllowedUser(...args),
-  isAdmin: (...args: unknown[]) => mockIsAdmin(...args),
+  isMemberOrAdmin: (...args: unknown[]) => mockIsMemberOrAdmin(...args),
 }));
 
 // Mock UserManagement component
@@ -36,14 +36,14 @@ describe("UserManagementPage", () => {
     expect(container.querySelector(".animate-spin")).toBeInTheDocument();
   });
 
-  it("redirects non-admin to dashboard", async () => {
+  it("redirects viewer to dashboard", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Viewer",
       email: "viewer@test.com",
     });
     mockGetAllowedUser.mockResolvedValue({ role: "viewer" });
-    mockIsAdmin.mockReturnValue(false);
+    mockIsMemberOrAdmin.mockReturnValue(false);
 
     render(<UserManagementPage />);
 
@@ -73,7 +73,7 @@ describe("UserManagementPage", () => {
       email: "admin@test.com",
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin" });
-    mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<UserManagementPage />);
 
@@ -92,7 +92,7 @@ describe("UserManagementPage", () => {
       email: "admin@test.com",
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin" });
-    mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<UserManagementPage />);
 
@@ -121,14 +121,32 @@ describe("UserManagementPage", () => {
     });
   });
 
-  it("returns null when not admin after loading", async () => {
+  it("renders for member users", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Member",
+      email: "member@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "member" });
+    mockIsMemberOrAdmin.mockReturnValue(true);
+
+    render(<UserManagementPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("User Management")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("user-management")).toBeInTheDocument();
+  });
+
+  it("returns null when viewer after loading", async () => {
     mockGetCurrentUser.mockResolvedValue({
       id: "user-1",
       name: "Viewer",
       email: "viewer@test.com",
     });
     mockGetAllowedUser.mockResolvedValue({ role: "viewer" });
-    mockIsAdmin.mockReturnValue(false);
+    mockIsMemberOrAdmin.mockReturnValue(false);
 
     const { container } = render(<UserManagementPage />);
 
@@ -136,7 +154,7 @@ describe("UserManagementPage", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
     });
 
-    // After loading, isAdmin is false, so returns null
+    // After loading, viewer cannot manage, so returns null
     await waitFor(() => {
       expect(container.querySelector(".min-h-screen")).toBeFalsy();
     });

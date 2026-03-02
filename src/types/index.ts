@@ -160,6 +160,8 @@ export interface UserPreferences {
   mealTypes: string[];
   weekStartDay: number;
   householdSize: number;
+  aiModelParse: string;
+  aiModelCombine: string;
 }
 
 export interface GeneralGroceryItem {

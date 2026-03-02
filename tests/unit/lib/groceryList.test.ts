@@ -903,7 +903,7 @@ describe("groceryList", () => {
       vi.clearAllMocks();
     });
 
-    it("calls combine-ingredients edge function with raw ingredients", async () => {
+    it("calls process-grocery-list edge function with raw ingredients", async () => {
       const mockItems = [
         { name: "broccoli", displayName: "broccoli", totalQuantity: 4, unit: "cup", category: "produce", sourceRecipes: ["Pasta", "Salad"] },
       ];
@@ -915,7 +915,7 @@ describe("groceryList", () => {
 
       const result = await smartCombineIngredients(ingredients, recipeNameMap);
 
-      expect(mockInvoke).toHaveBeenCalledWith("combine-ingredients", {
+      expect(mockInvoke).toHaveBeenCalledWith("process-grocery-list", {
         body: {
           rawIngredients: [
             { name: "broccoli", quantity: "2", unit: null, category: "produce", recipeName: "Pasta" },
@@ -971,7 +971,7 @@ describe("groceryList", () => {
 
       await smartCombineIngredients(unknownIngredients, recipeNameMap);
 
-      expect(mockInvoke).toHaveBeenCalledWith("combine-ingredients", {
+      expect(mockInvoke).toHaveBeenCalledWith("process-grocery-list", {
         body: {
           rawIngredients: [
             { name: "flour", quantity: "1", unit: "cup", category: "pantry", recipeName: "Unknown Recipe" },
@@ -989,7 +989,7 @@ describe("groceryList", () => {
 
       await smartCombineIngredients(nullIngredients, recipeNameMap);
 
-      expect(mockInvoke).toHaveBeenCalledWith("combine-ingredients", {
+      expect(mockInvoke).toHaveBeenCalledWith("process-grocery-list", {
         body: {
           rawIngredients: [
             { name: "salt", quantity: null, unit: null, category: "spices", recipeName: "Pasta" },

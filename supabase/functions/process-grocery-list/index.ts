@@ -37,7 +37,8 @@ serve(async (req) => {
       );
     }
 
-    const { rawIngredients }: { rawIngredients: RawIngredientInput[] } = await req.json();
+    const { rawIngredients, model: requestedModel }: { rawIngredients: RawIngredientInput[]; model?: string } = await req.json();
+    const model = requestedModel || "claude-sonnet-4-6";
 
     if (!rawIngredients || rawIngredients.length === 0) {
       return new Response(
@@ -100,9 +101,7 @@ Combine items that are the same real ingredient but appear separately.
 - Preserve the most specific category assignment
 - Combine sourceRecipes arrays (deduplicated) — derive sourceRecipes from the recipeName field on each input ingredient
 - Return raw numeric quantities — do NOT format as fractions or strings
-- Items where ALL inputs have null quantity: use null for totalQuantity
-- Use clean base ingredient names (e.g. "broccoli" not "broccoli floret")
-- Never use metric units (g, kg, ml) — convert to imperial (oz, lb, tsp, tbsp, cup)
+- When an input has null quantity: if the item is a discrete countable noun (e.g. "onion", "lemon", "plum", "jalapeño", "egg", "avocado"), default totalQuantity to 1. If it's a mass/uncountable noun (e.g. "blueberries", "flour", "olive oil", "spinach"), keep totalQuantity as null.
 
 ## displayName generation:
 For EVERY item in BOTH "items" and "perRecipeItems", generate a "displayName" — the human-friendly name to show on the grocery list. The displayName should be quantity-aware (pluralized correctly for that item's quantity context). Rules:
@@ -152,7 +151,7 @@ totalQuantity must be a number or null. unit must be a string or null.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
+        model,
         max_tokens: 8192,
         system: systemPrompt,
         messages: [
@@ -200,11 +199,7 @@ totalQuantity must be a number or null. unit must be a string or null.`;
       return true;
     });
     if (droppedNames.length > 0) {
-      console.warn(`AI dropped ingredients: ${droppedNames.join(", ")}. Falling back to skipped.`);
-      return new Response(
-        JSON.stringify({ success: true, skipped: true, message: `AI dropped ingredients: ${droppedNames.join(", ")}` }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.warn(`AI renamed/merged ingredients (not dropped): ${droppedNames.join(", ")}. Proceeding with results.`);
     }
 
     // Ensure every item has a displayName (fallback to name if AI omitted it)
@@ -226,7 +221,7 @@ totalQuantity must be a number or null. unit must be a string or null.`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in combine-ingredients:", error);
+    console.error("Error in process-grocery-list:", error);
     return new Response(
       JSON.stringify({
         success: false,

@@ -438,4 +438,156 @@ describe("GroceryItemRow", () => {
 
     expect(screen.getByLabelText("Uncheck item")).toBeInTheDocument();
   });
+
+  // ---- Single-field edit mode tests ----
+
+  it("shows edit/remove buttons when onEditText is provided (without editable)", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={vi.fn()} onRemove={vi.fn()} />);
+
+    expect(screen.getByLabelText("Edit item")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove item")).toBeInTheDocument();
+  });
+
+  it("shows only remove button when only onRemove is provided", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onRemove={vi.fn()} />);
+
+    expect(screen.queryByLabelText("Edit item")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Remove item")).toBeInTheDocument();
+  });
+
+  it("uses single text field in edit mode when onEditText is provided", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Edit item"));
+
+    expect(screen.getByLabelText("Edit item text")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Item name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Quantity")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Unit")).not.toBeInTheDocument();
+  });
+
+  it("pre-fills single-field edit with formatted item text", () => {
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Edit item"));
+
+    expect(screen.getByLabelText("Edit item text")).toHaveValue("2 cups flour");
+  });
+
+  it("calls onEditText with original name and new text when saved", () => {
+    const onEditText = vi.fn();
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={onEditText} />);
+
+    fireEvent.click(screen.getByLabelText("Edit item"));
+    fireEvent.change(screen.getByLabelText("Edit item text"), { target: { value: "3 cups whole wheat flour" } });
+    fireEvent.click(screen.getByLabelText("Save edit"));
+
+    expect(onEditText).toHaveBeenCalledWith("flour", "3 cups whole wheat flour");
+  });
+
+  it("saves single-field edit on Enter key", () => {
+    const onEditText = vi.fn();
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={onEditText} />);
+
+    fireEvent.click(screen.getByLabelText("Edit item"));
+    fireEvent.change(screen.getByLabelText("Edit item text"), { target: { value: "5 tbsp olive oil" } });
+    fireEvent.keyDown(screen.getByLabelText("Edit item text"), { key: "Enter" });
+
+    expect(onEditText).toHaveBeenCalledWith("flour", "5 tbsp olive oil");
+  });
+
+  it("cancels single-field edit on Escape key", () => {
+    const onEditText = vi.fn();
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={onEditText} />);
+
+    fireEvent.click(screen.getByLabelText("Edit item"));
+    fireEvent.change(screen.getByLabelText("Edit item text"), { target: { value: "changed" } });
+    fireEvent.keyDown(screen.getByLabelText("Edit item text"), { key: "Escape" });
+
+    expect(onEditText).not.toHaveBeenCalled();
+    expect(screen.getByText("2 cups flour")).toBeInTheDocument();
+  });
+
+  it("does not call onEditText when text is empty", () => {
+    const onEditText = vi.fn();
+    const item: SmartGroceryItem = {
+      name: "flour",
+      displayName: "flour",
+      totalQuantity: 2,
+      unit: "cup",
+      category: "pantry",
+      sourceRecipes: ["Pasta"],
+    };
+
+    render(<GroceryItemRow item={item} onEditText={onEditText} />);
+
+    fireEvent.click(screen.getByLabelText("Edit item"));
+    fireEvent.change(screen.getByLabelText("Edit item text"), { target: { value: "   " } });
+    fireEvent.click(screen.getByLabelText("Save edit"));
+
+    expect(onEditText).not.toHaveBeenCalled();
+  });
 });

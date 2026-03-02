@@ -17,12 +17,14 @@ const mockGetCurrentUser = vi.fn();
 const mockSignOut = vi.fn();
 const mockGetAllowedUser = vi.fn();
 const mockIsAdmin = vi.fn();
+const mockIsMemberOrAdmin = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
   signOut: () => mockSignOut(),
   getAllowedUser: (...args: unknown[]) => mockGetAllowedUser(...args),
   isAdmin: (...args: unknown[]) => mockIsAdmin(...args),
+  isMemberOrAdmin: (...args: unknown[]) => mockIsMemberOrAdmin(...args),
 }));
 
 const mockFromResult = {
@@ -106,6 +108,7 @@ describe("Dashboard", () => {
     capturedHomeSectionProps = {};
     capturedEventsProps = {};
     mockSignOut.mockResolvedValue(undefined);
+    mockIsMemberOrAdmin.mockReturnValue(false);
     // Default: loadStats - Promise.all with select/count
     mockFromResult.maybeSingle.mockResolvedValue({ data: null, error: null });
     mockFromResult.select.mockReturnValue(mockFromResult);
@@ -132,6 +135,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue(null);
     mockIsAdmin.mockReturnValue(false);
+    mockIsMemberOrAdmin.mockReturnValue(false);
 
     render(<Dashboard />);
 
@@ -206,6 +210,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
     mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<Dashboard />);
 
@@ -216,6 +221,25 @@ describe("Dashboard", () => {
     // Open the dropdown menu
     const menuBtn = screen.getByRole("button", { name: /Admin User/i });
     if (menuBtn) fireEvent.click(menuBtn);
+  });
+
+  it("shows Manage Users for member role", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Member User",
+      email: "member@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "member", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+    mockIsMemberOrAdmin.mockReturnValue(true);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Manage Users")).toBeInTheDocument();
   });
 
   it("does not show Manage Users for non-admin", async () => {
@@ -468,6 +492,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
     mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<Dashboard />);
 
@@ -542,6 +567,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
     mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<Dashboard />);
 
@@ -683,6 +709,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
     mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<Dashboard />);
 
@@ -753,6 +780,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
     mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<Dashboard />);
 
@@ -782,6 +810,7 @@ describe("Dashboard", () => {
     });
     mockGetAllowedUser.mockResolvedValue({ role: "admin", is_club_member: true });
     mockIsAdmin.mockReturnValue(true);
+    mockIsMemberOrAdmin.mockReturnValue(true);
 
     render(<Dashboard />);
 
@@ -1048,6 +1077,64 @@ describe("Dashboard", () => {
     // 1 club recipe (r2 filtered out) + 1 personal recipe (r4 filtered out) = 2
     const recipeLabels = screen.getAllByText("Total Recipes");
     expect(recipeLabels).toHaveLength(2);
+  });
+
+  it("Settings menu item navigates to /settings", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Settings"));
+    expect(mockNavigate).toHaveBeenCalledWith("/settings");
+  });
+
+  it("My Pantry menu item opens pantry dialog", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("My Pantry"));
+    // The PantryDialog mock renders when open=true and user.id exists
+    // We just verify the click doesn't error - the actual dialog is gated by user.id
+  });
+
+  it("Sign Out menu item calls signOut", async () => {
+    mockGetCurrentUser.mockResolvedValue({
+      id: "user-1",
+      name: "Test",
+      email: "test@test.com",
+    });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Sign Out"));
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   // --- loadStats count || 0 fallback branches ---

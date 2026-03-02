@@ -18,6 +18,7 @@ import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantrySection from "@/components/pantry/PantrySection";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
+import { RECOMBINE_DELAY_MS } from "@/lib/constants";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import { loadGroceryCache, saveGroceryCache, deleteGroceryCache, loadCheckedItems, saveCheckedItems } from "@/lib/groceryCache";
 import { loadGeneralItems, addGeneralItem, removeGeneralItem, updateGeneralItem, toRawIngredients } from "@/lib/generalGrocery";
@@ -64,6 +65,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
   const [pendingParseName, setPendingParseName] = useState<string>("");
+  const [pendingParseText, setPendingParseText] = useState<string>("");
   const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "done">("saving");
 
   // Smart grocery combine state
@@ -74,13 +76,30 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [generalItems, setGeneralItems] = useState<GeneralGroceryItem[]>([]);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [hasPendingGroceryChanges, setHasPendingGroceryChanges] = useState(false);
+  const [isAddingGeneral, setIsAddingGeneral] = useState(false);
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const lastCombinedGeneralCount = useRef<number>(0);
   const viewTabRef = useRef(viewTab);
   viewTabRef.current = viewTab;
   const groceryDirtyRef = useRef(true);
+  const recombineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingBackgroundCombineRef = useRef(false);
+  const triggerRecombineRef = useRef<() => void>(() => {});
 
   const navigate = useNavigate();
+
+  // On unmount: if a recombine timer is pending, fire the combine immediately
+  // so the cache is saved in the background (setState calls are no-ops but
+  // saveGroceryCache still writes to the DB).
+  useEffect(() => {
+    return () => {
+      if (recombineTimerRef.current) {
+        clearTimeout(recombineTimerRef.current);
+        triggerRecombineRef.current();
+      }
+    };
+  }, []);
 
   const loadPlan = useCallback(async () => {
     setIsLoading(true);
@@ -332,8 +351,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       saveGroceryCache("meal_plan", weekStartStr, userId, result.items, sortedRecipeIds, result.perRecipeItems);
     } catch (err) {
       console.error("Smart combine error:", err);
-      setSmartGroceryItems(null);
-      setPerRecipeItems(undefined);
+      // Preserve existing display items on error so the user doesn't lose their list
       const msg = err instanceof Error ? err.message : "Unknown error";
       setCombineError(msg.includes("skipped") ? "AI grocery service is not configured. Please set the ANTHROPIC_API_KEY in your Supabase edge function secrets." : msg);
     } finally {
@@ -355,73 +373,205 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     });
   }, [weekStart, userId]);
 
-  const handleAddGeneralItem = useCallback(async (item: { name: string; quantity?: string; unit?: string }) => {
+  const triggerRecombine = useCallback(async () => {
+    if (recombineTimerRef.current) {
+      clearTimeout(recombineTimerRef.current);
+      recombineTimerRef.current = null;
+    }
+    setHasPendingGroceryChanges(false);
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    await deleteGroceryCache("meal_plan", weekStartStr, userId);
+    lastCombinedRecipeIds.current = [];
+    lastCombinedGeneralCount.current = 0;
+    const genItems = await loadGeneralItems("meal_plan", weekStartStr, userId);
+    setGeneralItems(genItems);
+    const groceryData = await loadGroceryData();
+    await runSmartCombine(
+      groceryData?.ingredients ?? [],
+      groceryData?.contentMap ?? {},
+      groceryData?.recipes ?? [],
+      genItems
+    );
+  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+  triggerRecombineRef.current = triggerRecombine;
+
+  // Background combine after adding existing recipes (items closure is now up-to-date)
+  useEffect(() => {
+    if (!pendingBackgroundCombineRef.current) return;
+    pendingBackgroundCombineRef.current = false;
+    triggerRecombine();
+  }, [items, triggerRecombine]);
+
+  const startRecombineTimer = useCallback(() => {
+    if (recombineTimerRef.current) {
+      clearTimeout(recombineTimerRef.current);
+    }
+    recombineTimerRef.current = setTimeout(() => {
+      triggerRecombine();
+    }, RECOMBINE_DELAY_MS);
+  }, [triggerRecombine]);
+
+  const handleEditGroceryItem = useCallback((originalName: string, newText: string, sourceRecipeId?: string) => {
+    // Update combined list display
+    setSmartGroceryItems((prev) => {
+      if (!prev) return prev;
+      return prev.map((item) =>
+        item.name === originalName
+          ? { ...item, displayName: newText, totalQuantity: undefined, unit: undefined }
+          : item
+      );
+    });
+    // Update per-recipe list display
+    setPerRecipeItems((prev) => {
+      if (!prev) return prev;
+      const updated: Record<string, SmartGroceryItem[]> = {};
+      for (const [key, items] of Object.entries(prev)) {
+        updated[key] = items.map((item) =>
+          item.name === originalName
+            ? { ...item, displayName: newText, totalQuantity: undefined, unit: undefined }
+            : item
+        );
+      }
+      return updated;
+    });
+    // Persist edit to DB
+    if (sourceRecipeId) {
+      // Edit from a recipe tab — update the recipe_ingredients row
+      const match = recipeIngredients.find(
+        (ri) => ri.recipeId === sourceRecipeId && ri.name.toLowerCase() === originalName.toLowerCase()
+      );
+      if (match) {
+        supabase.from("recipe_ingredients").update({ name: newText }).eq("id", match.id).then(() => {});
+      }
+    } else {
+      // Edit from combined/general tab — persist General items only
+      const matchedItem = smartGroceryItems?.find((i) => i.name === originalName);
+      if (matchedItem?.sourceRecipes.includes("General")) {
+        const generalItem = generalItems.find((gi) =>
+          gi.name.toLowerCase() === originalName.toLowerCase()
+        );
+        if (generalItem) {
+          updateGeneralItem(generalItem.id, { name: newText, quantity: undefined, unit: undefined });
+        }
+      }
+    }
+    // Invalidate cache so a stale list isn't shown if user closes the browser
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    deleteGroceryCache("meal_plan", weekStartStr, userId);
+    lastCombinedRecipeIds.current = [];
+    lastCombinedGeneralCount.current = 0;
+    setHasPendingGroceryChanges(true);
+    startRecombineTimer();
+  }, [smartGroceryItems, generalItems, recipeIngredients, startRecombineTimer, weekStart, userId]);
+
+  const handleRemoveGroceryItem = useCallback((itemName: string, sourceRecipeId?: string) => {
+    // Remove from combined list
+    setSmartGroceryItems((prev) => prev ? prev.filter((item) => item.name !== itemName) : prev);
+    // Remove from per-recipe lists
+    setPerRecipeItems((prev) => {
+      if (!prev) return prev;
+      const updated: Record<string, SmartGroceryItem[]> = {};
+      for (const [key, items] of Object.entries(prev)) {
+        updated[key] = items.filter((item) => item.name !== itemName);
+      }
+      return updated;
+    });
+    // Persist delete to DB
+    if (sourceRecipeId) {
+      // Delete from a recipe tab — delete the recipe_ingredients row
+      const match = recipeIngredients.find(
+        (ri) => ri.recipeId === sourceRecipeId && ri.name.toLowerCase() === itemName.toLowerCase()
+      );
+      if (match) {
+        supabase.from("recipe_ingredients").delete().eq("id", match.id).then(() => {});
+        setRecipeIngredients((prev) => prev.filter((ri) => ri.id !== match.id));
+      }
+    } else {
+      // Delete from combined/general tab — persist General items only
+      const matchedItem = smartGroceryItems?.find((i) => i.name === itemName);
+      if (matchedItem?.sourceRecipes.includes("General")) {
+        const generalItem = generalItems.find((gi) =>
+          gi.name.toLowerCase() === itemName.toLowerCase()
+        );
+        if (generalItem) {
+          removeGeneralItem(generalItem.id);
+        }
+      }
+    }
+    // Invalidate cache so a stale list isn't shown if user closes the browser
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+    deleteGroceryCache("meal_plan", weekStartStr, userId);
+    lastCombinedRecipeIds.current = [];
+    lastCombinedGeneralCount.current = 0;
+    setHasPendingGroceryChanges(true);
+    startRecombineTimer();
+  }, [smartGroceryItems, generalItems, recipeIngredients, startRecombineTimer, weekStart, userId]);
+
+  // Saves already-parsed items directly without additional AI processing
+  const handleAddGeneralItemDirect = useCallback(async (item: { name: string; quantity?: string; unit?: string }) => {
     const weekStartStr = weekStart.toISOString().split("T")[0];
     await addGeneralItem("meal_plan", weekStartStr, userId, item);
     const updated = await loadGeneralItems("meal_plan", weekStartStr, userId);
     setGeneralItems(updated);
-    // Invalidate cache and re-combine to include new general item
     await deleteGroceryCache("meal_plan", weekStartStr, userId);
     lastCombinedRecipeIds.current = [];
     lastCombinedGeneralCount.current = 0;
     groceryDirtyRef.current = true;
-    // Trigger re-combine immediately if on groceries tab
-    if (viewTabRef.current === "groceries") {
-      const groceryData = await loadGroceryData();
-      if (groceryData) {
-        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, updated);
-      }
-    }
-  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+    setHasPendingGroceryChanges(true);
+    startRecombineTimer();
+  }, [weekStart, userId, startRecombineTimer]);
 
   const handleRemoveGeneralItem = useCallback(async (itemId: string) => {
     const weekStartStr = weekStart.toISOString().split("T")[0];
     await removeGeneralItem(itemId);
     const updated = await loadGeneralItems("meal_plan", weekStartStr, userId);
     setGeneralItems(updated);
-    // Invalidate cache and re-combine
     await deleteGroceryCache("meal_plan", weekStartStr, userId);
     lastCombinedRecipeIds.current = [];
     lastCombinedGeneralCount.current = 0;
     groceryDirtyRef.current = true;
-    if (viewTabRef.current === "groceries") {
-      const groceryData = await loadGroceryData();
-      if (groceryData) {
-        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, updated);
-      }
-    }
-  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+    setHasPendingGroceryChanges(true);
+    startRecombineTimer();
+  }, [weekStart, userId, startRecombineTimer]);
 
   const handleUpdateGeneralItem = useCallback(async (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => {
     const weekStartStr = weekStart.toISOString().split("T")[0];
     await updateGeneralItem(itemId, updates);
     const updated = await loadGeneralItems("meal_plan", weekStartStr, userId);
     setGeneralItems(updated);
-    // Invalidate cache and re-combine
     await deleteGroceryCache("meal_plan", weekStartStr, userId);
     lastCombinedRecipeIds.current = [];
     lastCombinedGeneralCount.current = 0;
     groceryDirtyRef.current = true;
-    if (viewTabRef.current === "groceries") {
-      const groceryData = await loadGroceryData();
-      if (groceryData) {
-        runSmartCombine(groceryData.ingredients, groceryData.contentMap, groceryData.recipes, updated);
-      }
-    }
-  }, [weekStart, userId, loadGroceryData, runSmartCombine]);
+    setHasPendingGroceryChanges(true);
+    startRecombineTimer();
+  }, [weekStart, userId, startRecombineTimer]);
 
   const handleBulkParseGroceryText = useCallback(async (text: string): Promise<ParsedGroceryItem[]> => {
-    const { data, error } = await supabase.functions.invoke("parse-grocery-text", {
-      body: { text },
+    // Create a temporary recipe entry for parsing
+    const { data: tempRecipe, error: recipeError } = await supabase
+      .from("recipes")
+      .insert({ name: "General Items", created_by: userId, event_id: null, ingredient_id: null })
+      .select("id")
+      .single();
+    if (recipeError) throw recipeError;
+
+    const { data, error } = await supabase.functions.invoke("parse-recipe", {
+      body: { recipeId: tempRecipe.id, recipeName: "General Items", text },
     });
+
+    // Clean up temp recipe — results are saved to general_grocery_items, not here
+    supabase.from("recipes").delete().eq("id", tempRecipe.id).then(() => {});
+
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error ?? "Failed to parse grocery text");
     if (data.skipped) return [];
-    return data.items as ParsedGroceryItem[];
-  }, []);
+    return (data.parsed?.ingredients ?? []) as ParsedGroceryItem[];
+  }, [userId]);
 
   useEffect(() => {
     if (viewTab !== "groceries") return;
+    if (isAddingGeneral) return; // Don't reload while bulk-add is in progress
     if (!groceryDirtyRef.current) return;
     groceryDirtyRef.current = false;
 
@@ -441,11 +591,13 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       // Check cache before running AI combine
       const cached = await loadGroceryCache("meal_plan", weekStartStr, userId);
-      if (cached && groceryData) {
-        const currentParsedIds = groceryData.recipes
-          .filter((r) => groceryData.contentMap[r.id]?.status === "completed")
-          .map((r) => r.id)
-          .sort();
+      if (cached) {
+        const currentParsedIds = groceryData
+          ? groceryData.recipes
+              .filter((r) => groceryData.contentMap[r.id]?.status === "completed")
+              .map((r) => r.id)
+              .sort()
+          : [];
         const cachedIds = [...cached.recipeIds].sort();
         if (
           currentParsedIds.length === cachedIds.length &&
@@ -465,7 +617,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       runSmartCombine(ingredients, contentMap, recipes, genItems);
     });
     loadPantryItems();
-  }, [viewTab, loadGroceryData, loadPantryItems, weekStart, userId, runSmartCombine]);
+  }, [viewTab, loadGroceryData, loadPantryItems, weekStart, userId, runSmartCombine, isAddingGeneral]);
 
   // Execute parse when parseStatus transitions to "parsing"
   useEffect(() => {
@@ -478,12 +630,17 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
         setParseStep("parsing");
         const recipe = items.find((i) => i.recipeId === pendingParseRecipeId);
+        const parseBody: Record<string, string> = {
+          recipeId: pendingParseRecipeId,
+          recipeName: pendingParseName,
+        };
+        if (pendingParseText) {
+          parseBody.text = pendingParseText;
+        } else {
+          parseBody.recipeUrl = recipe?.recipeUrl || recipe?.customUrl || "";
+        }
         const { data: parseData, error } = await supabase.functions.invoke("parse-recipe", {
-          body: {
-            recipeId: pendingParseRecipeId,
-            recipeUrl: recipe?.recipeUrl || recipe?.customUrl,
-            recipeName: pendingParseName,
-          },
+          body: parseBody,
         });
         if (error) throw error;
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
@@ -503,6 +660,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         setParseStatus("idle");
         setPendingParseRecipeId(null);
         setPendingParseName("");
+        setPendingParseText("");
         setParseStep("saving");
         groceryDirtyRef.current = true;
         toast.success("Recipe parsed successfully!");
@@ -572,28 +730,17 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       await addItemToPlan(recipe.name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, recipe.url, recipe.id);
     }
     setPendingSlot(null);
+    // Trigger background combine so Groceries tab is ready when the user switches to it
+    pendingBackgroundCombineRef.current = true;
   };
 
-  const handleAddManualMeal = async (
-    name: string,
-    ingredients: Array<{ name: string; quantity: number | null; unit: string | null; category: string; sort_order: number }>
-  ) => {
+  const handleAddManualMeal = async (name: string, text: string) => {
     const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType);
-    if (recipeId && ingredients.length > 0) {
-      try {
-        const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
-          p_recipe_id: recipeId,
-          p_ingredients: ingredients,
-        });
-        if (rpcError) throw rpcError;
-        await supabase.from("recipe_content").insert({
-          recipe_id: recipeId,
-          status: "completed",
-        });
-      } catch (error) {
-        console.error("Error saving manual ingredients:", error);
-        toast.error("Recipe added but failed to save ingredients");
-      }
+    if (recipeId && text.trim()) {
+      setPendingParseRecipeId(recipeId);
+      setPendingParseName(name);
+      setPendingParseText(text);
+      setParseStatus("parsing");
     }
     setPendingSlot(null);
   };
@@ -814,45 +961,32 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       )}
 
       {viewTab === "groceries" && (
-        <>
-          {items.some((i) => i.recipeId && (i.recipeUrl || i.customUrl)) || items.length > 0 || generalItems.length > 0 ? (
-            <GroceryListSection
-              recipes={groceryRecipes}
-              recipeIngredients={recipeIngredients}
-              recipeContentMap={recipeContentMap}
-              onParseRecipe={handleParseRecipe}
-              eventName={getWeekLabel(weekStart)}
-              isLoading={isLoadingGroceries}
-              pantryItems={pantryItems}
-              smartGroceryItems={smartGroceryItems}
-              isCombining={isCombining}
-              combineError={combineError}
-              perRecipeItems={perRecipeItems}
-              checkedItems={checkedItems}
-              onToggleChecked={handleToggleChecked}
-              generalItems={generalItems}
-              onAddGeneralItem={handleAddGeneralItem}
-              onRemoveGeneralItem={handleRemoveGeneralItem}
-              onUpdateGeneralItem={handleUpdateGeneralItem}
-              onBulkParseGroceryText={handleBulkParseGroceryText}
-            />
-          ) : (
-            <GroceryListSection
-              recipes={[]}
-              recipeIngredients={[]}
-              recipeContentMap={{}}
-              onParseRecipe={handleParseRecipe}
-              eventName={getWeekLabel(weekStart)}
-              generalItems={generalItems}
-              onAddGeneralItem={handleAddGeneralItem}
-              onRemoveGeneralItem={handleRemoveGeneralItem}
-              onUpdateGeneralItem={handleUpdateGeneralItem}
-              onBulkParseGroceryText={handleBulkParseGroceryText}
-              checkedItems={checkedItems}
-              onToggleChecked={handleToggleChecked}
-            />
-          )}
-        </>
+        <GroceryListSection
+          recipes={groceryRecipes}
+          recipeIngredients={recipeIngredients}
+          recipeContentMap={recipeContentMap}
+          onParseRecipe={handleParseRecipe}
+          eventName={getWeekLabel(weekStart)}
+          isLoading={isLoadingGroceries}
+          pantryItems={pantryItems}
+          smartGroceryItems={smartGroceryItems}
+          isCombining={isCombining}
+          combineError={combineError}
+          perRecipeItems={perRecipeItems}
+          checkedItems={checkedItems}
+          onToggleChecked={handleToggleChecked}
+          generalItems={generalItems}
+          onAddGeneralItemDirect={handleAddGeneralItemDirect}
+          onRemoveGeneralItem={handleRemoveGeneralItem}
+          onUpdateGeneralItem={handleUpdateGeneralItem}
+          onBulkParseGroceryText={handleBulkParseGroceryText}
+          onEditItemText={handleEditGroceryItem}
+          onRemoveItem={handleRemoveGroceryItem}
+          hasPendingChanges={hasPendingGroceryChanges}
+          onRecombine={triggerRecombine}
+          isAddingGeneral={isAddingGeneral}
+          onAddingGeneralChange={setIsAddingGeneral}
+        />
       )}
 
       {viewTab === "pantry" && (

@@ -32,6 +32,13 @@ vi.mock("@/components/ui/select", () => ({
 // Mock supabase client (imported transitively by groceryList)
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
+    from: vi.fn().mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: "temp-recipe-id" }, error: null }),
+        }),
+      }),
+    }),
     functions: {
       invoke: vi.fn().mockResolvedValue({ error: null }),
     },
@@ -336,10 +343,13 @@ describe("Paste ingredients", () => {
     mockInvoke.mockResolvedValueOnce({
       data: {
         success: true,
-        items: [
-          { name: "flour", quantity: 2, unit: "cups", category: "pantry" },
-          { name: "chicken", quantity: 1, unit: "lb", category: "meat_seafood" },
-        ],
+        ingredientCount: 2,
+        parsed: {
+          ingredients: [
+            { name: "flour", quantity: 2, unit: "cups", category: "pantry" },
+            { name: "chicken", quantity: 1, unit: "lb", category: "meat_seafood" },
+          ],
+        },
       },
       error: null,
     });
@@ -366,9 +376,12 @@ describe("Paste ingredients", () => {
     mockInvoke.mockResolvedValueOnce({
       data: {
         success: true,
-        items: [
-          { name: "olive oil", quantity: null, unit: null, category: "pantry" },
-        ],
+        ingredientCount: 1,
+        parsed: {
+          ingredients: [
+            { name: "olive oil", quantity: null, unit: null, category: "pantry" },
+          ],
+        },
       },
       error: null,
     });
@@ -440,7 +453,10 @@ describe("Paste ingredients", () => {
     mockInvoke.mockResolvedValueOnce({
       data: {
         success: true,
-        items: [{ name: "flour", quantity: 2, unit: "cups", category: "pantry" }],
+        ingredientCount: 1,
+        parsed: {
+          ingredients: [{ name: "flour", quantity: 2, unit: "cups", category: "pantry" }],
+        },
       },
       error: null,
     });
@@ -462,7 +478,10 @@ describe("Paste ingredients", () => {
     mockInvoke.mockResolvedValueOnce({
       data: {
         success: true,
-        items: [{ name: "mystery item", quantity: 1, unit: null, category: "invalid_category" }],
+        ingredientCount: 1,
+        parsed: {
+          ingredients: [{ name: "mystery item", quantity: 1, unit: null, category: "invalid_category" }],
+        },
       },
       error: null,
     });

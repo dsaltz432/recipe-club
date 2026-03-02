@@ -231,7 +231,8 @@ export function filterSmartPantryItems(
 export async function smartCombineIngredients(
   ingredients: RecipeIngredient[],
   recipeNameMap: Record<string, string>,
-  extraRawIngredients?: Array<{ name: string; quantity: string | null; unit: string | null; category: string; recipeName: string }>
+  extraRawIngredients?: Array<{ name: string; quantity: string | null; unit: string | null; category: string; recipeName: string }>,
+  model?: string
 ): Promise<SmartCombineResult> {
   // Map raw ingredients for the AI edge function
   const rawIngredients = [
@@ -246,8 +247,8 @@ export async function smartCombineIngredients(
   ];
 
   try {
-    const { data, error } = await supabase.functions.invoke("combine-ingredients", {
-      body: { rawIngredients },
+    const { data, error } = await supabase.functions.invoke("process-grocery-list", {
+      body: { rawIngredients, ...(model ? { model } : {}) },
     });
 
     if (error) throw error;

@@ -128,4 +128,56 @@ describe("GroceryCategoryGroup", () => {
       name: "cherry tomato",
     }));
   });
+
+  it("shows edit/remove buttons when onEditItemText is provided", () => {
+    render(
+      <GroceryCategoryGroup
+        category="produce"
+        items={items}
+        onEditItemText={vi.fn()}
+        onRemoveItem={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByLabelText("Edit item").length).toBe(2);
+    expect(screen.getAllByLabelText("Remove item").length).toBe(2);
+  });
+
+  it("uses single-field edit when onEditItemText is provided", () => {
+    const onEditItemText = vi.fn();
+
+    render(
+      <GroceryCategoryGroup
+        category="produce"
+        items={items}
+        onEditItemText={onEditItemText}
+      />
+    );
+
+    const editButtons = screen.getAllByLabelText("Edit item");
+    fireEvent.click(editButtons[0]);
+
+    expect(screen.getByLabelText("Edit item text")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Item name")).not.toBeInTheDocument();
+  });
+
+  it("calls onEditItemText when single-field edit is saved", () => {
+    const onEditItemText = vi.fn();
+
+    render(
+      <GroceryCategoryGroup
+        category="produce"
+        items={items}
+        onEditItemText={onEditItemText}
+      />
+    );
+
+    const editButtons = screen.getAllByLabelText("Edit item");
+    fireEvent.click(editButtons[0]);
+
+    fireEvent.change(screen.getByLabelText("Edit item text"), { target: { value: "5 roma tomatoes" } });
+    fireEvent.click(screen.getByLabelText("Save edit"));
+
+    expect(onEditItemText).toHaveBeenCalledWith("tomato", "5 roma tomatoes");
+  });
 });
