@@ -7,18 +7,23 @@ import { toast } from "sonner";
 interface GroceryExportMenuProps {
   items: SmartGroceryItem[];
   eventName: string;
+  checkedItems?: Set<string>;
 }
 
-const GroceryExportMenu = ({ items, eventName }: GroceryExportMenuProps) => {
+const GroceryExportMenu = ({ items, eventName, checkedItems }: GroceryExportMenuProps) => {
+  const uncheckedItems = checkedItems?.size
+    ? items.filter((item) => !checkedItems.has(item.name))
+    : items;
+
   const handleDownloadCSV = () => {
-    const grouped = groupByCategory(items);
+    const grouped = groupByCategory(uncheckedItems);
     const csv = generateCSV(grouped);
     const filename = `grocery-list-${eventName.toLowerCase().replace(/\s+/g, "-")}.csv`;
     downloadCSV(csv, filename);
   };
 
   const handleCopyToClipboard = async () => {
-    const grouped = groupByCategory(items);
+    const grouped = groupByCategory(uncheckedItems);
     const text = generatePlainText(grouped);
     try {
       await navigator.clipboard.writeText(text);

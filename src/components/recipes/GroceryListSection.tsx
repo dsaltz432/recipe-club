@@ -288,6 +288,7 @@ const GroceryListSection = ({
                 <GroceryExportMenu
                   items={filteredSmartItems || []}
                   eventName={eventName}
+                  checkedItems={checkedItems}
                 />
               </div>
             </div>
