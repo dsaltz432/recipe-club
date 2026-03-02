@@ -257,9 +257,21 @@ export async function smartCombineIngredients(
       throw new Error("AI returned skipped or no items");
     }
 
+    // Remap perRecipeItems from recipe-name keys to recipe-ID keys
+    const nameToId: Record<string, string> = {};
+    for (const [id, name] of Object.entries(recipeNameMap)) {
+      nameToId[name.toLowerCase()] = id;
+    }
+    const rawPerRecipe = (data.perRecipeItems as Record<string, SmartGroceryItem[]>) || {};
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {};
+    for (const [name, items] of Object.entries(rawPerRecipe)) {
+      const id = nameToId[name.toLowerCase()];
+      perRecipeItems[id ?? name] = items;
+    }
+
     return {
       items: data.items as SmartGroceryItem[],
-      perRecipeItems: (data.perRecipeItems as Record<string, SmartGroceryItem[]>) || {},
+      perRecipeItems,
     };
   } catch (error) {
     console.error("Smart combine failed:", error);

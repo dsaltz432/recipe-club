@@ -329,7 +329,7 @@ const GroceryListSection = ({
             </TabsContent>
 
             {recipesWithIngredients.map((recipe) => {
-              const recipeItems = perRecipeItems?.[recipe.name] ?? [];
+              const recipeItems = perRecipeItems?.[recipe.id] ?? perRecipeItems?.[recipe.name] ?? [];
               const filteredRecipeItems = pantryItems.length > 0
                 ? filterSmartPantryItems(recipeItems, pantryItems)
                 : recipeItems;
