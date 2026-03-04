@@ -308,10 +308,6 @@ const GroceryListSection = ({
                       key={category}
                       category={category}
                       items={items}
-                      editable={editable}
-                      onEditItem={onEditItem}
-                      onEditItemText={onEditItemText}
-                      onRemoveItem={onRemoveItem}
                       checkedItems={checkedItems}
                       onToggleChecked={onToggleChecked}
                     />
