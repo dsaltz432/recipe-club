@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { RecipeIngredient, SmartGroceryItem, GroceryCategory } from "@/types";
-import { CATEGORY_ORDER } from "@/lib/groceryList";
+import { CATEGORY_ORDER, isPantryItem } from "@/lib/groceryList";
+import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 import { deleteGroceryCache } from "@/lib/groceryCache";
 import { parseIngredientText } from "@/lib/parseIngredientText";
 import GroceryCategoryGroup from "@/components/recipes/GroceryCategoryGroup";
@@ -14,6 +15,7 @@ interface RecipeIngredientListProps {
   editable?: boolean;
   onIngredientsChange?: () => void;
   cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string };
+  pantryItems?: string[];
 }
 
 function toSmartItem(ing: RecipeIngredient): SmartGroceryItem {
@@ -46,6 +48,7 @@ const RecipeIngredientList = ({
   editable,
   onIngredientsChange,
   cacheContext,
+  pantryItems,
 }: RecipeIngredientListProps) => {
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,11 +150,18 @@ const RecipeIngredientList = ({
     );
   }
 
-  const grouped = groupByCategory(ingredients);
+  const allPantryItems =
+    pantryItems && pantryItems.length > 0
+      ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
+      : DEFAULT_PANTRY_ITEMS;
+  const displayedIngredients = ingredients.filter(
+    (ing) => !isPantryItem(ing.name, allPantryItems, ing.unit)
+  );
+  const grouped = groupByCategory(displayedIngredients);
 
   return (
     <div>
-      {ingredients.length === 0 ? (
+      {displayedIngredients.length === 0 ? (
         <p className="text-sm text-muted-foreground py-2">No ingredients yet</p>
       ) : (
         Array.from(grouped.entries()).map(([category, items]) => (

@@ -107,7 +107,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeCard at src/components/recipes/RecipeCard.tsx lines 64-69 shows the allPantryItems merge and isPantryItem filter pattern — copy it exactly. isPantryItem is from '@/lib/groceryList'; DEFAULT_PANTRY_ITEMS is from '@/lib/pantry'. RecipeIngredientList renders grouped items at line ~150; apply filter before groupByCategory. The count shown on the toggle button in EventRecipesTab (~line 251) is just the label 'Ingredients' with no count — so no count update needed there."
     },
     {

@@ -867,6 +867,7 @@ const PersonalMealDetailPage = () => {
               userId={user?.id}
               onIngredientsChange={() => grocery.refreshGroceries()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
+              pantryItems={grocery.pantryItems}
             />
           }
           groceryContent={

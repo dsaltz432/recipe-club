@@ -12,12 +12,42 @@
 
 ## Current Status
 **Last Updated:** 2026-03-05
-**Tasks Completed:** 6
+**Tasks Completed:** 7
 **Current Task:** Awaiting next iteration
 
 ---
 
 ## Session Log
+
+## [2026-03-05 06:00] — US-007: Add pantry filtering to RecipeIngredientList
+
+### What was implemented
+- Added `isPantryItem` to `@/lib/groceryList` import and `DEFAULT_PANTRY_ITEMS` from `@/lib/pantry` import in RecipeIngredientList
+- Added `pantryItems?: string[]` to `RecipeIngredientListProps`
+- Added `pantryItems` to RecipeIngredientList destructure
+- Filter applied before `groupByCategory`: merges `DEFAULT_PANTRY_ITEMS` with prop using same pattern as RecipeCard lines 64-69
+- Empty check now uses `displayedIngredients.length === 0` instead of `ingredients.length === 0`
+- Added `pantryItems?: string[]` to `EventRecipesTabProps`
+- EventRecipesTab destructures and passes `pantryItems` to RecipeIngredientList
+- EventDetailPage passes `pantryItems={grocery.pantryItems}` to EventRecipesTab
+- PersonalMealDetailPage passes `pantryItems={grocery.pantryItems}` to EventRecipesTab
+
+### Files changed
+- `src/components/recipes/RecipeIngredientList.tsx`
+- `src/components/events/EventRecipesTab.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- RecipeCard pantry pattern: `allPantryItems = pantryItems?.length > 0 ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])] : DEFAULT_PANTRY_ITEMS`; then filter with `isPantryItem(name, allPantryItems, unit)`
+- Filter must be applied before `groupByCategory` and the empty check must use the filtered array
+
+---
 
 ## [2026-03-05 05:00] — US-006: Add General Items support to EventDetailPage and PersonalMealDetailPage
 
