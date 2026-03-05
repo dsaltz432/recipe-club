@@ -10,18 +10,26 @@ export interface AllowedUser {
   access_type: "club";
 }
 
-export const isAuthenticated = async (): Promise<boolean> => {
-  try {
-    const { data } = await supabase.auth.getSession();
-    return data.session !== null;
-  } catch {
-    // getSession() can throw LockAcquireTimeoutError when navigator.locks
-    // is contended (e.g. token refresh after returning from a background tab).
-    // Fall back to checking localStorage directly.
-    const storageKey = `sb-${new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
-    const raw = localStorage.getItem(storageKey);
-    return raw !== null;
+/**
+ * getSession() can throw LockAcquireTimeoutError when navigator.locks is
+ * contended (e.g. token refresh after returning from a background tab).
+ * This helper retries with a short delay to wait for the lock to clear.
+ */
+async function getSessionWithRetry(retries = 3, delayMs = 1000) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await supabase.auth.getSession();
+    } catch {
+      if (i === retries) return null;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
   }
+  return null;
+}
+
+export const isAuthenticated = async (): Promise<boolean> => {
+  const result = await getSessionWithRetry();
+  return result?.data?.session !== null;
 };
 
 export const getAllowedUser = async (email: string): Promise<AllowedUser | null> => {
@@ -59,9 +67,10 @@ export const getClubMemberEmails = async (): Promise<string[]> => {
 
 
 export const getCurrentUser = async (): Promise<User | null> => {
-  const { data: sessionData } = await supabase.auth.getSession();
+  const result = await getSessionWithRetry();
+  const session = result?.data?.session;
 
-  if (!sessionData.session) {
+  if (!session) {
     return null;
   }
 
@@ -69,7 +78,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", sessionData.session.user.id)
+    .eq("id", session.user.id)
     .single();
 
   if (profileError) {
@@ -78,28 +87,28 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
   if (profileData) {
     return {
-      id: sessionData.session.user.id,
+      id: session.user.id,
       name:
         profileData.name ||
-        sessionData.session.user.user_metadata.name ||
-        sessionData.session.user.email?.split("@")[0] ||
+        session.user.user_metadata.name ||
+        session.user.email?.split("@")[0] ||
         "User",
-      email: sessionData.session.user.email || "",
+      email: session.user.email || "",
       avatar_url:
         profileData.avatar_url ||
-        sessionData.session.user.user_metadata.avatar_url,
+        session.user.user_metadata.avatar_url,
     };
   }
 
   // If no profile found, use the user data from the session
   return {
-    id: sessionData.session.user.id,
+    id: session.user.id,
     name:
-      sessionData.session.user.user_metadata.name ||
-      sessionData.session.user.email?.split("@")[0] ||
+      session.user.user_metadata.name ||
+      session.user.email?.split("@")[0] ||
       "User",
-    email: sessionData.session.user.email || "",
-    avatar_url: sessionData.session.user.user_metadata.avatar_url,
+    email: session.user.email || "",
+    avatar_url: session.user.user_metadata.avatar_url,
   };
 };
 
