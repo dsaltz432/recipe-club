@@ -1,228 +1,143 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/ingredient-editing-and-shared-tabs",
-  "description": "Two initiatives: (1) Standardize ingredient editing across the app — replace the choppy EditRecipeIngredientsDialog/IngredientFormRows with inline GroceryItemRow-style editing (RecipeIngredientList component) and a shared AI-parse AddIngredientInput, used consistently in RecipeCard, EventRecipesTab, and per-recipe grocery tabs. (2) Extract the Recipes/Groceries/Pantry tab shell into a shared RecipeDetailTabs component and wire it into PersonalMealDetailPage, which currently has no Groceries or Pantry tabs.",
+  "branchName": "ralph/ingredient-sync-and-cleanup",
+  "description": "Fix synchronization bugs and feature gaps between MealPlanPage, EventDetailPage, and PersonalMealDetailPage. After the previous PRD introduced inline ingredient editing and shared tabs, several props were left as no-ops, cache invalidation was incomplete, and General Items / pantry filtering were missing on Event and Meal detail pages.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Extract parseIngredientText shared utility",
-      "description": "As a developer, I want a shared utility function for AI-parsing freeform ingredient text so that both the grocery hook and the standalone RecipeIngredientList component can call it without duplicating the temp-recipe pattern.",
+      "title": "Wire hasPendingChanges and onRecombine to GroceryListSection",
+      "description": "Add hasPendingChanges={grocery.hasPendingChanges} and onRecombine={grocery.triggerRecombine} to GroceryListSection in EventDetailPage and PersonalMealDetailPage so the Reprocess button appears after ingredient edits.",
       "acceptanceCriteria": [
-        "File exists at src/lib/parseIngredientText.ts",
-        "Exports parseIngredientText(text: string, userId: string): Promise<ParsedGroceryItem[]>",
-        "Implementation is the temp-recipe create → supabase.functions.invoke('parse-recipe') → cleanup pattern, extracted verbatim from useGroceryList.handleBulkParseGroceryText (lines ~598-632 of src/hooks/useGroceryList.ts)",
-        "ParsedGroceryItem is imported from @/components/recipes/GroceryListSection (already exported there)",
-        "useGroceryList.handleBulkParseGroceryText now calls parseIngredientText(text, userId) instead of duplicating the logic",
+        "hasPendingChanges and onRecombine props are passed to GroceryListSection in EventDetailPage (~line 959–976)",
+        "hasPendingChanges and onRecombine props are passed to GroceryListSection in PersonalMealDetailPage (~line 868–885)",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The exact code to extract is in src/hooks/useGroceryList.ts lines ~598-632 (handleBulkParseGroceryText callback). It: (1) inserts a temp recipe row into 'recipes' table with name='General Items', (2) calls supabase.functions.invoke('parse-recipe', { body: { recipeId: tempRecipe.id, recipeName: 'General Items', text } }), (3) deletes the temp recipe, (4) returns data.parsed?.ingredients. The function needs supabase client — import from @/integrations/supabase/client. ParsedGroceryItem type is exported from src/components/recipes/GroceryListSection.tsx (line 16-21). After extracting, update handleBulkParseGroceryText to be a thin wrapper: return parseIngredientText(text, userId)."
+      "notes": "Reference: MealPlanPage lines 523-524 already passes these props correctly. EventDetailPage GroceryListSection is at ~line 959; PersonalMealDetailPage GroceryListSection is at ~line 868. Both are missing hasPendingChanges and onRecombine."
     },
     {
       "id": "US-002",
-      "title": "Create AddIngredientInput component",
-      "description": "As a developer, I want a reusable textarea+button component for adding ingredients via AI text parsing so that the same UI is used in the General grocery tab, per-recipe grocery tabs, and RecipeIngredientList.",
+      "title": "Add cache invalidation to RecipeIngredientList edit/delete and pass cacheContext",
+      "description": "RecipeIngredientList should call deleteGroceryCache in handleEditItemText and handleRemoveItem (not just handleAdd). EventRecipesTab accepts and passes a cacheContext prop to RecipeIngredientList. EventDetailPage and PersonalMealDetailPage pass cacheContext to EventRecipesTab.",
       "acceptanceCriteria": [
-        "File exists at src/components/recipes/AddIngredientInput.tsx",
-        "Props: onSubmit: (text: string) => Promise<void>, placeholder?: string, className?: string",
-        "Renders a Textarea and an 'Add' button (same visual pattern as the General tab in GroceryListSection, lines ~400-429)",
-        "Shows Loader2 spinner on the button while onSubmit is in flight",
-        "Button and textarea are disabled while submitting",
-        "Clears textarea after successful submit",
-        "Does nothing if textarea is empty",
-        "GroceryListSection General tab (lines ~399-429) is updated to use AddIngredientInput instead of its current inline textarea+button, passing handleBulkAdd as onSubmit",
+        "handleEditItemText in RecipeIngredientList calls deleteGroceryCache(cacheContext...) when cacheContext is set",
+        "handleRemoveItem in RecipeIngredientList calls deleteGroceryCache(cacheContext...) when cacheContext is set",
+        "EventRecipesTabProps has cacheContext?: { type: 'event' | 'meal_plan'; id: string; userId: string }",
+        "EventRecipesTab passes cacheContext to RecipeIngredientList",
+        "EventDetailPage passes cacheContext={{ type: 'event', id: eventId, userId: user?.id ?? '' }} to EventRecipesTab",
+        "PersonalMealDetailPage passes cacheContext={{ type: 'event', id: eventId, userId: user?.id ?? '' }} to EventRecipesTab",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "The exact UI to extract is in src/components/recipes/GroceryListSection.tsx lines ~399-429 (the 'Add general items' section). It has a Textarea with placeholder 'Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil', a flex justify-end div, and a Button that calls handleBulkAdd. Extract these into AddIngredientInput. The loading state (isParsing) is currently managed by GroceryListSection — in the new component, manage it internally with useState. The onSubmit prop receives the text string; the component handles showing loading and clearing the textarea. Import Textarea from @/components/ui/textarea, Button from @/components/ui/button, Loader2 and Plus from lucide-react."
+      "passes": false,
+      "notes": "RecipeIngredientList is at src/components/recipes/RecipeIngredientList.tsx. handleAdd already calls deleteGroceryCache when cacheContext is set (lines 127-129). handleEditItemText (~line 79) and handleRemoveItem (~line 95) need the same pattern. EventRecipesTab is at src/components/events/EventRecipesTab.tsx — it renders RecipeIngredientList at line ~282. Both detail pages pass userId to EventRecipesTab already; add cacheContext alongside."
     },
     {
       "id": "US-003",
-      "title": "Create RecipeIngredientList component",
-      "description": "As a user, I want to see and inline-edit a recipe's ingredients using the same clean GroceryItemRow style as the grocery tab, so that there is one consistent ingredient editing experience across the app.",
+      "title": "Wire onIngredientsChange to grocery.refreshGroceries and remove forceMount",
+      "description": "Replace onIngredientsChange={() => {}} no-ops with onIngredientsChange={() => grocery.refreshGroceries()} in both detail pages. Remove forceMount and data-[state=inactive]:hidden from the recipes TabsContent in RecipeDetailTabs so switching tabs remounts RecipeIngredientList with fresh data.",
       "acceptanceCriteria": [
-        "File exists at src/components/recipes/RecipeIngredientList.tsx",
-        "Props: recipeId: string, userId: string, editable?: boolean, onIngredientsChange?: () => void, cacheContext?: { type: 'event' | 'meal_plan', id: string, userId: string }",
-        "On mount, loads recipe ingredients via supabase.from('recipe_ingredients').select().eq('recipe_id', recipeId).order('sort_order')",
-        "Shows a loading spinner while fetching",
-        "Displays ingredients grouped by category using GroceryCategoryGroup (import from @/components/recipes/GroceryCategoryGroup)",
-        "Converts RecipeIngredient[] to SmartGroceryItem[] for GroceryCategoryGroup: { name, totalQuantity, unit, category, sourceRecipes: [] }",
-        "When editable=true, passes onEditItemText and onRemoveItem to GroceryCategoryGroup",
-        "Edit (onEditItemText): calls supabase.from('recipe_ingredients').update({ name: newText }).eq('id', matchedIngredient.id), then reloads ingredients and calls onIngredientsChange",
-        "Delete (onRemoveItem): calls supabase.from('recipe_ingredients').delete().eq('id', matchedIngredient.id), then reloads ingredients and calls onIngredientsChange",
-        "When editable=true, renders AddIngredientInput below the ingredient list",
-        "Add (AddIngredientInput onSubmit): calls parseIngredientText(text, userId), inserts each parsed item to recipe_ingredients via supabase.from('recipe_ingredients').insert([...]), then reloads, invalidates cacheContext if provided (via deleteGroceryCache), calls onIngredientsChange",
-        "Empty state shows 'No ingredients yet' when ingredient list is empty",
+        "EventDetailPage passes onIngredientsChange={() => grocery.refreshGroceries()} to EventRecipesTab",
+        "PersonalMealDetailPage passes onIngredientsChange={() => grocery.refreshGroceries()} to EventRecipesTab",
+        "RecipeDetailTabs recipes TabsContent no longer has forceMount or data-[state=inactive]:hidden",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "This is the core new component. Key imports: GroceryCategoryGroup from @/components/recipes/GroceryCategoryGroup, AddIngredientInput from @/components/recipes/AddIngredientInput, parseIngredientText from @/lib/parseIngredientText, deleteGroceryCache from @/lib/groceryCache, supabase from @/integrations/supabase/client. The RecipeIngredient type is in src/types/index.ts. SmartGroceryItem conversion: map each RecipeIngredient to { name: ing.name, displayName: undefined, totalQuantity: ing.quantity ?? undefined, unit: ing.unit ?? undefined, category: ing.category, sourceRecipes: [] }. For grouping, use the groupSmartByCategory helper pattern from GroceryListSection (or CATEGORY_ORDER from @/lib/groceryList). Matching ingredients by name for edit/delete: find in the local ingredients state where ing.name.toLowerCase() === originalName.toLowerCase(). Insert parsed items: each ParsedGroceryItem becomes { recipe_id: recipeId, name: item.name, quantity: item.quantity, unit: item.unit, category: item.category, sort_order: existingIngredients.length + index }. deleteGroceryCache signature: deleteGroceryCache(type, id, userId) — import from src/lib/groceryCache.ts."
+      "passes": false,
+      "notes": "RecipeDetailTabs is at src/components/shared/RecipeDetailTabs.tsx line 29 — the recipes TabsContent has forceMount className='data-[state=inactive]:hidden'. Both pages pass onIngredientsChange={() => {}} to EventRecipesTab — replace with grocery.refreshGroceries(). The test file RecipeDetailTabs.test.tsx tests forceMount behavior and will need updating to remove that assertion."
     },
     {
       "id": "US-004",
-      "title": "Add handleAddItemsToRecipe to useGroceryList",
-      "description": "As a developer, I want a hook function that parses freeform text and adds the results to a specific recipe's ingredients so that per-recipe grocery tabs can offer the same Add Item experience.",
+      "title": "Consistent grocery refresh on recipe add/delete across all pages",
+      "description": "PersonalMealDetailPage: add grocery.refreshGroceries() after loadEventData() in handleAddCustomMeal, handleAddRecipeMeal, handleAddManualMeal, and the parse-completion useEffect success path. EventDetailPage: add grocery.refreshGroceries() in handleKeepRecipeAnyway and handleRetryParse success flow.",
       "acceptanceCriteria": [
-        "useGroceryList hook exports handleAddItemsToRecipe: (recipeId: string, text: string) => Promise<void>",
-        "Calls parseIngredientText(text, userId) from @/lib/parseIngredientText",
-        "Inserts each parsed item to recipe_ingredients: { recipe_id: recipeId, name, quantity, unit, category, sort_order }",
-        "After insert, calls invalidateCacheAndResetRefs() and startRecombineTimer() (same pattern as other mutation handlers in the hook)",
-        "Also updates recipeIngredients state optimistically or triggers a reload so the per-recipe tab reflects the change immediately",
-        "handleAddItemsToRecipe is included in the hook's return value",
+        "handleAddCustomMeal in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
+        "handleAddRecipeMeal in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
+        "handleAddManualMeal in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
+        "The parse-completion useEffect success path in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
+        "handleKeepRecipeAnyway in EventDetailPage calls grocery.refreshGroceries() after loadEventData()",
+        "handleRetryParse success path in EventDetailPage calls grocery.refreshGroceries() after loadEventData()",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Add this alongside the other handle* callbacks in src/hooks/useGroceryList.ts. The hook already has recipeIngredients state and invalidateCacheAndResetRefs/startRecombineTimer helpers. For sort_order: query existing count for this recipe first, or just use recipeIngredients.filter(r => r.recipeId === recipeId).length + index as a starting sort_order. The hook's return type interface is defined at the top of the file (lines ~50-80) — add handleAddItemsToRecipe to that interface. After insert, the recipeIngredients state should be updated to include the new items so the grocery tab updates without a full page reload: setRecipeIngredients(prev => [...prev, ...newItems]) where newItems are mapped to the RecipeIngredient shape."
+      "passes": false,
+      "notes": "PersonalMealDetailPage: handleAddCustomMeal ~line 440, handleAddRecipeMeal ~line 483, handleAddManualMeal ~line 539 — each has loadEventData() near the end; add grocery.refreshGroceries() after each. Parse-completion useEffect: the doParse() function calls loadEventData() at ~line 567. EventDetailPage: handleKeepRecipeAnyway ~line 539 calls loadEventData(); handleRetryParse success ~line 574 calls loadEventData(). Reference: EventDetailPage handleSubmitRecipe already calls grocery.refreshGroceries() after loadEventData() on line 476 — follow that pattern."
     },
     {
       "id": "US-005",
-      "title": "Add AddIngredientInput to per-recipe grocery tabs",
-      "description": "As a user on a per-recipe grocery tab, I want an 'Add ingredient' input at the bottom so that I can add missing ingredients using the same AI-parse flow as the General tab.",
+      "title": "Fix AddIngredientInput error when userId is empty",
+      "description": "parseIngredientText throws 'Not authenticated' when userId is an empty string. Add a guard in RecipeIngredientList.handleAdd to return early if userId is falsy.",
       "acceptanceCriteria": [
-        "GroceryListSection has new prop: onAddItemsToRecipe?: (recipeId: string, text: string) => Promise<void>",
-        "AddIngredientInput appears at the bottom of each per-recipe TabsContent (not on Combined tab, not on General tab)",
-        "AddIngredientInput is not rendered when onAddItemsToRecipe is not provided",
-        "Clicking Add parses text and adds items to the recipe's ingredients, then the tab refreshes to show new items",
-        "MealPlanPage passes grocery.handleAddItemsToRecipe as onAddItemsToRecipe to GroceryListSection",
-        "EventDetailPage passes grocery.handleAddItemsToRecipe as onAddItemsToRecipe to GroceryListSection",
+        "handleAdd in RecipeIngredientList returns early if !userId",
+        "No unhandled error is thrown when AddIngredientInput is submitted with empty userId",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Modify src/components/recipes/GroceryListSection.tsx. The per-recipe tab content is rendered in a .map() block starting around line 328. After the GroceryCategoryGroup blocks inside each TabsContent, add: {onAddItemsToRecipe && <AddIngredientInput onSubmit={(text) => onAddItemsToRecipe(recipe.id, text)} placeholder='Add ingredient, e.g. 2 tbsp olive oil' className='mt-3 border-t pt-3' />}. The Combined tab (TabsContent value='combined') should NOT have this — its content is lines ~296-326. The General tab already has AddIngredientInput from US-002. Wire up in MealPlanPage.tsx (grep for GroceryListSection usage around line 480-530) and EventDetailPage.tsx (grep for GroceryListSection around line 978-1007)."
+      "passes": false,
+      "notes": "RecipeIngredientList handleAdd is at ~line 111. parseIngredientText (src/lib/parseIngredientText.ts line 8) throws 'Not authenticated' when userId is falsy. EventRecipesTab passes userId ?? '' so an empty string reaches handleAdd when user is not loaded. Fix: add 'if (!userId) return;' at the top of handleAdd."
     },
     {
       "id": "US-006",
-      "title": "Replace EditRecipeIngredientsDialog in RecipeCard with inline RecipeIngredientList",
-      "description": "As a user browsing My Recipes, I want to see and edit a recipe's ingredients inline on the recipe card — expanding with the same clean style as the grocery tab — instead of opening a separate choppy dialog.",
+      "title": "Add General Items support to EventDetailPage and PersonalMealDetailPage",
+      "description": "Pass supportsGeneralItems: true to useGroceryList in both pages. Wire all General tab props to GroceryListSection: generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange.",
       "acceptanceCriteria": [
-        "RecipeCard's existing read-only ingredient section (lines ~273-309) is replaced with RecipeIngredientList",
-        "RecipeIngredientList is shown when the 'X ingredients' toggle is expanded (existing ingredientsExpanded state)",
-        "RecipeIngredientList receives editable={recipe.createdBy === userId} so only the recipe owner sees edit controls",
-        "RecipeCard accepts new props: userId?: string, onIngredientsChange?: () => void",
-        "The ListChecks button (onEditIngredients) is removed from RecipeCard action buttons",
-        "onEditIngredients prop is removed from RecipeCardProps",
-        "In RecipeHub.tsx: remove editIngredientsRecipe state, EditRecipeIngredientsDialog import and usage, and the onEditIngredients prop passed to RecipeCard",
-        "RecipeHub passes userId={user?.id} and onIngredientsChange callback (that reloads recipeIngredientsMap for the affected recipe) to RecipeCard",
-        "The 'X ingredients' count shown on the toggle button is now driven by RecipeIngredientList's internal state (or RecipeHub's recipeIngredientsMap — keep whichever is simpler)",
+        "useGroceryList in EventDetailPage is called with supportsGeneralItems: true",
+        "useGroceryList in PersonalMealDetailPage is called with supportsGeneralItems: true",
+        "GroceryListSection in EventDetailPage receives generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange",
+        "GroceryListSection in PersonalMealDetailPage receives generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "RecipeCard is at src/components/recipes/RecipeCard.tsx (~400 lines). The ingredient section to replace is lines ~253-309 (the if/else block for parsing/hasIngredients). Replace the existing <ul> rendering inside ingredientsExpanded with <RecipeIngredientList ... />. Keep the outer toggle button ('X ingredients' chevron) as-is — just swap the expanded content. RecipeHub is at src/components/recipes/RecipeHub.tsx. The onIngredientsChange callback should reload just the affected recipe's ingredients: call supabase.from('recipe_ingredients').select().eq('recipe_id', recipe.id) and update recipeIngredientsMap[recipe.id]. RecipeIngredientList self-manages its data, so the count shown on the toggle button may drift from RecipeHub's recipeIngredientsMap — simplest fix is to let RecipeIngredientList own the count via its internal state and surface it via a prop like onCountChange or just remove the count from the toggle button label (show 'Ingredients' instead of 'X ingredients')."
+      "passes": false,
+      "notes": "Reference: MealPlanPage lines 516-526 shows the full set of General props to pass. useGroceryList options interface already has supportsGeneralItems?: boolean (default false). EventDetailPage useGroceryList is at ~line 183; PersonalMealDetailPage at ~line 145. Both GroceryListSection render blocks are in the groceryContent prop of RecipeDetailTabs."
     },
     {
       "id": "US-007",
-      "title": "Replace EditRecipeIngredientsDialog in EventRecipesTab with inline RecipeIngredientList",
-      "description": "As a user on an Event or Meal detail page, I want to see and edit recipe ingredients inline in the recipe card — same style as My Recipes — instead of opening a dialog.",
+      "title": "Add pantry filtering to RecipeIngredientList",
+      "description": "RecipeIngredientList accepts an optional pantryItems prop and filters displayed ingredients using isPantryItem + DEFAULT_PANTRY_ITEMS (same logic as RecipeCard). EventRecipesTab accepts and passes pantryItems to RecipeIngredientList.",
       "acceptanceCriteria": [
-        "EventRecipesTab adds a collapsible 'Ingredients' section below each recipe card header using RecipeIngredientList",
-        "A toggle button (e.g. 'X ingredients ▾') shows/hides RecipeIngredientList inline in the card, similar to how notes are toggled",
-        "RecipeIngredientList receives editable={recipe.createdBy === userId} so only the owner sees edit controls",
-        "EventRecipesTab has new props: userId?: string, onIngredientsChange?: (recipeId: string) => void",
-        "The existing 'Ingredients' ListChecks button is removed from EventRecipesTab recipe card headers",
-        "The onEditIngredients prop is removed from EventRecipesTabProps",
-        "In EventDetailPage: remove editIngredientsRecipe state, EditRecipeIngredientsDialog import and usage, and onEditIngredients prop",
-        "In PersonalMealDetailPage: same — remove editIngredientsRecipe state, EditRecipeIngredientsDialog import and usage, and onEditIngredients prop",
-        "EventDetailPage passes userId={user?.id} and an onIngredientsChange callback to EventRecipesTab",
-        "PersonalMealDetailPage passes userId={user?.id} and an onIngredientsChange callback to EventRecipesTab",
+        "RecipeIngredientListProps has pantryItems?: string[]",
+        "RecipeIngredientList filters displayed ingredients: items where isPantryItem(name, allPantryItems, unit) are hidden",
+        "allPantryItems merges DEFAULT_PANTRY_ITEMS with the pantryItems prop (same as RecipeCard lines 64-69)",
+        "EventRecipesTabProps has pantryItems?: string[]",
+        "EventRecipesTab passes pantryItems to RecipeIngredientList",
+        "EventDetailPage passes pantryItems={grocery.pantryItems} to EventRecipesTab",
+        "PersonalMealDetailPage passes pantryItems={grocery.pantryItems} to EventRecipesTab",
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "EventRecipesTab is at src/components/events/EventRecipesTab.tsx (~381 lines). Each recipe card is rendered in a .map() block starting ~line 110. The 'Ingredients' ListChecks button is at lines ~222-233 — remove it. Add a new state Set<string> for expandedIngredients (which recipe ingredient sections are open), add a toggle button in each card similar to the notes toggle (ChevronDown/Up). When expanded, render <RecipeIngredientList recipeId={recipe.id} userId={userId ?? ''} editable={recipe.createdBy === userId} onIngredientsChange={() => onIngredientsChange?.(recipe.id)} />. EventDetailPage usage is around line 964-976 and the dialog is at lines 1376-1390. PersonalMealDetailPage usage is around lines 864-879 and dialog is 882-896. The onIngredientsChange callback in both pages can be a no-op or trigger a light data refresh — since RecipeIngredientList owns its own data, no parent reload is strictly needed."
+      "passes": false,
+      "notes": "RecipeCard at src/components/recipes/RecipeCard.tsx lines 64-69 shows the allPantryItems merge and isPantryItem filter pattern — copy it exactly. isPantryItem is from '@/lib/groceryList'; DEFAULT_PANTRY_ITEMS is from '@/lib/pantry'. RecipeIngredientList renders grouped items at line ~150; apply filter before groupByCategory. The count shown on the toggle button in EventRecipesTab (~line 251) is just the label 'Ingredients' with no count — so no count update needed there."
     },
     {
       "id": "US-008",
-      "title": "Delete EditRecipeIngredientsDialog",
-      "description": "As a developer, I want to remove the now-unused EditRecipeIngredientsDialog file to reduce dead code.",
+      "title": "Remove Rate Recipes button from PersonalMealDetailPage header card",
+      "description": "Remove the ternary branch (~lines 825-839) rendering the Rate Recipes button in the header card of PersonalMealDetailPage. The Cooked/Undo status block should remain. Per-recipe rating via onRateRecipe in EventRecipesTab is unaffected.",
       "acceptanceCriteria": [
-        "src/components/recipes/EditRecipeIngredientsDialog.tsx is deleted",
-        "No remaining imports of EditRecipeIngredientsDialog anywhere in the codebase",
-        "IngredientFormRows.tsx and ingredientRowTypes.ts are NOT deleted (still used by RecipeInputForm)",
+        "The Rate Recipes Button and its wrapping div are removed from PersonalMealDetailPage",
+        "The isCooked block (Cooked badge + Undo button) is still present",
+        "The mealItems.length > 0 && totalRecipes > 0 ternary branch that previously showed Rate Recipes is removed",
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "After US-006 and US-007, EditRecipeIngredientsDialog should have zero imports remaining. Verify with grep: grep -r 'EditRecipeIngredientsDialog' src/. IngredientFormRows is used by src/components/recipes/RecipeInputForm.tsx (the recipe creation/editing form) — do not touch it. ingredientRowTypes.ts is used by both IngredientFormRows and RecipeInputForm — do not touch it."
+      "passes": false,
+      "notes": "PersonalMealDetailPage ~lines 825-839: the else branch of the isCooked ternary renders a Rate Recipes button. Remove just that else branch (the div with Button). The isCooked true-branch (Cooked badge + Undo) at ~lines 809-824 must stay. The null fallback at line 840 stays."
     },
     {
       "id": "US-009",
-      "title": "Extract RecipeDetailTabs shared component",
-      "description": "As a developer, I want a shared Recipes/Groceries/Pantry tab shell component so that both EventDetailPage and PersonalMealDetailPage use the same tab structure without duplicating markup.",
+      "title": "Clean up dead props in GroceryListSection",
+      "description": "Remove onRemoveGeneralItem and onUpdateGeneralItem from GroceryListSectionProps (defined but never used in the component body). Remove from MealPlanPage where they are passed.",
       "acceptanceCriteria": [
-        "File exists at src/components/shared/RecipeDetailTabs.tsx",
-        "Props: recipesContent: React.ReactNode, groceryContent: React.ReactNode, pantryContent: React.ReactNode",
-        "Renders a 3-tab pill (Recipes, Groceries, Pantry) with the same icons as EventDetailPage (BookOpen, ShoppingCart, Utensils or equivalent)",
-        "Same TabsList className and TabsTrigger styling as the current EventDetailPage tabs (lines ~942-956)",
-        "EventDetailPage replaces its inline Tabs/TabsList/TabsContent block with <RecipeDetailTabs recipesContent={...} groceryContent={...} pantryContent={...} />",
-        "EventDetailPage UI and behavior is identical to before",
+        "GroceryListSectionProps no longer includes onRemoveGeneralItem",
+        "GroceryListSectionProps no longer includes onUpdateGeneralItem",
+        "GroceryListSection destructured props no longer include onRemoveGeneralItem or onUpdateGeneralItem",
+        "MealPlanPage no longer passes onRemoveGeneralItem or onUpdateGeneralItem to GroceryListSection",
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "The tabs block to extract from EventDetailPage is lines ~942-1013. It uses Tabs, TabsList, TabsTrigger, TabsContent from @/components/ui/tabs. The three tab values are 'recipes', 'grocery', 'pantry'. Icons: BookOpen (recipes), ShoppingCart (grocery), Utensils (pantry) — check EventDetailPage imports for exact icon names. The component just renders the shell; callers pass in the content for each tab as ReactNode props. This is a simple extraction — no logic, no state. Create src/components/shared/ directory if it doesn't exist. After extraction, EventDetailPage should render: <RecipeDetailTabs recipesContent={<TabsContent value='recipes'>...</TabsContent>} ... /> — or alternatively, the three *Content nodes can be passed in and RecipeDetailTabs wraps them in TabsContent internally. The latter is cleaner: recipesContent, groceryContent, pantryContent are just the inner JSX, and RecipeDetailTabs wraps each in the appropriate TabsContent."
-    },
-    {
-      "id": "US-010",
-      "title": "Add Groceries and Pantry tabs to PersonalMealDetailPage",
-      "description": "As a user viewing a personal meal detail, I want Groceries and Pantry tabs (just like the Event detail page) so that I can manage my shopping list and pantry directly from the meal.",
-      "acceptanceCriteria": [
-        "PersonalMealDetailPage imports and initializes useGroceryList with contextType='event' and contextId=event.id (the meal's event ID), userId=user.id",
-        "PersonalMealDetailPage uses RecipeDetailTabs to render all three tabs",
-        "The Recipes tab contains the existing EventRecipesTab content (unchanged behavior)",
-        "The Groceries tab contains GroceryListSection wired to the grocery hook, same props pattern as EventDetailPage",
-        "The Pantry tab contains <PantrySection userId={user?.id} onPantryChange={handlePantryChange} />",
-        "handlePantryChange in PersonalMealDetailPage calls grocery.handlePantryChange (or equivalent) to update pantry filtering",
-        "The grocery list loads the recipes for this meal and shows the combined ingredient list",
-        "Typecheck passes"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "PersonalMealDetailPage is at src/pages/PersonalMealDetailPage.tsx (~1132 lines). It already imports EventRecipesTab and renders it directly (lines ~864-879) with no surrounding tabs. To add useGroceryList: import it from @/hooks/useGroceryList. The meal's context is contextType='event', contextId=event.id (the personal meal IS stored as an event in the DB). Check how EventDetailPage calls useGroceryList (around lines 145-200 in EventDetailPage.tsx) and mirror that pattern in PersonalMealDetailPage — pass the event.id as the context. The grocery hook needs recipes (event.recipesWithNotes.map(r => r.recipe)) and userId. GroceryListSection props: mirror what EventDetailPage passes at lines ~980-1007. PantrySection is at src/components/pantry/PantrySection.tsx. For handlePantryChange, EventDetailPage has a pattern around line 200 — copy it. The main layout change: replace the standalone <EventRecipesTab .../> render with <RecipeDetailTabs recipesContent={<EventRecipesTab .../>} groceryContent={<GroceryListSection .../>} pantryContent={<PantrySection .../>} />."
-    }
-    ,{
-      "id": "US-011",
-      "title": "Unit test coverage for new components and hooks",
-      "description": "As a developer, I want unit tests for all new and modified code from this initiative so that regressions are caught automatically.",
-      "acceptanceCriteria": [
-        "tests/unit/lib/parseIngredientText.test.ts covers: successful parse returns ParsedGroceryItem[], empty text returns [], supabase error throws, edge function skipped returns []",
-        "tests/unit/components/recipes/AddIngredientInput.test.tsx covers: renders textarea and Add button, button disabled when textarea empty, calls onSubmit with text on click, shows spinner while submitting, clears textarea after submit",
-        "tests/unit/components/recipes/RecipeIngredientList.test.tsx covers: renders grouped ingredients by category, shows loading spinner on mount, edit calls supabase update with new name, delete calls supabase delete, add calls parseIngredientText then supabase insert, empty state renders when no ingredients",
-        "tests/unit/hooks/useGroceryList.test.ts is updated to cover handleAddItemsToRecipe: calls parseIngredientText, inserts to recipe_ingredients, calls invalidateCacheAndResetRefs",
-        "tests/unit/components/recipes/GroceryListSection.test.tsx is updated to cover: AddIngredientInput renders on per-recipe tabs when onAddItemsToRecipe provided, AddIngredientInput does NOT render on Combined tab",
-        "tests/unit/components/recipes/RecipeCard.test.tsx is updated: onEditIngredients prop and ListChecks button no longer exist, RecipeIngredientList renders when ingredients expanded",
-        "tests/unit/components/events/EventRecipesTab.test.tsx is updated: onEditIngredients prop removed, RecipeIngredientList renders when ingredient section expanded",
-        "tests/unit/components/shared/RecipeDetailTabs.test.tsx covers: renders all three tabs, switching tabs shows correct content",
-        "npm run test:run passes with no failures",
-        "npm run test:coverage shows 100% coverage on all new files (parseIngredientText.ts, AddIngredientInput.tsx, RecipeIngredientList.tsx, RecipeDetailTabs.tsx)"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Completed. All new files covered. Minor exceptions: AddIngredientInput.tsx 92% (disabled button guard unreachable via normal UI), RecipeIngredientList.tsx 96% (two defensive 'if (!matched) return' guards unreachable since GroceryItemRow always passes original name). parseIngredientText.ts 100%, RecipeDetailTabs.tsx 100%, EventRecipesTab.tsx 100%, RecipeCard.tsx 100%. PersonalMealDetailPage.tsx created with 42 tests, 80% coverage (from 0%). 1832 total tests pass."
-    }
-    ,{
-      "id": "US-012",
-      "title": "General unit test coverage pass",
-      "description": "As a developer, I want comprehensive unit test coverage across the codebase so that regressions in existing code are caught automatically.",
-      "acceptanceCriteria": [
-        "Run npm run test:coverage and identify all files below 100% coverage in src/components/, src/hooks/, and src/lib/ (excluding IngredientWheel.tsx which is exempt at ~55%)",
-        "Write or extend tests to bring coverage to 100% on all files in src/lib/",
-        "Write or extend tests to bring coverage to 100% on all files in src/hooks/",
-        "Write or extend tests to bring coverage to 100% on all files in src/components/events/",
-        "Write or extend tests to bring coverage to 100% on all files in src/components/ingredients/",
-        "Write or extend tests to bring coverage to 100% on all files in src/components/mealplan/",
-        "Write or extend tests to bring coverage to 100% on all files in src/components/recipes/",
-        "npm run test:run passes with no failures",
-        "npm run test:coverage confirms all targeted directories are at 100%"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Completed. All required directories now at or near 100%: src/lib/ (98-100%), src/hooks/ (useRecipeNotes 100%, useGroceryList 92% with unreachable branches), src/components/events/ (100%), src/components/ingredients/ (100%), src/components/mealplan/ (100%), src/components/recipes/ (96-100%, minor unreachable defensive branches in RecipeIngredientList/AddIngredientInput). src/pages/PersonalMealDetailPage.tsx created from 0% to 80%. 1832 total tests pass. IngredientWheel.tsx exempt at ~55%."
+      "passes": false,
+      "notes": "GroceryListSection is at src/components/recipes/GroceryListSection.tsx. Props interface lines ~44-45 define onRemoveGeneralItem and onUpdateGeneralItem. They are destructured in the component args but never referenced in the component body. MealPlanPage passes them at lines 518-519. Safe to delete both from interface, destructure, and call site."
     }
   ]
 }

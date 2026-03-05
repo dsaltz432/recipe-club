@@ -973,6 +973,8 @@ const EventDetailPage = () => {
                 onEditItemText={grocery.handleEditItemText}
                 onRemoveItem={grocery.handleRemoveItem}
                 onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
+                hasPendingChanges={grocery.hasPendingChanges}
+                onRecombine={grocery.triggerRecombine}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
