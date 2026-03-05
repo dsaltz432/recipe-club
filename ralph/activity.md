@@ -10,14 +10,44 @@
 
 ## Current Status
 **Last Updated:** 2026-03-04
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 7
+**Current Task:** US-007 complete
 
 - **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — loads recipe ingredients, groups by category with GroceryCategoryGroup, inline edit/delete/add; manages its own state
 
 ---
 
 ## Session Log
+
+## [2026-03-04] — US-007: Replace EditRecipeIngredientsDialog in EventRecipesTab with inline RecipeIngredientList
+
+### What was implemented
+- Removed `onEditIngredients` prop and `ListChecks` button from `EventRecipesTab`
+- Added `userId?: string` and `onIngredientsChange?: (recipeId: string) => void` to `EventRecipesTabProps`
+- Added local `expandedIngredients: Set<string>` state with `toggleIngredients` handler
+- Added Ingredients toggle button (ChevronDown/Up) in each recipe card header
+- When expanded, renders `<RecipeIngredientList recipeId userId editable onIngredientsChange />` with Separator
+- Removed `ListChecks` import from lucide-react; added `useState` import
+- Imported `RecipeIngredientList` from `@/components/recipes/RecipeIngredientList`
+- In `EventDetailPage.tsx`: removed `editIngredientsRecipe` state, `EditRecipeIngredientsDialog` import and dialog JSX, `onEditIngredients` prop; added `userId` and `onIngredientsChange` to EventRecipesTab
+- In `PersonalMealDetailPage.tsx`: removed `editIngredientsRecipe` state, `editIngredientsItems` state, `weekStart` state, week_start load block, `handleEditIngredientsClick`, `EditRecipeIngredientsDialog` import and dialog JSX, `onEditIngredients` prop; added `userId` and `onIngredientsChange` to EventRecipesTab; removed unused `RecipeIngredient` type import
+
+### Files changed
+- `src/components/events/EventRecipesTab.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- `weekStart` state in PersonalMealDetailPage was only used for the dialog cacheContext — remove the load block too when removing the state
+- EventRecipesTab is a pure display component; local state for `expandedIngredients` is appropriate here
+- `onIngredientsChange` in parent pages can be a no-op `() => {}` since RecipeIngredientList owns its own data
+
+---
 
 ## [2026-03-04] — US-006: Replace EditRecipeIngredientsDialog in RecipeCard with inline RecipeIngredientList
 

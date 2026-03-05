@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser, getAllowedUser } from "@/lib/auth";
-import type { User, Recipe, RecipeRatingsSummary, RecipeIngredient } from "@/types";
+import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,6 @@ import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
-import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
 import { saveRecipeEdit } from "@/lib/recipeActions";
 
 interface PersonalEventData {
@@ -124,11 +123,6 @@ const PersonalMealDetailPage = () => {
   // Cooked state
   const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
   const [uncookConfirmOpen, setUncookConfirmOpen] = useState(false);
-
-  // Edit ingredients state
-  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
-  const [editIngredientsItems, setEditIngredientsItems] = useState<RecipeIngredient[]>([]);
-  const [weekStart, setWeekStart] = useState<string | null>(null);
 
   // Notes expansion state
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -201,18 +195,6 @@ const PersonalMealDetailPage = () => {
         };
       });
       setMealItems(mealItemsList);
-
-      // Load week_start from the meal plan for grocery cache invalidation
-      if (mealItemsList.length > 0) {
-        const { data: planData } = await supabase
-          .from("meal_plans")
-          .select("week_start")
-          .eq("id", mealItemsList[0].plan_id)
-          .single();
-        if (planData) {
-          setWeekStart(planData.week_start);
-        }
-      }
 
       const linkedRecipeIds = mealItemsList
         .map((m) => m.recipe_id)
@@ -587,34 +569,6 @@ const PersonalMealDetailPage = () => {
     toast.success("Recipe saved without parsing");
   };
 
-  const handleEditIngredientsClick = async (recipe: Recipe) => {
-    try {
-      const { data } = await supabase
-        .from("recipe_ingredients")
-        .select("*")
-        .eq("recipe_id", recipe.id)
-        .order("sort_order", { ascending: true });
-
-      setEditIngredientsItems(
-        (data || []).map((row) => ({
-          id: row.id,
-          recipeId: row.recipe_id,
-          name: row.name,
-          quantity: row.quantity ?? undefined,
-          unit: row.unit ?? undefined,
-          category: row.category as RecipeIngredient["category"],
-          rawText: row.raw_text ?? undefined,
-          sortOrder: row.sort_order ?? undefined,
-          createdAt: row.created_at,
-        }))
-      );
-      setEditIngredientsRecipe({ id: recipe.id, name: recipe.name });
-    } catch (error) {
-      console.error("Error loading ingredients:", error);
-      toast.error("Failed to load ingredients");
-    }
-  };
-
   const handleEditRecipeClick = (recipe: Recipe) => {
     setRecipeToEdit(recipe);
     setEditRecipeName(recipe.name);
@@ -875,25 +829,10 @@ const PersonalMealDetailPage = () => {
           onDeleteNoteClick={handleDeleteClick}
           onDeleteRecipeClick={handleDeleteRecipeClick}
           onRateRecipe={isClubMember ? handleRateRecipe : undefined}
-          onEditIngredients={handleEditIngredientsClick}
+          userId={user?.id}
+          onIngredientsChange={() => {}}
         />
       </main>
-
-      {/* Edit Ingredients Dialog */}
-      {editIngredientsRecipe && (
-        <EditRecipeIngredientsDialog
-          open={!!editIngredientsRecipe}
-          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
-          recipeId={editIngredientsRecipe.id}
-          recipeName={editIngredientsRecipe.name}
-          ingredients={editIngredientsItems}
-          onSaved={() => {
-            setEditIngredientsRecipe(null);
-            loadEventData();
-          }}
-          cacheContext={weekStart && user?.id ? { type: "meal_plan", id: weekStart, userId: user.id } : undefined}
-        />
-      )}
 
       {/* Add Meal Dialog */}
       <AddMealDialog

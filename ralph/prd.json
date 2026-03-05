@@ -133,7 +133,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "EventRecipesTab is at src/components/events/EventRecipesTab.tsx (~381 lines). Each recipe card is rendered in a .map() block starting ~line 110. The 'Ingredients' ListChecks button is at lines ~222-233 — remove it. Add a new state Set<string> for expandedIngredients (which recipe ingredient sections are open), add a toggle button in each card similar to the notes toggle (ChevronDown/Up). When expanded, render <RecipeIngredientList recipeId={recipe.id} userId={userId ?? ''} editable={recipe.createdBy === userId} onIngredientsChange={() => onIngredientsChange?.(recipe.id)} />. EventDetailPage usage is around line 964-976 and the dialog is at lines 1376-1390. PersonalMealDetailPage usage is around lines 864-879 and dialog is 882-896. The onIngredientsChange callback in both pages can be a no-op or trigger a light data refresh — since RecipeIngredientList owns its own data, no parent reload is strictly needed."
     },
     {

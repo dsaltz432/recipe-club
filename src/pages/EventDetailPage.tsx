@@ -68,7 +68,6 @@ import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
-import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
 import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
 
 interface EventData {
@@ -158,9 +157,6 @@ const EventDetailPage = () => {
 
   // Pantry dialog state
   const [showPantryDialog, setShowPantryDialog] = useState(false);
-
-  // Edit ingredients state
-  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
 
   // Parse progress step definitions
   const parseSteps = [
@@ -971,7 +967,8 @@ const EventDetailPage = () => {
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={userIsMember ? handleRateRecipe : undefined}
-              onEditIngredients={(recipe) => setEditIngredientsRecipe({ id: recipe.id, name: recipe.name })}
+              userId={user?.id}
+              onIngredientsChange={() => {}}
             />
           </TabsContent>
 
@@ -1373,21 +1370,6 @@ const EventDetailPage = () => {
         />
       )}
 
-      {/* Edit Ingredients Dialog */}
-      {editIngredientsRecipe && user?.id && (
-        <EditRecipeIngredientsDialog
-          open={!!editIngredientsRecipe}
-          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
-          recipeId={editIngredientsRecipe.id}
-          recipeName={editIngredientsRecipe.name}
-          ingredients={grocery.recipeIngredients.filter((i) => i.recipeId === editIngredientsRecipe.id)}
-          onSaved={() => {
-            setEditIngredientsRecipe(null);
-            grocery.refreshGroceries();
-          }}
-          cacheContext={eventId ? { type: "event", id: eventId, userId: user.id } : undefined}
-        />
-      )}
     </div>
   );
 };
