@@ -74,6 +74,7 @@ export interface UseGroceryListReturn {
     updates: { name?: string; quantity?: string; unit?: string }
   ) => Promise<void>;
   handleBulkParseGroceryText: (text: string) => Promise<ParsedGroceryItem[]>;
+  handleAddItemsToRecipe: (recipeId: string, text: string) => Promise<void>;
   handleParseRecipe: (recipeId: string) => Promise<void>;
   triggerRecombine: () => Promise<void>;
 
@@ -604,6 +605,47 @@ export function useGroceryList(
     [userId]
   );
 
+  const handleAddItemsToRecipe = useCallback(
+    async (recipeId: string, text: string): Promise<void> => {
+      if (!userId) throw new Error("Not authenticated");
+      const parsed = await parseIngredientText(text, userId);
+      if (parsed.length === 0) return;
+      const existingCount = recipeIngredients.filter(
+        (r) => r.recipeId === recipeId
+      ).length;
+      const rows = parsed.map((item, index) => ({
+        recipe_id: recipeId,
+        name: item.name,
+        quantity: item.quantity ?? null,
+        unit: item.unit ?? null,
+        category: item.category ?? null,
+        sort_order: existingCount + index,
+      }));
+      const { data, error } = await supabase
+        .from("recipe_ingredients")
+        .insert(rows)
+        .select();
+      if (error) throw error;
+      if (data) {
+        const newItems: RecipeIngredient[] = data.map((row) => ({
+          id: row.id,
+          recipeId: row.recipe_id,
+          name: row.name,
+          quantity: row.quantity ?? undefined,
+          unit: row.unit ?? undefined,
+          category: row.category as RecipeIngredient["category"],
+          rawText: row.raw_text ?? undefined,
+          sortOrder: row.sort_order ?? undefined,
+          createdAt: row.created_at,
+        }));
+        setRecipeIngredients((prev) => [...prev, ...newItems]);
+      }
+      invalidateCacheAndResetRefs();
+      startRecombineTimer();
+    },
+    [userId, recipeIngredients, invalidateCacheAndResetRefs, startRecombineTimer]
+  );
+
   const handleParseRecipe = useCallback(
     async (recipeId: string) => {
       // Look up recipe from either the groceryRecipes state or the recipes prop
@@ -766,6 +808,7 @@ export function useGroceryList(
     handleRemoveGeneralItem,
     handleUpdateGeneralItem,
     handleBulkParseGroceryText,
+    handleAddItemsToRecipe,
     handleParseRecipe,
     triggerRecombine,
 

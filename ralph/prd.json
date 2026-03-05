@@ -75,7 +75,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Add this alongside the other handle* callbacks in src/hooks/useGroceryList.ts. The hook already has recipeIngredients state and invalidateCacheAndResetRefs/startRecombineTimer helpers. For sort_order: query existing count for this recipe first, or just use recipeIngredients.filter(r => r.recipeId === recipeId).length + index as a starting sort_order. The hook's return type interface is defined at the top of the file (lines ~50-80) — add handleAddItemsToRecipe to that interface. After insert, the recipeIngredients state should be updated to include the new items so the grocery tab updates without a full page reload: setRecipeIngredients(prev => [...prev, ...newItems]) where newItems are mapped to the RecipeIngredient shape."
     },
     {

@@ -10,14 +10,35 @@
 
 ## Current Status
 **Last Updated:** 2026-03-04
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 - **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — loads recipe ingredients, groups by category with GroceryCategoryGroup, inline edit/delete/add; manages its own state
 
 ---
 
 ## Session Log
+
+## [2026-03-04] — US-004: Add handleAddItemsToRecipe to useGroceryList
+
+### What was implemented
+- Added `handleAddItemsToRecipe: (recipeId: string, text: string) => Promise<void>` to `UseGroceryListReturn` interface
+- Implemented `handleAddItemsToRecipe` callback: calls `parseIngredientText`, inserts rows to `recipe_ingredients` with `sort_order` based on existing count for that recipe, updates `recipeIngredients` state with returned rows, then calls `invalidateCacheAndResetRefs()` and `startRecombineTimer()`
+- Added `handleAddItemsToRecipe` to the hook's return value
+
+### Files changed
+- `src/hooks/useGroceryList.ts` (interface + implementation + return)
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- `invalidateCacheAndResetRefs` and `startRecombineTimer` are defined before the `handleBulkParseGroceryText` callback, so they're available for the new callback's deps array
+- `recipeIngredients` state is available in scope; filtering by `recipeId` gives existing count for sort_order
+
+---
 
 ## [2026-03-04] — US-003: Create RecipeIngredientList component
 
