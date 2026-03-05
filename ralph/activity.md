@@ -19,6 +19,29 @@
 
 ## Session Log
 
+## [2026-03-05 09:00] — US-009: Clean up dead props in GroceryListSection
+
+### What was implemented
+- Removed `onRemoveGeneralItem?: (itemId: string) => void` from `GroceryListSectionProps`
+- Removed `onUpdateGeneralItem?: (itemId: string, updates: {...}) => void` from `GroceryListSectionProps`
+- Removed `onRemoveGeneralItem={grocery.handleRemoveGeneralItem}` from GroceryListSection in MealPlanPage
+- Removed `onUpdateGeneralItem={grocery.handleUpdateGeneralItem}` from GroceryListSection in MealPlanPage
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx`
+- `src/components/mealplan/MealPlanPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- These props were only in the interface definition, never destructured or used in the component body — TypeScript did not warn about them since they were optional
+- When removing props from an interface, always check all call sites with Grep to find all pass-through locations
+
+---
+
 ## [2026-03-05 07:00] — US-008: Remove Rate Recipes button from PersonalMealDetailPage header card
 
 ### What was implemented

@@ -41,8 +41,6 @@ interface GroceryListSectionProps {
   onToggleChecked?: (itemName: string) => void;
   generalItems?: GeneralGroceryItem[];
   onAddGeneralItemDirect?: (item: { name: string; quantity?: string; unit?: string }) => Promise<void>;
-  onRemoveGeneralItem?: (itemId: string) => void;
-  onUpdateGeneralItem?: (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => void;
   onBulkParseGroceryText?: (text: string) => Promise<ParsedGroceryItem[]>;
   hasPendingChanges?: boolean;
   onRecombine?: () => Promise<void> | void;

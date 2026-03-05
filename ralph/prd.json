@@ -136,7 +136,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryListSection is at src/components/recipes/GroceryListSection.tsx. Props interface lines ~44-45 define onRemoveGeneralItem and onUpdateGeneralItem. They are destructured in the component args but never referenced in the component body. MealPlanPage passes them at lines 518-519. Safe to delete both from interface, destructure, and call site."
     }
   ]
