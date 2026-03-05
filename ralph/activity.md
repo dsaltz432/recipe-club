@@ -12,12 +12,35 @@
 
 ## Current Status
 **Last Updated:** 2026-03-05
-**Tasks Completed:** 5
+**Tasks Completed:** 6
 **Current Task:** Awaiting next iteration
 
 ---
 
 ## Session Log
+
+## [2026-03-05 05:00] — US-006: Add General Items support to EventDetailPage and PersonalMealDetailPage
+
+### What was implemented
+- Added `supportsGeneralItems: true` to `useGroceryList` in EventDetailPage
+- Added `supportsGeneralItems: true` to `useGroceryList` in PersonalMealDetailPage
+- Added `generalItems`, `onAddGeneralItemDirect`, `onBulkParseGroceryText`, `isAddingGeneral`, `onAddingGeneralChange` to GroceryListSection in EventDetailPage
+- Added same 5 General props to GroceryListSection in PersonalMealDetailPage
+
+### Files changed
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- Pattern: add `supportsGeneralItems: true` to useGroceryList options, then pass the 5 General props (generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange) to GroceryListSection
+- Reference: MealPlanPage lines 77 and 516-526
+
+---
 
 ## [2026-03-05 04:00] — US-005: Fix AddIngredientInput error when userId is empty
 

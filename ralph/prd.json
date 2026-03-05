@@ -89,7 +89,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Reference: MealPlanPage lines 516-526 shows the full set of General props to pass. useGroceryList options interface already has supportsGeneralItems?: boolean (default false). EventDetailPage useGroceryList is at ~line 183; PersonalMealDetailPage at ~line 145. Both GroceryListSection render blocks are in the groceryContent prop of RecipeDetailTabs."
     },
     {

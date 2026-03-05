@@ -184,6 +184,7 @@ const EventDetailPage = () => {
     recipeIds: groceryRecipeIds,
     recipes: groceryRecipes,
     enabled: true,
+    supportsGeneralItems: true,
   });
 
   const toggleRecipeNotes = (recipeId: string) => {
@@ -978,6 +979,11 @@ const EventDetailPage = () => {
                 onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
                 hasPendingChanges={grocery.hasPendingChanges}
                 onRecombine={grocery.triggerRecombine}
+                generalItems={grocery.generalItems}
+                onAddGeneralItemDirect={grocery.handleAddGeneralItemDirect}
+                onBulkParseGroceryText={grocery.handleBulkParseGroceryText}
+                isAddingGeneral={grocery.isAddingGeneral}
+                onAddingGeneralChange={grocery.setIsAddingGeneral}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
