@@ -17,7 +17,36 @@
 
 ---
 
+## Codebase Patterns (additions)
+- **RecipeDetailTabs** at `src/components/shared/RecipeDetailTabs.tsx` — shared 3-tab shell (Recipes/Groceries/Pantry); props: `recipesContent`, `groceryContent`, `pantryContent` as `React.ReactNode`; wraps each in `TabsContent` with `forceMount`+`data-[state=inactive]:hidden` on the recipes tab
+
 ## Session Log
+
+## [2026-03-04] — US-009: Extract RecipeDetailTabs shared component
+
+### What was implemented
+- Created `src/components/shared/RecipeDetailTabs.tsx` with props: `recipesContent`, `groceryContent`, `pantryContent` (React.ReactNode)
+- Renders 3-tab shell with BookOpen/ShoppingCart/UtensilsCrossed icons, same styling as EventDetailPage tabs
+- `TabsContent value="recipes"` uses `forceMount` + `data-[state=inactive]:hidden` to match existing behavior
+- Updated `EventDetailPage.tsx`: removed inline Tabs block, replaced with `<RecipeDetailTabs>`
+- Removed now-unused `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` imports from EventDetailPage
+- Removed now-unused `BookOpen` and `UtensilsCrossed` icon imports from EventDetailPage (ShoppingCart kept — still used in empty grocery state)
+
+### Files changed
+- `src/components/shared/RecipeDetailTabs.tsx` (new file)
+- `src/pages/EventDetailPage.tsx` (import cleanup, tabs block replaced)
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- The recipes TabsContent needs `forceMount className="data-[state=inactive]:hidden"` to preserve the EventDetailPage behavior (recipes tab content stays mounted)
+- When extracting a tabs shell, pass inner JSX directly as ReactNode props — the component wraps them in TabsContent internally
+- After extraction, unused imports (Tabs, TabsList, TabsTrigger, TabsContent, BookOpen, UtensilsCrossed) must be cleaned up or build will fail on strict TS projects
+
+---
 
 ## [2026-03-04] — US-008: Delete EditRecipeIngredientsDialog
 

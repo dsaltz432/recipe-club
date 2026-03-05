@@ -164,7 +164,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "The tabs block to extract from EventDetailPage is lines ~942-1013. It uses Tabs, TabsList, TabsTrigger, TabsContent from @/components/ui/tabs. The three tab values are 'recipes', 'grocery', 'pantry'. Icons: BookOpen (recipes), ShoppingCart (grocery), Utensils (pantry) — check EventDetailPage imports for exact icon names. The component just renders the shell; callers pass in the content for each tab as ReactNode props. This is a simple extraction — no logic, no state. Create src/components/shared/ directory if it doesn't exist. After extraction, EventDetailPage should render: <RecipeDetailTabs recipesContent={<TabsContent value='recipes'>...</TabsContent>} ... /> — or alternatively, the three *Content nodes can be passed in and RecipeDetailTabs wraps them in TabsContent internally. The latter is cleaner: recipesContent, groceryContent, pantryContent are just the inner JSX, and RecipeDetailTabs wraps each in the appropriate TabsContent."
     },
     {
