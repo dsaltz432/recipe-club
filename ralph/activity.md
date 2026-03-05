@@ -19,6 +19,34 @@
 
 ## Session Log
 
+## [2026-03-04] — US-006: Replace EditRecipeIngredientsDialog in RecipeCard with inline RecipeIngredientList
+
+### What was implemented
+- Removed `onEditIngredients` prop and `ListChecks` button from `RecipeCard`
+- Added `userId?: string` and `onIngredientsChange?: () => void` to `RecipeCardProps`
+- Replaced expanded `<div>` ingredient list with `<RecipeIngredientList recipeId userId editable onIngredientsChange />`
+- Removed `GROCERY_CATEGORIES`, `CATEGORY_ORDER`, `ListChecks` imports from RecipeCard (no longer needed for rendering)
+- Kept `ingredients` and `pantryItems` props for toggle visibility (`hasIngredients` check)
+- In `RecipeHub.tsx`: removed `editIngredientsRecipe` state, `handleEditIngredients`, `handleIngredientsSaved`, `EditRecipeIngredientsDialog` import and JSX
+- Added `handleIngredientsChange(recipeId)` in RecipeHub that reloads that recipe's `recipe_ingredients` and updates `recipeIngredientsMap`
+- `RecipeCard` now receives `userId={userId}` and `onIngredientsChange={() => handleIngredientsChange(recipe.id)}`
+
+### Files changed
+- `src/components/recipes/RecipeCard.tsx`
+- `src/components/recipes/RecipeHub.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- `isPantryItem` and `DEFAULT_PANTRY_ITEMS` are still imported in RecipeCard because `filteredIngredients`/`hasIngredients` still uses them for toggle visibility
+- The `import("@/types").GroceryCategory` inline import type works fine in function bodies in RecipeHub
+- RecipeIngredientList is self-managed — parent just needs to trigger data reload via callback
+
+---
+
 ## [2026-03-04] — US-005: Add AddIngredientInput to per-recipe grocery tabs
 
 ### What was implemented

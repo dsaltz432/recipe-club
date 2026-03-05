@@ -112,7 +112,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeCard is at src/components/recipes/RecipeCard.tsx (~400 lines). The ingredient section to replace is lines ~253-309 (the if/else block for parsing/hasIngredients). Replace the existing <ul> rendering inside ingredientsExpanded with <RecipeIngredientList ... />. Keep the outer toggle button ('X ingredients' chevron) as-is — just swap the expanded content. RecipeHub is at src/components/recipes/RecipeHub.tsx. The onIngredientsChange callback should reload just the affected recipe's ingredients: call supabase.from('recipe_ingredients').select().eq('recipe_id', recipe.id) and update recipeIngredientsMap[recipe.id]. RecipeIngredientList self-manages its data, so the count shown on the toggle button may drift from RecipeHub's recipeIngredientsMap — simplest fix is to let RecipeIngredientList own the count via its internal state and surface it via a prop like onCountChange or just remove the count from the toggle button label (show 'Ingredients' instead of 'X ingredients')."
     },
     {
