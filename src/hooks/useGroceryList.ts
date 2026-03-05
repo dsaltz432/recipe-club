@@ -677,12 +677,14 @@ export function useGroceryList(
 
   // --- Effects ---
 
-  // Unmount cleanup: fire pending recombine to persist cache
+  // Unmount cleanup: clear pending recombine timer.
+  // Don't fire triggerRecombine() here — it makes async Supabase calls that
+  // can hold navigator.locks and block getSession() on the next page.
   useEffect(() => {
     return () => {
       if (recombineTimerRef.current) {
         clearTimeout(recombineTimerRef.current);
-        triggerRecombineRef.current();
+        recombineTimerRef.current = null;
       }
     };
   }, []);

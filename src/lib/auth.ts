@@ -11,8 +11,17 @@ export interface AllowedUser {
 }
 
 export const isAuthenticated = async (): Promise<boolean> => {
-  const { data } = await supabase.auth.getSession();
-  return data.session !== null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session !== null;
+  } catch {
+    // getSession() can throw LockAcquireTimeoutError when navigator.locks
+    // is contended (e.g. token refresh after returning from a background tab).
+    // Fall back to checking localStorage directly.
+    const storageKey = `sb-${new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+    const raw = localStorage.getItem(storageKey);
+    return raw !== null;
+  }
 };
 
 export const getAllowedUser = async (email: string): Promise<AllowedUser | null> => {
@@ -50,7 +59,14 @@ export const getClubMemberEmails = async (): Promise<string[]> => {
 
 
 export const getCurrentUser = async (): Promise<User | null> => {
-  const { data: sessionData } = await supabase.auth.getSession();
+  let sessionData;
+  try {
+    const result = await supabase.auth.getSession();
+    sessionData = result.data;
+  } catch {
+    // getSession() can throw on lock timeout after background tab switch
+    return null;
+  }
 
   if (!sessionData.session) {
     return null;
