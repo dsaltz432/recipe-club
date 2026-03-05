@@ -35,7 +35,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "The exact UI to extract is in src/components/recipes/GroceryListSection.tsx lines ~399-429 (the 'Add general items' section). It has a Textarea with placeholder 'Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil', a flex justify-end div, and a Button that calls handleBulkAdd. Extract these into AddIngredientInput. The loading state (isParsing) is currently managed by GroceryListSection — in the new component, manage it internally with useState. The onSubmit prop receives the text string; the component handles showing loading and clearing the textarea. Import Textarea from @/components/ui/textarea, Button from @/components/ui/button, Loader2 and Plus from lucide-react."
     },
     {

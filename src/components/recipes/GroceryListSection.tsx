@@ -3,7 +3,6 @@ import { Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
@@ -12,6 +11,7 @@ import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
 import type { GroceryItemEdit } from "./GroceryItemRow";
+import AddIngredientInput from "./AddIngredientInput";
 
 export interface ParsedGroceryItem {
   name: string;
@@ -96,7 +96,6 @@ const GroceryListSection = ({
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [newItemUnit, setNewItemUnit] = useState("");
   // General tab state
-  const [bulkPasteText, setBulkPasteText] = useState("");
   const [localIsParsing, setLocalIsParsing] = useState(false);
   const isParsing = externalIsAdding ?? localIsParsing;
   const setIsParsing = onAddingGeneralChange ?? setLocalIsParsing;
@@ -146,11 +145,11 @@ const GroceryListSection = ({
     : generalSmartItems;
   const generalGrouped = groupSmartByCategory(filteredGeneralItems);
 
-  const handleBulkAdd = async () => {
-    if (!bulkPasteText.trim() || !onBulkParseGroceryText || !onAddGeneralItemDirect) return;
+  const handleBulkAdd = async (text: string) => {
+    if (!onBulkParseGroceryText || !onAddGeneralItemDirect) return;
     setIsParsing(true);
     try {
-      const items = await onBulkParseGroceryText(bulkPasteText);
+      const items = await onBulkParseGroceryText(text);
       for (const item of items) {
         const isDuplicate = existingGeneralNames.has(item.name.toLowerCase());
         if (isDuplicate) continue;
@@ -160,7 +159,6 @@ const GroceryListSection = ({
           unit: item.unit ?? undefined,
         });
       }
-      setBulkPasteText("");
       await onRecombine?.();
     } catch {
       toast.error("Failed to add items. Please try again.");
@@ -397,36 +395,10 @@ const GroceryListSection = ({
                   )}
 
                   {/* Add general items */}
-                  <div className="mt-3 border-t pt-3 space-y-2">
-                    <Textarea
-                      value={bulkPasteText}
-                      onChange={(e) => setBulkPasteText(e.target.value)}
-                      placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
-                      className="min-h-[80px] text-sm"
-                      aria-label="General items textarea"
-                    />
-                    <div className="flex justify-end">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleBulkAdd}
-                        disabled={!bulkPasteText.trim() || isParsing}
-                        className="text-xs"
-                      >
-                        {isParsing ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Adding ingredients...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+                  <AddIngredientInput
+                    onSubmit={handleBulkAdd}
+                    className="mt-3 border-t pt-3"
+                  />
                 </div>
               </TabsContent>
             )}
