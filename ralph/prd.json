@@ -147,7 +147,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "After US-006 and US-007, EditRecipeIngredientsDialog should have zero imports remaining. Verify with grep: grep -r 'EditRecipeIngredientsDialog' src/. IngredientFormRows is used by src/components/recipes/RecipeInputForm.tsx (the recipe creation/editing form) — do not touch it. ingredientRowTypes.ts is used by both IngredientFormRows and RecipeInputForm — do not touch it."
     },
     {

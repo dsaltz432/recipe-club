@@ -19,6 +19,26 @@
 
 ## Session Log
 
+## [2026-03-04] — US-008: Delete EditRecipeIngredientsDialog
+
+### What was implemented
+- Deleted `src/components/recipes/EditRecipeIngredientsDialog.tsx` (no remaining imports after US-006 and US-007)
+- Used `git rm` to stage the deletion
+
+### Files changed
+- `src/components/recipes/EditRecipeIngredientsDialog.tsx` (deleted)
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- `git rm` is the right tool when `rm` is blocked — stages the deletion automatically
+- After US-006 and US-007, all imports were already removed; grep confirmed zero references before deleting
+
+---
+
 ## [2026-03-04] — US-007: Replace EditRecipeIngredientsDialog in EventRecipesTab with inline RecipeIngredientList
 
 ### What was implemented
