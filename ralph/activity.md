@@ -3,7 +3,7 @@
 ## Codebase Patterns
 - **GroceryListSection** at `src/components/recipes/GroceryListSection.tsx` — accepts `hasPendingChanges`, `onRecombine`, `generalItems`, `onAddGeneralItemDirect`, `onBulkParseGroceryText`, `isAddingGeneral`, `onAddingGeneralChange`; `hasGeneralTab = !!onBulkParseGroceryText`
 - **useGroceryList** at `src/hooks/useGroceryList.ts` — returns `hasPendingChanges`, `triggerRecombine`, `generalItems`, `handleAddGeneralItemDirect`, `handleBulkParseGroceryText`, `isAddingGeneral`, `setIsAddingGeneral`, `refreshGroceries`, `invalidateCache`; accepts `supportsGeneralItems?: boolean` (default false)
-- **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — props: `recipeId`, `userId`, `editable?`, `onIngredientsChange?`, `cacheContext?`; handleAdd already calls deleteGroceryCache when cacheContext set; handleEditItemText and handleRemoveItem do NOT yet
+- **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — props: `recipeId`, `userId`, `editable?`, `onIngredientsChange?`, `cacheContext?`; handleAdd guards with `if (!userId) return` then calls deleteGroceryCache when cacheContext set; handleEditItemText and handleRemoveItem also call deleteGroceryCache when cacheContext set
 - **EventRecipesTab** at `src/components/events/EventRecipesTab.tsx` — renders RecipeIngredientList at ~line 282; currently passes `userId ?? ''`; does NOT pass cacheContext
 - **RecipeDetailTabs** at `src/components/shared/RecipeDetailTabs.tsx` — recipes TabsContent has `forceMount className="data-[state=inactive]:hidden"`; grocery and pantry tabs are standard
 - **isPantryItem + DEFAULT_PANTRY_ITEMS** pattern: `import { isPantryItem } from '@/lib/groceryList'` and `import { DEFAULT_PANTRY_ITEMS } from '@/lib/pantry'`; merge with `[...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]` then filter
@@ -12,12 +12,30 @@
 
 ## Current Status
 **Last Updated:** 2026-03-05
-**Tasks Completed:** 4
+**Tasks Completed:** 5
 **Current Task:** Awaiting next iteration
 
 ---
 
 ## Session Log
+
+## [2026-03-05 04:00] — US-005: Fix AddIngredientInput error when userId is empty
+
+### What was implemented
+- Added `if (!userId) return;` guard at the top of `handleAdd` in RecipeIngredientList
+
+### Files changed
+- `src/components/recipes/RecipeIngredientList.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- EventRecipesTab passes `userId ?? ''` so an empty string reaches handleAdd when user is not loaded; early return prevents the `parseIngredientText` 'Not authenticated' throw
+
+---
 
 ## [2026-03-05 03:00] — US-004: Consistent grocery refresh on recipe add/delete across all pages
 

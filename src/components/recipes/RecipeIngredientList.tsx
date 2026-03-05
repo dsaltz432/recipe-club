@@ -116,6 +116,7 @@ const RecipeIngredientList = ({
 
   const handleAdd = useCallback(
     async (text: string) => {
+      if (!userId) return;
       const parsed = await parseIngredientText(text, userId);
       if (parsed.length > 0) {
         await supabase.from("recipe_ingredients").insert(

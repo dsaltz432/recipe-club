@@ -74,7 +74,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeIngredientList handleAdd is at ~line 111. parseIngredientText (src/lib/parseIngredientText.ts line 8) throws 'Not authenticated' when userId is falsy. EventRecipesTab passes userId ?? '' so an empty string reaches handleAdd when user is not loaded. Fix: add 'if (!userId) return;' at the top of handleAdd."
     },
     {
