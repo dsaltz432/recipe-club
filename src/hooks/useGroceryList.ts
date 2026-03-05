@@ -123,7 +123,7 @@ export function useGroceryList(
   const recombineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRecombineRef = useRef<() => void>(() => {});
   const dirtyRef = useRef(true);
-  const prevRecipeIdsRef = useRef<string>("");
+  const prevRecipeIdsRef = useRef<string | null>(null);
 
   // Serialized recipe IDs for change detection
   const serializedRecipeIds = useMemo(
@@ -689,7 +689,7 @@ export function useGroceryList(
 
   // Detect recipeIds changes and mark dirty
   useEffect(() => {
-    if (prevRecipeIdsRef.current === "") {
+    if (prevRecipeIdsRef.current === null) {
       // First render — just record, don't mark dirty (the initial dirty=true handles it)
       prevRecipeIdsRef.current = serializedRecipeIds;
       return;
