@@ -182,7 +182,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "PersonalMealDetailPage is at src/pages/PersonalMealDetailPage.tsx (~1132 lines). It already imports EventRecipesTab and renders it directly (lines ~864-879) with no surrounding tabs. To add useGroceryList: import it from @/hooks/useGroceryList. The meal's context is contextType='event', contextId=event.id (the personal meal IS stored as an event in the DB). Check how EventDetailPage calls useGroceryList (around lines 145-200 in EventDetailPage.tsx) and mirror that pattern in PersonalMealDetailPage — pass the event.id as the context. The grocery hook needs recipes (event.recipesWithNotes.map(r => r.recipe)) and userId. GroceryListSection props: mirror what EventDetailPage passes at lines ~980-1007. PantrySection is at src/components/pantry/PantrySection.tsx. For handlePantryChange, EventDetailPage has a pattern around line 200 — copy it. The main layout change: replace the standalone <EventRecipesTab .../> render with <RecipeDetailTabs recipesContent={<EventRecipesTab .../>} groceryContent={<GroceryListSection .../>} pantryContent={<PantrySection .../>} />."
     }
     ,{

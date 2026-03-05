@@ -22,6 +22,37 @@
 
 ## Session Log
 
+## [2026-03-04] — US-010: Add Groceries and Pantry tabs to PersonalMealDetailPage
+
+### What was implemented
+- Added `useMemo` to existing `useState`/`useEffect` import
+- Added `useGroceryList` import from `@/hooks/useGroceryList`
+- Added `RecipeDetailTabs` import from `@/components/shared/RecipeDetailTabs`
+- Added `GroceryListSection` import from `@/components/recipes/GroceryListSection`
+- Added `PantrySection` import from `@/components/pantry/PantrySection`
+- Added `ShoppingCart` to lucide-react imports
+- Added `groceryRecipeIds` and `groceryRecipes` useMemo variables derived from `event?.recipesWithNotes`
+- Initialized `grocery = useGroceryList({ contextType: 'event', contextId: eventId, userId: user?.id, recipeIds, recipes, enabled: true })`
+- Added `handlePantryChange` that calls `grocery.refreshGroceries()`
+- Replaced standalone `<EventRecipesTab>` block with `<RecipeDetailTabs>` with all three tab contents wired up
+- Grocery tab shows empty state (ShoppingCart icon) when no recipes; otherwise renders GroceryListSection with full hook props
+- Pantry tab renders `<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />`
+
+### Files changed
+- `src/pages/PersonalMealDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- Pattern mirrors EventDetailPage exactly — use `contextType='event'` with `contextId=eventId` (URL param, not event state)
+- `event?.ingredientName` in PersonalMealDetailPage is the meal name (derived from recipe names), used as `eventName` prop
+- The grocery hook's `contextId` should be from URL params (always available) not from loaded event state (undefined during initial load)
+
+---
+
 ## [2026-03-04] — US-009: Extract RecipeDetailTabs shared component
 
 ### What was implemented
