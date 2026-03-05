@@ -993,6 +993,7 @@ const EventDetailPage = () => {
                 onToggleChecked={grocery.handleToggleChecked}
                 onEditItemText={grocery.handleEditItemText}
                 onRemoveItem={grocery.handleRemoveItem}
+                onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">

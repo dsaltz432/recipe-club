@@ -524,6 +524,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           onRecombine={grocery.triggerRecombine}
           isAddingGeneral={grocery.isAddingGeneral}
           onAddingGeneralChange={grocery.setIsAddingGeneral}
+          onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
         />
       )}
 

@@ -19,6 +19,31 @@
 
 ## Session Log
 
+## [2026-03-04] — US-005: Add AddIngredientInput to per-recipe grocery tabs
+
+### What was implemented
+- Added `onAddItemsToRecipe?: (recipeId: string, text: string) => Promise<void>` to `GroceryListSectionProps`
+- Added `onAddItemsToRecipe` to destructured props in `GroceryListSection`
+- In the per-recipe `.map()` tab block, added `{onAddItemsToRecipe && <AddIngredientInput ... />}` after the ingredient group list — only on per-recipe tabs, not Combined or General
+- Wired `onAddItemsToRecipe={grocery.handleAddItemsToRecipe}` in `EventDetailPage.tsx`
+- Wired `onAddItemsToRecipe={grocery.handleAddItemsToRecipe}` in `MealPlanPage.tsx`
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx` (prop added, per-recipe tab content updated)
+- `src/pages/EventDetailPage.tsx` (prop wired)
+- `src/components/mealplan/MealPlanPage.tsx` (prop wired)
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- Per-recipe tab content is in the `.map()` block at line ~326 of GroceryListSection; Combined tab is separate at line ~294
+- The conditional `{onAddItemsToRecipe && ...}` pattern correctly gates the input — not shown when prop is absent
+
+---
+
 ## [2026-03-04] — US-004: Add handleAddItemsToRecipe to useGroceryList
 
 ### What was implemented

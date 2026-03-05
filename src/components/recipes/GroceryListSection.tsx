@@ -48,6 +48,7 @@ interface GroceryListSectionProps {
   onRecombine?: () => Promise<void> | void;
   isAddingGeneral?: boolean;
   onAddingGeneralChange?: (v: boolean) => void;
+  onAddItemsToRecipe?: (recipeId: string, text: string) => Promise<void>;
 }
 
 function groupSmartByCategory(
@@ -89,6 +90,7 @@ const GroceryListSection = ({
   onRecombine,
   isAddingGeneral: externalIsAdding,
   onAddingGeneralChange,
+  onAddItemsToRecipe,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -351,6 +353,13 @@ const GroceryListSection = ({
                         onToggleChecked={onToggleChecked}
                       />
                     ))
+                  )}
+                  {onAddItemsToRecipe && (
+                    <AddIngredientInput
+                      onSubmit={(text) => onAddItemsToRecipe(recipe.id, text)}
+                      placeholder="Add ingredient, e.g. 2 tbsp olive oil"
+                      className="mt-3 border-t pt-3"
+                    />
                   )}
                 </TabsContent>
               );

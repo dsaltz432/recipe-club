@@ -92,7 +92,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Modify src/components/recipes/GroceryListSection.tsx. The per-recipe tab content is rendered in a .map() block starting around line 328. After the GroceryCategoryGroup blocks inside each TabsContent, add: {onAddItemsToRecipe && <AddIngredientInput onSubmit={(text) => onAddItemsToRecipe(recipe.id, text)} placeholder='Add ingredient, e.g. 2 tbsp olive oil' className='mt-3 border-t pt-3' />}. The Combined tab (TabsContent value='combined') should NOT have this — its content is lines ~296-326. The General tab already has AddIngredientInput from US-002. Wire up in MealPlanPage.tsx (grep for GroceryListSection usage around line 480-530) and EventDetailPage.tsx (grep for GroceryListSection around line 978-1007)."
     },
     {
