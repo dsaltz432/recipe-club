@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isAuthenticated } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
-
-// Module-level flag to prevent duplicate onAuthStateChange listeners
-let refreshTokenListenerRegistered = false;
 
 const AuthGuard = ({ children }: AuthGuardProps) => {
   const navigate = useNavigate();
@@ -19,31 +15,26 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   useEffect(() => {
     let mounted = true;
 
-    const checkAuth = async () => {
-      const authenticated = await isAuthenticated();
+    // Use onAuthStateChange as the primary auth mechanism.
+    // This handles token refreshes after returning from background tabs
+    // without blocking on navigator.locks (which getSession() does).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      if (!authenticated) {
+
+      if (event === "SIGNED_OUT" || (!session && event === "INITIAL_SESSION")) {
         toast.info("Your session has expired. Please sign in again.");
         navigate("/");
-      } else {
-        setIsAuthed(true);
+        setIsAuthed(false);
+        setIsChecking(false);
+        return;
       }
-      setIsChecking(false);
-    };
 
-    checkAuth();
-    return () => { mounted = false; };
-  }, [navigate]);
+      if (session) {
+        setIsAuthed(true);
+        setIsChecking(false);
 
-  // Register a one-time listener to capture Google OAuth refresh tokens
-  useEffect(() => {
-    if (refreshTokenListenerRegistered) return;
-    refreshTokenListenerRegistered = true;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN") {
-        if (session?.provider_refresh_token) {
-          // Save the refresh token we just received
+        // Save Google OAuth refresh token when available
+        if (event === "SIGNED_IN" && session.provider_refresh_token) {
           await supabase.from("user_tokens").upsert(
             {
               user_id: session.user.id,
@@ -58,10 +49,10 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
-      refreshTokenListenerRegistered = false;
     };
-  }, []);
+  }, [navigate]);
 
   if (isChecking) {
     return (

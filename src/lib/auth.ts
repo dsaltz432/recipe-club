@@ -59,14 +59,7 @@ export const getClubMemberEmails = async (): Promise<string[]> => {
 
 
 export const getCurrentUser = async (): Promise<User | null> => {
-  let sessionData;
-  try {
-    const result = await supabase.auth.getSession();
-    sessionData = result.data;
-  } catch {
-    // getSession() can throw on lock timeout after background tab switch
-    return null;
-  }
+  const { data: sessionData } = await supabase.auth.getSession();
 
   if (!sessionData.session) {
     return null;
