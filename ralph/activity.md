@@ -19,6 +19,26 @@
 
 ## Session Log
 
+## [2026-03-05 07:00] — US-008: Remove Rate Recipes button from PersonalMealDetailPage header card
+
+### What was implemented
+- Removed the `mealItems.length > 0 && totalRecipes > 0 ?` else branch (lines ~830-844) from the isCooked ternary in PersonalMealDetailPage — replaced with `: null`
+- Removed unused `Star` import from lucide-react in PersonalMealDetailPage
+
+### Files changed
+- `src/pages/PersonalMealDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- When removing a button that uses a lucide icon, also check if the icon import becomes unused — TypeScript will catch it as TS6133
+- The ternary `isCooked ? ... : mealItems.length > 0 && totalRecipes > 0 ? ... : null` simplifies to `isCooked ? ... : null` when removing the middle branch
+
+---
+
 ## [2026-03-05 06:00] — US-007: Add pantry filtering to RecipeIngredientList
 
 ### What was implemented

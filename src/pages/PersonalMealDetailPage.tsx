@@ -41,7 +41,6 @@ import {
   ArrowLeft,
   ChefHat,
   Calendar as CalendarIcon,
-  Star,
   Menu,
   LogOut,
   BookOpen,
@@ -825,21 +824,6 @@ const PersonalMealDetailPage = () => {
                   >
                     <RotateCcw className="h-3.5 w-3.5 mr-1" />
                     Undo
-                  </Button>
-                </div>
-              ) : mealItems.length > 0 && totalRecipes > 0 ? (
-                <div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setRatingRecipes(null);
-                      setShowRatingDialog(true);
-                    }}
-                    className="text-purple border-purple/30 hover:bg-purple/5"
-                  >
-                    <Star className="h-3.5 w-3.5 mr-1" />
-                    Rate Recipes
                   </Button>
                 </div>
               ) : null}

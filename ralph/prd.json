@@ -121,7 +121,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "PersonalMealDetailPage ~lines 825-839: the else branch of the isCooked ternary renders a Rate Recipes button. Remove just that else branch (the div with Button). The isCooked true-branch (Cooked badge + Undo) at ~lines 809-824 must stay. The null fallback at line 840 stays."
     },
     {
