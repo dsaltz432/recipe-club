@@ -54,7 +54,10 @@ beforeEach(() => {
 
 describe("AuthGuard", () => {
   it("shows loading spinner while checking auth", () => {
-    mockIsAuthenticated.mockReturnValue(new Promise(() => {}));
+    // onAuthStateChange never calls callback → stays loading
+    mockOnAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
 
     render(
       <AuthGuard>
@@ -67,7 +70,11 @@ describe("AuthGuard", () => {
   });
 
   it("renders children when authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValue(true);
+    mockOnAuthStateChange.mockImplementation((callback: (event: string, session: unknown) => void) => {
+      // Immediately invoke callback with a valid session
+      callback("INITIAL_SESSION", { user: { id: "user-123" } });
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
 
     render(
       <AuthGuard>
@@ -81,7 +88,11 @@ describe("AuthGuard", () => {
   });
 
   it("shows toast and navigates to / when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValue(false);
+    mockOnAuthStateChange.mockImplementation((callback: (event: string, session: unknown) => void) => {
+      // Immediately invoke callback with no session (INITIAL_SESSION + null)
+      callback("INITIAL_SESSION", null);
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
 
     render(
       <AuthGuard>
@@ -100,12 +111,11 @@ describe("AuthGuard", () => {
   });
 
   it("does not update state after unmount (mounted flag)", async () => {
-    let resolveAuth: (value: boolean) => void;
-    mockIsAuthenticated.mockReturnValue(
-      new Promise<boolean>((resolve) => {
-        resolveAuth = resolve;
-      })
-    );
+    let triggerCallback: ((event: string, session: unknown) => void) | null = null;
+    mockOnAuthStateChange.mockImplementation((callback: (event: string, session: unknown) => void) => {
+      triggerCallback = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
 
     const { unmount } = render(
       <AuthGuard>
@@ -113,11 +123,11 @@ describe("AuthGuard", () => {
       </AuthGuard>
     );
 
-    // Unmount before auth resolves
+    // Unmount before auth state resolves
     unmount();
 
-    // Resolve auth after unmount — should not cause state updates
-    resolveAuth!(true);
+    // Trigger callback after unmount — should not cause state updates
+    triggerCallback!("INITIAL_SESSION", { user: { id: "user-123" } });
 
     // Give it a tick to process
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -127,7 +137,10 @@ describe("AuthGuard", () => {
   });
 
   it("renders null when not authed and checking complete", async () => {
-    mockIsAuthenticated.mockResolvedValue(false);
+    mockOnAuthStateChange.mockImplementation((callback: (event: string, session: unknown) => void) => {
+      callback("SIGNED_OUT", null);
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
 
     render(
       <AuthGuard>
@@ -145,7 +158,9 @@ describe("AuthGuard", () => {
   });
 
   it("registers onAuthStateChange listener for refresh token capture", () => {
-    mockIsAuthenticated.mockReturnValue(new Promise(() => {}));
+    mockOnAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
 
     render(
       <AuthGuard>
@@ -157,7 +172,9 @@ describe("AuthGuard", () => {
   });
 
   it("upserts refresh token on SIGNED_IN event with provider_refresh_token", async () => {
-    mockIsAuthenticated.mockResolvedValue(true);
+    mockOnAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
 
     render(
       <AuthGuard>
@@ -187,7 +204,9 @@ describe("AuthGuard", () => {
   });
 
   it("does not upsert when SIGNED_IN event has no provider_refresh_token", async () => {
-    mockIsAuthenticated.mockResolvedValue(true);
+    mockOnAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
 
     render(
       <AuthGuard>
@@ -205,7 +224,9 @@ describe("AuthGuard", () => {
   });
 
   it("does not upsert on non-SIGNED_IN events", async () => {
-    mockIsAuthenticated.mockResolvedValue(true);
+    mockOnAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
 
     render(
       <AuthGuard>

@@ -2710,6 +2710,34 @@ describe("RecipeHub - Edit Personal Recipe", () => {
       });
     });
   });
+
+  it("catches unexpected error in handleSaveEdit and shows error toast", async () => {
+    const { toast } = await import("sonner");
+    vi.mocked(toast.success).mockImplementationOnce(() => {
+      throw new Error("Unexpected error");
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText(/Edit recipe/));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recipe name/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to update recipe");
+    });
+  });
 });
 
 describe("RecipeHub - Edit Rating", () => {
@@ -2755,7 +2783,7 @@ describe("RecipeHub - Edit Rating", () => {
   });
 
   it("shows edit rating button on club recipes with ratings when userId is provided", async () => {
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isClubMember />);
 
     await waitFor(() => {
       expect(screen.getByText("Rated Club Recipe")).toBeInTheDocument();
@@ -2774,7 +2802,7 @@ describe("RecipeHub - Edit Rating", () => {
   });
 
   it("opens rating dialog when edit rating button is clicked", async () => {
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isClubMember />);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
@@ -2788,7 +2816,7 @@ describe("RecipeHub - Edit Rating", () => {
   });
 
   it("closes rating dialog when cancel is triggered", async () => {
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isClubMember />);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
@@ -2821,7 +2849,7 @@ describe("RecipeHub - Edit Rating", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isClubMember />);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
@@ -2869,7 +2897,7 @@ describe("RecipeHub - Edit Rating", () => {
       return createMockQueryBuilder([]);
     });
 
-    render(<RecipeHub userId="user-123" />);
+    render(<RecipeHub userId="user-123" isClubMember />);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Edit rating/)).toBeInTheDocument();
@@ -4114,7 +4142,7 @@ describe("RecipeHub - Parse Recipe", () => {
     expect(mockFunctionsInvoke).not.toHaveBeenCalled();
   });
 
-  it("shows edit ingredients button for personal recipes and opens dialog", async () => {
+  it("shows inline ingredient list with Add form for personal recipe owner", async () => {
     const personalRecipesData = [
       {
         id: "personal-1",
@@ -4129,10 +4157,15 @@ describe("RecipeHub - Parse Recipe", () => {
       },
     ];
 
+    // Provide an ingredient so the expand button appears (hasIngredients = true)
+    const ingredientData = [
+      { id: "ing-1", recipe_id: "personal-1", name: "flour", quantity: null, unit: null, category: "pantry", sort_order: 0, raw_text: null, created_at: "2026-01-01" },
+    ];
+
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
       if (table === "recipe_notes") return createMockQueryBuilder([]);
-      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder(ingredientData);
       if (table === "recipe_content") return createMockQueryBuilder([]);
       return createMockQueryBuilder([]);
     });
@@ -4149,16 +4182,19 @@ describe("RecipeHub - Parse Recipe", () => {
       expect(screen.getByText("My Editable Recipe")).toBeInTheDocument();
     });
 
-    // Click edit ingredients button
-    fireEvent.click(screen.getByLabelText(/Edit ingredients/));
-
-    // Edit Ingredients Dialog should open
+    // Expand the inline ingredient list (button shows because hasIngredients = true)
     await waitFor(() => {
-      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Expand ingredients for My Editable Recipe/)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText(/Expand ingredients for My Editable Recipe/));
+
+    // Inline RecipeIngredientList appears with Add form (editable = owner)
+    await waitFor(() => {
+      expect(screen.getByRole("textbox")).toBeInTheDocument();
     });
   });
 
-  it("reloads recipes after saving ingredients", async () => {
+  it("reloads recipe ingredient list after an ingredient is removed", async () => {
     const personalRecipesData = [
       {
         id: "personal-1",
@@ -4173,18 +4209,17 @@ describe("RecipeHub - Parse Recipe", () => {
       },
     ];
 
-    // Mock rpc for saving ingredients
+    const ingredientData = [
+      { id: "ing-1", recipe_id: "personal-1", name: "sugar", quantity: null, unit: null, category: "pantry", sort_order: 0, raw_text: null, created_at: "2026-01-01" },
+    ];
+
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "recipes") return createMockQueryBuilder(personalRecipesData);
       if (table === "recipe_notes") return createMockQueryBuilder([]);
-      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder(ingredientData);
       if (table === "recipe_content") return createMockQueryBuilder([]);
       return createMockQueryBuilder([]);
     });
-
-    // Need to also mock rpc on supabase for the EditRecipeIngredientsDialog save
-    const { supabase } = await import("@/integrations/supabase/client");
-    (supabase as unknown as Record<string, unknown>).rpc = vi.fn().mockResolvedValue({ error: null });
 
     render(<RecipeHub userId="user-123" />);
 
@@ -4198,24 +4233,71 @@ describe("RecipeHub - Parse Recipe", () => {
       expect(screen.getByText("Recipe To Edit")).toBeInTheDocument();
     });
 
-    // Click edit ingredients button
-    fireEvent.click(screen.getByLabelText(/Edit ingredients/));
-
+    // Expand inline ingredient list
     await waitFor(() => {
-      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Expand ingredients for Recipe To Edit/)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText(/Expand ingredients for Recipe To Edit/));
+
+    // Inline ingredient list loads and shows ingredient + remove button
+    await waitFor(() => {
+      expect(screen.getByText("sugar")).toBeInTheDocument();
     });
 
-    // Add an ingredient name so save will work
-    fireEvent.change(screen.getByLabelText("Name for row 1"), {
-      target: { value: "Flour" },
+    // Remove the ingredient — triggers handleIngredientsChange which reloads
+    fireEvent.click(screen.getByLabelText("Remove item"));
+
+    await waitFor(() => {
+      // handleIngredientsChange called: recipe_ingredients re-queried for personal-1
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("recipe_ingredients");
+    });
+  });
+});
+
+describe("RecipeHub - Mobile Filter Panel", () => {
+  const mockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("opens mobile filter panel when icon button is clicked", async () => {
+    const { container } = render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
     });
 
-    // Click save
-    fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
+    // Mobile filter panel div does not exist before clicking
+    expect(container.querySelector('[class*="flex-col"][class*="gap-3"]')).toBeNull();
 
-    // The dialog should close and recipes should reload
+    // The mobile filter button is a sibling of the search input inside a shared flex container
+    const searchInput = screen.getByPlaceholderText("Search recipes...");
+    const flexContainer = searchInput.parentElement?.parentElement;
+    const mobileFilterBtn = flexContainer?.querySelector("button");
+    expect(mobileFilterBtn).toBeTruthy();
+    fireEvent.click(mobileFilterBtn!);
+
+    // Mobile filter panel div now renders (only present when mobileFiltersOpen is true)
     await waitFor(() => {
-      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
+      expect(container.querySelector('[class*="flex-col"][class*="gap-3"]')).not.toBeNull();
     });
   });
 });

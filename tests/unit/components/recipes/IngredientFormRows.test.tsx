@@ -38,6 +38,9 @@ vi.mock("@/integrations/supabase/client", () => ({
           single: vi.fn().mockResolvedValue({ data: { id: "temp-recipe-id" }, error: null }),
         }),
       }),
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
     }),
     functions: {
       invoke: vi.fn().mockResolvedValue({ error: null }),
@@ -45,9 +48,14 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+}));
+
 import IngredientFormRows from "@/components/recipes/IngredientFormRows";
 import { createBlankRow, type IngredientRow } from "@/components/recipes/ingredientRowTypes";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const mockInvoke = supabase.functions.invoke as ReturnType<typeof vi.fn>;
 
@@ -80,7 +88,7 @@ describe("IngredientFormRows", () => {
   it("renders Add Ingredient button", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    expect(screen.getByRole("button", { name: /add ingredient/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Ingredient" })).toBeInTheDocument();
   });
 
   it("renders rows with inputs", () => {
@@ -198,7 +206,7 @@ describe("IngredientFormRows", () => {
 
     render(<IngredientFormRows rows={rows} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /add ingredient/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Ingredient" }));
 
     expect(onRowsChange).toHaveBeenCalledWith([
       expect.objectContaining({ id: "r1" }),
@@ -260,7 +268,7 @@ describe("IngredientFormRows", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
     expect(screen.getByText("Qty")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /add ingredient/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Ingredient" })).toBeInTheDocument();
     expect(screen.queryByLabelText(/Quantity for row/)).not.toBeInTheDocument();
   });
 
@@ -305,38 +313,38 @@ describe("Paste ingredients", () => {
     onRowsChange = vi.fn();
   });
 
-  it("renders Paste ingredients button", () => {
+  it("renders Add ingredients button", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
-    expect(screen.getByRole("button", { name: /paste ingredients/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add ingredients" })).toBeInTheDocument();
   });
 
-  it("shows textarea when Paste ingredients is clicked", () => {
+  it("shows textarea when Add ingredients is clicked", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     expect(screen.getByLabelText("Paste ingredients text")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /parse/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
   });
 
-  it("disables Paste ingredients button when textarea is open", () => {
+  it("disables Add ingredients button when textarea is open", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
-    expect(screen.getByRole("button", { name: /paste ingredients/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
+    expect(screen.getByRole("button", { name: "Add ingredients" })).toBeDisabled();
   });
 
-  it("disables Parse button when textarea is empty", () => {
+  it("disables Add button when textarea is empty", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
-    expect(screen.getByRole("button", { name: /^parse$/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
-  it("enables Parse button when textarea has text", () => {
+  it("enables Add button when textarea has text", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "2 cups flour, 1 lb chicken" },
     });
-    expect(screen.getByRole("button", { name: /^parse$/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add" })).not.toBeDisabled();
   });
 
   it("appends parsed items as new rows on successful parse", async () => {
@@ -357,11 +365,11 @@ describe("Paste ingredients", () => {
     const existingRows = [makeRow({ id: "r1", name: "sugar" })];
     render(<IngredientFormRows rows={existingRows} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "2 cups flour, 1 lb chicken" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await vi.waitFor(() => {
       expect(onRowsChange).toHaveBeenCalledWith([
@@ -388,11 +396,11 @@ describe("Paste ingredients", () => {
 
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "olive oil" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await vi.waitFor(() => {
       expect(onRowsChange).toHaveBeenCalledWith([
@@ -409,11 +417,11 @@ describe("Paste ingredients", () => {
 
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "flour, sugar" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await vi.waitFor(() => {
       expect(onRowsChange).not.toHaveBeenCalled();
@@ -428,11 +436,11 @@ describe("Paste ingredients", () => {
 
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "flour" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await vi.waitFor(() => {
       expect(onRowsChange).not.toHaveBeenCalled();
@@ -442,10 +450,10 @@ describe("Paste ingredients", () => {
   it("closes textarea when Cancel is clicked", () => {
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     expect(screen.getByLabelText("Paste ingredients text")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByLabelText("Paste ingredients text")).not.toBeInTheDocument();
   });
 
@@ -463,11 +471,11 @@ describe("Paste ingredients", () => {
 
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "flour" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await vi.waitFor(() => {
       expect(screen.queryByLabelText("Paste ingredients text")).not.toBeInTheDocument();
@@ -488,17 +496,36 @@ describe("Paste ingredients", () => {
 
     render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /paste ingredients/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
     fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
       target: { value: "mystery item" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^parse$/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await vi.waitFor(() => {
       expect(onRowsChange).toHaveBeenCalledWith([
         expect.objectContaining({ name: "mystery item", category: "other" }),
       ]);
     });
+  });
+
+  it("shows dev mode error toast when data.skipped is true", async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true, skipped: true }, error: null });
+
+    render(<IngredientFormRows rows={[]} onRowsChange={onRowsChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add ingredients" }));
+    fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      target: { value: "some ingredient" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    await vi.waitFor(() => {
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        "Ingredient parsing is not available in dev mode."
+      );
+    });
+    expect(onRowsChange).not.toHaveBeenCalled();
   });
 });
 

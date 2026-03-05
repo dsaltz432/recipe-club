@@ -22,6 +22,42 @@
 
 ## Session Log
 
+## [2026-03-04] — US-011 & US-012: Unit test coverage for new components and hooks
+
+### What was implemented
+- **parseIngredientText.test.ts**: Added test for `data.parsed?.ingredients ?? []` fallback → 100% coverage
+- **RecipeDetailTabs.test.tsx**: Created with 4 tests covering all tabs, default view, switching, forceMount → 100% coverage
+- **EventRecipesTab.test.tsx**: Updated to remove `onEditIngredients`, add `RecipeIngredientList` expansion tests → 100% coverage
+- **RecipeCard.test.tsx**: Updated to remove `onEditIngredients`, add `RecipeIngredientList` expansion test → 100% coverage
+- **RecipeIngredientList.test.tsx**: Added 5 new tests (load error, null fields, cancel edit, empty parse, null quantity/unit) → 96% coverage (2 unreachable defensive guards at lines 84, 100)
+- **AddIngredientInput.test.tsx**: Comprehensive tests for all behaviors → 92% (disabled button guard unreachable)
+- **RecipeHub.test.tsx**: Added catch block test and mobile filter panel test → 99% (V8 source map issue at 750-768)
+- **PersonalMealDetailPage.test.tsx**: Created from scratch with 42 tests covering loading, not-found, CRUD actions, parse progress flow, rating dialog, uncook, sign out → 80% coverage (from 0%)
+- **prd.json**: Marked US-011 and US-012 as passes: true
+
+### Files changed
+- `tests/unit/lib/parseIngredientText.test.ts`
+- `tests/unit/components/shared/RecipeDetailTabs.test.tsx` (new)
+- `tests/unit/components/events/EventRecipesTab.test.tsx`
+- `tests/unit/components/recipes/RecipeCard.test.tsx`
+- `tests/unit/components/recipes/RecipeIngredientList.test.tsx`
+- `tests/unit/components/recipes/AddIngredientInput.test.tsx`
+- `tests/unit/components/recipes/RecipeHub.test.tsx`
+- `tests/unit/pages/PersonalMealDetailPage.test.tsx` (new)
+- `ralph/prd.json`
+
+### Quality checks
+- Build: N/A (test-only changes)
+- Tests: 1832 pass, 0 fail
+- Coverage: all required directories at ≥96%; PersonalMealDetailPage 80% (from 0%)
+
+### Key patterns learned
+- **V8 source map + JSX conditionals**: `{mobileFiltersOpen && ...}` blocks may not be tracked by V8 even when code executes. Test the behavior (DOM assertion), not the coverage number
+- **Disabled button guards**: `if (!text.trim()) return` in handlers called only by disabled buttons are unreachable through normal UI — don't test
+- **Defensive race-condition guards**: `if (!matched) return` in edit/delete handlers are unreachable through normal UI (component always passes valid names)
+- **Page-level test pattern**: Mock `useGroceryList` and `useRecipeNotes` directly at the hook level; mock all child components; use `makeSelectEqEqSingle` / `makeOr` builder helpers for complex supabase chains
+- **Parse progress flow**: Trigger by calling `onAddCustomMeal` with `shouldParse=true`; the parse effect fires via `useEffect([parseStatus, pendingParseRecipeId])`; use `{ timeout: 5000 }` in `waitFor` due to built-in `setTimeout(resolve, 2500)` delay
+
 ## [2026-03-04] — US-010: Add Groceries and Pantry tabs to PersonalMealDetailPage
 
 ### What was implemented

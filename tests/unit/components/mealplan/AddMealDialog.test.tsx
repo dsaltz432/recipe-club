@@ -593,8 +593,8 @@ describe("AddMealDialog", () => {
       fireEvent.click(screen.getByText("Manual"));
 
       // Should show paste textarea instead of ingredient rows
-      expect(screen.getByText("Paste Ingredients")).toBeInTheDocument();
-      expect(screen.getByLabelText("Paste ingredients text")).toBeInTheDocument();
+      expect(screen.getByText("Ingredients")).toBeInTheDocument();
+      expect(screen.getByLabelText("Ingredients text")).toBeInTheDocument();
     });
 
     it("switches from manual back to URL mode", () => {
@@ -618,7 +618,7 @@ describe("AddMealDialog", () => {
       fireEvent.click(screen.getByText("Manual"));
 
       // Paste ingredients text
-      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      fireEvent.change(screen.getByLabelText("Ingredients text"), {
         target: { value: "1 lb spaghetti" },
       });
 

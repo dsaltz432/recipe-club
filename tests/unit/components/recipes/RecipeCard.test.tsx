@@ -11,6 +11,13 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+// Mock RecipeIngredientList — RecipeCard.test.tsx tests RecipeCard behavior, not the list component
+vi.mock("@/components/recipes/RecipeIngredientList", () => ({
+  default: ({ recipeId }: { recipeId: string }) => (
+    <div data-testid={`recipe-ingredient-list-${recipeId}`}>RecipeIngredientList</div>
+  ),
+}));
+
 // Mock sonner toast
 vi.mock("sonner", () => ({
   toast: {
@@ -734,7 +741,7 @@ describe("RecipeCard - Ingredients Section", () => {
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
   });
 
-  it("expands to show grouped ingredients when clicked", () => {
+  it("expands to show RecipeIngredientList when clicked", () => {
     const recipe = createMockRecipe();
     const ingredients = [
       createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
@@ -746,15 +753,8 @@ describe("RecipeCard - Ingredients Section", () => {
 
     fireEvent.click(screen.getByLabelText(/Expand ingredients/));
 
-    // Category headings
-    expect(screen.getByText("Produce")).toBeInTheDocument();
-    expect(screen.getByText("Protein")).toBeInTheDocument();
-    expect(screen.getByText("Spices")).toBeInTheDocument();
-
-    // Ingredients
-    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
-    expect(screen.getByText("1 Lemon")).toBeInTheDocument();
-    expect(screen.getByText("Garlic")).toBeInTheDocument();
+    // RecipeIngredientList is shown after expanding
+    expect(screen.getByTestId(`recipe-ingredient-list-${recipe.id}`)).toBeInTheDocument();
   });
 
   it("collapses ingredients when clicked again", () => {
@@ -883,7 +883,7 @@ describe("RecipeCard - Ingredients Section", () => {
     expect(screen.getByRole("button", { name: /parse ingredients/i })).toBeInTheDocument();
   });
 
-  it("excludes pantry items (salt, pepper, water) from ingredient count and list", () => {
+  it("excludes pantry items (salt, pepper, water) from ingredient count", () => {
     const recipe = createMockRecipe();
     const ingredients = [
       createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
@@ -896,13 +896,6 @@ describe("RecipeCard - Ingredients Section", () => {
 
     // Only non-pantry ingredient should be counted
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
-
-    // Expand and verify pantry items are not shown
-    fireEvent.click(screen.getByLabelText(/Expand ingredients/));
-    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
-    expect(screen.queryByText("salt")).not.toBeInTheDocument();
-    expect(screen.queryByText("Pepper")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Water/)).not.toBeInTheDocument();
   });
 
   it("hides ingredients section when all ingredients are pantry items", () => {
@@ -918,7 +911,7 @@ describe("RecipeCard - Ingredients Section", () => {
     expect(screen.queryByLabelText(/Expand ingredients/)).not.toBeInTheDocument();
   });
 
-  it("filters custom pantryItems in addition to defaults", () => {
+  it("filters custom pantryItems from ingredient count", () => {
     const recipe = createMockRecipe();
     const ingredients = [
       createMockIngredient({ id: "ing-1", name: "Salmon", quantity: 2, unit: "lb", category: "meat_seafood" }),
@@ -930,10 +923,6 @@ describe("RecipeCard - Ingredients Section", () => {
     render(<RecipeCard recipe={recipe} ingredients={ingredients} pantryItems={["butter", "olive oil"]} />);
 
     expect(screen.getByText("1 ingredient")).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText(/Expand ingredients/));
-    expect(screen.getByText("2 lb Salmon")).toBeInTheDocument();
-    expect(screen.queryByText(/salt/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/butter/i)).not.toBeInTheDocument();
   });
 
   it("renders ingredients section with ingredient color theming", () => {
@@ -946,57 +935,36 @@ describe("RecipeCard - Ingredients Section", () => {
   });
 });
 
-describe("RecipeCard - Edit Ingredients", () => {
+describe("RecipeCard - Inline Ingredient Toggle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("shows edit ingredients button when onEditIngredients is provided", () => {
-    const onEditIngredients = vi.fn();
+  it("shows expand ingredients toggle button when recipe has ingredients", () => {
     const recipe = createMockRecipe();
+    const ingredients = [createMockIngredient()];
 
-    render(<RecipeCard recipe={recipe} onEditIngredients={onEditIngredients} />);
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
 
-    expect(screen.getByLabelText(/Edit ingredients/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Expand ingredients for/)).toBeInTheDocument();
   });
 
-  it("does not show edit ingredients button when onEditIngredients is not provided", () => {
+  it("does not show ingredient list by default (collapsed)", () => {
+    const recipe = createMockRecipe();
+    const ingredients = [createMockIngredient()];
+
+    render(<RecipeCard recipe={recipe} ingredients={ingredients} />);
+
+    expect(screen.queryByText("No ingredients yet")).not.toBeInTheDocument();
+  });
+
+  it("does not have onEditIngredients prop (removed in US-006)", () => {
     const recipe = createMockRecipe();
 
     render(<RecipeCard recipe={recipe} />);
 
+    // Old "Edit ingredients" aria-label button no longer exists
     expect(screen.queryByLabelText(/Edit ingredients/)).not.toBeInTheDocument();
-  });
-
-  it("calls onEditIngredients with recipe when edit ingredients button is clicked", () => {
-    const onEditIngredients = vi.fn();
-    const recipe = createMockRecipe();
-
-    render(<RecipeCard recipe={recipe} onEditIngredients={onEditIngredients} />);
-
-    fireEvent.click(screen.getByLabelText(/Edit ingredients/));
-
-    expect(onEditIngredients).toHaveBeenCalledWith(recipe);
-  });
-
-  it("shows edit ingredients alongside edit and delete buttons", () => {
-    const onEditIngredients = vi.fn();
-    const onEdit = vi.fn();
-    const onDelete = vi.fn();
-    const recipe = createMockRecipe({ isPersonal: true });
-
-    render(
-      <RecipeCard
-        recipe={recipe}
-        onEditIngredients={onEditIngredients}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
-    );
-
-    expect(screen.getByLabelText(/Edit ingredients/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
   });
 });
 
@@ -1007,7 +975,6 @@ describe("RecipeCard - Layout Structure", () => {
 
   it("renders all action buttons in header for personal recipe with all callbacks", () => {
     const onAddNote = vi.fn();
-    const onEditIngredients = vi.fn();
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     const recipe = createMockRecipe({ isPersonal: true, ingredientName: "Salmon" });
@@ -1016,7 +983,6 @@ describe("RecipeCard - Layout Structure", () => {
       <RecipeCard
         recipe={recipe}
         onAddNote={onAddNote}
-        onEditIngredients={onEditIngredients}
         onEdit={onEdit}
         onDelete={onDelete}
       />
@@ -1024,7 +990,6 @@ describe("RecipeCard - Layout Structure", () => {
 
     // All action buttons should be present
     expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Edit ingredients/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
     // Badges should be in a separate row (both present)

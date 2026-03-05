@@ -907,11 +907,11 @@ describe("groceryList", () => {
       const mockItems = [
         { name: "broccoli", displayName: "broccoli", totalQuantity: 4, unit: "cup", category: "produce", sourceRecipes: ["Pasta", "Salad"] },
       ];
-      const mockPerRecipeItems = {
+      const mockPerRecipeItemsByName = {
         "Pasta": [{ name: "broccoli", displayName: "broccoli", totalQuantity: 2, category: "produce", sourceRecipes: ["Pasta"] }],
         "Salad": [{ name: "broccoli florets", displayName: "broccoli florets", totalQuantity: 2, unit: "cup", category: "produce", sourceRecipes: ["Salad"] }],
       };
-      mockInvoke.mockResolvedValue({ data: { items: mockItems, perRecipeItems: mockPerRecipeItems }, error: null });
+      mockInvoke.mockResolvedValue({ data: { items: mockItems, perRecipeItems: mockPerRecipeItemsByName }, error: null });
 
       const result = await smartCombineIngredients(ingredients, recipeNameMap);
 
@@ -924,7 +924,11 @@ describe("groceryList", () => {
         },
       });
       expect(result.items).toEqual(mockItems);
-      expect(result.perRecipeItems).toEqual(mockPerRecipeItems);
+      // perRecipeItems is remapped from recipe name to recipe ID keys
+      expect(result.perRecipeItems).toEqual({
+        "recipe-1": mockPerRecipeItemsByName["Pasta"],
+        "recipe-2": mockPerRecipeItemsByName["Salad"],
+      });
     });
 
     it("throws when edge function returns skipped", async () => {
