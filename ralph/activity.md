@@ -10,12 +10,43 @@
 
 ## Current Status
 **Last Updated:** 2026-03-04
-**Tasks Completed:** 1
-**Current Task:** US-001 complete
+**Tasks Completed:** 3
+**Current Task:** US-003 complete
+
+- **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — loads recipe ingredients, groups by category with GroceryCategoryGroup, inline edit/delete/add; manages its own state
 
 ---
 
 ## Session Log
+
+## [2026-03-04] — US-003: Create RecipeIngredientList component
+
+### What was implemented
+- Created `src/components/recipes/RecipeIngredientList.tsx`
+- Props: `recipeId`, `userId`, `editable?`, `onIngredientsChange?`, `cacheContext?`
+- Loads ingredients from `recipe_ingredients` table on mount, ordered by `sort_order`
+- Shows `Loader2` spinner while fetching; empty state "No ingredients yet"
+- Groups ingredients by category using `groupByCategory` helper (mirrors `groupSmartByCategory` from GroceryListSection)
+- Converts `RecipeIngredient[]` → `SmartGroceryItem[]` via `toSmartItem` for `GroceryCategoryGroup`
+- When `editable=true`: passes `onEditItemText`/`onRemoveItem` to each group; renders `AddIngredientInput` below list
+- Edit: updates `name` in `recipe_ingredients` by matched id; reloads; calls `onIngredientsChange`
+- Delete: deletes row by matched id; reloads; calls `onIngredientsChange`
+- Add: calls `parseIngredientText`, inserts parsed items with `sort_order`, reloads, invalidates `cacheContext` via `deleteGroceryCache`, calls `onIngredientsChange`
+
+### Files changed
+- `src/components/recipes/RecipeIngredientList.tsx` (new file)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no test changes)
+- Lint: N/A
+
+### Learnings for future iterations
+- `SmartGroceryItem.displayName` is required as `string` — use `ing.name` (not `undefined`)
+- `groupByCategory` local helper mirrors `groupSmartByCategory` in GroceryListSection — operates on raw `RecipeIngredient[]` then maps to `SmartGroceryItem[]` per render
+- `cacheContext` typed separately from `GroceryCacheContextType` to keep component self-contained; passes through to `deleteGroceryCache(type, id, userId)`
+
+---
 
 ## [2026-03-04] — US-002: Create AddIngredientInput component
 

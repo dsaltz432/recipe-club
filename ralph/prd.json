@@ -58,7 +58,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This is the core new component. Key imports: GroceryCategoryGroup from @/components/recipes/GroceryCategoryGroup, AddIngredientInput from @/components/recipes/AddIngredientInput, parseIngredientText from @/lib/parseIngredientText, deleteGroceryCache from @/lib/groceryCache, supabase from @/integrations/supabase/client. The RecipeIngredient type is in src/types/index.ts. SmartGroceryItem conversion: map each RecipeIngredient to { name: ing.name, displayName: undefined, totalQuantity: ing.quantity ?? undefined, unit: ing.unit ?? undefined, category: ing.category, sourceRecipes: [] }. For grouping, use the groupSmartByCategory helper pattern from GroceryListSection (or CATEGORY_ORDER from @/lib/groceryList). Matching ingredients by name for edit/delete: find in the local ingredients state where ing.name.toLowerCase() === originalName.toLowerCase(). Insert parsed items: each ParsedGroceryItem becomes { recipe_id: recipeId, name: item.name, quantity: item.quantity, unit: item.unit, category: item.category, sort_order: existingIngredients.length + index }. deleteGroceryCache signature: deleteGroceryCache(type, id, userId) — import from src/lib/groceryCache.ts."
     },
     {
