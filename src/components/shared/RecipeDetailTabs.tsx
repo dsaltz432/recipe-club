@@ -26,7 +26,7 @@ export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="recipes" forceMount className="data-[state=inactive]:hidden">
+      <TabsContent value="recipes">
         {recipesContent}
       </TabsContent>
 

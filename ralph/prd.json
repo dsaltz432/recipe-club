@@ -44,7 +44,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeDetailTabs is at src/components/shared/RecipeDetailTabs.tsx line 29 — the recipes TabsContent has forceMount className='data-[state=inactive]:hidden'. Both pages pass onIngredientsChange={() => {}} to EventRecipesTab — replace with grocery.refreshGroceries(). The test file RecipeDetailTabs.test.tsx tests forceMount behavior and will need updating to remove that assertion."
     },
     {

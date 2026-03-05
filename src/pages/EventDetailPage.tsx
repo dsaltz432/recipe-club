@@ -951,7 +951,7 @@ const EventDetailPage = () => {
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={userIsMember ? handleRateRecipe : undefined}
               userId={user?.id}
-              onIngredientsChange={() => {}}
+              onIngredientsChange={() => grocery.refreshGroceries()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
             />
           }

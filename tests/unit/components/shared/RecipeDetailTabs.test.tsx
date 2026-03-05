@@ -66,7 +66,7 @@ describe("RecipeDetailTabs", () => {
     });
   });
 
-  it("keeps recipesContent mounted when switching to another tab (forceMount)", async () => {
+  it("unmounts recipesContent when switching to another tab", async () => {
     const user = userEvent.setup();
 
     render(
@@ -79,7 +79,6 @@ describe("RecipeDetailTabs", () => {
 
     await user.click(screen.getByRole("tab", { name: /Groceries/ }));
 
-    // recipesContent uses forceMount so it stays in DOM even when inactive
-    expect(screen.getByText("Recipes content")).toBeInTheDocument();
+    expect(screen.queryByText("Recipes content")).not.toBeInTheDocument();
   });
 });

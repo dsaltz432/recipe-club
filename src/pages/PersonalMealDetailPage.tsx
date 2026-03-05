@@ -860,7 +860,7 @@ const PersonalMealDetailPage = () => {
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={isClubMember ? handleRateRecipe : undefined}
               userId={user?.id}
-              onIngredientsChange={() => {}}
+              onIngredientsChange={() => grocery.refreshGroceries()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
             />
           }

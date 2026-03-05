@@ -19,6 +19,31 @@
 
 ## Session Log
 
+## [2026-03-05 02:00] — US-003: Wire onIngredientsChange to grocery.refreshGroceries and remove forceMount
+
+### What was implemented
+- Removed `forceMount` and `data-[state=inactive]:hidden` from recipes TabsContent in RecipeDetailTabs
+- Replaced `onIngredientsChange={() => {}}` with `onIngredientsChange={() => grocery.refreshGroceries()}` in EventDetailPage (~line 954)
+- Replaced `onIngredientsChange={() => {}}` with `onIngredientsChange={() => grocery.refreshGroceries()}` in PersonalMealDetailPage (~line 863)
+- Updated RecipeDetailTabs.test.tsx: changed forceMount test to assert recipes content is NOT in DOM after switching tabs
+
+### Files changed
+- `src/components/shared/RecipeDetailTabs.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+- `tests/unit/components/shared/RecipeDetailTabs.test.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- Removing forceMount means RecipeIngredientList remounts on tab switch, which will re-fetch fresh data
+- Test for forceMount needed inversion: `queryByText(...).not.toBeInTheDocument()` instead of `getByText(...).toBeInTheDocument()`
+
+---
+
 ## [2026-03-05 01:00] — US-002: Add cache invalidation to RecipeIngredientList edit/delete and pass cacheContext
 
 ### What was implemented
