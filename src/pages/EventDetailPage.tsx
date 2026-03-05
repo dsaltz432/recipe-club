@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin, signOut } from "@/lib/auth";
-import type { User, Recipe, RecipeRatingsSummary, RecipeIngredient, RecipeContent, SmartGroceryItem } from "@/types";
+import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
+import { useGroceryList } from "@/hooks/useGroceryList";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,9 +67,6 @@ import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerT
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
-import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
-import { smartCombineIngredients } from "@/lib/groceryList";
-import { loadGroceryCache, saveGroceryCache, deleteGroceryCache } from "@/lib/groceryCache";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
 import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
 import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
@@ -152,25 +150,13 @@ const EventDetailPage = () => {
   const [ratingDialogMode, setRatingDialogMode] = useState<"completing" | "rating">("completing");
   const [ratingRecipes, setRatingRecipes] = useState<EventRecipeWithRatings[] | null>(null);
 
-  // Grocery list state
-  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
-  const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
-  const [isLoadingIngredients, setIsLoadingIngredients] = useState(false);
-
   // Parse-on-add state
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [parseError, setParseError] = useState<string | null>(null);
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "notifying" | "done">("saving");
 
-  // Smart grocery combine state
-  const [smartGroceryItems, setSmartGroceryItems] = useState<SmartGroceryItem[] | null>(null);
-  const [perRecipeItems, setPerRecipeItems] = useState<Record<string, SmartGroceryItem[]> | undefined>(undefined);
-  const [isCombining, setIsCombining] = useState(false);
-  const [combineError, setCombineError] = useState<string | null>(null);
-
-  // Pantry state
-  const [pantryItems, setPantryItems] = useState<string[]>([]);
+  // Pantry dialog state
   const [showPantryDialog, setShowPantryDialog] = useState(false);
 
   // Edit ingredients state
@@ -186,6 +172,25 @@ const EventDetailPage = () => {
 
   // Notes expansion state - tracks which recipes have notes expanded
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
+
+  // Grocery list hook
+  const groceryRecipeIds = useMemo(
+    () => event?.recipesWithNotes.map((r) => r.recipe.id) ?? [],
+    [event?.recipesWithNotes]
+  );
+  const groceryRecipes = useMemo(
+    () => event?.recipesWithNotes.map((r) => r.recipe) ?? [],
+    [event?.recipesWithNotes]
+  );
+
+  const grocery = useGroceryList({
+    contextType: "event",
+    contextId: eventId,
+    userId: user?.id,
+    recipeIds: groceryRecipeIds,
+    recipes: groceryRecipes,
+    enabled: true,
+  });
 
   const toggleRecipeNotes = (recipeId: string) => {
     setExpandedRecipeNotes(prev => {
@@ -373,142 +378,6 @@ const EventDetailPage = () => {
     }
   };
 
-  const loadGroceryData = async (recipeIds: string[]): Promise<{ ingredients: RecipeIngredient[]; contentMap: Record<string, RecipeContent> } | null> => {
-    setIsLoadingIngredients(true);
-    try {
-      const [ingredientsResult, contentResult] = await Promise.all([
-        supabase.from("recipe_ingredients").select("*").in("recipe_id", recipeIds),
-        supabase.from("recipe_content").select("*").in("recipe_id", recipeIds),
-      ]);
-
-      let ingredients: RecipeIngredient[] = [];
-      const contentMap: Record<string, RecipeContent> = {};
-
-      if (ingredientsResult.data) {
-        ingredients = ingredientsResult.data.map((row) => ({
-          id: row.id,
-          recipeId: row.recipe_id,
-          name: row.name,
-          quantity: row.quantity ?? undefined,
-          unit: row.unit ?? undefined,
-          category: row.category as RecipeIngredient["category"],
-          rawText: row.raw_text ?? undefined,
-          sortOrder: row.sort_order ?? undefined,
-          createdAt: row.created_at,
-        }));
-        setRecipeIngredients(ingredients);
-      }
-
-      if (contentResult.data) {
-        for (const row of contentResult.data) {
-          contentMap[row.recipe_id] = {
-            id: row.id,
-            recipeId: row.recipe_id,
-            description: row.description ?? undefined,
-            servings: row.servings ?? undefined,
-            prepTime: row.prep_time ?? undefined,
-            cookTime: row.cook_time ?? undefined,
-            totalTime: row.total_time ?? undefined,
-            instructions: Array.isArray(row.instructions) ? row.instructions as string[] : undefined,
-            sourceTitle: row.source_title ?? undefined,
-            parsedAt: row.parsed_at ?? undefined,
-            status: row.status as RecipeContent["status"],
-            errorMessage: row.error_message ?? undefined,
-            createdAt: row.created_at,
-          };
-        }
-        setRecipeContentMap(contentMap);
-      }
-
-      return { ingredients, contentMap };
-    } catch (error) {
-      console.error("Error loading grocery data:", error);
-      return null;
-    } finally {
-      setIsLoadingIngredients(false);
-    }
-  };
-
-  const runSmartCombine = async (currentIngredients: RecipeIngredient[], currentContentMap: Record<string, RecipeContent>, recipes: Recipe[], forEventId?: string) => {
-    // Count parsed recipes
-    const parsedRecipes = recipes.filter((r) => currentContentMap[r.id]?.status === "completed");
-    if (parsedRecipes.length < 1) {
-      setSmartGroceryItems(null);
-      setCombineError(null);
-      return;
-    }
-
-    setIsCombining(true);
-    setCombineError(null);
-    try {
-      const recipeNameMap: Record<string, string> = {};
-      for (const r of recipes) {
-        recipeNameMap[r.id] = r.name;
-      }
-      const result = await smartCombineIngredients(currentIngredients, recipeNameMap);
-      setSmartGroceryItems(result.items);
-      setPerRecipeItems(result.perRecipeItems);
-
-      // Persist to cache
-      const eid = forEventId || eventId;
-      if (eid) {
-        const sortedRecipeIds = parsedRecipes.map((r) => r.id).sort();
-        saveGroceryCache("event", eid, user!.id, result.items, sortedRecipeIds, result.perRecipeItems);
-      }
-    } catch (err) {
-      console.error("Smart combine error:", err);
-      setSmartGroceryItems(null);
-      setPerRecipeItems(undefined);
-      setCombineError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setIsCombining(false);
-    }
-  };
-
-  const handleParseRecipe = async (recipeId: string) => {
-    const recipe = event?.recipesWithNotes.find((r) => r.recipe.id === recipeId)?.recipe;
-    if (!recipe?.url) return;
-
-    try {
-      const { data, error } = await supabase.functions.invoke("parse-recipe", {
-        body: { recipeId, recipeUrl: recipe.url, recipeName: recipe.name },
-      });
-
-      if (error) throw error;
-
-      if (!data?.success) {
-        toast.error(data?.error ?? "Failed to parse recipe. Please try again.");
-        return;
-      }
-
-      if (data?.skipped) {
-        toast.success("Recipe parsed (skipped in dev mode)");
-      } else {
-        toast.success("Recipe parsed successfully!");
-      }
-
-      // Reload grocery data and run smart combine with fresh data
-      const recipeIds = event!.recipesWithNotes.map((r) => r.recipe.id);
-      const groceryData = await loadGroceryData(recipeIds);
-      if (!groceryData) return;
-
-      const allRecipes = event!.recipesWithNotes.map((r) => r.recipe);
-      await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-    } catch (error) {
-      console.error("Error parsing recipe:", error);
-      toast.error("Failed to parse recipe. Please try again.");
-    }
-  };
-
-  const loadPantryItems = async (userId: string) => {
-    try {
-      await ensureDefaultPantryItems(userId);
-      const items = await getPantryItems(userId);
-      setPantryItems(items.map((i) => i.name));
-    } catch (error) {
-      console.error("Error loading pantry items:", error);
-    }
-  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -522,10 +391,6 @@ const EventDetailPage = () => {
         setUserIsMemberOrAdmin(isMemberOrAdmin(allowed));
       }
 
-      if (currentUser?.id) {
-        loadPantryItems(currentUser.id);
-      }
-
       await loadEventData();
       setIsLoading(false);
     };
@@ -533,37 +398,6 @@ const EventDetailPage = () => {
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
-
-  // Load grocery data when event recipes are available
-  useEffect(() => {
-    if (event?.recipesWithNotes && event.recipesWithNotes.length > 0) {
-      const recipeIds = event.recipesWithNotes.map((r) => r.recipe.id);
-      loadGroceryData(recipeIds).then(async (groceryData) => {
-        if (!groceryData) return;
-        // Check cache before running AI combine
-        const cached = await loadGroceryCache("event", eventId!, user?.id || "");
-        if (cached) {
-          const currentParsedIds = event.recipesWithNotes
-            .filter((r) => groceryData.contentMap[r.recipe.id]?.status === "completed")
-            .map((r) => r.recipe.id)
-            .sort();
-          const cachedIds = [...cached.recipeIds].sort();
-          if (
-            currentParsedIds.length === cachedIds.length &&
-            currentParsedIds.every((id, i) => id === cachedIds[i])
-          ) {
-            setSmartGroceryItems(cached.items);
-            setPerRecipeItems(cached.perRecipeItems);
-            return;
-          }
-        }
-        // Cache miss or stale — run smart combine with fresh data
-        const allRecipes = event.recipesWithNotes.map((r) => r.recipe);
-        runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event?.recipesWithNotes?.length]);
 
   const isValidUrl = (url: string) => {
     return url.trim().startsWith("http://") || url.trim().startsWith("https://");
@@ -642,18 +476,10 @@ const EventDetailPage = () => {
         if (parseError) throw parseError;
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse ingredients");
 
-        // Loading step: reload event and grocery data
+        // Loading step: reload event data (grocery hook auto-detects recipe changes)
         setParseStep("loading");
         await loadEventData();
-
-        const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
-        const groceryData = await loadGroceryData(recipeIds);
-
-        // Fire off combining in background (don't await — Groceries tab shows spinner)
-        if (groceryData) {
-          const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
-          runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-        }
+        grocery.refreshGroceries();
 
         setParseStep("notifying");
         await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
@@ -680,18 +506,10 @@ const EventDetailPage = () => {
           if (parseError) throw parseError;
           if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
 
-          // Loading step: reload event and grocery data
+          // Loading step: reload event data (grocery hook auto-detects recipe changes)
           setParseStep("loading");
           await loadEventData();
-
-          const recipeIds = [...event.recipesWithNotes.map((r) => r.recipe.id), newRecipeId];
-          const groceryData = await loadGroceryData(recipeIds);
-
-          // Fire off combining in background (don't await — Groceries tab shows spinner)
-          if (groceryData) {
-            const allRecipes = [...event.recipesWithNotes.map((r) => r.recipe), insertedRecipe as unknown as Recipe];
-            runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-          }
+          grocery.refreshGroceries();
 
           // Notifying step: send email notification to club members
           setParseStep("notifying");
@@ -820,7 +638,7 @@ const EventDetailPage = () => {
       if (error) throw error;
       setRecipeToDelete(null);
       toast.success("Recipe deleted");
-      deleteGroceryCache("event", eventId!, user!.id);
+      grocery.invalidateCache();
       sendRecipeNotification("deleted", deletedName);
       loadEventData();
     } catch (error) {
@@ -893,9 +711,7 @@ const EventDetailPage = () => {
   };
 
   const handlePantryChange = () => {
-    if (user?.id) {
-      loadPantryItems(user.id);
-    }
+    grocery.refreshGroceries();
   };
 
   const handleRatingsSubmitted = () => {
@@ -1163,16 +979,20 @@ const EventDetailPage = () => {
             {event && event.recipesWithNotes.length > 0 ? (
               <GroceryListSection
                 recipes={event.recipesWithNotes.map((r) => r.recipe)}
-                recipeIngredients={recipeIngredients}
-                recipeContentMap={recipeContentMap}
-                onParseRecipe={handleParseRecipe}
+                recipeIngredients={grocery.recipeIngredients}
+                recipeContentMap={grocery.recipeContentMap}
+                onParseRecipe={grocery.handleParseRecipe}
                 eventName={event.ingredientName || "Event"}
-                isLoading={isLoadingIngredients}
-                pantryItems={pantryItems}
-                smartGroceryItems={smartGroceryItems}
-                isCombining={isCombining}
-                combineError={combineError}
-                perRecipeItems={perRecipeItems}
+                isLoading={grocery.isLoading}
+                pantryItems={grocery.pantryItems}
+                smartGroceryItems={grocery.smartGroceryItems}
+                isCombining={grocery.isCombining}
+                combineError={grocery.combineError}
+                perRecipeItems={grocery.perRecipeItems}
+                checkedItems={grocery.checkedItems}
+                onToggleChecked={grocery.handleToggleChecked}
+                onEditItemText={grocery.handleEditItemText}
+                onRemoveItem={grocery.handleRemoveItem}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
@@ -1559,17 +1379,10 @@ const EventDetailPage = () => {
           onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
           recipeId={editIngredientsRecipe.id}
           recipeName={editIngredientsRecipe.name}
-          ingredients={recipeIngredients.filter((i) => i.recipeId === editIngredientsRecipe.id)}
-          onSaved={async () => {
+          ingredients={grocery.recipeIngredients.filter((i) => i.recipeId === editIngredientsRecipe.id)}
+          onSaved={() => {
             setEditIngredientsRecipe(null);
-            const recipeIds = event?.recipesWithNotes.map((r) => r.recipe.id) || [];
-            if (recipeIds.length > 0) {
-              const groceryData = await loadGroceryData(recipeIds);
-              if (groceryData) {
-                const allRecipes = event!.recipesWithNotes.map((r) => r.recipe);
-                await runSmartCombine(groceryData.ingredients, groceryData.contentMap, allRecipes);
-              }
-            }
+            grocery.refreshGroceries();
           }}
           cacheContext={eventId ? { type: "event", id: eventId, userId: user.id } : undefined}
         />
