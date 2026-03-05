@@ -29,8 +29,11 @@ export async function loadGroceryCache(
 
     // per_recipe_items column added by migration; access via cast
     const row = data as unknown as Record<string, unknown>;
+    const items = row.items as SmartGroceryItem[];
+    // Row exists but cache was cleared (items emptied to preserve checked_items)
+    if (!items || items.length === 0) return null;
     return {
-      items: row.items as SmartGroceryItem[],
+      items,
       recipeIds: row.recipe_ids as string[],
       perRecipeItems: (row.per_recipe_items as Record<string, SmartGroceryItem[]>) ?? undefined,
     };
@@ -79,9 +82,15 @@ export async function deleteGroceryCache(
   userId: string
 ): Promise<void> {
   try {
+    // Clear cached grocery data but preserve checked_items
     const { error } = await supabase
       .from("combined_grocery_items")
-      .delete()
+      .update({
+        items: [] as unknown as Json,
+        recipe_ids: [],
+        per_recipe_items: {} as unknown as Json,
+        updated_at: new Date(0).toISOString(),
+      } as Record<string, unknown>)
       .eq("context_type", contextType)
       .eq("context_id", contextId)
       .eq("user_id", userId);

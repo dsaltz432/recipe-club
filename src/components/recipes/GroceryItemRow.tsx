@@ -186,10 +186,10 @@ const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecke
                 variant="ghost"
                 size="sm"
                 onClick={handleStartEdit}
-                className="h-6 w-6 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                className="h-5 w-5 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                 aria-label="Edit item"
               >
-                <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                <Pencil className="h-3 w-3 text-gray-500" />
               </Button>
             )}
             {(editable || onRemove) && (
@@ -197,10 +197,10 @@ const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecke
                 variant="ghost"
                 size="sm"
                 onClick={() => onRemove?.(item.name)}
-                className="h-6 w-6 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                className="h-5 w-5 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                 aria-label="Remove item"
               >
-                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                <Trash2 className="h-3 w-3 text-red-500" />
               </Button>
             )}
           </>
