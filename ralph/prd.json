@@ -61,7 +61,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "PersonalMealDetailPage: handleAddCustomMeal ~line 440, handleAddRecipeMeal ~line 483, handleAddManualMeal ~line 539 — each has loadEventData() near the end; add grocery.refreshGroceries() after each. Parse-completion useEffect: the doParse() function calls loadEventData() at ~line 567. EventDetailPage: handleKeepRecipeAnyway ~line 539 calls loadEventData(); handleRetryParse success ~line 574 calls loadEventData(). Reference: EventDetailPage handleSubmitRecipe already calls grocery.refreshGroceries() after loadEventData() on line 476 — follow that pattern."
     },
     {

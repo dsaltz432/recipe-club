@@ -545,6 +545,7 @@ const EventDetailPage = () => {
     setShowAddForm(false);
     toast.success("Recipe added (parsing skipped)");
     loadEventData();
+    grocery.refreshGroceries();
   };
 
   const handleRetryParse = async () => {
@@ -573,6 +574,7 @@ const EventDetailPage = () => {
       setShowAddForm(false);
       toast.success("Recipe parsed successfully!");
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error retrying parse:", error);
       const msg = error instanceof Error ? error.message : "Failed to parse recipe";

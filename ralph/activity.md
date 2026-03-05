@@ -12,12 +12,36 @@
 
 ## Current Status
 **Last Updated:** 2026-03-05
-**Tasks Completed:** 1
+**Tasks Completed:** 4
 **Current Task:** Awaiting next iteration
 
 ---
 
 ## Session Log
+
+## [2026-03-05 03:00] — US-004: Consistent grocery refresh on recipe add/delete across all pages
+
+### What was implemented
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddCustomMeal` in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddRecipeMeal` in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddManualMeal` in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in parse-completion useEffect success path in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleKeepRecipeAnyway` in EventDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleRetryParse` success path in EventDetailPage
+
+### Files changed
+- `src/pages/PersonalMealDetailPage.tsx`
+- `src/pages/EventDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- Pattern: follow EventDetailPage handleSubmitRecipe which already calls grocery.refreshGroceries() after loadEventData() on line 476
+
+---
 
 ## [2026-03-05 02:00] — US-003: Wire onIngredientsChange to grocery.refreshGroceries and remove forceMount
 

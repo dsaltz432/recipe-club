@@ -438,6 +438,7 @@ const PersonalMealDetailPage = () => {
       }
 
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error adding custom meal:", error);
       toast.error("Failed to add meal");
@@ -481,6 +482,7 @@ const PersonalMealDetailPage = () => {
 
       toast.success(`Added ${recipes.length} recipe${recipes.length !== 1 ? "s" : ""} to meal`);
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error adding recipes to meal:", error);
       toast.error("Failed to add recipes");
@@ -537,6 +539,7 @@ const PersonalMealDetailPage = () => {
 
       toast.success("Recipe added!");
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error adding manual meal:", error);
       toast.error("Failed to add meal");
@@ -565,6 +568,7 @@ const PersonalMealDetailPage = () => {
 
         setParseStep("loading");
         loadEventData();
+        grocery.refreshGroceries();
 
         setParseStep("done");
         await new Promise(resolve => setTimeout(resolve, 2500));
