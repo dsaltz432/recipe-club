@@ -18,7 +18,7 @@ const GoogleSignIn = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      await signInWithGoogle(true);
       // Supabase handles the redirect
     } catch (error) {
       console.error("Error signing in:", error);
