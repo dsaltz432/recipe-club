@@ -19,6 +19,33 @@
 
 ## Session Log
 
+## [2026-03-05 01:00] — US-002: Add cache invalidation to RecipeIngredientList edit/delete and pass cacheContext
+
+### What was implemented
+- Added `deleteGroceryCache(cacheContext...)` call in `handleEditItemText` in RecipeIngredientList (same pattern as handleAdd)
+- Added `deleteGroceryCache(cacheContext...)` call in `handleRemoveItem` in RecipeIngredientList
+- Added `cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string }` to `EventRecipesTabProps`
+- Added `cacheContext` to EventRecipesTab destructure and pass-through to RecipeIngredientList
+- EventDetailPage passes `cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}` to EventRecipesTab
+- PersonalMealDetailPage passes `cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}` to EventRecipesTab
+
+### Files changed
+- `src/components/recipes/RecipeIngredientList.tsx`
+- `src/components/events/EventRecipesTab.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A
+- Lint: N/A
+
+### Learnings for future iterations
+- `eventId` from `useParams` is `string | undefined` — always use `eventId ?? ""` when passing to typed string fields
+- handleEditItemText and handleRemoveItem needed `cacheContext` added to their useCallback dependency arrays
+
+---
+
 ## [2026-03-05 00:00] — US-001: Wire hasPendingChanges and onRecombine to GroceryListSection
 
 ### What was implemented

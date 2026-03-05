@@ -30,7 +30,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeIngredientList is at src/components/recipes/RecipeIngredientList.tsx. handleAdd already calls deleteGroceryCache when cacheContext is set (lines 127-129). handleEditItemText (~line 79) and handleRemoveItem (~line 95) need the same pattern. EventRecipesTab is at src/components/events/EventRecipesTab.tsx — it renders RecipeIngredientList at line ~282. Both detail pages pass userId to EventRecipesTab already; add cacheContext alongside."
     },
     {

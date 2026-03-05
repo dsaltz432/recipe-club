@@ -59,6 +59,7 @@ interface EventRecipesTabProps {
   onRateRecipe?: (recipe: EventRecipeWithRatings) => void;
   userId?: string;
   onIngredientsChange?: (recipeId: string) => void;
+  cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string };
 }
 
 const EventRecipesTab = ({
@@ -78,6 +79,7 @@ const EventRecipesTab = ({
   onRateRecipe,
   userId,
   onIngredientsChange,
+  cacheContext,
 }: EventRecipesTabProps) => {
   const [expandedIngredients, setExpandedIngredients] = useState<Set<string>>(new Set());
 
@@ -284,6 +286,7 @@ const EventRecipesTab = ({
                         userId={userId ?? ""}
                         editable={recipe.createdBy === userId}
                         onIngredientsChange={() => onIngredientsChange?.(recipe.id)}
+                        cacheContext={cacheContext}
                       />
                     </>
                   )}

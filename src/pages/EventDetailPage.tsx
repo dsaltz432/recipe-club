@@ -952,6 +952,7 @@ const EventDetailPage = () => {
               onRateRecipe={userIsMember ? handleRateRecipe : undefined}
               userId={user?.id}
               onIngredientsChange={() => {}}
+              cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
             />
           }
           groceryContent={

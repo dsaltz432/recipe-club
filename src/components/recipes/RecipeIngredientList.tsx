@@ -87,9 +87,12 @@ const RecipeIngredientList = ({
         .update({ name: newText })
         .eq("id", matched.id);
       await loadIngredients();
+      if (cacheContext) {
+        await deleteGroceryCache(cacheContext.type, cacheContext.id, cacheContext.userId);
+      }
       onIngredientsChange?.();
     },
-    [ingredients, loadIngredients, onIngredientsChange]
+    [ingredients, loadIngredients, cacheContext, onIngredientsChange]
   );
 
   const handleRemoveItem = useCallback(
@@ -103,9 +106,12 @@ const RecipeIngredientList = ({
         .delete()
         .eq("id", matched.id);
       await loadIngredients();
+      if (cacheContext) {
+        await deleteGroceryCache(cacheContext.type, cacheContext.id, cacheContext.userId);
+      }
       onIngredientsChange?.();
     },
-    [ingredients, loadIngredients, onIngredientsChange]
+    [ingredients, loadIngredients, cacheContext, onIngredientsChange]
   );
 
   const handleAdd = useCallback(
