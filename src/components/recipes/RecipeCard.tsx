@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, ListChecks } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
-import { GROCERY_CATEGORIES, CATEGORY_ORDER, isPantryItem } from "@/lib/groceryList";
+import { isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
+import RecipeIngredientList from "./RecipeIngredientList";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -48,14 +49,15 @@ interface RecipeCardProps {
   onDelete?: (recipeId: string) => void;
   onEditRating?: (recipe: RecipeWithNotes) => void;
   onAddNote?: (recipe: RecipeWithNotes) => void;
-  onEditIngredients?: (recipe: RecipeWithNotes) => void;
   ingredients?: RecipeIngredient[];
   pantryItems?: string[];
   contentStatus?: RecipeContent["status"];
   onParseRecipe?: (recipeId: string) => void;
+  userId?: string;
+  onIngredientsChange?: () => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditIngredients, ingredients, pantryItems, contentStatus, onParseRecipe }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
 
@@ -111,7 +113,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
               )}
             </div>
             {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onEditIngredients || onDelete || onEdit) && (
+            {(recipe.url || onAddNote || onDelete || onEdit) && (
               <div className="flex items-center gap-0 -ml-1 mt-0.5">
                 {recipe.url && (
                   <a
@@ -133,17 +135,6 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
                     aria-label={`Add note for ${recipe.name}`}
                   >
                     <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                {onEditIngredients && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    aria-label={`Edit ingredients for ${recipe.name}`}
-                    onClick={() => onEditIngredients(recipe)}
-                  >
-                    <ListChecks className="h-3.5 w-3.5" />
                   </Button>
                 )}
                 {onEdit && (
@@ -285,25 +276,14 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, onEditI
               <span>{filteredIngredients!.length} ingredient{filteredIngredients!.length !== 1 ? "s" : ""}</span>
             </button>
             {ingredientsExpanded && (
-              <div className="mt-2 space-y-2 pl-1">
-                {CATEGORY_ORDER.filter((cat) =>
-                  filteredIngredients!.some((ing) => ing.category === cat)
-                ).map((cat) => (
-                  <div key={cat}>
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                      {GROCERY_CATEGORIES[cat]}
-                    </div>
-                    <ul className="space-y-0.5">
-                      {filteredIngredients!
-                        .filter((ing) => ing.category === cat)
-                        .map((ing) => (
-                          <li key={ing.id} className="text-sm">
-                            {ing.quantity ? `${ing.quantity} ` : ""}{ing.unit ? `${ing.unit} ` : ""}{ing.name}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                ))}
+              <div className="mt-2">
+                <RecipeIngredientList
+                  recipeId={recipe.id}
+                  userId={userId ?? ''}
+                  editable={recipe.createdBy === userId}
+                  onIngredientsChange={onIngredientsChange}
+                  pantryItems={pantryItems}
+                />
               </div>
             )}
           </div>

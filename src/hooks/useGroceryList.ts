@@ -17,13 +17,14 @@ import {
   toRawIngredients,
 } from "@/lib/generalGrocery";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
-import { RECOMBINE_DELAY_MS } from "@/lib/constants";
+import { parseIngredientText } from "@/lib/parseIngredientText";
 import type {
   Recipe,
   RecipeIngredient,
   RecipeContent,
   SmartGroceryItem,
   GeneralGroceryItem,
+  GroceryCategory,
 } from "@/types";
 import type { ParsedGroceryItem } from "@/components/recipes/GroceryListSection";
 
@@ -66,6 +67,7 @@ export interface UseGroceryListReturn {
     name: string;
     quantity?: string;
     unit?: string;
+    category?: string;
   }) => Promise<void>;
   handleRemoveGeneralItem: (itemId: string) => Promise<void>;
   handleUpdateGeneralItem: (
@@ -73,12 +75,14 @@ export interface UseGroceryListReturn {
     updates: { name?: string; quantity?: string; unit?: string }
   ) => Promise<void>;
   handleBulkParseGroceryText: (text: string) => Promise<ParsedGroceryItem[]>;
+  handleAddItemsToRecipe: (recipeId: string, text: string) => Promise<void>;
   handleParseRecipe: (recipeId: string) => Promise<void>;
   triggerRecombine: () => Promise<void>;
 
   // Control
   refreshGroceries: () => void;
   invalidateCache: () => void;
+  markIngredientChange: () => void;
 }
 
 export function useGroceryList(
@@ -121,9 +125,17 @@ export function useGroceryList(
   const lastCombinedRecipeIds = useRef<string[]>([]);
   const lastCombinedGeneralCount = useRef<number>(0);
   const recombineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const markIngredientTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRecombineRef = useRef<() => void>(() => {});
   const dirtyRef = useRef(true);
   const prevRecipeIdsRef = useRef<string | null>(null);
+  const loadingGenRef = useRef(0);
+
+  // localStorage key used to survive navigation when markIngredientChange fires
+  // before the debounce timer completes.
+  const ingredientDirtyKey = contextType && contextId
+    ? `grocery_ingredient_dirty_${contextType}_${contextId}`
+    : null;
 
   // Serialized recipe IDs for change detection
   const serializedRecipeIds = useMemo(
@@ -380,49 +392,45 @@ export function useGroceryList(
   ]);
   triggerRecombineRef.current = triggerRecombine;
 
-  const startRecombineTimer = useCallback(() => {
-    if (recombineTimerRef.current) {
-      clearTimeout(recombineTimerRef.current);
-    }
-    recombineTimerRef.current = setTimeout(() => {
-      triggerRecombine();
-    }, RECOMBINE_DELAY_MS);
-  }, [triggerRecombine]);
-
   const handleEditItemText = useCallback(
     (originalName: string, newText: string, sourceRecipeId?: string) => {
-      // Update combined list display
-      setSmartGroceryItems((prev) => {
-        if (!prev) return prev;
-        return prev.map((item) =>
-          item.name === originalName
-            ? {
-                ...item,
-                displayName: newText,
-                totalQuantity: undefined,
-                unit: undefined,
-              }
-            : item
-        );
-      });
-      // Update per-recipe list display
-      setPerRecipeItems((prev) => {
-        if (!prev) return prev;
-        const updated: Record<string, SmartGroceryItem[]> = {};
-        for (const [key, items] of Object.entries(prev)) {
-          updated[key] = items.map((item) =>
+      if (sourceRecipeId) {
+        // Only update the specific per-recipe list — combined tab quantity may
+        // aggregate multiple recipes, so leave it for AI recombine to correct.
+        setPerRecipeItems((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            [sourceRecipeId]: (prev[sourceRecipeId] ?? []).map((item) =>
+              item.name === originalName
+                ? { ...item, displayName: newText, totalQuantity: undefined, unit: undefined }
+                : item
+            ),
+          };
+        });
+      } else {
+        // Edit from combined/general tab — update combined list display directly
+        setSmartGroceryItems((prev) => {
+          if (!prev) return prev;
+          return prev.map((item) =>
             item.name === originalName
-              ? {
-                  ...item,
-                  displayName: newText,
-                  totalQuantity: undefined,
-                  unit: undefined,
-                }
+              ? { ...item, displayName: newText, totalQuantity: undefined, unit: undefined }
               : item
           );
-        }
-        return updated;
-      });
+        });
+        setPerRecipeItems((prev) => {
+          if (!prev) return prev;
+          const updated: Record<string, SmartGroceryItem[]> = {};
+          for (const [key, items] of Object.entries(prev)) {
+            updated[key] = items.map((item) =>
+              item.name === originalName
+                ? { ...item, displayName: newText, totalQuantity: undefined, unit: undefined }
+                : item
+            );
+          }
+          return updated;
+        });
+      }
       // Persist edit to DB
       if (sourceRecipeId) {
         const match = recipeIngredients.find(
@@ -433,7 +441,7 @@ export function useGroceryList(
         if (match) {
           supabase
             .from("recipe_ingredients")
-            .update({ name: newText })
+            .update({ name: newText, quantity: null, unit: null })
             .eq("id", match.id)
             .then(() => {});
         }
@@ -456,34 +464,47 @@ export function useGroceryList(
         }
       }
       invalidateCacheAndResetRefs();
+      if (ingredientDirtyKey) localStorage.setItem(ingredientDirtyKey, "true");
       setHasPendingChanges(true);
-      startRecombineTimer();
     },
     [
       smartGroceryItems,
       generalItems,
       recipeIngredients,
       supportsGeneralItems,
-      startRecombineTimer,
+      ingredientDirtyKey,
       invalidateCacheAndResetRefs,
     ]
   );
 
   const handleRemoveItem = useCallback(
     (itemName: string, sourceRecipeId?: string) => {
-      // Remove from combined list
-      setSmartGroceryItems((prev) =>
-        prev ? prev.filter((item) => item.name !== itemName) : prev
-      );
-      // Remove from per-recipe lists
-      setPerRecipeItems((prev) => {
-        if (!prev) return prev;
-        const updated: Record<string, SmartGroceryItem[]> = {};
-        for (const [key, items] of Object.entries(prev)) {
-          updated[key] = items.filter((item) => item.name !== itemName);
-        }
-        return updated;
-      });
+      if (sourceRecipeId) {
+        // Only remove from the specific per-recipe list — the combined tab may
+        // include contributions from other recipes, so leave it for AI recombine.
+        setPerRecipeItems((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            [sourceRecipeId]: (prev[sourceRecipeId] ?? []).filter(
+              (item) => item.name !== itemName
+            ),
+          };
+        });
+      } else {
+        // Remove from combined list (General item or combined-tab delete)
+        setSmartGroceryItems((prev) =>
+          prev ? prev.filter((item) => item.name !== itemName) : prev
+        );
+        setPerRecipeItems((prev) => {
+          if (!prev) return prev;
+          const updated: Record<string, SmartGroceryItem[]> = {};
+          for (const [key, items] of Object.entries(prev)) {
+            updated[key] = items.filter((item) => item.name !== itemName);
+          }
+          return updated;
+        });
+      }
       // Persist delete to DB
       if (sourceRecipeId) {
         const match = recipeIngredients.find(
@@ -516,36 +537,52 @@ export function useGroceryList(
         }
       }
       invalidateCacheAndResetRefs();
+      if (ingredientDirtyKey) localStorage.setItem(ingredientDirtyKey, "true");
       setHasPendingChanges(true);
-      startRecombineTimer();
     },
     [
       smartGroceryItems,
       generalItems,
       recipeIngredients,
       supportsGeneralItems,
-      startRecombineTimer,
+      ingredientDirtyKey,
       invalidateCacheAndResetRefs,
     ]
   );
 
   const handleAddGeneralItemDirect = useCallback(
-    async (item: { name: string; quantity?: string; unit?: string }) => {
+    async (item: { name: string; quantity?: string; unit?: string; category?: string }) => {
       if (!supportsGeneralItems || !contextId || !userId) return;
       await addGeneralItem(contextType, contextId, userId, item);
       const updated = await loadGeneralItems(contextType, contextId, userId);
       setGeneralItems(updated);
+
+      // Append directly to display state — skip AI recombine, show Reprocess button
+      const newSmartItem: SmartGroceryItem = {
+        name: item.name,
+        displayName: item.name,
+        totalQuantity: item.quantity != null ? parseFloat(item.quantity) : undefined,
+        unit: item.unit,
+        category: ((item.category ?? "other") as GroceryCategory),
+        sourceRecipes: ["General"],
+      };
+      setPerRecipeItems((prev) => {
+        const existing = prev?.["General"] ?? [];
+        return { ...(prev ?? {}), General: [...existing, newSmartItem] };
+      });
+      // Don't update the combined list immediately — let Recombine handle it,
+      // consistent with per-recipe tab add behavior.
+
       invalidateCacheAndResetRefs();
-      dirtyRef.current = true;
+      if (ingredientDirtyKey) localStorage.setItem(ingredientDirtyKey, "true");
       setHasPendingChanges(true);
-      startRecombineTimer();
     },
     [
       contextType,
       contextId,
       userId,
       supportsGeneralItems,
-      startRecombineTimer,
+      ingredientDirtyKey,
       invalidateCacheAndResetRefs,
     ]
   );
@@ -557,16 +594,16 @@ export function useGroceryList(
       const updated = await loadGeneralItems(contextType, contextId, userId);
       setGeneralItems(updated);
       invalidateCacheAndResetRefs();
+      if (ingredientDirtyKey) localStorage.setItem(ingredientDirtyKey, "true");
       dirtyRef.current = true;
       setHasPendingChanges(true);
-      startRecombineTimer();
     },
     [
       contextType,
       contextId,
       userId,
       supportsGeneralItems,
-      startRecombineTimer,
+      ingredientDirtyKey,
       invalidateCacheAndResetRefs,
     ]
   );
@@ -581,16 +618,16 @@ export function useGroceryList(
       const updated = await loadGeneralItems(contextType, contextId, userId);
       setGeneralItems(updated);
       invalidateCacheAndResetRefs();
+      if (ingredientDirtyKey) localStorage.setItem(ingredientDirtyKey, "true");
       dirtyRef.current = true;
       setHasPendingChanges(true);
-      startRecombineTimer();
     },
     [
       contextType,
       contextId,
       userId,
       supportsGeneralItems,
-      startRecombineTimer,
+      ingredientDirtyKey,
       invalidateCacheAndResetRefs,
     ]
   );
@@ -598,37 +635,68 @@ export function useGroceryList(
   const handleBulkParseGroceryText = useCallback(
     async (text: string): Promise<ParsedGroceryItem[]> => {
       if (!userId) throw new Error("Not authenticated");
-      // Create a temporary recipe entry for parsing
-      const { data: tempRecipe, error: recipeError } = await supabase
-        .from("recipes")
-        .insert({
-          name: "General Items",
-          created_by: userId,
-          event_id: null,
-          ingredient_id: null,
-        })
-        .select("id")
-        .single();
-      if (recipeError) throw recipeError;
-
-      const { data, error } = await supabase.functions.invoke("parse-recipe", {
-        body: { recipeId: tempRecipe.id, recipeName: "General Items", text },
-      });
-
-      // Clean up temp recipe
-      supabase
-        .from("recipes")
-        .delete()
-        .eq("id", tempRecipe.id)
-        .then(() => {});
-
-      if (error) throw error;
-      if (!data?.success)
-        throw new Error(data?.error ?? "Failed to parse grocery text");
-      if (data.skipped) return [];
-      return (data.parsed?.ingredients ?? []) as ParsedGroceryItem[];
+      return parseIngredientText(text, userId);
     },
     [userId]
+  );
+
+  const handleAddItemsToRecipe = useCallback(
+    async (recipeId: string, text: string): Promise<void> => {
+      if (!userId) throw new Error("Not authenticated");
+      const parsed = await parseIngredientText(text, userId);
+      if (parsed.length === 0) return;
+      const existingCount = recipeIngredients.filter(
+        (r) => r.recipeId === recipeId
+      ).length;
+      const rows = parsed.map((item, index) => ({
+        recipe_id: recipeId,
+        name: item.name,
+        quantity: item.quantity ?? null,
+        unit: item.unit ?? null,
+        category: item.category ?? null,
+        sort_order: existingCount + index,
+      }));
+      const { data, error } = await supabase
+        .from("recipe_ingredients")
+        .insert(rows)
+        .select();
+      if (error) throw error;
+      if (data) {
+        const newItems: RecipeIngredient[] = data.map((row) => ({
+          id: row.id,
+          recipeId: row.recipe_id,
+          name: row.name,
+          quantity: row.quantity ?? undefined,
+          unit: row.unit ?? undefined,
+          category: row.category as RecipeIngredient["category"],
+          rawText: row.raw_text ?? undefined,
+          sortOrder: row.sort_order ?? undefined,
+          createdAt: row.created_at,
+        }));
+        setRecipeIngredients((prev) => [...prev, ...newItems]);
+
+        // Append directly to display state — skip AI recombine, show Reprocess button
+        const recipeName =
+          groceryRecipes.find((r) => r.id === recipeId)?.name ?? recipeId;
+        const newSmartItems: SmartGroceryItem[] = newItems.map((item) => ({
+          name: item.name,
+          displayName: item.name,
+          totalQuantity: item.quantity,
+          unit: item.unit,
+          category: (item.category ?? "other") as GroceryCategory,
+          sourceRecipes: [recipeName],
+        }));
+        setPerRecipeItems((prev) => {
+          const existing = prev?.[recipeId] ?? [];
+          return { ...(prev ?? {}), [recipeId]: [...existing, ...newSmartItems] };
+        });
+        // Don't update the combined list immediately — let Recombine handle it,
+        // consistent with edit/delete behavior on per-recipe tabs.
+      }
+      invalidateCacheAndResetRefs();
+      setHasPendingChanges(true);
+    },
+    [userId, recipeIngredients, groceryRecipes, invalidateCacheAndResetRefs]
   );
 
   const handleParseRecipe = useCallback(
@@ -675,6 +743,28 @@ export function useGroceryList(
     }
   }, [contextType, contextId, userId]);
 
+  // Called when a recipe ingredient changes externally (e.g. Recipes tab edit/delete).
+  // - Sets a localStorage flag so returning to this page always skips the cache and
+  //   recombines with fresh data (handles the case where user navigates away quickly).
+  // - Debounces triggerRecombine so rapid edits only fire one AI call (1.5s after last edit).
+  const MARK_INGREDIENT_DEBOUNCE_MS = 1500;
+  const markIngredientChange = useCallback(() => {
+    // Persist dirty across navigation
+    if (ingredientDirtyKey) {
+      localStorage.setItem(ingredientDirtyKey, "true");
+    }
+    // Debounce the AI recombine
+    if (markIngredientTimerRef.current) {
+      clearTimeout(markIngredientTimerRef.current);
+    }
+    markIngredientTimerRef.current = setTimeout(() => {
+      markIngredientTimerRef.current = null;
+      triggerRecombineRef.current();
+    }, MARK_INGREDIENT_DEBOUNCE_MS);
+    setHasPendingChanges(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ingredientDirtyKey]);
+
   // --- Effects ---
 
   // Unmount cleanup: clear pending recombine timer.
@@ -685,6 +775,10 @@ export function useGroceryList(
       if (recombineTimerRef.current) {
         clearTimeout(recombineTimerRef.current);
         recombineTimerRef.current = null;
+      }
+      if (markIngredientTimerRef.current) {
+        clearTimeout(markIngredientTimerRef.current);
+        markIngredientTimerRef.current = null;
       }
     };
   }, []);
@@ -712,6 +806,9 @@ export function useGroceryList(
     dirtyRef.current = false;
 
     const currentRecipeIds = recipeIds;
+    // Stamp this cycle so stale async continuations can bail out if a newer
+    // cycle has already started (e.g. recipeIds populated after initial empty render).
+    const gen = ++loadingGenRef.current;
 
     // Load general items alongside grocery data
     if (supportsGeneralItems) {
@@ -719,6 +816,9 @@ export function useGroceryList(
     }
 
     loadGroceryData(currentRecipeIds).then(async (groceryData) => {
+      // Bail if a newer loading cycle has started while we were awaiting.
+      if (gen !== loadingGenRef.current) return;
+
       // Load checked items
       loadCheckedItems(contextType, contextId, userId).then(setCheckedItems);
 
@@ -731,8 +831,20 @@ export function useGroceryList(
 
       if (!groceryData && genItems.length === 0) return;
 
+      // Check if a Recipes-tab ingredient edit/delete marked us dirty while we were away.
+      // If so, skip the cache so we always recombine with fresh data.
+      const ingredientDirty = ingredientDirtyKey
+        ? localStorage.getItem(ingredientDirtyKey) === "true"
+        : false;
+      if (ingredientDirty && ingredientDirtyKey) {
+        localStorage.removeItem(ingredientDirtyKey);
+      }
+
       // Check cache before running AI combine
-      const cached = await loadGroceryCache(contextType, contextId, userId);
+      const cached = ingredientDirty
+        ? null
+        : await loadGroceryCache(contextType, contextId, userId);
+      if (gen !== loadingGenRef.current) return; // check again after awaits
       if (cached) {
         const currentParsedIds = groceryData
           ? groceryData.recipes
@@ -793,10 +905,12 @@ export function useGroceryList(
     handleRemoveGeneralItem,
     handleUpdateGeneralItem,
     handleBulkParseGroceryText,
+    handleAddItemsToRecipe,
     handleParseRecipe,
     triggerRecombine,
 
     refreshGroceries,
     invalidateCache,
+    markIngredientChange,
   };
 }

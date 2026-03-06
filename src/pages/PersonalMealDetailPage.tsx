@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentUser, getAllowedUser } from "@/lib/auth";
-import type { User, Recipe, RecipeRatingsSummary, RecipeIngredient } from "@/types";
+import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
+import { useGroceryList } from "@/hooks/useGroceryList";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { RecipeDetailTabs } from "@/components/shared/RecipeDetailTabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,12 +41,12 @@ import {
   ArrowLeft,
   ChefHat,
   Calendar as CalendarIcon,
-  Star,
   Menu,
   LogOut,
   BookOpen,
   Check,
   RotateCcw,
+  ShoppingCart,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import { signOut } from "@/lib/auth";
@@ -53,8 +55,9 @@ import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
-import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
 import { saveRecipeEdit } from "@/lib/recipeActions";
+import GroceryListSection from "@/components/recipes/GroceryListSection";
+import PantrySection from "@/components/pantry/PantrySection";
 
 interface PersonalEventData {
   eventId: string;
@@ -125,13 +128,32 @@ const PersonalMealDetailPage = () => {
   const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
   const [uncookConfirmOpen, setUncookConfirmOpen] = useState(false);
 
-  // Edit ingredients state
-  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
-  const [editIngredientsItems, setEditIngredientsItems] = useState<RecipeIngredient[]>([]);
-  const [weekStart, setWeekStart] = useState<string | null>(null);
-
   // Notes expansion state
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
+
+  // Grocery list hook
+  const groceryRecipeIds = useMemo(
+    () => event?.recipesWithNotes.map((r) => r.recipe.id) ?? [],
+    [event?.recipesWithNotes]
+  );
+  const groceryRecipes = useMemo(
+    () => event?.recipesWithNotes.map((r) => r.recipe) ?? [],
+    [event?.recipesWithNotes]
+  );
+
+  const grocery = useGroceryList({
+    contextType: "event",
+    contextId: eventId,
+    userId: user?.id,
+    recipeIds: groceryRecipeIds,
+    recipes: groceryRecipes,
+    enabled: !!event,
+    supportsGeneralItems: true,
+  });
+
+  const handlePantryChange = () => {
+    grocery.refreshGroceries();
+  };
 
   const toggleRecipeNotes = (recipeId: string) => {
     setExpandedRecipeNotes((prev) => {
@@ -201,18 +223,6 @@ const PersonalMealDetailPage = () => {
         };
       });
       setMealItems(mealItemsList);
-
-      // Load week_start from the meal plan for grocery cache invalidation
-      if (mealItemsList.length > 0) {
-        const { data: planData } = await supabase
-          .from("meal_plans")
-          .select("week_start")
-          .eq("id", mealItemsList[0].plan_id)
-          .single();
-        if (planData) {
-          setWeekStart(planData.week_start);
-        }
-      }
 
       const linkedRecipeIds = mealItemsList
         .map((m) => m.recipe_id)
@@ -428,6 +438,7 @@ const PersonalMealDetailPage = () => {
       }
 
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error adding custom meal:", error);
       toast.error("Failed to add meal");
@@ -471,6 +482,7 @@ const PersonalMealDetailPage = () => {
 
       toast.success(`Added ${recipes.length} recipe${recipes.length !== 1 ? "s" : ""} to meal`);
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error adding recipes to meal:", error);
       toast.error("Failed to add recipes");
@@ -527,6 +539,7 @@ const PersonalMealDetailPage = () => {
 
       toast.success("Recipe added!");
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error adding manual meal:", error);
       toast.error("Failed to add meal");
@@ -555,6 +568,7 @@ const PersonalMealDetailPage = () => {
 
         setParseStep("loading");
         loadEventData();
+        grocery.refreshGroceries();
 
         setParseStep("done");
         await new Promise(resolve => setTimeout(resolve, 2500));
@@ -585,34 +599,6 @@ const PersonalMealDetailPage = () => {
     setPendingParseName("");
     setParseStep("saving");
     toast.success("Recipe saved without parsing");
-  };
-
-  const handleEditIngredientsClick = async (recipe: Recipe) => {
-    try {
-      const { data } = await supabase
-        .from("recipe_ingredients")
-        .select("*")
-        .eq("recipe_id", recipe.id)
-        .order("sort_order", { ascending: true });
-
-      setEditIngredientsItems(
-        (data || []).map((row) => ({
-          id: row.id,
-          recipeId: row.recipe_id,
-          name: row.name,
-          quantity: row.quantity ?? undefined,
-          unit: row.unit ?? undefined,
-          category: row.category as RecipeIngredient["category"],
-          rawText: row.raw_text ?? undefined,
-          sortOrder: row.sort_order ?? undefined,
-          createdAt: row.created_at,
-        }))
-      );
-      setEditIngredientsRecipe({ id: recipe.id, name: recipe.name });
-    } catch (error) {
-      console.error("Error loading ingredients:", error);
-      toast.error("Failed to load ingredients");
-    }
   };
 
   const handleEditRecipeClick = (recipe: Recipe) => {
@@ -840,60 +826,75 @@ const PersonalMealDetailPage = () => {
                     Undo
                   </Button>
                 </div>
-              ) : mealItems.length > 0 && totalRecipes > 0 ? (
-                <div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setRatingRecipes(null);
-                      setShowRatingDialog(true);
-                    }}
-                    className="text-purple border-purple/30 hover:bg-purple/5"
-                  >
-                    <Star className="h-3.5 w-3.5 mr-1" />
-                    Rate Recipes
-                  </Button>
-                </div>
               ) : null}
             </div>
           </CardContent>
         </Card>
 
-        {/* Recipes */}
-        <EventRecipesTab
-          recipesWithNotes={event?.recipesWithNotes || []}
-          user={user}
-          userIsAdmin={true}
-          expandedRecipeNotes={expandedRecipeNotes}
-          deletingNoteId={deletingNoteId}
-          onToggleRecipeNotes={toggleRecipeNotes}
-          onAddRecipeClick={() => setShowAddMealDialog(true)}
-          onEditRecipeClick={handleEditRecipeClick}
-          onAddNotesClick={handleAddNotesClick}
-          onEditNoteClick={handleEditNoteClick}
-          onDeleteNoteClick={handleDeleteClick}
-          onDeleteRecipeClick={handleDeleteRecipeClick}
-          onRateRecipe={isClubMember ? handleRateRecipe : undefined}
-          onEditIngredients={handleEditIngredientsClick}
+        {/* Tabbed Content */}
+        <RecipeDetailTabs
+          recipesContent={
+            <EventRecipesTab
+              recipesWithNotes={event?.recipesWithNotes || []}
+              user={user}
+              userIsAdmin={true}
+              expandedRecipeNotes={expandedRecipeNotes}
+              deletingNoteId={deletingNoteId}
+              onToggleRecipeNotes={toggleRecipeNotes}
+              onAddRecipeClick={() => setShowAddMealDialog(true)}
+              onEditRecipeClick={handleEditRecipeClick}
+              onAddNotesClick={handleAddNotesClick}
+              onEditNoteClick={handleEditNoteClick}
+              onDeleteNoteClick={handleDeleteClick}
+              onDeleteRecipeClick={handleDeleteRecipeClick}
+              onRateRecipe={isClubMember ? handleRateRecipe : undefined}
+              userId={user?.id}
+              onIngredientsChange={() => grocery.markIngredientChange()}
+              cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
+              pantryItems={grocery.pantryItems}
+            />
+          }
+          groceryContent={
+            event && event.recipesWithNotes.length > 0 ? (
+              <GroceryListSection
+                recipes={event.recipesWithNotes.map((r) => r.recipe)}
+                recipeIngredients={grocery.recipeIngredients}
+                recipeContentMap={grocery.recipeContentMap}
+                onParseRecipe={grocery.handleParseRecipe}
+                eventName={event.ingredientName || "Meal"}
+                isLoading={grocery.isLoading}
+                pantryItems={grocery.pantryItems}
+                smartGroceryItems={grocery.smartGroceryItems}
+                isCombining={grocery.isCombining}
+                combineError={grocery.combineError}
+                perRecipeItems={grocery.perRecipeItems}
+                checkedItems={grocery.checkedItems}
+                onToggleChecked={grocery.handleToggleChecked}
+                onEditItemText={grocery.handleEditItemText}
+                onRemoveItem={grocery.handleRemoveItem}
+                onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
+                hasPendingChanges={grocery.hasPendingChanges}
+                onRecombine={grocery.triggerRecombine}
+                generalItems={grocery.generalItems}
+                onAddGeneralItemDirect={grocery.handleAddGeneralItemDirect}
+                onBulkParseGroceryText={grocery.handleBulkParseGroceryText}
+                isAddingGeneral={grocery.isAddingGeneral}
+                onAddingGeneralChange={grocery.setIsAddingGeneral}
+              />
+            ) : (
+              <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
+                <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center text-sm sm:text-base">
+                    Add recipes first to generate a grocery list.
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          }
+          pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
         />
       </main>
-
-      {/* Edit Ingredients Dialog */}
-      {editIngredientsRecipe && (
-        <EditRecipeIngredientsDialog
-          open={!!editIngredientsRecipe}
-          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
-          recipeId={editIngredientsRecipe.id}
-          recipeName={editIngredientsRecipe.name}
-          ingredients={editIngredientsItems}
-          onSaved={() => {
-            setEditIngredientsRecipe(null);
-            loadEventData();
-          }}
-          cacheContext={weekStart && user?.id ? { type: "meal_plan", id: weekStart, userId: user.id } : undefined}
-        />
-      )}
 
       {/* Add Meal Dialog */}
       <AddMealDialog

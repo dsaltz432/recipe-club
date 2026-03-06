@@ -3866,7 +3866,7 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Manual"));
 
       // Paste ingredients
-      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      fireEvent.change(screen.getByLabelText("Ingredients text"), {
         target: { value: "1 lb spaghetti" },
       });
 
@@ -3957,15 +3957,16 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Manual"));
 
       // Paste ingredients
-      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      fireEvent.change(screen.getByLabelText("Ingredients text"), {
         target: { value: "1 lb spaghetti" },
       });
 
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
 
+      // Parse fails → shows "Parsing Failed" dialog (no toast — setParseStatus("failed"))
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Recipe added but failed to parse ingredients");
+        expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
       });
 
       consoleSpy.mockRestore();
@@ -4047,16 +4048,16 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Manual"));
 
       // Paste ingredients
-      fireEvent.change(screen.getByLabelText("Paste ingredients text"), {
+      fireEvent.change(screen.getByLabelText("Ingredients text"), {
         target: { value: "1 lb spaghetti" },
       });
 
       // Submit
       fireEvent.click(screen.getByText("Add to Meal"));
 
-      // parse-recipe fails → shows error toast
+      // parse-recipe fails → shows "Parsing Failed" dialog (no toast — setParseStatus("failed"))
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Recipe added but failed to parse ingredients");
+        expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
       });
 
       consoleSpy.mockRestore();
@@ -4136,7 +4137,7 @@ describe("MealPlanPage", () => {
       return { smartItems, perRecipe };
     };
 
-    it("handleEditGroceryItem edits an item via the Combined tab", async () => {
+    it("handleEditGroceryItem edits an item via a per-recipe tab", async () => {
       setupGroceryWithSmartItems();
       mockLoadGeneralItems.mockResolvedValue([
         { id: "gen-1", name: "general item", quantity: "1", unit: undefined },
@@ -4151,18 +4152,16 @@ describe("MealPlanPage", () => {
       // Switch to Groceries tab
       fireEvent.click(screen.getByText("Groceries"));
 
+      // Wait for grocery data to load
       await waitFor(() => {
         expect(screen.getByText("2 lbs chicken breast")).toBeInTheDocument();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
 
-      // Click Edit button on first item
-      const editButtons = screen.getAllByLabelText("Edit item");
-      fireEvent.click(editButtons[0]);
-
-      // Fill in the single-field editor
-      const editInput = screen.getByLabelText("Edit item text");
-      fireEvent.change(editInput, { target: { value: "3 lbs chicken thighs" } });
-      fireEvent.click(screen.getByLabelText("Save edit"));
+      // Directly invoke handleEditItemText (simulating per-recipe tab edit)
+      (capturedGroceryListProps!.onEditItemText as (orig: string, text: string, recipeId?: string) => void)(
+        "chicken breast", "3 lbs chicken thighs", undefined
+      );
 
       // After edit, the startRecombineTimer should have been called —
       // advance the timer to trigger recombine
@@ -4187,26 +4186,17 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByText("Groceries"));
 
-      // "general item" with totalQuantity:1 displays as "1 general item"
+      // Wait for both smart items and general items to be loaded
       await waitFor(() => {
         expect(screen.getByText("1 general item")).toBeInTheDocument();
-      });
-
-      // Wait for generalItems to be loaded (loadGeneralItems is async)
-      await waitFor(() => {
         expect(mockLoadGeneralItems).toHaveBeenCalled();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
-      // Allow React to re-render with the updated generalItems state
-      await new Promise((r) => setTimeout(r, 50));
 
-      // The general item has category "produce" which is first in CATEGORY_ORDER,
-      // so its edit button is the first one (index 0)
-      const editButtons = screen.getAllByLabelText("Edit item");
-      fireEvent.click(editButtons[0]);
-
-      const editInput = screen.getByLabelText("Edit item text");
-      fireEvent.change(editInput, { target: { value: "updated general item" } });
-      fireEvent.click(screen.getByLabelText("Save edit"));
+      // Directly invoke handleEditItemText for a General-sourced item (no recipeId)
+      (capturedGroceryListProps!.onEditItemText as (orig: string, text: string, recipeId?: string) => void)(
+        "general item", "updated general item", undefined
+      );
 
       // Should have called updateGeneralItem for the General-sourced item
       await waitFor(() => {
@@ -4218,7 +4208,7 @@ describe("MealPlanPage", () => {
       });
     });
 
-    it("handleRemoveGroceryItem removes an item from the Combined tab", async () => {
+    it("handleRemoveGroceryItem removes an item from a per-recipe tab", async () => {
       setupGroceryWithSmartItems();
       mockLoadGeneralItems.mockResolvedValue([]);
 
@@ -4230,13 +4220,16 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByText("Groceries"));
 
+      // Wait for grocery data to load
       await waitFor(() => {
         expect(screen.getByText("2 lbs chicken breast")).toBeInTheDocument();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
 
-      // Click Remove button on first item (chicken breast)
-      const removeButtons = screen.getAllByLabelText("Remove item");
-      fireEvent.click(removeButtons[0]);
+      // Directly invoke handleRemoveItem (simulating per-recipe tab remove)
+      (capturedGroceryListProps!.onRemoveItem as (name: string, recipeId?: string) => void)(
+        "chicken breast", undefined
+      );
 
       // startRecombineTimer was invoked — verify pending changes flag is set
       // The Recombine button should appear because hasPendingChanges is true
@@ -4267,22 +4260,17 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByText("Groceries"));
 
-      // "general item" with totalQuantity:1 displays as "1 general item"
+      // Wait for both smart items and general items to be loaded
       await waitFor(() => {
         expect(screen.getByText("1 general item")).toBeInTheDocument();
-      });
-
-      // Wait for generalItems to be loaded (loadGeneralItems is async)
-      await waitFor(() => {
         expect(mockLoadGeneralItems).toHaveBeenCalled();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
-      // Allow React to re-render with the updated generalItems state
-      await new Promise((r) => setTimeout(r, 50));
 
-      // The general item has category "produce" which is first in CATEGORY_ORDER,
-      // so its remove button is the first one (index 0)
-      const removeButtons = screen.getAllByLabelText("Remove item");
-      fireEvent.click(removeButtons[0]);
+      // Directly invoke handleRemoveItem for a General-sourced item (no recipeId)
+      (capturedGroceryListProps!.onRemoveItem as (name: string, recipeId?: string) => void)(
+        "general item", undefined
+      );
 
       // Should call removeGeneralItem for the General-sourced item
       await waitFor(() => {
@@ -4330,6 +4318,9 @@ describe("MealPlanPage", () => {
               data: { id: "temp-recipe-1" },
               error: null,
             }),
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
           });
         }
         return createMockQueryBuilder();
@@ -4343,29 +4334,20 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByText("Groceries"));
 
-      // General tab is default when no recipe ingredients exist
+      // General tab is default when no recipe ingredients exist — wait for textarea
       await waitFor(() => {
-        expect(screen.getByLabelText("General item name")).toBeInTheDocument();
+        expect(screen.getByRole("textbox")).toBeInTheDocument();
       });
 
-      // Fill in the add general item form
-      fireEvent.change(screen.getByLabelText("General item quantity"), {
-        target: { value: "2" },
-      });
-      fireEvent.change(screen.getByLabelText("General item unit"), {
-        target: { value: "lbs" },
-      });
-      fireEvent.change(screen.getByLabelText("General item name"), {
-        target: { value: "potatoes" },
+      // Type text in AddIngredientInput
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "2 lbs potatoes" },
       });
 
       // Click Add button
-      const addButtons = screen.getAllByRole("button").filter(
-        (b) => b.textContent?.trim() === "Add"
-      );
-      fireEvent.click(addButtons[addButtons.length - 1]);
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-      // Should call parse-recipe with the combined text
+      // Should call parse-recipe with the text
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
           body: { recipeId: "temp-recipe-1", recipeName: "General Items", text: "2 lbs potatoes" },
@@ -4562,6 +4544,9 @@ describe("MealPlanPage", () => {
               data: { id: "temp-recipe-id" },
               error: null,
             }),
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
           });
         }
         return createMockQueryBuilder();
@@ -4575,35 +4560,20 @@ describe("MealPlanPage", () => {
 
       fireEvent.click(screen.getByText("Groceries"));
 
-      // General tab is default, wait for its content
+      // General tab is default — wait for AddIngredientInput textarea
       await waitFor(() => {
-        expect(screen.getByText("Paste list")).toBeInTheDocument();
+        expect(screen.getByRole("textbox")).toBeInTheDocument();
       });
 
-      // Click "Paste list" button
-      fireEvent.click(screen.getByText("Paste list"));
-
-      // Fill in the bulk paste textarea
-      const textarea = screen.getByLabelText("Bulk paste textarea");
-      fireEvent.change(textarea, { target: { value: "3 tomatoes\n1 bunch basil" } });
-
-      // Click Parse button
-      fireEvent.click(screen.getByText("Parse"));
+      // Type text in AddIngredientInput and click Add
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "3 tomatoes\n1 bunch basil" } });
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
           body: { recipeId: "temp-recipe-id", recipeName: "General Items", text: "3 tomatoes\n1 bunch basil" },
         });
       });
-
-      // Parsed preview should show items
-      await waitFor(() => {
-        expect(screen.getByText("tomatoes")).toBeInTheDocument();
-        expect(screen.getByText("basil")).toBeInTheDocument();
-      });
-
-      // Click "Add all" to confirm
-      fireEvent.click(screen.getByText("Add all"));
 
       await waitFor(() => {
         expect(mockAddGeneralItem).toHaveBeenCalled();
@@ -4641,6 +4611,9 @@ describe("MealPlanPage", () => {
               data: { id: "temp-recipe-id" },
               error: null,
             }),
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
           });
         }
         return createMockQueryBuilder();
@@ -4655,15 +4628,11 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Paste list")).toBeInTheDocument();
+        expect(screen.getByRole("textbox")).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText("Paste list"));
-
-      const textarea = screen.getByLabelText("Bulk paste textarea");
-      fireEvent.change(textarea, { target: { value: "nothing useful" } });
-
-      fireEvent.click(screen.getByText("Parse"));
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "nothing useful" } });
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
@@ -4671,9 +4640,9 @@ describe("MealPlanPage", () => {
         });
       });
 
-      // Skipped returns empty preview — the parsed items count should be 0
+      // Skipped returns empty array — no items added
       await waitFor(() => {
-        expect(screen.getByText("Parsed items (0)")).toBeInTheDocument();
+        expect(mockAddGeneralItem).not.toHaveBeenCalled();
       });
     });
 
@@ -4708,6 +4677,9 @@ describe("MealPlanPage", () => {
               data: { id: "temp-recipe-id" },
               error: null,
             }),
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
           });
         }
         return createMockQueryBuilder();
@@ -4722,19 +4694,15 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Paste list")).toBeInTheDocument();
+        expect(screen.getByRole("textbox")).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText("Paste list"));
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "some text" } });
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-      const textarea = screen.getByLabelText("Bulk paste textarea");
-      fireEvent.change(textarea, { target: { value: "some text" } });
-
-      fireEvent.click(screen.getByText("Parse"));
-
-      // GroceryListSection catches the thrown error and shows toast
+      // handleBulkAdd catches the thrown error and shows toast
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to parse grocery text. Please try again.");
+        expect(toast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
       });
     });
 
@@ -4769,6 +4737,9 @@ describe("MealPlanPage", () => {
               data: { id: "temp-recipe-id" },
               error: null,
             }),
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
           });
         }
         return createMockQueryBuilder();
@@ -4783,18 +4754,14 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Paste list")).toBeInTheDocument();
+        expect(screen.getByRole("textbox")).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText("Paste list"));
-
-      const textarea = screen.getByLabelText("Bulk paste textarea");
-      fireEvent.change(textarea, { target: { value: "bad text" } });
-
-      fireEvent.click(screen.getByText("Parse"));
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "bad text" } });
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to parse grocery text. Please try again.");
+        expect(toast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
       });
     });
   });
@@ -4868,11 +4835,11 @@ describe("MealPlanPage", () => {
 
       await waitFor(() => {
         expect(screen.getByText("2 lbs chicken")).toBeInTheDocument();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
 
-      // Remove an item to trigger hasPendingChanges = true
-      const removeButtons = screen.getAllByLabelText("Remove item");
-      fireEvent.click(removeButtons[0]);
+      // Remove an item to trigger hasPendingChanges = true via captured callback
+      (capturedGroceryListProps!.onRemoveItem as (name: string) => void)("chicken");
 
       // After remove, hasPendingChanges is set and startRecombineTimer is called
       // The Recombine button should appear before the timer fires
@@ -4961,21 +4928,19 @@ describe("MealPlanPage", () => {
 
       await waitFor(() => {
         expect(screen.getByText("2 lbs onion")).toBeInTheDocument();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
 
-      // Clear mocks to track recombine effects
+      // Remove an item — this triggers invalidateCacheAndResetRefs (synchronous) + startRecombineTimer
+      (capturedGroceryListProps!.onRemoveItem as (name: string) => void)("onion");
+
+      // Clear the synchronous deleteGroceryCache call so we can detect the timer-triggered one
       mockDeleteGroceryCache.mockClear();
 
-      // Remove an item — this triggers startRecombineTimer
-      fireEvent.click(screen.getAllByLabelText("Remove item")[0]);
+      // Advance the timer to trigger recombine (RECOMBINE_DELAY_MS = 15 min = 900,000ms)
+      vi.advanceTimersByTime(900000);
 
-      // deleteGroceryCache should NOT be called yet (timer hasn't fired)
-      expect(mockDeleteGroceryCache).not.toHaveBeenCalled();
-
-      // Advance the timer to trigger recombine
-      vi.advanceTimersByTime(60000);
-
-      // Now triggerRecombine should have fired
+      // Now triggerRecombine should have fired, calling deleteGroceryCache again
       await waitFor(() => {
         expect(mockDeleteGroceryCache).toHaveBeenCalled();
       });
@@ -5051,10 +5016,11 @@ describe("MealPlanPage", () => {
 
       await waitFor(() => {
         expect(screen.getByText("3 oz garlic")).toBeInTheDocument();
+        expect(capturedGroceryListProps).not.toBeNull();
       });
 
-      // Remove an item to trigger startRecombineTimer
-      fireEvent.click(screen.getAllByLabelText("Remove item")[0]);
+      // Remove an item to trigger startRecombineTimer via captured callback
+      (capturedGroceryListProps!.onRemoveItem as (name: string) => void)("garlic");
 
       // Unmount before the timer fires
       unmount();
@@ -5228,6 +5194,9 @@ describe("MealPlanPage", () => {
               data: { id: "temp-recipe-id" },
               error: null,
             }),
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
           });
         }
         return createMockQueryBuilder();
@@ -5242,18 +5211,15 @@ describe("MealPlanPage", () => {
       fireEvent.click(screen.getByText("Groceries"));
 
       await waitFor(() => {
-        expect(screen.getByText("Paste list")).toBeInTheDocument();
+        expect(screen.getByRole("textbox")).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText("Paste list"));
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "some grocery items" } });
+      fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-      const textarea = screen.getByLabelText("Bulk paste textarea");
-      fireEvent.change(textarea, { target: { value: "some grocery items" } });
-      fireEvent.click(screen.getByText("Parse"));
-
-      // Should show error toast with fallback message
+      // Should show error toast when parse fails
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to parse grocery text. Please try again.");
+        expect(toast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
       });
     });
   });

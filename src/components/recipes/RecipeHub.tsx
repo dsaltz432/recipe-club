@@ -34,7 +34,6 @@ import { Search, BookOpen, Loader2, SlidersHorizontal } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
-import EditRecipeIngredientsDialog from "./EditRecipeIngredientsDialog";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
 import { getPantryItems, DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
@@ -101,18 +100,29 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [recipeIngredientsMap, setRecipeIngredientsMap] = useState<Record<string, RecipeIngredient[]>>({});
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
-  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<RecipeWithNotes | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-
-  const handleEditIngredients = (recipe: RecipeWithNotes) => {
-    setEditIngredientsRecipe(recipe);
-  };
-
-  const handleIngredientsSaved = () => {
-    setEditIngredientsRecipe(null);
-    setIsLoading(true);
-    loadRecipes();
+  const handleIngredientsChange = async (recipeId: string) => {
+    const { data } = await supabase
+      .from("recipe_ingredients")
+      .select("*")
+      .eq("recipe_id", recipeId);
+    if (data) {
+      setRecipeIngredientsMap((prev) => ({
+        ...prev,
+        [recipeId]: data.map((row) => ({
+          id: row.id,
+          recipeId: row.recipe_id,
+          name: row.name,
+          quantity: row.quantity ?? undefined,
+          unit: row.unit ?? undefined,
+          category: row.category as import("@/types").GroceryCategory,
+          rawText: row.raw_text ?? undefined,
+          sortOrder: row.sort_order ?? undefined,
+          createdAt: row.created_at ?? undefined,
+        })),
+      }));
+    }
   };
 
   const loadRecipes = async () => {
@@ -818,11 +828,12 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onDelete={recipe.createdBy === userId || (recipe.eventId && canEdit) ? handleDeleteRecipe : undefined}
                 onEditRating={userId && isClubMember ? handleEditRating : undefined}
                 onAddNote={userId ? handleAddNote : undefined}
-                onEditIngredients={recipe.createdBy === userId ? handleEditIngredients : undefined}
                 ingredients={recipeIngredientsMap[recipe.id]}
                 pantryItems={pantryItemNames}
                 contentStatus={recipeContentMap[recipe.id]?.status}
                 onParseRecipe={isAdmin ? handleParseRecipe : undefined}
+                userId={userId}
+                onIngredientsChange={() => handleIngredientsChange(recipe.id)}
               />
             ))}
           </div>
@@ -993,18 +1004,6 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Ingredients Dialog */}
-      {editIngredientsRecipe && (
-        <EditRecipeIngredientsDialog
-          open={!!editIngredientsRecipe}
-          onOpenChange={() => setEditIngredientsRecipe(null)}
-          recipeId={editIngredientsRecipe.id}
-          recipeName={editIngredientsRecipe.name}
-          ingredients={recipeIngredientsMap[editIngredientsRecipe.id] || []}
-          onSaved={handleIngredientsSaved}
-        />
-      )}
 
       {/* Edit Rating Dialog */}
       {ratingDialogOpen && ratingRecipe && ratingRecipe.eventId && userId && (

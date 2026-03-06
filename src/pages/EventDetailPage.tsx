@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RecipeDetailTabs } from "@/components/shared/RecipeDetailTabs";
 import {
   Dialog,
   DialogContent,
@@ -50,8 +50,6 @@ import {
   Menu,
   LogOut,
   ShoppingCart,
-  BookOpen,
-  UtensilsCrossed,
   Users,
   CheckCircle,
   Settings,
@@ -68,7 +66,6 @@ import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
-import EditRecipeIngredientsDialog from "@/components/recipes/EditRecipeIngredientsDialog";
 import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
 
 interface EventData {
@@ -159,9 +156,6 @@ const EventDetailPage = () => {
   // Pantry dialog state
   const [showPantryDialog, setShowPantryDialog] = useState(false);
 
-  // Edit ingredients state
-  const [editIngredientsRecipe, setEditIngredientsRecipe] = useState<{ id: string; name: string } | null>(null);
-
   // Parse progress step definitions
   const parseSteps = [
     { key: "saving" as const, label: "Adding recipe" },
@@ -189,7 +183,8 @@ const EventDetailPage = () => {
     userId: user?.id,
     recipeIds: groceryRecipeIds,
     recipes: groceryRecipes,
-    enabled: true,
+    enabled: !!event,
+    supportsGeneralItems: true,
   });
 
   const toggleRecipeNotes = (recipeId: string) => {
@@ -551,6 +546,7 @@ const EventDetailPage = () => {
     setShowAddForm(false);
     toast.success("Recipe added (parsing skipped)");
     loadEventData();
+    grocery.refreshGroceries();
   };
 
   const handleRetryParse = async () => {
@@ -579,6 +575,7 @@ const EventDetailPage = () => {
       setShowAddForm(false);
       toast.success("Recipe parsed successfully!");
       loadEventData();
+      grocery.refreshGroceries();
     } catch (error) {
       console.error("Error retrying parse:", error);
       const msg = error instanceof Error ? error.message : "Failed to parse recipe";
@@ -939,23 +936,8 @@ const EventDetailPage = () => {
         </Card>
 
         {/* Tabbed Content */}
-        <Tabs defaultValue="recipes" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-3 mb-4 h-auto rounded-lg">
-            <TabsTrigger value="recipes" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
-              <BookOpen className="h-3.5 w-3.5" />
-              <span className="text-xs sm:text-sm">Recipes</span>
-            </TabsTrigger>
-            <TabsTrigger value="grocery" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
-              <ShoppingCart className="h-3.5 w-3.5" />
-              <span className="text-xs sm:text-sm">Groceries</span>
-            </TabsTrigger>
-            <TabsTrigger value="pantry" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
-              <UtensilsCrossed className="h-3.5 w-3.5" />
-              <span className="text-xs sm:text-sm">Pantry</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="recipes" forceMount className="data-[state=inactive]:hidden">
+        <RecipeDetailTabs
+          recipesContent={
             <EventRecipesTab
               recipesWithNotes={event?.recipesWithNotes || []}
               user={user}
@@ -971,12 +953,14 @@ const EventDetailPage = () => {
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={userIsMember ? handleRateRecipe : undefined}
-              onEditIngredients={(recipe) => setEditIngredientsRecipe({ id: recipe.id, name: recipe.name })}
+              userId={user?.id}
+              onIngredientsChange={() => grocery.markIngredientChange()}
+              cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
+              pantryItems={grocery.pantryItems}
             />
-          </TabsContent>
-
-          <TabsContent value="grocery">
-            {event && event.recipesWithNotes.length > 0 ? (
+          }
+          groceryContent={
+            event && event.recipesWithNotes.length > 0 ? (
               <GroceryListSection
                 recipes={event.recipesWithNotes.map((r) => r.recipe)}
                 recipeIngredients={grocery.recipeIngredients}
@@ -993,6 +977,14 @@ const EventDetailPage = () => {
                 onToggleChecked={grocery.handleToggleChecked}
                 onEditItemText={grocery.handleEditItemText}
                 onRemoveItem={grocery.handleRemoveItem}
+                onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
+                hasPendingChanges={grocery.hasPendingChanges}
+                onRecombine={grocery.triggerRecombine}
+                generalItems={grocery.generalItems}
+                onAddGeneralItemDirect={grocery.handleAddGeneralItemDirect}
+                onBulkParseGroceryText={grocery.handleBulkParseGroceryText}
+                isAddingGeneral={grocery.isAddingGeneral}
+                onAddingGeneralChange={grocery.setIsAddingGeneral}
               />
             ) : (
               <Card className="bg-white/90 backdrop-blur-sm border-2 border-dashed border-purple/20">
@@ -1003,14 +995,10 @@ const EventDetailPage = () => {
                   </p>
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pantry">
-            <PantrySection userId={user?.id} onPantryChange={handlePantryChange} />
-          </TabsContent>
-
-        </Tabs>
+            )
+          }
+          pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
+        />
       </main>
 
       {/* Add Recipe Dialog */}
@@ -1372,21 +1360,6 @@ const EventDetailPage = () => {
         />
       )}
 
-      {/* Edit Ingredients Dialog */}
-      {editIngredientsRecipe && user?.id && (
-        <EditRecipeIngredientsDialog
-          open={!!editIngredientsRecipe}
-          onOpenChange={(open) => { if (!open) setEditIngredientsRecipe(null); }}
-          recipeId={editIngredientsRecipe.id}
-          recipeName={editIngredientsRecipe.name}
-          ingredients={grocery.recipeIngredients.filter((i) => i.recipeId === editIngredientsRecipe.id)}
-          onSaved={() => {
-            setEditIngredientsRecipe(null);
-            grocery.refreshGroceries();
-          }}
-          cacheContext={eventId ? { type: "event", id: eventId, userId: user.id } : undefined}
-        />
-      )}
     </div>
   );
 };

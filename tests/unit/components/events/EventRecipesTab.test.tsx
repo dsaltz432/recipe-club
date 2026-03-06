@@ -5,6 +5,14 @@ import { renderStars } from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import { createMockUser, createMockRecipe, createMockNote } from "@tests/utils";
 
+vi.mock("@/components/recipes/RecipeIngredientList", () => ({
+  default: ({ recipeId, onIngredientsChange }: { recipeId: string; onIngredientsChange?: () => void }) => (
+    <div data-testid={`ingredient-list-${recipeId}`}>
+      <button onClick={onIngredientsChange}>trigger-change</button>
+    </div>
+  ),
+}));
+
 describe("EventRecipesTab", () => {
   const user = createMockUser();
 
@@ -806,7 +814,7 @@ describe("renderStars", () => {
   });
 });
 
-describe("EventRecipesTab - Edit Ingredients", () => {
+describe("EventRecipesTab - Inline Ingredient Toggle", () => {
   const user = createMockUser();
 
   const defaultProps = {
@@ -828,8 +836,7 @@ describe("EventRecipesTab - Edit Ingredients", () => {
     vi.clearAllMocks();
   });
 
-  it("shows edit ingredients button for recipe created by current user", () => {
-    const onEditIngredients = vi.fn();
+  it("shows Ingredients toggle button for each recipe", () => {
     const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
     const recipesWithNotes: EventRecipeWithRatings[] = [
       { recipe, notes: [] },
@@ -839,16 +846,14 @@ describe("EventRecipesTab - Edit Ingredients", () => {
       <EventRecipesTab
         {...defaultProps}
         recipesWithNotes={recipesWithNotes}
-        onEditIngredients={onEditIngredients}
       />
     );
 
-    expect(screen.getByLabelText("Edit ingredients for My Recipe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Toggle ingredients for My Recipe")).toBeInTheDocument();
   });
 
-  it("does not show edit ingredients button for recipe created by other user", () => {
-    const onEditIngredients = vi.fn();
-    const recipe = createMockRecipe({ createdBy: "other-user", name: "Other Recipe" });
+  it("does not show RecipeIngredientList by default (collapsed)", () => {
+    const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
     const recipesWithNotes: EventRecipeWithRatings[] = [
       { recipe, notes: [] },
     ];
@@ -857,14 +862,14 @@ describe("EventRecipesTab - Edit Ingredients", () => {
       <EventRecipesTab
         {...defaultProps}
         recipesWithNotes={recipesWithNotes}
-        onEditIngredients={onEditIngredients}
       />
     );
 
-    expect(screen.queryByLabelText("Edit ingredients for Other Recipe")).not.toBeInTheDocument();
+    // The ingredient list is not shown until toggled
+    expect(screen.queryByText("No ingredients yet")).not.toBeInTheDocument();
   });
 
-  it("does not show edit ingredients button when onEditIngredients is not provided", () => {
+  it("does not have onEditIngredients prop (prop was removed in US-007)", () => {
     const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
     const recipesWithNotes: EventRecipeWithRatings[] = [
       { recipe, notes: [] },
@@ -880,8 +885,7 @@ describe("EventRecipesTab - Edit Ingredients", () => {
     expect(screen.queryByLabelText("Edit ingredients for My Recipe")).not.toBeInTheDocument();
   });
 
-  it("calls onEditIngredients with recipe when clicked", () => {
-    const onEditIngredients = vi.fn();
+  it("expands RecipeIngredientList when toggle is clicked", () => {
     const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
     const recipesWithNotes: EventRecipeWithRatings[] = [
       { recipe, notes: [] },
@@ -891,12 +895,52 @@ describe("EventRecipesTab - Edit Ingredients", () => {
       <EventRecipesTab
         {...defaultProps}
         recipesWithNotes={recipesWithNotes}
-        onEditIngredients={onEditIngredients}
       />
     );
 
-    fireEvent.click(screen.getByLabelText("Edit ingredients for My Recipe"));
+    fireEvent.click(screen.getByLabelText("Toggle ingredients for My Recipe"));
 
-    expect(onEditIngredients).toHaveBeenCalledWith(recipe);
+    expect(screen.getByTestId(`ingredient-list-${recipe.id}`)).toBeInTheDocument();
+  });
+
+  it("collapses RecipeIngredientList when toggle is clicked twice", () => {
+    const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    render(
+      <EventRecipesTab
+        {...defaultProps}
+        recipesWithNotes={recipesWithNotes}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Toggle ingredients for My Recipe"));
+    expect(screen.getByTestId(`ingredient-list-${recipe.id}`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Toggle ingredients for My Recipe"));
+    expect(screen.queryByTestId(`ingredient-list-${recipe.id}`)).not.toBeInTheDocument();
+  });
+
+  it("calls onIngredientsChange when ingredient list fires change", () => {
+    const onIngredientsChange = vi.fn();
+    const recipe = createMockRecipe({ createdBy: user.id, name: "My Recipe" });
+    const recipesWithNotes: EventRecipeWithRatings[] = [
+      { recipe, notes: [] },
+    ];
+
+    render(
+      <EventRecipesTab
+        {...defaultProps}
+        recipesWithNotes={recipesWithNotes}
+        onIngredientsChange={onIngredientsChange}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Toggle ingredients for My Recipe"));
+    fireEvent.click(screen.getByText("trigger-change"));
+
+    expect(onIngredientsChange).toHaveBeenCalledWith(recipe.id);
   });
 });

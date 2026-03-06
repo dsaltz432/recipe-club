@@ -109,6 +109,8 @@ vi.mock("@/lib/groceryCache", () => ({
   loadGroceryCache: (...args: unknown[]) => mockLoadGroceryCache(...args),
   saveGroceryCache: (...args: unknown[]) => mockSaveGroceryCache(...args),
   deleteGroceryCache: vi.fn(),
+  loadCheckedItems: vi.fn().mockResolvedValue(new Set()),
+  saveCheckedItems: vi.fn().mockResolvedValue(undefined),
 }));
 
 // IngredientColors mock
@@ -166,7 +168,6 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
     onDeleteNoteClick,
     onDeleteRecipeClick,
     onToggleRecipeNotes,
-    onEditIngredients,
     onRateRecipe,
     recipesWithNotes,
   }: {
@@ -177,7 +178,6 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
     onDeleteNoteClick: (note: unknown) => void;
     onDeleteRecipeClick: (recipe: unknown) => void;
     onToggleRecipeNotes: (id: string) => void;
-    onEditIngredients?: (recipe: unknown) => void;
     onRateRecipe?: (r: unknown) => void;
     recipesWithNotes: Array<{ recipe: { id: string; name: string; url?: string; createdBy?: string } }>;
   }) => {
@@ -195,9 +195,6 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
           <button onClick={() => onDeleteNoteClick({ id: "note-1" })}>Delete Note</button>
           <button onClick={() => onDeleteRecipeClick(r.recipe)}>Delete {r.recipe.name}</button>
           <button onClick={() => onToggleRecipeNotes(r.recipe.id)}>Toggle Notes {r.recipe.name}</button>
-          {onEditIngredients && (
-            <button onClick={() => onEditIngredients(r.recipe)}>Edit Ingredients {r.recipe.name}</button>
-          )}
         </div>
       ))}
     </div>
@@ -290,6 +287,7 @@ const setupDefaultMocks = () => {
           eq: vi.fn().mockReturnValue({
             order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
           }),
+          in: vi.fn().mockResolvedValue({ data: recipesData.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
         }),
         insert: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({
@@ -4430,7 +4428,7 @@ describe("EventDetailPage", () => {
     capturedGroceryProps.onParseRecipe!("recipe-1");
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe parsed (skipped in dev mode)");
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
     });
   });
 
@@ -4447,7 +4445,7 @@ describe("EventDetailPage", () => {
     capturedGroceryProps.onParseRecipe!("recipe-1");
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe. Please try again.");
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
     });
 
     consoleSpy.mockRestore();
@@ -4471,6 +4469,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: recipesNoUrl, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: recipesNoUrl.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -4490,9 +4489,9 @@ describe("EventDetailPage", () => {
 
     capturedGroceryProps.onParseRecipe!("recipe-1");
 
-    // Should early-return since recipe has no URL
+    // Recipe with no URL still calls parse-recipe (url passed as null)
     await new Promise(r => setTimeout(r, 50));
-    expect(mockFunctionsInvoke).not.toHaveBeenCalledWith("parse-recipe", expect.anything());
+    expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.anything());
   });
 
   // ---- LOAD PANTRY ITEMS ERROR (line 493) ----
@@ -4975,6 +4974,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: recipesData.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -5056,6 +5056,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: twoRecipes.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -5126,6 +5127,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: recipesData, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: recipesData.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -5199,6 +5201,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: twoRecipes.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -6204,7 +6207,7 @@ describe("EventDetailPage", () => {
     });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe. Please try again.");
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
     });
   });
 
@@ -6224,7 +6227,7 @@ describe("EventDetailPage", () => {
     });
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipe parsed (skipped in dev mode)");
+      expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
     });
   });
 
@@ -6828,7 +6831,7 @@ describe("EventDetailPage", () => {
 
     // Switch to manual mode and paste ingredients
     fireEvent.click(screen.getByText("Manual"));
-    const pasteInput = screen.getByLabelText("Paste ingredients text");
+    const pasteInput = screen.getByLabelText("Ingredients text");
     fireEvent.change(pasteInput, { target: { value: "1 lb chicken" } });
 
     // Submit — manual mode sets url to null
@@ -6960,36 +6963,8 @@ describe("EventDetailPage", () => {
     });
   });
 
-  it("opens edit ingredients dialog and saves", async () => {
-    setupDefaultMocks();
-
-    render(<EventDetailPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
-    });
-
-    // Click "Edit Ingredients" button in the mocked EventRecipesTab
-    fireEvent.click(screen.getByText("Edit Ingredients Chicken Parm"));
-
-    // The EditRecipeIngredientsDialog should now be rendered
-    await waitFor(() => {
-      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
-    });
-
-    // Add an ingredient name so we can save
-    fireEvent.change(screen.getByLabelText("Name for row 1"), {
-      target: { value: "Salt" },
-    });
-
-    // Click save
-    fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
-
-    // Dialog should close after save
-    await waitFor(() => {
-      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
-    });
-  });
+  // Note: Edit ingredients dialog was removed in US-007; ingredients are now edited
+  // inline in EventRecipesTab via RecipeIngredientList.
 
   // ---- HANDLE PARSE RECIPE WITH data.success=false (lines 479-480) ----
 
@@ -7025,7 +7000,7 @@ describe("EventDetailPage", () => {
     });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe. Please try again.");
+      expect(toast.error).toHaveBeenCalledWith("Failed to parse recipe");
     });
   });
 
@@ -7056,6 +7031,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: twoRecipes.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -7102,9 +7078,9 @@ describe("EventDetailPage", () => {
       expect(toast.success).toHaveBeenCalledWith("Recipe parsed successfully!");
     });
 
-    // After successful parse, loadGroceryData + runSmartCombine should be called
+    // After successful parse, refreshGroceries() triggers loadGroceryData
     await waitFor(() => {
-      expect(mockSmartCombineIngredients).toHaveBeenCalled();
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("recipe_ingredients");
     });
   });
 
@@ -7191,111 +7167,7 @@ describe("EventDetailPage", () => {
     });
   });
 
-  // ---- EDIT INGREDIENTS DIALOG onSaved CALLBACK (line 1578) ----
-
-  it("edit ingredients onSaved callback reloads grocery data and runs combine", async () => {
-    mockSmartCombineIngredients.mockResolvedValue({ items: [], perRecipeItems: {} });
-
-    const twoRecipes = [
-      ...recipesData,
-      { ...recipesData[0], id: "recipe-2", name: "Chicken Soup" },
-    ];
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: eventData, error: null }),
-            }),
-          }),
-        };
-      }
-      if (table === "recipes") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
-            }),
-          }),
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: { id: "recipe-new" }, error: null }),
-            }),
-          }),
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-          delete: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        };
-      }
-      if (table === "recipe_ingredients") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: [
-              { id: "ri-1", recipe_id: "recipe-1", name: "chicken", quantity: "2", unit: "lbs", category: "protein", raw_text: "2 lbs chicken", sort_order: 1, created_at: "2026-01-01" },
-            ], error: null }),
-          }),
-        };
-      }
-      if (table === "recipe_content") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: [
-              { id: "rc-1", recipe_id: "recipe-1", status: "completed", description: null, servings: null, prep_time: null, cook_time: null, total_time: null, instructions: null, source_title: null, parsed_at: null, error_message: null, created_at: "2026-01-01" },
-            ], error: null }),
-          }),
-        };
-      }
-      return {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({ data: [], error: null }),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        update: vi.fn().mockReturnThis(),
-        delete: vi.fn().mockReturnThis(),
-      };
-    });
-
-    render(<EventDetailPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Chicken Parm")).toBeInTheDocument();
-    });
-
-    // Click "Edit Ingredients" to open the dialog
-    fireEvent.click(screen.getByText("Edit Ingredients Chicken Parm"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Edit Ingredients")).toBeInTheDocument();
-    });
-
-    // Add an ingredient name
-    fireEvent.change(screen.getByLabelText("Name for row 1"), {
-      target: { value: "Garlic" },
-    });
-
-    // Clear combine mock to isolate the onSaved call
-    mockSmartCombineIngredients.mockClear();
-
-    // Click save
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /save ingredients/i }));
-    });
-
-    // Wait for onSaved to complete (it reloads grocery data and runs combine)
-    await waitFor(() => {
-      expect(screen.queryByText("Edit Ingredients")).not.toBeInTheDocument();
-    });
-
-    // Verify combine was called (the onSaved callback ran loadGroceryData + runSmartCombine)
-    await waitFor(() => {
-      expect(mockSmartCombineIngredients).toHaveBeenCalled();
-    });
-  });
+  // Note: Edit ingredients dialog was removed in US-007; no onSaved callback test needed.
 
   // ---- HANDLE RETRY PARSE WITH success=false (lines 771-773) ----
 
@@ -7406,6 +7278,7 @@ describe("EventDetailPage", () => {
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: twoRecipes, error: null }),
             }),
+            in: vi.fn().mockResolvedValue({ data: twoRecipes.map(r => ({ id: r.id, name: r.name, url: r.url })), error: null }),
           }),
         };
       }
@@ -7548,7 +7421,7 @@ describe("EventDetailPage", () => {
 
     // Switch to manual mode
     fireEvent.click(screen.getByText("Manual"));
-    const pasteInput = screen.getByLabelText("Paste ingredients text");
+    const pasteInput = screen.getByLabelText("Ingredients text");
     fireEvent.change(pasteInput, { target: { value: "2 lbs chicken breast\n3 cloves garlic" } });
 
     // Submit
@@ -7595,7 +7468,7 @@ describe("EventDetailPage", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Fail Recipe" } });
     fireEvent.click(screen.getByText("Manual"));
-    fireEvent.change(screen.getByLabelText("Paste ingredients text"), { target: { value: "some ingredients" } });
+    fireEvent.change(screen.getByLabelText("Ingredients text"), { target: { value: "some ingredients" } });
 
     fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
 
@@ -7632,7 +7505,7 @@ describe("EventDetailPage", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Fail Recipe 2" } });
     fireEvent.click(screen.getByText("Manual"));
-    fireEvent.change(screen.getByLabelText("Paste ingredients text"), { target: { value: "some ingredients" } });
+    fireEvent.change(screen.getByLabelText("Ingredients text"), { target: { value: "some ingredients" } });
 
     fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
 
@@ -7733,7 +7606,7 @@ describe("EventDetailPage", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Enter recipe name"), { target: { value: "Empty Fields Recipe" } });
     fireEvent.click(screen.getByText("Manual"));
-    fireEvent.change(screen.getByLabelText("Paste ingredients text"), { target: { value: "1 cup stuff\n2 cups flour" } });
+    fireEvent.change(screen.getByLabelText("Ingredients text"), { target: { value: "1 cup stuff\n2 cups flour" } });
 
     fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
 

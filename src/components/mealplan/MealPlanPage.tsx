@@ -515,8 +515,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           onToggleChecked={grocery.handleToggleChecked}
           generalItems={grocery.generalItems}
           onAddGeneralItemDirect={grocery.handleAddGeneralItemDirect}
-          onRemoveGeneralItem={grocery.handleRemoveGeneralItem}
-          onUpdateGeneralItem={grocery.handleUpdateGeneralItem}
           onBulkParseGroceryText={grocery.handleBulkParseGroceryText}
           onEditItemText={grocery.handleEditItemText}
           onRemoveItem={grocery.handleRemoveItem}
@@ -524,6 +522,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           onRecombine={grocery.triggerRecombine}
           isAddingGeneral={grocery.isAddingGeneral}
           onAddingGeneralChange={grocery.setIsAddingGeneral}
+          onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
         />
       )}
 

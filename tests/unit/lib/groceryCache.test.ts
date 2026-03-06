@@ -164,25 +164,28 @@ describe("groceryCache", () => {
   });
 
   describe("deleteGroceryCache", () => {
-    it("deletes with correct context params", async () => {
-      const delEq3 = vi.fn().mockResolvedValue({ error: null });
-      const delEq2 = vi.fn().mockReturnValue({ eq: delEq3 });
-      const delEq1 = vi.fn().mockReturnValue({ eq: delEq2 });
-      mockDelete.mockReturnValue({ eq: delEq1 });
+    it("clears cache items via update with correct context params", async () => {
+      const updEq3 = vi.fn().mockResolvedValue({ error: null });
+      const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+      const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+      mockUpdate.mockReturnValue({ eq: updEq1 });
 
       await deleteGroceryCache("event", "event-1", "user-1");
 
-      expect(delEq1).toHaveBeenCalledWith("context_type", "event");
-      expect(delEq2).toHaveBeenCalledWith("context_id", "event-1");
-      expect(delEq3).toHaveBeenCalledWith("user_id", "user-1");
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ items: [], recipe_ids: [] })
+      );
+      expect(updEq1).toHaveBeenCalledWith("context_type", "event");
+      expect(updEq2).toHaveBeenCalledWith("context_id", "event-1");
+      expect(updEq3).toHaveBeenCalledWith("user_id", "user-1");
     });
 
     it("handles errors gracefully", async () => {
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      const delEq3 = vi.fn().mockResolvedValue({ error: new Error("Delete failed") });
-      const delEq2 = vi.fn().mockReturnValue({ eq: delEq3 });
-      const delEq1 = vi.fn().mockReturnValue({ eq: delEq2 });
-      mockDelete.mockReturnValue({ eq: delEq1 });
+      const updEq3 = vi.fn().mockResolvedValue({ error: new Error("Update failed") });
+      const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+      const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+      mockUpdate.mockReturnValue({ eq: updEq1 });
 
       await deleteGroceryCache("event", "event-1", "user-1");
 
@@ -310,16 +313,16 @@ describe("groceryCache", () => {
     });
 
     it("deleteGroceryCache works with meal_plan context", async () => {
-      const delEq3 = vi.fn().mockResolvedValue({ error: null });
-      const delEq2 = vi.fn().mockReturnValue({ eq: delEq3 });
-      const delEq1 = vi.fn().mockReturnValue({ eq: delEq2 });
-      mockDelete.mockReturnValue({ eq: delEq1 });
+      const updEq3 = vi.fn().mockResolvedValue({ error: null });
+      const updEq2 = vi.fn().mockReturnValue({ eq: updEq3 });
+      const updEq1 = vi.fn().mockReturnValue({ eq: updEq2 });
+      mockUpdate.mockReturnValue({ eq: updEq1 });
 
       await deleteGroceryCache("meal_plan", "2026-02-15", "user-2");
 
-      expect(delEq1).toHaveBeenCalledWith("context_type", "meal_plan");
-      expect(delEq2).toHaveBeenCalledWith("context_id", "2026-02-15");
-      expect(delEq3).toHaveBeenCalledWith("user_id", "user-2");
+      expect(updEq1).toHaveBeenCalledWith("context_type", "meal_plan");
+      expect(updEq2).toHaveBeenCalledWith("context_id", "2026-02-15");
+      expect(updEq3).toHaveBeenCalledWith("user_id", "user-2");
     });
   });
 });

@@ -1,643 +1,231 @@
-# Recipe Club Hub - Grocery Enhancements - Activity Log
+# Recipe Club Hub - Ingredient Sync & Cleanup - Activity Log
 
 ## Codebase Patterns
-
-### Component Prop Threading Pattern
-- Checked/toggle state flows: MealPlanPage (state + handler) → GroceryListSection → GroceryCategoryGroup → GroceryItemRow
-- Use `Set<string>` for checked items — item `name` field is the unique key
-- `onToggleChecked?: (itemName: string) => void` at section/group level, `onToggleChecked?: () => void` at row level (closed over item name in GroceryCategoryGroup)
-- Checkbox only renders when `onToggleChecked` is provided — components work both with and without cross-off support
-
-### Edge Function Template (Deno)
-- All edge functions use `import { serve } from "https://deno.land/std@0.168.0/http/server.ts"`
-- CORS headers: `{ "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" }`
-- OPTIONS handler returns `new Response("ok", { headers: corsHeaders })`
-- Missing env var pattern: return `{ success: true, skipped: true, message: "..." }` (not an error)
-- Error pattern: catch block returns `{ success: false, error: message }` with status 500
-- Validation errors return status 400
-- All responses include `{ ...corsHeaders, "Content-Type": "application/json" }`
-
-### Tables Not in Generated Supabase Types
-- Tables added by migration (e.g., `general_grocery_items`) are not in `src/integrations/supabase/types.ts` generated types
-- Use `const db = supabase as any;` at module level, then `db.from("table_name")` for queries
-- Cast returned `data` with `(data as Record<string, unknown>[])` for type-safe row mapping
-- Map snake_case DB columns to camelCase TypeScript properties in the mapping function
-
-### General Items Integration Pattern
-- General items feed into AI combine pipeline via `toRawIngredients()` → `extraRawIngredients` param on `smartCombineIngredients()`
-- `smartCombineIngredients` accepts optional `extraRawIngredients` array that gets concatenated with recipe-derived raw ingredients
-- General items use `recipeName: 'General'` and `category: 'other'` — the AI re-categorizes and merges them with recipe ingredients
-- Cache invalidation flow: add/remove/update general item → `deleteGroceryCache()` → reset `lastCombinedRecipeIds` + `lastCombinedGeneralCount` → re-run `runSmartCombine()`
-- `hasGeneralTab` flag is derived from `!!onAddGeneralItem` prop — components render General tab only when this callback is provided
-- The General tab uses inline add/edit/remove UI (not GroceryItemRow component) since general items have different shape than SmartGroceryItem
-- When no recipe ingredients exist but `hasGeneralTab` is true, the tabs still render with General as the default tab
-
-### Database Migration Pattern
-- Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for additive migrations
-- JSONB columns with array defaults: `DEFAULT '[]'::jsonb`
-- Existing RLS policies with `auth.uid() = user_id` automatically cover new columns (row-level, not column-level)
-- Migration files go in `supabase/migrations/` with timestamp prefix
-- If `apply_migration` MCP permission is blocked, use `execute_sql` to apply directly
-
-### External API Edge Function Pattern
-- Auth via `x-api-key` header checked against `Deno.env.get('GROCERY_API_KEY')`
-- User identification via `user_email` → lookup user ID from `auth.users` using `supabase.auth.admin.listUsers()`
-- Uses Supabase service role client (`SUPABASE_SERVICE_ROLE_KEY`) to bypass RLS
-- Method dispatch via `req.method` — GET uses query params, POST/PUT/DELETE parse `req.json()` body
-- CORS `Access-Control-Allow-Headers` must include `x-api-key` for external callers
-- Duplicate item constraint violation (PostgreSQL error code `23505`) returns 409 status
-- `verify_jwt: false` when deploying since external APIs authenticate via API key, not Supabase JWT
-
-### Bulk Paste UI Pattern
-- Flow: "Paste list" button → textarea → Parse button → preview list → "Add all" confirm → items added
-- `onBulkParseGroceryText` callback prop invokes the `parse-grocery-text` edge function from MealPlanPage
-- Preview shows parsed items with category badge, quantity, unit, and name; duplicates flagged with "duplicate" label and yellow styling
-- Duplicate detection: compare `item.name.toLowerCase()` against `existingGeneralNames` Set built from current `generalItems`
-- Duplicates are visually flagged but automatically skipped during confirm (no error, just silent skip)
-- `ParsedGroceryItem` type exported from `GroceryListSection.tsx`: `{ name, quantity: number|null, unit: string|null, category }`
-- Preview items can be individually removed via X button using `removedPreviewIndices` Set (by index)
-- After confirm, all bulk paste state resets (textarea, preview, removed indices)
-- Each parsed item calls `onAddGeneralItem` sequentially — MealPlanPage handler invalidates cache and re-combines on each call
-
-### Week Start Day Pattern
-- `getWeekStart(date, weekStartDay)` — Sunday-start: `d.getDay()` offset, Monday-start: `(d.getDay() + 6) % 7` offset
-- MealPlanGrid uses `dayOrder = Array.from({length: 7}, (_, i) => (i + weekStartDay) % 7)` to map display positions to stored dayOfWeek values
-- `dayLabels = dayOrder.map(dow => ALL_DAY_LABELS[dow])` for display-ordered day names
-- `renderSlot(dayOrder[displayIndex], mealType)` passes actual dayOfWeek, not display index
-- `getDateLabel(displayIndex)` uses display index directly (offset from weekStart date)
-- `handleViewMealEvent` converts dayOfWeek → date offset via `(dayOfWeek - weekStartDay + 7) % 7`
-- Storage is always Sunday-indexed (0=Sun..6=Sat) — display reordering is purely UI-level
-
-### Settings Page Pattern
-- Settings page is a standalone route `/settings` (not a Dashboard tab) with AuthGuard
-- Uses `loadUserPreferences(userId)` / `saveUserPreferences(userId, prefs)` in `src/lib/userPreferences.ts`
-- `user_preferences` table not in generated Supabase types — uses `const db = supabase as any;` pattern
-- Save button with explicit save action (not auto-save) — simpler and gives user control
-- Meal type toggles use Switch component from `@radix-ui/react-switch`
-- Toast pattern: `toast()` for warnings (no icon), `toast.success()` for success, `toast.error()` for failures
-- In tests, mock `sonner` and check `toast.success`/`toast.error` as vi.fn() calls — do NOT look for toast text in DOM
+- **GroceryListSection** at `src/components/recipes/GroceryListSection.tsx` — accepts `hasPendingChanges`, `onRecombine`, `generalItems`, `onAddGeneralItemDirect`, `onBulkParseGroceryText`, `isAddingGeneral`, `onAddingGeneralChange`; `hasGeneralTab = !!onBulkParseGroceryText`
+- **useGroceryList** at `src/hooks/useGroceryList.ts` — returns `hasPendingChanges`, `triggerRecombine`, `generalItems`, `handleAddGeneralItemDirect`, `handleBulkParseGroceryText`, `isAddingGeneral`, `setIsAddingGeneral`, `refreshGroceries`, `invalidateCache`; accepts `supportsGeneralItems?: boolean` (default false)
+- **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — props: `recipeId`, `userId`, `editable?`, `onIngredientsChange?`, `cacheContext?`; handleAdd guards with `if (!userId) return` then calls deleteGroceryCache when cacheContext set; handleEditItemText and handleRemoveItem also call deleteGroceryCache when cacheContext set
+- **EventRecipesTab** at `src/components/events/EventRecipesTab.tsx` — renders RecipeIngredientList at ~line 282; currently passes `userId ?? ''`; does NOT pass cacheContext
+- **RecipeDetailTabs** at `src/components/shared/RecipeDetailTabs.tsx` — recipes TabsContent has `forceMount className="data-[state=inactive]:hidden"`; grocery and pantry tabs are standard
+- **isPantryItem + DEFAULT_PANTRY_ITEMS** pattern: `import { isPantryItem } from '@/lib/groceryList'` and `import { DEFAULT_PANTRY_ITEMS } from '@/lib/pantry'`; merge with `[...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]` then filter
+- **npm run build** runs `tsc -b && vite build` — use for typecheck verification
+- **parseIngredientText** at `src/lib/parseIngredientText.ts` — throws 'Not authenticated' when userId is falsy
 
 ## Current Status
-**Last Updated:** 2026-02-28
-**Tasks Completed:** 16
-**Current Task:** US-017 completed
+**Last Updated:** 2026-03-05
+**Tasks Completed:** 7
+**Current Task:** Awaiting next iteration
 
 ---
 
 ## Session Log
 
-## 2026-02-28 08:45 — US-001: Create Instacart edge function
+## [2026-03-05 09:00] — US-009: Clean up dead props in GroceryListSection
 
 ### What was implemented
-- Created Supabase edge function at `supabase/functions/instacart-recipe/index.ts`
-- Proxies requests to Instacart Create Recipe Page API (`POST https://connect.instacart.com/idp/v1/products/recipe`)
-- Transforms SmartGroceryItem-style items into Instacart's ingredient format
-- Items without totalQuantity or unit get empty measurements array
-- Graceful fallback when INSTACART_API_KEY not configured (returns instacart.com URL)
-- Returns 400 for empty/missing items, 500 for Instacart API errors
+- Removed `onRemoveGeneralItem?: (itemId: string) => void` from `GroceryListSectionProps`
+- Removed `onUpdateGeneralItem?: (itemId: string, updates: {...}) => void` from `GroceryListSectionProps`
+- Removed `onRemoveGeneralItem={grocery.handleRemoveGeneralItem}` from GroceryListSection in MealPlanPage
+- Removed `onUpdateGeneralItem={grocery.handleUpdateGeneralItem}` from GroceryListSection in MealPlanPage
 
 ### Files changed
-- `supabase/functions/instacart-recipe/index.ts` (new)
+- `src/components/recipes/GroceryListSection.tsx`
+- `src/components/mealplan/MealPlanPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1579/1579, 57 files)
-- Lint: N/A (edge function is Deno, not part of frontend lint)
-
-### Learnings for future iterations
-- Edge functions are Deno-based, not included in `npm run build` typecheck (tsc only checks src/)
-- The MealPlanPage test has an intermittent flaky test (`runs smart combine even with a single parsed recipe`) — it passes when run in isolation but sometimes fails in full suite
-- combine-ingredients/index.ts is the gold standard template for edge function patterns
-
----
-
-## 2026-02-28 08:50 — US-002: Create frontend instacart lib module
-
-### What was implemented
-- Created `src/lib/instacart.ts` with two exports:
-  - `transformForInstacart(items: SmartGroceryItem[]): InstacartItem[]` — strips `category` and `sourceRecipes`, keeps `name`, `displayName`, and optionally `totalQuantity`/`unit`
-  - `sendToInstacart(items: SmartGroceryItem[], title: string): Promise<string>` — calls `supabase.functions.invoke('instacart-recipe')`, returns `products_link_url`
-- Follows same edge function invocation pattern as `smartCombineIngredients()` in `groceryList.ts`
-- Handles three response paths: success (returns URL), error field set (throws), skipped/dev mode (returns fallback URL)
-- Created comprehensive tests at `tests/unit/lib/instacart.test.ts` (7 tests)
-
-### Files changed
-- `src/lib/instacart.ts` (new)
-- `tests/unit/lib/instacart.test.ts` (new)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1586/1586, 58 files)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- The `InstacartItem` interface is the frontend's view of the edge function payload — it maps directly to the `items` array in the POST body
-- `sendToInstacart` does NOT throw on `skipped: true` — it returns the fallback URL, matching the dev mode pattern
-- Mock pattern for edge function tests: `const mockInvoke = vi.fn()` with `vi.mock("@/integrations/supabase/client")`
+- These props were only in the interface definition, never destructured or used in the component body — TypeScript did not warn about them since they were optional
+- When removing props from an interface, always check all call sites with Grep to find all pass-through locations
 
 ---
 
-## 2026-02-28 09:00 — US-003: Add Instacart button to GroceryExportMenu
+## [2026-03-05 07:00] — US-008: Remove Rate Recipes button from PersonalMealDetailPage header card
 
 ### What was implemented
-- Added Instacart button to `GroceryExportMenu` as a third button alongside Copy and CSV
-- Uses `ShoppingCart` icon from lucide-react, with `Loader2` spinner during loading
-- Clicking calls `sendToInstacart(items, eventName)` and opens the returned URL via `window.open(url, '_blank')`
-- Shows toast error "Failed to send to Instacart. Please try again." on failure
-- Button is disabled while loading or when items array is empty
-- Added comprehensive tests (8 tests): renders button, success opens new tab, failure shows toast, loading disables button, empty items disables button
-- Added `@/lib/instacart` mock to GroceryListSection test file to prevent import breakage
+- Removed the `mealItems.length > 0 && totalRecipes > 0 ?` else branch (lines ~830-844) from the isCooked ternary in PersonalMealDetailPage — replaced with `: null`
+- Removed unused `Star` import from lucide-react in PersonalMealDetailPage
 
 ### Files changed
-- `src/components/recipes/GroceryExportMenu.tsx` (modified)
-- `tests/unit/components/recipes/GroceryExportMenu.test.tsx` (modified)
-- `tests/unit/components/recipes/GroceryListSection.test.tsx` (modified — added instacart mock)
+- `src/pages/PersonalMealDetailPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1589/1590, 58 files — 1 pre-existing flaky test in MealPlanPage)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- When adding a new import to a component used in multiple test files, ALL test files that render that component need the mock added (e.g., GroceryListSection tests needed `@/lib/instacart` mock)
-- `vi.stubGlobal("open", mockOpen)` + `vi.unstubAllGlobals()` is the clean way to mock `window.open` in Vitest
-- Button loading pattern: `useState` for loading flag, disable button during loading, show spinner icon swap
+- When removing a button that uses a lucide icon, also check if the icon import becomes unused — TypeScript will catch it as TS6133
+- The ternary `isCooked ? ... : mealItems.length > 0 && totalRecipes > 0 ? ... : null` simplifies to `isCooked ? ... : null` when removing the middle branch
 
 ---
 
-## 2026-02-28 09:10 — US-004: Add checked_items column to grocery cache table
+## [2026-03-05 06:00] — US-007: Add pantry filtering to RecipeIngredientList
 
 ### What was implemented
-- Created migration file at `supabase/migrations/20260228000001_add_checked_items_to_grocery_cache.sql`
-- Adds `checked_items` JSONB column with `NOT NULL DEFAULT '[]'::jsonb` to `combined_grocery_items` table
-- Column stores an array of item name strings representing crossed-off grocery items
-- Applied migration to production database via `execute_sql`
-- Verified existing RLS policies (select/insert/update/delete with `auth.uid() = user_id`) automatically cover the new column
+- Added `isPantryItem` to `@/lib/groceryList` import and `DEFAULT_PANTRY_ITEMS` from `@/lib/pantry` import in RecipeIngredientList
+- Added `pantryItems?: string[]` to `RecipeIngredientListProps`
+- Added `pantryItems` to RecipeIngredientList destructure
+- Filter applied before `groupByCategory`: merges `DEFAULT_PANTRY_ITEMS` with prop using same pattern as RecipeCard lines 64-69
+- Empty check now uses `displayedIngredients.length === 0` instead of `ingredients.length === 0`
+- Added `pantryItems?: string[]` to `EventRecipesTabProps`
+- EventRecipesTab destructures and passes `pantryItems` to RecipeIngredientList
+- EventDetailPage passes `pantryItems={grocery.pantryItems}` to EventRecipesTab
+- PersonalMealDetailPage passes `pantryItems={grocery.pantryItems}` to EventRecipesTab
 
 ### Files changed
-- `supabase/migrations/20260228000001_add_checked_items_to_grocery_cache.sql` (new)
+- `src/components/recipes/RecipeIngredientList.tsx`
+- `src/components/events/EventRecipesTab.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1589/1590, 58 files — 1 pre-existing flaky test in MealPlanPage)
-- Lint: N/A (migration-only change)
-
-### Learnings for future iterations
-- `apply_migration` MCP tool may require explicit user permission — `execute_sql` works as a fallback for applying DDL
-- RLS policies on this table are row-level (`auth.uid() = user_id`), so new columns are automatically covered without additional policies
-- The `IF NOT EXISTS` guard in the migration makes it safe to re-run
-
----
-
-## 2026-02-28 09:00 — US-005: Create grocery check persistence lib
-
-### What was implemented
-- Added `loadCheckedItems(contextType, contextId, userId): Promise<Set<string>>` to `src/lib/groceryCache.ts`
-  - Reads `checked_items` JSONB column from `combined_grocery_items` row, returns as `Set<string>`
-  - Returns empty Set when no cache row exists or on error
-- Added `saveCheckedItems(contextType, contextId, userId, checkedItems: Set<string>): Promise<void>` to `src/lib/groceryCache.ts`
-  - Updates the `checked_items` column on the existing cache row
-  - Uses `update` with `.eq()` chain (not upsert) since checked items only make sense when a cache row already exists
-- Added 7 new tests to `tests/unit/lib/groceryCache.test.ts` (total now 20 tests)
-
-### Files changed
-- `src/lib/groceryCache.ts` (modified — added two new exported functions)
-- `tests/unit/lib/groceryCache.test.ts` (modified — added loadCheckedItems and saveCheckedItems test blocks)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1596/1597, 58 files — 1 pre-existing flaky test in MealPlanPage)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- The `checked_items` column is not in generated Supabase types — use `Record<string, Json>` cast for update payload, same pattern as `per_recipe_items`
-- `update` is better than `upsert` for `saveCheckedItems` because: (a) avoids needing to provide required `items` field for Insert type, (b) semantically correct since you can't check off items without an existing grocery list
-- `select("checked_items")` works for narrow column reads — don't need `select("*")` when only one column is needed
-- The mock chain for `update` follows the same pattern as `delete`: `mockUpdate.mockReturnValue({ eq: ... })` with three `.eq()` calls
+- RecipeCard pantry pattern: `allPantryItems = pantryItems?.length > 0 ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])] : DEFAULT_PANTRY_ITEMS`; then filter with `isPantryItem(name, allPantryItems, unit)`
+- Filter must be applied before `groupByCategory` and the empty check must use the filtered array
 
 ---
 
-## 2026-02-28 09:20 — US-006: Add cross-off UI to grocery items
+## [2026-03-05 05:00] — US-006: Add General Items support to EventDetailPage and PersonalMealDetailPage
 
 ### What was implemented
-- Added checkbox (clickable toggle button) to `GroceryItemRow` — renders when `onToggleChecked` prop is provided
-- Checked items display with `line-through opacity-50` styling, remain visible in list
-- Threaded `checkedItems: Set<string>` and `onToggleChecked` callback through GroceryCategoryGroup and GroceryListSection
-- Added `checkedItems` state to MealPlanPage with `handleToggleChecked` callback
-- Loads checked state from DB via `loadCheckedItems()` when grocery tab is opened (alongside grocery cache loading)
-- Persists state via `saveCheckedItems()` on each toggle
-- Resets checked items when AI recombine runs (recipe changes invalidate checked state)
-- Crossing off does NOT affect exports — Instacart, CSV, and Copy all use the full item list
-- Added 6 new GroceryItemRow tests (checkbox renders, line-through styling, toggle callback, label toggling)
-- Added 4 new GroceryListSection tests (checkboxes render, checked styling, toggle callback, no checkboxes without prop)
-- Fixed MealPlanPage test mock to include `loadCheckedItems` and `saveCheckedItems`
+- Added `supportsGeneralItems: true` to `useGroceryList` in EventDetailPage
+- Added `supportsGeneralItems: true` to `useGroceryList` in PersonalMealDetailPage
+- Added `generalItems`, `onAddGeneralItemDirect`, `onBulkParseGroceryText`, `isAddingGeneral`, `onAddingGeneralChange` to GroceryListSection in EventDetailPage
+- Added same 5 General props to GroceryListSection in PersonalMealDetailPage
 
 ### Files changed
-- `src/components/recipes/GroceryItemRow.tsx` (modified — added isChecked/onToggleChecked props, checkbox UI, line-through styling)
-- `src/components/recipes/GroceryCategoryGroup.tsx` (modified — threaded checkedItems/onToggleChecked props)
-- `src/components/recipes/GroceryListSection.tsx` (modified — added checkedItems/onToggleChecked props, passed to GroceryCategoryGroup)
-- `src/components/mealplan/MealPlanPage.tsx` (modified — added checkedItems state, handleToggleChecked, load/save integration, reset on recombine)
-- `tests/unit/components/recipes/GroceryItemRow.test.tsx` (modified — added 6 checkbox tests)
-- `tests/unit/components/recipes/GroceryListSection.test.tsx` (modified — added 4 checked items tests)
-- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (modified — added loadCheckedItems/saveCheckedItems mock)
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1607/1607, 58 files)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- Custom checkbox button (not shadcn Checkbox which doesn't exist) works fine — styled with `border-gray-300` unchecked, `bg-purple border-purple` checked
-- When adding new exports to a module already mocked in tests (groceryCache), ALL test files that mock that module need updating
-- `Set<string>` works well for checked items — `has()` for checking, `add()`/`delete()` for toggling
-- Reset checked items in `runSmartCombine` callback ensures cross-off state doesn't persist across recipe changes
-- Checkbox renders conditionally via `onToggleChecked &&` guard — keeps the component backward-compatible for contexts that don't need cross-off
+- Pattern: add `supportsGeneralItems: true` to useGroceryList options, then pass the 5 General props (generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange) to GroceryListSection
+- Reference: MealPlanPage lines 77 and 516-526
 
 ---
 
-## 2026-02-28 09:30 — US-007: Create general_grocery_items database table
+## [2026-03-05 04:00] — US-005: Fix AddIngredientInput error when userId is empty
 
 ### What was implemented
-- Created migration at `supabase/migrations/20260228000002_create_general_grocery_items.sql`
-- Table: `general_grocery_items` with columns: id (UUID PK), user_id (UUID FK to auth.users), context_type (TEXT with CHECK for 'meal_plan'/'event'), context_id (TEXT), name (TEXT), quantity (TEXT nullable), unit (TEXT nullable), created_at (TIMESTAMPTZ)
-- UNIQUE constraint on (user_id, context_type, context_id, name) — prevents duplicate items within same user/week
-- RLS enabled with 4 policies (SELECT, INSERT, UPDATE, DELETE) using `auth.uid() = user_id`
-- Service role bypasses RLS automatically — no extra policy needed for external API edge function (US-010)
-- Applied migration via `execute_sql` (apply_migration permission was blocked)
+- Added `if (!userId) return;` guard at the top of `handleAdd` in RecipeIngredientList
 
 ### Files changed
-- `supabase/migrations/20260228000002_create_general_grocery_items.sql` (new)
+- `src/components/recipes/RecipeIngredientList.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1607/1607, 58 files)
-- Lint: N/A (migration-only change)
-
-### Learnings for future iterations
-- The `general_grocery_items` table mirrors the context_type/context_id pattern from `combined_grocery_items` — same 'meal_plan'/'event' check constraint
-- `quantity` is TEXT (not NUMERIC) because users type freeform values like '1/2' or 'a few'
-- No service role policy needed — Supabase service role key inherently bypasses RLS
-- Follow the `combined_grocery_items` RLS pattern (separate policies for SELECT/INSERT/UPDATE/DELETE) rather than the simpler `user_pantry_items` pattern (FOR ALL)
-
----
-
-## 2026-02-28 09:40 — US-008: Create general grocery items lib module
-
-### What was implemented
-- Created `src/lib/generalGrocery.ts` with five exports:
-  - `loadGeneralItems(contextType, contextId, userId): Promise<GeneralGroceryItem[]>` — fetches from `general_grocery_items` table, ordered by `created_at`
-  - `addGeneralItem(contextType, contextId, userId, item): Promise<void>` — inserts new row with name, optional quantity/unit
-  - `removeGeneralItem(itemId): Promise<void>` — deletes by id
-  - `updateGeneralItem(itemId, updates): Promise<void>` — updates name/quantity/unit fields
-  - `toRawIngredients(items): RawIngredientInput[]` — converts general items to combine-ingredients edge function format with `recipeName: 'General'` and `category: 'other'`
-- Added `GeneralGroceryItem` type to `src/types/index.ts`: `{ id, userId, contextType, contextId, name, quantity?, unit?, createdAt? }`
-- All CRUD functions handle errors gracefully with `console.error` (same pattern as groceryCache.ts)
-- Created comprehensive tests at `tests/unit/lib/generalGrocery.test.ts` (15 tests)
-
-### Files changed
-- `src/types/index.ts` (modified — added GeneralGroceryItem interface)
-- `src/lib/generalGrocery.ts` (new)
-- `tests/unit/lib/generalGrocery.test.ts` (new)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1622/1622, 59 files)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- Tables created by migration but not in generated Supabase types need `const db = supabase as any;` to bypass TypeScript's `.from()` overload checking
-- The `RawIngredientInput` interface is defined locally in `generalGrocery.ts` — it matches the shape used by `combine-ingredients/index.ts` edge function
-- `toRawIngredients()` sets `category: 'other'` for all general items — the AI combine pipeline will re-categorize them during processing
-- General items with `recipeName: 'General'` will appear as a source recipe badge in the Combined view (handled by UI in US-009)
-- The mock pattern for `select -> eq -> eq -> eq -> order` chain: mock each step in the chain, with `mockOrder` being the terminal that resolves the promise
+- EventRecipesTab passes `userId ?? ''` so an empty string reaches handleAdd when user is not loaded; early return prevents the `parseIngredientText` 'Not authenticated' throw
 
 ---
 
-## 2026-02-28 10:00 — US-009: Integrate general items into AI combine pipeline and grocery UI
+## [2026-03-05 03:00] — US-004: Consistent grocery refresh on recipe add/delete across all pages
 
 ### What was implemented
-- Added `extraRawIngredients` parameter to `smartCombineIngredients()` in `groceryList.ts` — general items are concatenated with recipe-derived raw ingredients before sending to the combine-ingredients edge function
-- Added `generalItems` state to MealPlanPage.tsx with full CRUD handlers (`handleAddGeneralItem`, `handleRemoveGeneralItem`, `handleUpdateGeneralItem`)
-- General items are loaded from database when grocery tab is opened, alongside recipe ingredients
-- General items are included in the AI combine pipeline via `toRawIngredients()` — they get merged, deduplicated, and categorized by the same AI that handles recipe ingredients
-- Cache invalidation: adding/removing/updating a general item calls `deleteGroceryCache()`, resets combine tracking refs, and triggers re-combine
-- Added 'General' tab to GroceryListSection alongside 'Combined' and per-recipe tabs
-- General tab shows list of general items with inline edit/delete controls and an always-visible add input at the bottom
-- General tab items support cross-off checkboxes (same mechanism as recipe items)
-- Empty state on General tab shows "No items yet" with the add input
-- When no recipe ingredients exist, GroceryListSection still renders with General as the default tab
-- All exports (CSV, clipboard, Instacart) automatically include general items because they use the AI-combined result
-- Added 12 new tests to GroceryListSection test file for General tab functionality
-- Updated 2 MealPlanPage tests that expected old empty state behavior (now show General tab instead)
-- Added `generalGrocery` module mock and `deleteGroceryCache` mock to MealPlanPage test file
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddCustomMeal` in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddRecipeMeal` in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddManualMeal` in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in parse-completion useEffect success path in PersonalMealDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleKeepRecipeAnyway` in EventDetailPage
+- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleRetryParse` success path in EventDetailPage
 
 ### Files changed
-- `src/lib/groceryList.ts` (modified — added `extraRawIngredients` parameter to `smartCombineIngredients`)
-- `src/components/mealplan/MealPlanPage.tsx` (modified — added general items state, CRUD handlers, cache invalidation, General tab props)
-- `src/components/recipes/GroceryListSection.tsx` (modified — added General tab with add/edit/remove UI, new props)
-- `tests/unit/components/recipes/GroceryListSection.test.tsx` (modified — added 12 General tab tests)
-- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (modified — added generalGrocery mock, deleteGroceryCache mock, updated 2 tests)
+- `src/pages/PersonalMealDetailPage.tsx`
+- `src/pages/EventDetailPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1634/1634, 59 files)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- `smartCombineIngredients` now accepts `extraRawIngredients` — any future source of ingredients (e.g., from an external API) can plug in the same way
-- Cache invalidation for general items requires resetting BOTH `lastCombinedRecipeIds` and `lastCombinedGeneralCount` refs to force re-combine
-- When `hasAnyIngredients` is false but `hasGeneralTab` is true, the tabs still render with General as the default tab — this required updating the `Tabs defaultValue` to be conditional
-- The `hasGeneralTab` flag is derived from `!!onAddGeneralItem` rather than checking `generalItems.length`, so the tab is always available for adding items
-- When MealPlanPage has no meals at all, we now render GroceryListSection with general items support instead of the old "No meals planned" empty state — this means users can always add general grocery items
-- Tests that click Radix UI tabs need `userEvent.setup()` + `await user.click()` rather than `fireEvent.click()` to properly trigger tab content changes
+- Pattern: follow EventDetailPage handleSubmitRecipe which already calls grocery.refreshGroceries() after loadEventData() on line 476
 
 ---
 
-## 2026-02-28 10:30 — US-010: Create external API edge function for general grocery items
+## [2026-03-05 02:00] — US-003: Wire onIngredientsChange to grocery.refreshGroceries and remove forceMount
 
 ### What was implemented
-- Created Supabase edge function at `supabase/functions/grocery-items-api/index.ts`
-- Full REST API (GET/POST/PUT/DELETE) for CRUD on `general_grocery_items` table
-- Auth via `x-api-key` header validated against `GROCERY_API_KEY` env var
-- User identification via `user_email` field — looks up user ID from auth.users via admin API
-- Uses Supabase service role client (`SUPABASE_SERVICE_ROLE_KEY`) to bypass RLS for all database operations
-- GET: list items by user_email, context_type, context_id (query params)
-- POST: add items with body `{ user_email, context_type, context_id, items: [{ name, quantity?, unit? }] }`
-- PUT: update item with body `{ item_id, name?, quantity?, unit? }`
-- DELETE: remove item with body `{ item_id }`
-- Duplicate item name (unique constraint violation) returns 409 with clear error message
-- Graceful fallback when GROCERY_API_KEY not configured (returns `{ success: true, skipped: true }`)
-- Returns 401 for invalid/missing API key, 404 for unknown user email
-- Follows same CORS, error handling, and response patterns as other edge functions
-- `verify_jwt: false` needed when deploying (external APIs use API key auth, not Supabase JWT)
+- Removed `forceMount` and `data-[state=inactive]:hidden` from recipes TabsContent in RecipeDetailTabs
+- Replaced `onIngredientsChange={() => {}}` with `onIngredientsChange={() => grocery.refreshGroceries()}` in EventDetailPage (~line 954)
+- Replaced `onIngredientsChange={() => {}}` with `onIngredientsChange={() => grocery.refreshGroceries()}` in PersonalMealDetailPage (~line 863)
+- Updated RecipeDetailTabs.test.tsx: changed forceMount test to assert recipes content is NOT in DOM after switching tabs
 
 ### Files changed
-- `supabase/functions/grocery-items-api/index.ts` (new)
+- `src/components/shared/RecipeDetailTabs.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+- `tests/unit/components/shared/RecipeDetailTabs.test.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1634/1634, 59 files — 1 pre-existing flaky test in MealPlanPage full suite, passes in isolation)
-- Lint: N/A (edge function is Deno, not part of frontend lint)
-
-### Learnings for future iterations
-- Edge function with Supabase client needs `createClient` from `https://esm.sh/@supabase/supabase-js@2` (Deno import)
-- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are automatically available in Supabase Edge Functions — no need to set them
-- `supabase.auth.admin.listUsers()` is the reliable way to look up users by email when using service role key
-- PostgreSQL unique constraint violation returns error code `23505` — use this to detect duplicate items and return 409
-- For external API functions, add `x-api-key` to CORS `Access-Control-Allow-Headers`
-- GET requests use URL query params (`new URL(req.url).searchParams`), POST/PUT/DELETE use `req.json()` body
-- The `profiles` table may not have email column — prefer `auth.admin.listUsers()` fallback for user lookup
-
----
-
-## 2026-02-28 11:00 — US-011: Create AI grocery text parser edge function
-
-### What was implemented
-- Created Supabase edge function at `supabase/functions/parse-grocery-text/index.ts`
-- Accepts POST with `{ text: string }` body containing freeform grocery list text
-- Uses Anthropic API (`claude-haiku-4-5-20251001`) to parse text into structured items with name, quantity, unit, and category
-- Handles any input format: comma-separated, line-separated, natural language, messy notes, or mixed
-- AI assigns categories from the 10 GroceryCategory values (produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other)
-- Category guidelines in prompt include CATEGORY_OVERRIDES logic (oils → pantry, tofu → meat_seafood, etc.)
-- Items without explicit quantities get null for quantity and unit
-- Validates and sanitizes AI output: ensures valid categories, filters empty names, normalizes types
-- Graceful fallback when ANTHROPIC_API_KEY not configured (returns `{ success: true, skipped: true }`)
-- Returns 400 for empty/missing text
-- Follows same CORS, OPTIONS, try-catch patterns as combine-ingredients/index.ts
-
-### Files changed
-- `supabase/functions/parse-grocery-text/index.ts` (new)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1633/1634, 59 files — 1 pre-existing flaky test in MealPlanPage)
-- Lint: N/A (edge function is Deno, not part of frontend lint)
-
-### Learnings for future iterations
-- Used `claude-haiku-4-5-20251001` instead of claude-sonnet for this simpler parsing task — faster and cheaper
-- The parse function is simpler than combine-ingredients: it just parses text into items, no merging/deduplication needed
-- Output validation is important: sanitize AI output by checking category values against a Set, normalizing types, and filtering empty names
-- The same parse-grocery-text function will be reused by both US-012 (bulk paste on General tab) and US-013 (bulk paste in recipe editing)
-
----
-
-## 2026-02-28 12:00 — US-012: Add bulk paste UI to General tab
-
-### What was implemented
-- Added "Paste list" button to General tab alongside the existing Add button
-- Clicking "Paste list" opens a textarea for pasting freeform grocery text
-- "Parse" button sends text to `parse-grocery-text` edge function via new `onBulkParseGroceryText` callback
-- Loading spinner shown during parsing, toast error on failure
-- On success, shows preview list with parsed items including name, quantity, unit, and category badge
-- Duplicate items (already in user's general list) are flagged with "duplicate" label and yellow styling, automatically skipped on confirm
-- Users can remove individual preview items via X button before confirming
-- "Add all" button adds all non-duplicate, non-removed items via `onAddGeneralItem()` calls
-- After adding, bulk paste state resets and "Paste list" button reappears
-- Cancel button available in both textarea and preview states
-- Added `handleBulkParseGroceryText` callback in MealPlanPage that invokes `supabase.functions.invoke("parse-grocery-text")`
-- Exported `ParsedGroceryItem` type from GroceryListSection for use by MealPlanPage
-- Cache invalidation handled automatically since each `onAddGeneralItem` call triggers MealPlanPage's existing cache invalidation logic
-- Added 12 new tests covering: button renders/hides, textarea opens, parse disabled when empty, successful parse shows preview, error shows toast, remove preview item, confirm adds items, duplicate handling, state clears after add, cancel from textarea, cancel from preview
-
-### Files changed
-- `src/components/recipes/GroceryListSection.tsx` (modified — added bulk paste UI, state, handlers, new prop, exported ParsedGroceryItem type)
-- `src/components/mealplan/MealPlanPage.tsx` (modified — added handleBulkParseGroceryText callback, passed to GroceryListSection)
-- `tests/unit/components/recipes/GroceryListSection.test.tsx` (modified — added 12 bulk paste tests)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1645/1646, 59 files — 1 pre-existing flaky test in MealPlanPage)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- The `ParsedGroceryItem` type (from the edge function) uses `quantity: number | null` while `GeneralGroceryItem` uses `quantity?: string` — conversion needed: `String(item.quantity)` for non-null, `undefined` for null
-- Duplicate detection uses `Set` of lowercased existing item names for case-insensitive comparison
-- Preview items tracked by index, removed items tracked via `removedPreviewIndices: Set<number>` — simpler than maintaining a filtered array
-- The `onBulkParseGroceryText` callback is a clean abstraction: GroceryListSection doesn't need to know about supabase client, MealPlanPage owns the edge function invocation
-- Each `onAddGeneralItem` call in the confirm loop triggers MealPlanPage's full invalidation + re-combine cycle — this is correct for data consistency but means N API calls for N items. A batch add function could optimize this in the future.
+- Removing forceMount means RecipeIngredientList remounts on tab switch, which will re-fetch fresh data
+- Test for forceMount needed inversion: `queryByText(...).not.toBeInTheDocument()` instead of `getByText(...).toBeInTheDocument()`
 
 ---
 
-## 2026-02-28 13:00 — US-013: Add bulk paste ingredients to recipe editing
+## [2026-03-05 01:00] — US-002: Add cache invalidation to RecipeIngredientList edit/delete and pass cacheContext
 
 ### What was implemented
-- Added "Paste ingredients" button to `IngredientFormRows` alongside the existing "Add Ingredient" button
-- Uses `ClipboardPaste` icon from lucide-react
-- Clicking "Paste ingredients" opens an inline textarea with a bordered container
-- "Parse" button sends text to `parse-grocery-text` edge function via `supabase.functions.invoke()`
-- Loading spinner (`Loader2`) shown on Parse button during parsing, button text changes to "Parsing..."
-- Parse button is disabled when textarea is empty or while parsing
-- On success, parsed items are converted to `IngredientRow` format and appended to existing rows (not replaced)
-- Conversion: `quantity: String(parsed.quantity)` for non-null (empty string for null), `unit: parsed.unit || ""`, `category` validated against allowed values (defaults to "other" for invalid)
-- Each parsed item gets a unique ID via `parsed-${crypto.randomUUID()}`
-- Textarea closes and clears after successful parse
-- On error (network error, `success: false`), shows toast: "Failed to parse ingredients. Please try again."
-- Cancel button closes the textarea and clears text
-- "Paste ingredients" button is disabled while textarea is open
-- Reuses the same `parse-grocery-text` edge function from US-011 — no new backend work
-- Added 12 new tests covering: button renders, textarea opens, paste button disabled when open, parse disabled when empty, parse enabled with text, successful parse appends rows, null quantity/unit handling, error handling (network error, success:false), cancel closes textarea, textarea closes after parse, invalid category defaults to "other"
+- Added `deleteGroceryCache(cacheContext...)` call in `handleEditItemText` in RecipeIngredientList (same pattern as handleAdd)
+- Added `deleteGroceryCache(cacheContext...)` call in `handleRemoveItem` in RecipeIngredientList
+- Added `cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string }` to `EventRecipesTabProps`
+- Added `cacheContext` to EventRecipesTab destructure and pass-through to RecipeIngredientList
+- EventDetailPage passes `cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}` to EventRecipesTab
+- PersonalMealDetailPage passes `cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}` to EventRecipesTab
 
 ### Files changed
-- `src/components/recipes/IngredientFormRows.tsx` (modified — added paste ingredients UI, state, parse handler)
-- `tests/unit/components/recipes/IngredientFormRows.test.tsx` (modified — added 12 paste ingredients tests)
+- `src/components/recipes/RecipeIngredientList.tsx`
+- `src/components/events/EventRecipesTab.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1658/1658, 59 files)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- The paste flow for recipe editing is simpler than the General tab bulk paste (US-012) — no preview/confirm step needed since parsed items become editable `IngredientRow` entries the user can modify before saving the recipe
-- `crypto.randomUUID()` works in all modern browsers and jsdom — no polyfill needed for tests
-- The `parse-grocery-text` edge function returns `quantity: number | null` but `IngredientRow.quantity` is `string` — conversion: `String(item.quantity)` for non-null, `""` for null
-- Category validation with a `Set<string>` of valid categories is a good pattern — protects against AI returning unexpected values
-- The "Paste ingredients" button is disabled while the textarea is open via the `showPasteArea` state flag — simple boolean guard prevents duplicate open
-- Both "Add Ingredient" and "Paste ingredients" buttons use `flex-1` to share the width evenly in the button row
+- `eventId` from `useParams` is `string | undefined` — always use `eventId ?? ""` when passing to typed string fields
+- handleEditItemText and handleRemoveItem needed `cacheContext` added to their useCallback dependency arrays
 
 ---
 
-## 2026-02-28 14:00 — US-014: Add meal_types and week_start_day columns to user_preferences
+## [2026-03-05 00:00] — US-001: Wire hasPendingChanges and onRecombine to GroceryListSection
 
 ### What was implemented
-- Created migration at `supabase/migrations/20260228000003_add_meal_settings_to_user_preferences.sql`
-- Adds `meal_types TEXT[] NOT NULL DEFAULT '{breakfast,lunch,dinner}'` column to `user_preferences`
-- Adds `week_start_day INTEGER NOT NULL DEFAULT 0` column to `user_preferences` (0=Sunday, 1=Monday)
-- Adds CHECK constraint `week_start_day_check` ensuring `week_start_day IN (0, 1)`
-- Applied migration via `execute_sql` (apply_migration permission was blocked)
-- Verified existing RLS policy "Users can manage their own preferences" (FOR ALL with `auth.uid() = user_id`) automatically covers new columns
+- Added `hasPendingChanges={grocery.hasPendingChanges}` and `onRecombine={grocery.triggerRecombine}` to GroceryListSection in EventDetailPage (~line 975-976)
+- Added same two props to GroceryListSection in PersonalMealDetailPage (~line 884-885)
 
 ### Files changed
-- `supabase/migrations/20260228000003_add_meal_settings_to_user_preferences.sql` (new)
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: pass (1657/1658, 59 files — 1 pre-existing flaky test in MealPlanPage)
-- Lint: N/A (migration-only change)
-
-### Learnings for future iterations
-- `user_preferences` table uses a single `FOR ALL` RLS policy (not separate per-operation like `combined_grocery_items`) — simpler pattern
-- `meal_types` is `TEXT[]` (PostgreSQL array) with default `'{breakfast,lunch,dinner}'` — this allows any subset and easy extension
-- `week_start_day` uses INTEGER with CHECK constraint for valid values — simple and effective for a small enum (0=Sunday, 1=Monday)
-- The `IF NOT EXISTS` guard on `ADD COLUMN` + conditional constraint creation make the migration idempotent
-
----
-
-## 2026-02-28 15:00 — US-015: Create settings page with preferences lib
-
-### What was implemented
-- Created `src/lib/userPreferences.ts` with two exports:
-  - `loadUserPreferences(userId): Promise<UserPreferences>` — reads meal_types, week_start_day, household_size from user_preferences table, returns defaults when no row exists
-  - `saveUserPreferences(userId, prefs): Promise<void>` — upserts on user_id with meal_types, week_start_day, household_size, updated_at
-- Added `UserPreferences` interface to `src/types/index.ts`: `{ mealTypes: string[], weekStartDay: number, householdSize: number }`
-- Created `src/pages/Settings.tsx` — standalone page with three sections:
-  - Meal Types: Switch toggles for Breakfast, Lunch, Dinner — prevents unchecking last one with toast warning
-  - Week Start Day: Select dropdown for Sunday (0) vs Monday (1)
-  - Household Size: Number input (min 1)
-- Save button persists all settings, shows success/error toast
-- Back button navigates to `/dashboard`
-- Added `/settings` route to `src/App.tsx` wrapped in AuthGuard
-- Added Settings menu item to Dashboard.tsx dropdown menu (between My Pantry and Sign Out) with Settings icon from lucide-react
-- Created 8 tests for userPreferences lib (load defaults, load stored, error handling, null field handling, upsert, throw on error)
-- Created 12 tests for Settings page (loading, three sections render, back button, meal type switches, load prefs, save, success/error toasts, last meal type prevention, household size)
-
-### Files changed
-- `src/types/index.ts` (modified — added UserPreferences interface)
-- `src/lib/userPreferences.ts` (new)
-- `src/pages/Settings.tsx` (new)
-- `src/App.tsx` (modified — added /settings route with AuthGuard)
-- `src/pages/Dashboard.tsx` (modified — added Settings import and dropdown menu item)
-- `tests/unit/lib/userPreferences.test.ts` (new)
-- `tests/unit/pages/Settings.test.tsx` (new)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1677/1678, 61 files — 1 pre-existing flaky test in MealPlanPage)
+- Tests: N/A
 - Lint: N/A
 
 ### Learnings for future iterations
-- `user_preferences` table is not in generated Supabase types — must use `const db = supabase as any;` pattern (same as `general_grocery_items`)
-- Toast testing: mock `sonner` module and check `toast.success`/`toast.error` as `vi.fn()` calls — do NOT try to find toast text in DOM (Toaster component not in test render)
-- `toast()` (base call, no `.success`/`.error`) is used for non-critical warnings like "must keep one meal type" — it renders without an icon
-- Switch component: `onCheckedChange` passes boolean `checked` value directly (not an event)
-- Number input: use `fireEvent.change` instead of `userEvent.clear`+`type` for number inputs to avoid intermediate state issues in tests
-- The `UserPreferences` type is intentionally minimal (mealTypes, weekStartDay, householdSize) — other columns like dietary_restrictions exist in DB but aren't exposed in Settings yet
-- Settings page defaults match the DB column defaults: mealTypes=['breakfast','lunch','dinner'], weekStartDay=0, householdSize=2
-
----
-
-## 2026-02-28 16:00 — US-016: Filter meal plan grid by user's meal type preferences
-
-### What was implemented
-- Added optional `mealTypes` prop to `MealPlanGrid` component — defaults to `['breakfast', 'lunch', 'dinner']` when not provided
-- Grid now only renders rows/columns for the meal types in the `mealTypes` prop using `activeMealTypes = mealTypes || DEFAULT_MEAL_TYPES`
-- Mobile layout `grid-cols` is dynamically computed: `grid-cols-[56px_${"1fr_".repeat(activeMealTypes.length).trim()}]`
-- Desktop layout naturally adjusts since it iterates `activeMealTypes` as rows (fewer meal types = fewer rows)
-- Widened `MealPlanSlot` `mealType` prop from strict union type to `string` to accept dynamic meal types
-- `MealPlanPage` now loads user preferences via `loadUserPreferences(userId)` in a `useEffect` and passes `userPreferences?.mealTypes` to `MealPlanGrid`
-- AddMealDialog doesn't need changes — it receives `mealType` from grid slot clicks, and only enabled slots are rendered
-- Existing meal plan items for disabled meal types are preserved in the database (display-only filtering)
-- Added `userPreferences` mock to MealPlanPage test file
-- Added 6 new MealPlanGrid tests covering: default behavior, subset rendering, fewer slots, mobile header adjustment, two-type rendering, and hidden items for disabled types
-
-### Files changed
-- `src/components/mealplan/MealPlanGrid.tsx` (modified — added mealTypes prop, dynamic grid cols, activeMealTypes)
-- `src/components/mealplan/MealPlanSlot.tsx` (modified — widened mealType prop from union to string)
-- `src/components/mealplan/MealPlanPage.tsx` (modified — added userPreferences state, loadUserPreferences import/call, pass mealTypes to MealPlanGrid)
-- `tests/unit/components/mealplan/MealPlanGrid.test.tsx` (modified — added 6 mealTypes prop tests)
-- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (modified — added userPreferences mock)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1683/1684, 61 files — 1 pre-existing flaky test in MealPlanPage full suite)
-- Lint: N/A
-
-### Learnings for future iterations
-- Desktop grid layout uses meal types as rows and days as columns — so reducing meal types just means fewer rows, no column count change needed
-- Mobile grid layout uses days as rows and meal types as columns — so reducing meal types requires dynamic `grid-cols` template
-- `"1fr_".repeat(n).trim()` generates the dynamic fractional column spec for mobile grid
-- The `mealType` prop on `MealPlanSlot` had to be widened from `"breakfast" | "lunch" | "dinner" | "snack"` to `string` to accept any dynamic value from user preferences
-- `userPreferences?.mealTypes` passes `undefined` when preferences haven't loaded yet, which correctly falls back to the default 3 meal types in MealPlanGrid
-- AddMealDialog doesn't have a meal type selector — it just displays the mealType passed from the slot, so no filtering logic needed there
-- The `userPreferences` state in MealPlanPage will also be used by US-017 for `weekStartDay`
-
----
-
-## 2026-02-28 17:00 — US-017: Apply week start day preference to meal plan
-
-### What was implemented
-- Modified `getWeekStart()` in MealPlanPage to accept `weekStartDay` parameter — for Monday-start, uses `(dayOfWeek + 6) % 7` offset calculation
-- MealPlanPage recalculates `weekStart` when user preferences load and `weekStartDay !== 0`
-- `handleCurrentWeek` uses `weekStartDay` from user preferences to navigate to the correct current week
-- MealPlanGrid accepts optional `weekStartDay` prop — builds `dayOrder` array and `dayLabels` dynamically
-  - `dayOrder` maps display position → actual dayOfWeek value (0=Sun..6=Sat)
-  - Sunday-start: `[0,1,2,3,4,5,6]` → Mon-start: `[1,2,3,4,5,6,0]`
-  - `renderSlot` uses `dayOrder[displayIndex]` to pass correct dayOfWeek to `MealPlanSlot`
-  - `getDateLabel` uses display index (offset from weekStart) so dates are always correct
-- WeekNavigation accepts optional `weekStartDay` prop — `isCurrentWeek()` uses the same `(dayOfWeek + 6) % 7` offset to compute current week's Monday
-- `handleViewMealEvent` uses `(dayOfWeek - weekStartDay + 7) % 7` to compute correct date offset from weekStart
-- All props flow: MealPlanPage → MealPlanGrid (`weekStartDay`) and → WeekNavigation (`weekStartDay`)
-- Added 5 new MealPlanGrid tests: Sunday default, Monday reorder, item mapping, date labels, onAddMeal dayOfWeek
-- Added 3 new WeekNavigation tests: hide Today on current Monday week, show Today on different week, Monday-start week range
-
-### Files changed
-- `src/components/mealplan/MealPlanPage.tsx` (modified — updated getWeekStart, handleCurrentWeek, useEffect for prefs, handleViewMealEvent, passed weekStartDay props)
-- `src/components/mealplan/MealPlanGrid.tsx` (modified — added weekStartDay prop, dayOrder/dayLabels, updated all DAY_LABELS references)
-- `src/components/mealplan/WeekNavigation.tsx` (modified — added weekStartDay prop, updated isCurrentWeek)
-- `tests/unit/components/mealplan/MealPlanGrid.test.tsx` (modified — added 5 weekStartDay prop tests)
-- `tests/unit/components/mealplan/WeekNavigation.test.tsx` (modified — added 3 weekStartDay prop tests)
-
-### Quality checks
-- Build: pass
-- Tests: pass (1691/1692, 61 files — 1 pre-existing flaky test in MealPlanPage full suite, passes in isolation)
-- Lint: N/A
-
-### Learnings for future iterations
-- This story only changes display order, NOT how dayOfWeek values are stored — `meal_plan_items.day_of_week` always uses JS convention (0=Sunday through 6=Saturday)
-- The `dayOrder` array is the key abstraction: it maps display position → stored dayOfWeek value, used consistently in both mobile and desktop layouts
-- `getDateLabel(displayIndex)` works correctly because it adds `displayIndex` (position from start of week) to `weekStart` date — no dayOfWeek mapping needed there
-- For `handleViewMealEvent`, the formula `(dayOfWeek - weekStartDay + 7) % 7` converts a stored dayOfWeek back to a display offset from weekStart
-- When user preferences load with `weekStartDay !== 0`, the initial `weekStart` state (computed with default Sunday) must be recalculated — this is handled in the useEffect that loads preferences
-- `(dayOfWeek + 6) % 7` is the standard formula to convert Sunday-based day (0=Sun) to Monday-based offset (Mon=0, Tue=1, ..., Sun=6)
-- The `ALL_DAY_LABELS` constant (renamed from `DAY_LABELS`) is the canonical Sunday-indexed array; `dayLabels` is the display-ordered version computed from `dayOrder`
+- Both detail pages use `grocery.hasPendingChanges` and `grocery.triggerRecombine` from `useGroceryList` hook
+- The GroceryListSection block in both pages ends at the `onAddItemsToRecipe` line before the empty-state Card
 
 ---

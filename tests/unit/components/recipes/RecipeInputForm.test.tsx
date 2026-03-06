@@ -232,7 +232,7 @@ describe("RecipeInputForm - Mode Switching", () => {
     );
 
     expect(screen.getByText("Ingredients")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /add ingredient/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Ingredient" })).toBeInTheDocument();
     expect(screen.queryByLabelText(/recipe url/i)).not.toBeInTheDocument();
   });
 

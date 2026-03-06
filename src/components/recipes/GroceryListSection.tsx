@@ -3,7 +3,6 @@ import { Loader2, RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
@@ -12,6 +11,7 @@ import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
 import type { GroceryItemEdit } from "./GroceryItemRow";
+import AddIngredientInput from "./AddIngredientInput";
 
 export interface ParsedGroceryItem {
   name: string;
@@ -40,14 +40,13 @@ interface GroceryListSectionProps {
   checkedItems?: Set<string>;
   onToggleChecked?: (itemName: string) => void;
   generalItems?: GeneralGroceryItem[];
-  onAddGeneralItemDirect?: (item: { name: string; quantity?: string; unit?: string }) => Promise<void>;
-  onRemoveGeneralItem?: (itemId: string) => void;
-  onUpdateGeneralItem?: (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => void;
+  onAddGeneralItemDirect?: (item: { name: string; quantity?: string; unit?: string; category?: string }) => Promise<void>;
   onBulkParseGroceryText?: (text: string) => Promise<ParsedGroceryItem[]>;
   hasPendingChanges?: boolean;
   onRecombine?: () => Promise<void> | void;
   isAddingGeneral?: boolean;
   onAddingGeneralChange?: (v: boolean) => void;
+  onAddItemsToRecipe?: (recipeId: string, text: string) => Promise<void>;
 }
 
 function groupSmartByCategory(
@@ -89,6 +88,7 @@ const GroceryListSection = ({
   onRecombine,
   isAddingGeneral: externalIsAdding,
   onAddingGeneralChange,
+  onAddItemsToRecipe,
 }: GroceryListSectionProps) => {
   const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -96,7 +96,6 @@ const GroceryListSection = ({
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [newItemUnit, setNewItemUnit] = useState("");
   // General tab state
-  const [bulkPasteText, setBulkPasteText] = useState("");
   const [localIsParsing, setLocalIsParsing] = useState(false);
   const isParsing = externalIsAdding ?? localIsParsing;
   const setIsParsing = onAddingGeneralChange ?? setLocalIsParsing;
@@ -137,8 +136,6 @@ const GroceryListSection = ({
     }
   };
 
-  const existingGeneralNames = new Set(generalItems.map((item) => item.name.toLowerCase()));
-
   // AI-processed General items — render these just like a recipe tab
   const generalSmartItems = perRecipeItems?.["General"] ?? [];
   const filteredGeneralItems = pantryItems.length > 0
@@ -146,22 +143,20 @@ const GroceryListSection = ({
     : generalSmartItems;
   const generalGrouped = groupSmartByCategory(filteredGeneralItems);
 
-  const handleBulkAdd = async () => {
-    if (!bulkPasteText.trim() || !onBulkParseGroceryText || !onAddGeneralItemDirect) return;
+  const handleBulkAdd = async (text: string) => {
+    if (!onBulkParseGroceryText || !onAddGeneralItemDirect) return;
     setIsParsing(true);
     try {
-      const items = await onBulkParseGroceryText(bulkPasteText);
+      const items = await onBulkParseGroceryText(text);
       for (const item of items) {
-        const isDuplicate = existingGeneralNames.has(item.name.toLowerCase());
-        if (isDuplicate) continue;
         await onAddGeneralItemDirect({
           name: item.name,
           quantity: item.quantity != null ? String(item.quantity) : undefined,
           unit: item.unit ?? undefined,
+          category: item.category,
         });
       }
-      setBulkPasteText("");
-      await onRecombine?.();
+      // Items appear immediately in display state — Reprocess button shown for AI dedup
     } catch {
       toast.error("Failed to add items. Please try again.");
     } finally {
@@ -282,7 +277,7 @@ const GroceryListSection = ({
                     className="text-xs border-purple/30 text-purple hover:bg-purple/5 animate-in fade-in duration-300"
                   >
                     <RefreshCw className="h-3 w-3 mr-1" />
-                    Reprocess
+                    Recombine
                   </Button>
                 )}
                 <GroceryExportMenu
@@ -344,7 +339,7 @@ const GroceryListSection = ({
                       <GroceryCategoryGroup
                         key={`${recipe.id}-${category}`}
                         category={category}
-                        items={items}
+                        items={items.map((i) => ({ ...i, sourceRecipes: [] }))}
                         editable={editable}
                         onEditItem={onEditItem}
                         onEditItemText={onEditItemText ? (orig, text) => onEditItemText(orig, text, recipe.id) : undefined}
@@ -353,6 +348,13 @@ const GroceryListSection = ({
                         onToggleChecked={onToggleChecked}
                       />
                     ))
+                  )}
+                  {onAddItemsToRecipe && (
+                    <AddIngredientInput
+                      onSubmit={(text) => onAddItemsToRecipe(recipe.id, text)}
+                      placeholder="Add ingredient, e.g. 2 tbsp olive oil"
+                      className="mt-3 border-t pt-3"
+                    />
                   )}
                 </TabsContent>
               );
@@ -386,7 +388,7 @@ const GroceryListSection = ({
                         <GroceryCategoryGroup
                           key={`general-${category}`}
                           category={category}
-                          items={items}
+                          items={items.map((i) => ({ ...i, sourceRecipes: [] }))}
                           onEditItemText={onEditItemText}
                           onRemoveItem={onRemoveItem}
                           checkedItems={checkedItems}
@@ -397,36 +399,10 @@ const GroceryListSection = ({
                   )}
 
                   {/* Add general items */}
-                  <div className="mt-3 border-t pt-3 space-y-2">
-                    <Textarea
-                      value={bulkPasteText}
-                      onChange={(e) => setBulkPasteText(e.target.value)}
-                      placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
-                      className="min-h-[80px] text-sm"
-                      aria-label="General items textarea"
-                    />
-                    <div className="flex justify-end">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleBulkAdd}
-                        disabled={!bulkPasteText.trim() || isParsing}
-                        className="text-xs"
-                      >
-                        {isParsing ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Adding ingredients...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+                  <AddIngredientInput
+                    onSubmit={handleBulkAdd}
+                    className="mt-3 border-t pt-3"
+                  />
                 </div>
               </TabsContent>
             )}

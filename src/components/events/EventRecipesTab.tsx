@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,9 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
-  ListChecks,
 } from "lucide-react";
 import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary } from "@/types";
+import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
 
 export interface EventRecipeWithRatings extends EventRecipeWithNotes {
   ratingSummary?: RecipeRatingsSummary;
@@ -56,7 +57,10 @@ interface EventRecipesTabProps {
   onDeleteNoteClick: (note: RecipeNote) => void;
   onDeleteRecipeClick: (recipe: Recipe) => void;
   onRateRecipe?: (recipe: EventRecipeWithRatings) => void;
-  onEditIngredients?: (recipe: Recipe) => void;
+  userId?: string;
+  onIngredientsChange?: (recipeId: string) => void;
+  cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string };
+  pantryItems?: string[];
 }
 
 const EventRecipesTab = ({
@@ -74,8 +78,25 @@ const EventRecipesTab = ({
   onDeleteNoteClick,
   onDeleteRecipeClick,
   onRateRecipe,
-  onEditIngredients,
+  userId,
+  onIngredientsChange,
+  cacheContext,
+  pantryItems,
 }: EventRecipesTabProps) => {
+  const [expandedIngredients, setExpandedIngredients] = useState<Set<string>>(new Set());
+
+  const toggleIngredients = (recipeId: string) => {
+    setExpandedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(recipeId)) {
+        next.delete(recipeId);
+      } else {
+        next.add(recipeId);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
@@ -219,18 +240,20 @@ const EventRecipesTab = ({
                           {notes.length} {notes.length !== 1 ? "notes" : "note"}
                         </span>
                       )}
-                      {onEditIngredients && recipe.createdBy === user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
-                          aria-label={`Edit ingredients for ${recipe.name}`}
-                          onClick={() => onEditIngredients(recipe)}
-                        >
-                          <ListChecks className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          <span className="text-[10px] sm:text-xs">Ingredients</span>
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
+                        aria-label={`Toggle ingredients for ${recipe.name}`}
+                        onClick={() => toggleIngredients(recipe.id)}
+                      >
+                        {expandedIngredients.has(recipe.id) ? (
+                          <ChevronUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        )}
+                        <span className="text-[10px] sm:text-xs">Ingredients</span>
+                      </Button>
                       {(recipe.createdBy === user?.id || canManageRecipes) && (
                         <>
                           <Button
@@ -255,6 +278,21 @@ const EventRecipesTab = ({
                       )}
                     </div>
                   </div>
+
+                  {/* Expandable Ingredients Section */}
+                  {expandedIngredients.has(recipe.id) && (
+                    <>
+                      <Separator className="bg-purple/10" />
+                      <RecipeIngredientList
+                        recipeId={recipe.id}
+                        userId={userId ?? ""}
+                        editable={recipe.createdBy === userId}
+                        onIngredientsChange={() => onIngredientsChange?.(recipe.id)}
+                        cacheContext={cacheContext}
+                        pantryItems={pantryItems}
+                      />
+                    </>
+                  )}
 
                   {/* Expandable Notes Section */}
                   {notes.length > 0 && (

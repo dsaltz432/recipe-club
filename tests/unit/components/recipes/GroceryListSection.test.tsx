@@ -785,12 +785,15 @@ describe("GroceryListSection", () => {
     expect(screen.getByText("Add item")).toBeInTheDocument();
   });
 
-  it("passes editable props to GroceryCategoryGroup for smart items", () => {
+  it("passes editable props to GroceryCategoryGroup for per-recipe tab items", async () => {
+    const user = userEvent.setup();
     const onEditItem = vi.fn();
     const onRemoveItem = vi.fn();
-    const smartItems: SmartGroceryItem[] = [
-      { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Stir Fry"] },
-    ];
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "broccoli", displayName: "broccoli", totalQuantity: 2, unit: "head", category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
 
     render(
       <GroceryListSection
@@ -802,9 +805,12 @@ describe("GroceryListSection", () => {
         editable
         onEditItem={onEditItem}
         onRemoveItem={onRemoveItem}
-        smartGroceryItems={smartItems}
+        perRecipeItems={perRecipeItems}
       />
     );
+
+    // Navigate to per-recipe tab (edit/remove buttons are on per-recipe tabs, not Combined)
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
     // Verify edit buttons are visible (these come from GroceryItemRow via GroceryCategoryGroup)
     expect(screen.getAllByLabelText("Edit item").length).toBeGreaterThan(0);
@@ -932,7 +938,7 @@ describe("GroceryListSection", () => {
     { id: "gen-2", userId: "user-1", contextType: "meal_plan", contextId: "2026-03-02", name: "dish soap" },
   ];
 
-  it("renders General tab when onAddGeneralItem is provided", () => {
+  it("renders General tab when onBulkParseGroceryText is provided", () => {
     render(
       <GroceryListSection
         recipes={recipes}
@@ -940,7 +946,7 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
       />
     );
@@ -948,7 +954,7 @@ describe("GroceryListSection", () => {
     expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
   });
 
-  it("does not render General tab when onAddGeneralItem is not provided", () => {
+  it("does not render General tab when onBulkParseGroceryText is not provided", () => {
     render(
       <GroceryListSection
         recipes={recipes}
@@ -972,7 +978,7 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
       />
     );
@@ -999,7 +1005,7 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={generalItems}
         perRecipeItems={generalPerRecipeItems}
       />
@@ -1011,9 +1017,12 @@ describe("GroceryListSection", () => {
     expect(screen.getByText(/dish soap/)).toBeInTheDocument();
   });
 
-  it("calls onAddGeneralItem when adding a general item", async () => {
+  it("calls onBulkParseGroceryText and onAddGeneralItemDirect when Add is clicked on General tab", async () => {
     const user = userEvent.setup();
-    const onAddGeneralItem = vi.fn().mockResolvedValue(undefined);
+    const onBulkParseGroceryText = vi.fn().mockResolvedValue([
+      { name: "toilet paper", quantity: 4, unit: "pack", category: "other" },
+    ]);
+    const onAddGeneralItemDirect = vi.fn().mockResolvedValue(undefined);
 
     render(
       <GroceryListSection
@@ -1022,54 +1031,24 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={onAddGeneralItem}
+        onBulkParseGroceryText={onBulkParseGroceryText}
+        onAddGeneralItemDirect={onAddGeneralItemDirect}
         generalItems={[]}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
 
-    fireEvent.change(screen.getByLabelText("General item name"), { target: { value: "toilet paper" } });
-    fireEvent.change(screen.getByLabelText("General item quantity"), { target: { value: "4" } });
-    fireEvent.change(screen.getByLabelText("General item unit"), { target: { value: "pack" } });
-
-    fireEvent.click(screen.getByText("Add"));
+    const textarea = screen.getByRole("textbox");
+    await user.type(textarea, "4 packs toilet paper");
+    await user.click(screen.getByRole("button", { name: /Add/ }));
 
     await waitFor(() => {
-      expect(onAddGeneralItem).toHaveBeenCalledWith({
+      expect(onBulkParseGroceryText).toHaveBeenCalledWith("4 packs toilet paper");
+      expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
         name: "toilet paper",
         quantity: "4",
         unit: "pack",
-      });
-    });
-  });
-
-  it("calls onAddGeneralItem on Enter key in general add form", async () => {
-    const user = userEvent.setup();
-    const onAddGeneralItem = vi.fn().mockResolvedValue(undefined);
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={onAddGeneralItem}
-        generalItems={[]}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-
-    fireEvent.change(screen.getByLabelText("General item name"), { target: { value: "napkins" } });
-    fireEvent.keyDown(screen.getByLabelText("General item name"), { key: "Enter" });
-
-    await waitFor(() => {
-      expect(onAddGeneralItem).toHaveBeenCalledWith({
-        name: "napkins",
-        quantity: undefined,
-        unit: undefined,
       });
     });
   });
@@ -1091,7 +1070,7 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={generalItems}
         perRecipeItems={generalPerRecipeItems}
         checkedItems={new Set<string>()}
@@ -1112,17 +1091,17 @@ describe("GroceryListSection", () => {
         recipeContentMap={{}}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
       />
     );
 
     // General tab should be the default when no ingredients
     expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
-    expect(screen.getByLabelText("General item name")).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("disables Add button when general item name is empty", async () => {
+  it("disables Add button on General tab when textarea is empty", async () => {
     const user = userEvent.setup();
 
     render(
@@ -1132,20 +1111,20 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
 
-    const addButton = screen.getAllByText("Add").find(el => el.tagName === "BUTTON") as HTMLButtonElement;
+    const addButton = screen.getByRole("button", { name: /Add/ }) as HTMLButtonElement;
     expect(addButton.disabled).toBe(true);
   });
 
-  // ---- Bulk paste tests ----
+  // ---- General tab AddIngredientInput tests ----
 
-  it("shows Paste list button when onBulkParseGroceryText is provided", async () => {
+  it("shows AddIngredientInput on General tab when onBulkParseGroceryText is provided", async () => {
     const user = userEvent.setup();
 
     render(
@@ -1155,20 +1134,17 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
-        onBulkParseGroceryText={vi.fn()}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
 
-    expect(screen.getByText("Paste list")).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("does not show Paste list button when onBulkParseGroceryText is not provided", async () => {
-    const user = userEvent.setup();
-
+  it("does not render General tab when only onAddGeneralItemDirect is provided", () => {
     render(
       <GroceryListSection
         recipes={recipes}
@@ -1176,98 +1152,12 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
+        onAddGeneralItemDirect={vi.fn()}
         generalItems={[]}
       />
     );
 
-    await user.click(screen.getByRole("tab", { name: "General" }));
-
-    expect(screen.queryByText("Paste list")).not.toBeInTheDocument();
-  });
-
-  it("opens textarea when Paste list button is clicked", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
-        generalItems={[]}
-        onBulkParseGroceryText={vi.fn()}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-
-    expect(screen.getByLabelText("Bulk paste textarea")).toBeInTheDocument();
-    expect(screen.getByText("Parse")).toBeInTheDocument();
-  });
-
-  it("disables Parse button when textarea is empty", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
-        generalItems={[]}
-        onBulkParseGroceryText={vi.fn()}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-
-    const parseButton = screen.getByText("Parse") as HTMLButtonElement;
-    expect(parseButton.closest("button")!.disabled).toBe(true);
-  });
-
-  it("calls onBulkParseGroceryText and shows preview on successful parse", async () => {
-    const user = userEvent.setup();
-    const mockParse = vi.fn().mockResolvedValue([
-      { name: "milk", quantity: 1, unit: "gallon", category: "dairy" },
-      { name: "bread", quantity: null, unit: null, category: "bakery" },
-    ]);
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn()}
-        generalItems={[]}
-        onBulkParseGroceryText={mockParse}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-
-    fireEvent.change(screen.getByLabelText("Bulk paste textarea"), { target: { value: "milk, bread" } });
-    await user.click(screen.getByText("Parse"));
-
-    await waitFor(() => {
-      expect(mockParse).toHaveBeenCalledWith("milk, bread");
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed items (2)")).toBeInTheDocument();
-      expect(screen.getByText(/milk/)).toBeInTheDocument();
-      expect(screen.getByText(/bread/)).toBeInTheDocument();
-      expect(screen.getByText("Add all")).toBeInTheDocument();
-    });
+    expect(screen.queryByRole("tab", { name: "General" })).not.toBeInTheDocument();
   });
 
   it("shows toast error when bulk add fails", async () => {
@@ -1282,26 +1172,26 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={vi.fn().mockResolvedValue(undefined)}
-        generalItems={[]}
         onBulkParseGroceryText={mockParse}
+        onAddGeneralItemDirect={vi.fn().mockResolvedValue(undefined)}
+        generalItems={[]}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
 
-    fireEvent.change(screen.getByLabelText("Bulk paste textarea"), { target: { value: "stuff" } });
-    await user.click(screen.getByRole("button", { name: /Add/i }));
+    const textarea = screen.getByRole("textbox");
+    await user.type(textarea, "stuff");
+    await user.click(screen.getByRole("button", { name: /Add/ }));
 
     await waitFor(() => {
       expect(mockToast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
     });
   });
 
-  it("parses and adds all items in one step when Add is clicked", async () => {
+  it("parses and adds all items in one step when Add is clicked on General tab", async () => {
     const user = userEvent.setup();
-    const onAddGeneralItem = vi.fn().mockResolvedValue(undefined);
+    const onAddGeneralItemDirect = vi.fn().mockResolvedValue(undefined);
     const mockParse = vi.fn().mockResolvedValue([
       { name: "milk", quantity: 1, unit: "gallon", category: "dairy" },
       { name: "bread", quantity: null, unit: null, category: "bakery" },
@@ -1314,25 +1204,25 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={onAddGeneralItem}
-        generalItems={[]}
         onBulkParseGroceryText={mockParse}
+        onAddGeneralItemDirect={onAddGeneralItemDirect}
+        generalItems={[]}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-    fireEvent.change(screen.getByLabelText("Bulk paste textarea"), { target: { value: "milk, bread" } });
-    await user.click(screen.getByRole("button", { name: /Add/i }));
+    const textarea = screen.getByRole("textbox");
+    await user.type(textarea, "milk, bread");
+    await user.click(screen.getByRole("button", { name: /Add/ }));
 
     await waitFor(() => {
-      expect(onAddGeneralItem).toHaveBeenCalledTimes(2);
-      expect(onAddGeneralItem).toHaveBeenCalledWith({
+      expect(onAddGeneralItemDirect).toHaveBeenCalledTimes(2);
+      expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
         name: "milk",
         quantity: "1",
         unit: "gallon",
       });
-      expect(onAddGeneralItem).toHaveBeenCalledWith({
+      expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
         name: "bread",
         quantity: undefined,
         unit: undefined,
@@ -1342,7 +1232,7 @@ describe("GroceryListSection", () => {
 
   it("skips duplicate items when bulk adding", async () => {
     const user = userEvent.setup();
-    const onAddGeneralItem = vi.fn().mockResolvedValue(undefined);
+    const onAddGeneralItemDirect = vi.fn().mockResolvedValue(undefined);
     const mockParse = vi.fn().mockResolvedValue([
       { name: "paper towels", quantity: null, unit: null, category: "other" },
       { name: "bread", quantity: null, unit: null, category: "bakery" },
@@ -1355,21 +1245,21 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={onAddGeneralItem}
-        generalItems={generalItems}
         onBulkParseGroceryText={mockParse}
+        onAddGeneralItemDirect={onAddGeneralItemDirect}
+        generalItems={generalItems}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-    fireEvent.change(screen.getByLabelText("Bulk paste textarea"), { target: { value: "paper towels, bread" } });
-    await user.click(screen.getByRole("button", { name: /Add/i }));
+    const textarea = screen.getByRole("textbox");
+    await user.type(textarea, "paper towels, bread");
+    await user.click(screen.getByRole("button", { name: /Add/ }));
 
     await waitFor(() => {
       // Only bread should be added (paper towels is duplicate)
-      expect(onAddGeneralItem).toHaveBeenCalledTimes(1);
-      expect(onAddGeneralItem).toHaveBeenCalledWith({
+      expect(onAddGeneralItemDirect).toHaveBeenCalledTimes(1);
+      expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
         name: "bread",
         quantity: undefined,
         unit: undefined,
@@ -1377,9 +1267,9 @@ describe("GroceryListSection", () => {
     });
   });
 
-  it("clears bulk paste state after successful add", async () => {
+  it("clears textarea after successful add on General tab", async () => {
     const user = userEvent.setup();
-    const onAddGeneralItem = vi.fn().mockResolvedValue(undefined);
+    const onAddGeneralItemDirect = vi.fn().mockResolvedValue(undefined);
     const mockParse = vi.fn().mockResolvedValue([
       { name: "milk", quantity: null, unit: null, category: "dairy" },
     ]);
@@ -1391,48 +1281,20 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        onAddGeneralItem={onAddGeneralItem}
-        generalItems={[]}
         onBulkParseGroceryText={mockParse}
+        onAddGeneralItemDirect={onAddGeneralItemDirect}
+        generalItems={[]}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-    fireEvent.change(screen.getByLabelText("Bulk paste textarea"), { target: { value: "milk" } });
-    await user.click(screen.getByRole("button", { name: /Add/i }));
+    const textarea = screen.getByRole("textbox");
+    await user.type(textarea, "milk");
+    await user.click(screen.getByRole("button", { name: /Add/ }));
 
     await waitFor(() => {
-      // Should go back to showing the Paste list button
-      expect(screen.getByText("Paste list")).toBeInTheDocument();
-      expect(screen.queryByLabelText("Bulk paste textarea")).not.toBeInTheDocument();
+      expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("");
     });
-  });
-
-  it("closes bulk paste on Cancel", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-        onAddGeneralItem={vi.fn().mockResolvedValue(undefined)}
-        generalItems={[]}
-        onBulkParseGroceryText={vi.fn()}
-      />
-    );
-
-    await user.click(screen.getByRole("tab", { name: "General" }));
-    await user.click(screen.getByText("Paste list"));
-    expect(screen.getByLabelText("Bulk paste textarea")).toBeInTheDocument();
-
-    await user.click(screen.getByText("Cancel"));
-
-    expect(screen.queryByLabelText("Bulk paste textarea")).not.toBeInTheDocument();
-    expect(screen.getByText("Paste list")).toBeInTheDocument();
   });
 
   // ---- Reprocess button tests ----
@@ -1525,11 +1387,14 @@ describe("GroceryListSection", () => {
     expect(onRecombine).toHaveBeenCalledTimes(1);
   });
 
-  it("passes onEditItemText to category groups on Combined tab", () => {
+  it("passes onEditItemText to category groups on per-recipe tab", async () => {
+    const user = userEvent.setup();
     const onEditItemText = vi.fn();
-    const editSmartItems: SmartGroceryItem[] = [
-      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
-    ];
+    const editPerRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
 
     render(
       <GroceryListSection
@@ -1538,11 +1403,13 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        smartGroceryItems={editSmartItems}
+        perRecipeItems={editPerRecipeItems}
         onEditItemText={onEditItemText}
         onRemoveItem={vi.fn()}
       />
     );
+
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
     // Edit buttons should be visible on items (powered by onEditText)
     const editButtons = screen.getAllByLabelText("Edit item");
@@ -1553,11 +1420,14 @@ describe("GroceryListSection", () => {
     expect(screen.getByLabelText("Edit item text")).toBeInTheDocument();
   });
 
-  it("passes onRemoveItem to category groups and calls handler on delete", () => {
+  it("passes onRemoveItem to category groups and calls handler on delete", async () => {
+    const user = userEvent.setup();
     const onRemoveItem = vi.fn();
-    const removeSmartItems: SmartGroceryItem[] = [
-      { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
-    ];
+    const removePerRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
 
     render(
       <GroceryListSection
@@ -1566,15 +1436,97 @@ describe("GroceryListSection", () => {
         recipeContentMap={contentMap}
         onParseRecipe={mockParseRecipe}
         eventName="Test Event"
-        smartGroceryItems={removeSmartItems}
+        perRecipeItems={removePerRecipeItems}
         onRemoveItem={onRemoveItem}
       />
     );
+
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
 
     const removeButtons = screen.getAllByLabelText("Remove item");
     expect(removeButtons.length).toBeGreaterThan(0);
 
     fireEvent.click(removeButtons[0]);
     expect(onRemoveItem).toHaveBeenCalled();
+  });
+
+  it("shows AddIngredientInput on per-recipe tab when onAddItemsToRecipe is provided", async () => {
+    const user = userEvent.setup();
+    const onAddItemsToRecipe = vi.fn().mockResolvedValue(undefined);
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        perRecipeItems={perRecipeItems}
+        onAddItemsToRecipe={onAddItemsToRecipe}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    expect(screen.getByPlaceholderText(/Add ingredient,/)).toBeInTheDocument();
+  });
+
+  it("calls onAddItemsToRecipe with recipeId and text when Add is clicked on per-recipe tab", async () => {
+    const user = userEvent.setup();
+    const onAddItemsToRecipe = vi.fn().mockResolvedValue(undefined);
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        perRecipeItems={perRecipeItems}
+        onAddItemsToRecipe={onAddItemsToRecipe}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    const textarea = screen.getByPlaceholderText(/Add ingredient,/);
+    await user.type(textarea, "2 cups flour");
+    await user.click(screen.getByRole("button", { name: /Add/ }));
+
+    expect(onAddItemsToRecipe).toHaveBeenCalledWith("recipe-1", "2 cups flour");
+  });
+
+  it("does not show AddIngredientInput on per-recipe tab when onAddItemsToRecipe is not provided", async () => {
+    const user = userEvent.setup();
+    const perRecipeItems: Record<string, SmartGroceryItem[]> = {
+      "Tomato Soup": [
+        { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
+      ],
+    };
+
+    render(
+      <GroceryListSection
+        recipes={recipes}
+        recipeIngredients={ingredients}
+        recipeContentMap={contentMap}
+        onParseRecipe={mockParseRecipe}
+        eventName="Test Event"
+        perRecipeItems={perRecipeItems}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Tomato Soup" }));
+
+    expect(screen.queryByPlaceholderText(/Add ingredient,/)).not.toBeInTheDocument();
   });
 });
