@@ -282,6 +282,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                   userId={userId ?? ''}
                   editable={recipe.createdBy === userId}
                   onIngredientsChange={onIngredientsChange}
+                  pantryItems={pantryItems}
                 />
               </div>
             )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -19,6 +20,9 @@ const AddIngredientInput = ({ onSubmit, placeholder, className }: AddIngredientI
     try {
       await onSubmit(text);
       setText("");
+    } catch (error) {
+      console.error("Error adding ingredient:", error);
+      toast.error("Failed to add ingredient");
     } finally {
       setIsSubmitting(false);
     }

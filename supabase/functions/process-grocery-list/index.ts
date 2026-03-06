@@ -70,6 +70,9 @@ Combine items that are the same real ingredient but appear separately.
 - "black peppercorn" ≠ "black pepper" (whole peppercorns ≠ ground pepper - keep separate)
 - "cinnamon stick" ≠ "cinnamon" / "ground cinnamon" (different forms - keep separate)
 
+## Pluralization merging:
+- Treat singular and plural forms of the same ingredient as the same item and merge them: "jalapeño" + "jalapeños" → merge; "onion" + "onions" → merge; "tomato" + "tomatoes" → merge. Use the plural form as the canonical name when quantities combine to more than 1.
+
 ## MUST-MERGE ingredient variants (same grocery item):
 - ALL salt types → "salt": "kosher salt", "sea salt", "table salt", "flaky salt", "coarse salt"
 - ALL onion colors → "onion": "yellow onion", "white onion", "sweet onion" (but NOT "red onion", "green onion", "shallot")

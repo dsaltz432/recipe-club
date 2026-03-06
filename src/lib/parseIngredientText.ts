@@ -1,6 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ParsedGroceryItem } from "@/components/recipes/GroceryListSection";
 
+function fallbackParse(text: string): ParsedGroceryItem[] {
+  return text
+    .split(/\n|,/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, quantity: null, unit: null, category: "other" }));
+}
+
 export async function parseIngredientText(
   text: string,
   userId: string
@@ -31,9 +39,9 @@ export async function parseIngredientText(
     .eq("id", tempRecipe.id)
     .then(() => {});
 
-  if (error) throw error;
-  if (!data?.success)
-    throw new Error(data?.error ?? "Failed to parse grocery text");
-  if (data.skipped) return [];
-  return (data.parsed?.ingredients ?? []) as ParsedGroceryItem[];
+  // If AI parsing fails or returns nothing, fall back to treating each line as a
+  // raw ingredient name so the user's input is never silently dropped.
+  if (error || !data?.success || data.skipped) return fallbackParse(text);
+  const parsed = (data.parsed?.ingredients ?? []) as ParsedGroceryItem[];
+  return parsed.length > 0 ? parsed : fallbackParse(text);
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { RecipeIngredient, SmartGroceryItem, GroceryCategory } from "@/types";
 import { CATEGORY_ORDER, isPantryItem } from "@/lib/groceryList";
@@ -87,7 +88,7 @@ const RecipeIngredientList = ({
       if (!matched) return;
       await supabase
         .from("recipe_ingredients")
-        .update({ name: newText })
+        .update({ name: newText, quantity: null, unit: null })
         .eq("id", matched.id);
       await loadIngredients();
       if (cacheContext) {
@@ -120,24 +121,34 @@ const RecipeIngredientList = ({
   const handleAdd = useCallback(
     async (text: string) => {
       if (!userId) return;
-      const parsed = await parseIngredientText(text, userId);
-      if (parsed.length > 0) {
-        await supabase.from("recipe_ingredients").insert(
-          parsed.map((item, index) => ({
-            recipe_id: recipeId,
-            name: item.name,
-            quantity: item.quantity ?? null,
-            unit: item.unit ?? null,
-            category: item.category,
-            sort_order: ingredients.length + index,
-          }))
-        );
+      try {
+        const parsed = await parseIngredientText(text, userId);
+        if (parsed.length === 0) {
+          toast.error("No ingredients recognized — try being more specific");
+          return;
+        }
+        const { error: insertError } = await supabase
+          .from("recipe_ingredients")
+          .insert(
+            parsed.map((item, index) => ({
+              recipe_id: recipeId,
+              name: item.name,
+              quantity: item.quantity ?? null,
+              unit: item.unit ?? null,
+              category: item.category,
+              sort_order: ingredients.length + index,
+            }))
+          );
+        if (insertError) throw insertError;
+        await loadIngredients();
+        if (cacheContext) {
+          await deleteGroceryCache(cacheContext.type, cacheContext.id, cacheContext.userId);
+        }
+        onIngredientsChange?.();
+      } catch (error) {
+        console.error("Error adding ingredient:", error);
+        throw error;
       }
-      await loadIngredients();
-      if (cacheContext) {
-        await deleteGroceryCache(cacheContext.type, cacheContext.id, cacheContext.userId);
-      }
-      onIngredientsChange?.();
     },
     [recipeId, userId, ingredients.length, loadIngredients, cacheContext, onIngredientsChange]
   );

@@ -147,7 +147,7 @@ const PersonalMealDetailPage = () => {
     userId: user?.id,
     recipeIds: groceryRecipeIds,
     recipes: groceryRecipes,
-    enabled: true,
+    enabled: !!event,
     supportsGeneralItems: true,
   });
 
@@ -849,7 +849,7 @@ const PersonalMealDetailPage = () => {
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={isClubMember ? handleRateRecipe : undefined}
               userId={user?.id}
-              onIngredientsChange={() => grocery.refreshGroceries()}
+              onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
               pantryItems={grocery.pantryItems}
             />

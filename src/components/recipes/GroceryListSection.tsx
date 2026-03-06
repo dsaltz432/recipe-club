@@ -40,7 +40,7 @@ interface GroceryListSectionProps {
   checkedItems?: Set<string>;
   onToggleChecked?: (itemName: string) => void;
   generalItems?: GeneralGroceryItem[];
-  onAddGeneralItemDirect?: (item: { name: string; quantity?: string; unit?: string }) => Promise<void>;
+  onAddGeneralItemDirect?: (item: { name: string; quantity?: string; unit?: string; category?: string }) => Promise<void>;
   onBulkParseGroceryText?: (text: string) => Promise<ParsedGroceryItem[]>;
   hasPendingChanges?: boolean;
   onRecombine?: () => Promise<void> | void;
@@ -136,8 +136,6 @@ const GroceryListSection = ({
     }
   };
 
-  const existingGeneralNames = new Set(generalItems.map((item) => item.name.toLowerCase()));
-
   // AI-processed General items — render these just like a recipe tab
   const generalSmartItems = perRecipeItems?.["General"] ?? [];
   const filteredGeneralItems = pantryItems.length > 0
@@ -151,15 +149,14 @@ const GroceryListSection = ({
     try {
       const items = await onBulkParseGroceryText(text);
       for (const item of items) {
-        const isDuplicate = existingGeneralNames.has(item.name.toLowerCase());
-        if (isDuplicate) continue;
         await onAddGeneralItemDirect({
           name: item.name,
           quantity: item.quantity != null ? String(item.quantity) : undefined,
           unit: item.unit ?? undefined,
+          category: item.category,
         });
       }
-      await onRecombine?.();
+      // Items appear immediately in display state — Reprocess button shown for AI dedup
     } catch {
       toast.error("Failed to add items. Please try again.");
     } finally {
@@ -280,7 +277,7 @@ const GroceryListSection = ({
                     className="text-xs border-purple/30 text-purple hover:bg-purple/5 animate-in fade-in duration-300"
                   >
                     <RefreshCw className="h-3 w-3 mr-1" />
-                    Reprocess
+                    Recombine
                   </Button>
                 )}
                 <GroceryExportMenu
@@ -342,7 +339,7 @@ const GroceryListSection = ({
                       <GroceryCategoryGroup
                         key={`${recipe.id}-${category}`}
                         category={category}
-                        items={items}
+                        items={items.map((i) => ({ ...i, sourceRecipes: [] }))}
                         editable={editable}
                         onEditItem={onEditItem}
                         onEditItemText={onEditItemText ? (orig, text) => onEditItemText(orig, text, recipe.id) : undefined}
@@ -391,7 +388,7 @@ const GroceryListSection = ({
                         <GroceryCategoryGroup
                           key={`general-${category}`}
                           category={category}
-                          items={items}
+                          items={items.map((i) => ({ ...i, sourceRecipes: [] }))}
                           onEditItemText={onEditItemText}
                           onRemoveItem={onRemoveItem}
                           checkedItems={checkedItems}

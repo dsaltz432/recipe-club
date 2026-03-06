@@ -361,14 +361,7 @@ For ingredient names:
   YES: "broccoli", "garlic", "ginger", "sesame oil", "soy sauce", "cilantro", "celery"
   NO: "fresh garlic", "broccoli florets", "minced ginger", "toasted sesame oil", "garlic clove", "broccoli head"
 - The name should NEVER contain a count unit word (head, clove, bunch, stalk, sprig, ear, strip, slice, piece) — those go in the "unit" field.
-- ALWAYS use SINGULAR forms. Common examples:
-  "onion" not "onions", "tomato" not "tomatoes", "egg" not "eggs",
-  "peanut" not "peanuts", "chestnut" not "chestnuts", "shallot" not "shallots",
-  "short rib" not "short ribs", "peppercorn" not "peppercorns",
-  "sesame seed" not "sesame seeds", "cherry tomato" not "cherry tomatoes"
-  Exception: compound product names where the plural is the standard product name:
-  "red pepper flakes" (not "red pepper flake"), "rice noodles" (not "rice noodle"),
-  "rolled oats" (not "rolled oat"), "lo mein noodles", "breadcrumbs"
+- Preserve the natural form of the ingredient name — do not force singular or plural. Use whatever form appears most natural for the ingredient (e.g. "jalapeños" or "jalapeño" are both fine, "red pepper flakes" not "red pepper flake"). Fix obvious spelling typos (e.g. "tomatoe" → "tomato", "chiken" → "chicken") but otherwise keep the user's wording.
 - Keep qualifiers that identify a DIFFERENT product or form:
   YES (different products): "sesame oil", "rice vinegar", "low sodium soy sauce", "romaine lettuce heart"
   YES (distinct product forms): "crushed tomato" (a canned product), "red pepper flakes" (a spice product), "dried apricot" (different from fresh apricot), "dry white wine" (wine classification), "chili oil" (a product), "pickled jalapeño" (a distinct jarred product), "pickled red onion" (a distinct prepared product)

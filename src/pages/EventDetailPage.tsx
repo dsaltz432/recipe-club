@@ -183,7 +183,7 @@ const EventDetailPage = () => {
     userId: user?.id,
     recipeIds: groceryRecipeIds,
     recipes: groceryRecipes,
-    enabled: true,
+    enabled: !!event,
     supportsGeneralItems: true,
   });
 
@@ -954,7 +954,7 @@ const EventDetailPage = () => {
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={userIsMember ? handleRateRecipe : undefined}
               userId={user?.id}
-              onIngredientsChange={() => grocery.refreshGroceries()}
+              onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
               pantryItems={grocery.pantryItems}
             />
