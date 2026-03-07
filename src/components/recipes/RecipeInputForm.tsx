@@ -140,7 +140,9 @@ const RecipeInputForm = ({
           value={formData.name}
           onChange={(e) => update({ name: e.target.value })}
           placeholder={namePlaceholder}
+          maxLength={50}
         />
+        <p className="text-xs text-muted-foreground">{formData.name.length}/50</p>
       </div>
 
       {/* Mode selection */}

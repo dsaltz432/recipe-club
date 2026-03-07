@@ -136,6 +136,26 @@
 
 <!-- Agent will append dated entries here -->
 
+## [2026-03-07 12:30] — US-007: Add recipe title max length and character counter
+
+### What was implemented
+- RecipeInputForm.tsx: added `maxLength={50}` to the recipe name Input
+- RecipeInputForm.tsx: added `<p className='text-xs text-muted-foreground'>{formData.name.length}/50</p>` below the Input
+
+### Files changed
+- `src/components/recipes/RecipeInputForm.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no grocery components touched)
+- Lint: N/A
+
+### Learnings for future iterations
+- Character counter placed directly after Input, inside the same wrapping div (no extra wrapper needed)
+- formData.name.length gives current character count; maxLength enforces limit natively in browser
+
+---
+
 ## [2026-03-07 00:00] — US-001: Create skeleton UI component
 
 ### What was implemented

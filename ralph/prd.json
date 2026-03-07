@@ -114,7 +114,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeInputForm.tsx ~line 138-143: the Input with id='recipe-input-name'. Add maxLength={50} prop. Add <p className='text-xs text-muted-foreground mt-1'>{formData.name.length}/50</p> below the Input (or below the FormItem wrapping it). The form data field is formData.name."
     },
     {
