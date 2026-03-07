@@ -693,7 +693,7 @@ const PersonalMealDetailPage = () => {
 
         if (error) throw error;
         setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: new Date().toISOString() })));
-        toast.success(`${label} and meal marked as cooked!`);
+        toast.success(`${label}!`);
       } catch (error) {
         console.error("Error marking as cooked after rating:", error);
         toast.success(`${label}!`);
@@ -851,7 +851,7 @@ const PersonalMealDetailPage = () => {
               onEditNoteClick={handleEditNoteClick}
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
-              onRateRecipe={isClubMember ? handleRateRecipe : undefined}
+              onRateRecipe={handleRateRecipe}
               userId={user?.id}
               onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
