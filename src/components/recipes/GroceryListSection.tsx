@@ -311,11 +311,18 @@ const GroceryListSection = ({
               )}
 
               {!isCombining && !smartGrouped && combineError && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-md border border-red-200">
-                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
-                  <p className="text-sm text-red-700">
-                    {combineError}
-                  </p>
+                <div className="flex items-center justify-between gap-3 p-3 bg-red-50 rounded-md border border-red-200">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                    <p className="text-sm text-red-700">
+                      Couldn't combine grocery items. Try again or check individual recipe tabs.
+                    </p>
+                  </div>
+                  {onRecombine && (
+                    <Button variant="outline" size="sm" onClick={onRecombine} className="shrink-0 text-xs">
+                      Try Again
+                    </Button>
+                  )}
                 </div>
               )}
             </TabsContent>

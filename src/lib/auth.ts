@@ -197,7 +197,4 @@ export const signOut = async (): Promise<void> => {
     toast.error("Failed to sign out: " + error.message);
     throw error;
   }
-
-  // Immediately redirect to homepage after signout
-  window.location.href = "/";
 };

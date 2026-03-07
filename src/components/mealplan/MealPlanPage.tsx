@@ -3,15 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShoppingCart, UtensilsCrossed } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
+import ParseProgressDialog from "./ParseProgressDialog";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
@@ -246,6 +238,18 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setPendingParseName("");
     setParseStep("saving");
     toast.success("Recipe saved without parsing");
+  };
+
+  const handleParseDiscard = async () => {
+    if (pendingParseRecipeId) {
+      await supabase.from("meal_plan_items").delete().eq("recipe_id", pendingParseRecipeId);
+      await supabase.from("recipes").delete().eq("id", pendingParseRecipeId);
+    }
+    setParseStatus("idle");
+    setPendingParseRecipeId(null);
+    setPendingParseName("");
+    setParseStep("saving");
+    loadPlan();
   };
 
   const handleAddMeal = (dayOfWeek: number, mealType: string) => {
@@ -532,44 +536,14 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       )}
 
       {/* Parse progress dialog */}
-      <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {
-        if (parseStatus === "failed") {
-          handleParseKeep();
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {parseStatus === "failed" ? "Parsing Failed" : "Adding Recipe"}
-            </DialogTitle>
-            <DialogDescription>
-              {parseStatus === "failed"
-                ? `Failed to parse ingredients for "${pendingParseName}".`
-                : `Extracting ingredients from "${pendingParseName}"...`}
-            </DialogDescription>
-          </DialogHeader>
-          {parseStatus === "parsing" && (
-            <RecipeParseProgress
-              steps={[
-                { key: "saving", label: "Adding recipe" },
-                { key: "parsing", label: "Parsing ingredients & instructions" },
-                { key: "loading", label: "Loading recipe data" },
-              ]}
-              currentStep={parseStep}
-            />
-          )}
-          {parseStatus === "failed" && (
-            <div className="flex gap-2 justify-end pt-2">
-              <Button variant="outline" onClick={handleParseKeep}>
-                Keep Recipe Anyway
-              </Button>
-              <Button onClick={handleParseRetry}>
-                Try Again
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ParseProgressDialog
+        parseStatus={parseStatus}
+        parseStep={parseStep}
+        recipeName={pendingParseName}
+        onDiscard={handleParseDiscard}
+        onKeep={handleParseKeep}
+        onRetry={handleParseRetry}
+      />
     </div>
   );
 };

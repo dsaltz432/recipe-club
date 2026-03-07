@@ -15,6 +15,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ExternalLink, BookOpen, Loader2, ChefHat, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { signInWithGoogle } from "@/lib/auth";
+import { isDevMode } from "@/lib/devMode";
 import type { GroceryCategory } from "@/types";
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
 import {
@@ -113,9 +115,14 @@ const SharedRecipePage = () => {
       });
   }, [currentUserId, recipe]);
 
-  const handleSignIn = () => {
-    sessionStorage.setItem("postLoginRedirect", window.location.pathname);
-    navigate("/");
+  const handleSignIn = async () => {
+    if (isDevMode()) {
+      sessionStorage.setItem("postLoginRedirect", window.location.pathname);
+      navigate("/");
+      return;
+    }
+    // On prod: go straight to Google OAuth, redirect back to this page after auth
+    await signInWithGoogle(false, window.location.origin + window.location.pathname);
   };
 
   const handleAddClick = async () => {
@@ -274,7 +281,7 @@ const SharedRecipePage = () => {
               <div className="w-full flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-                  <span>Already in your collection</span>
+                  <span>Saved in your collection</span>
                 </div>
                 <Link to="/dashboard/recipes" className="shrink-0">
                   <Button variant="outline" className="w-full sm:w-auto">Go to My Recipes</Button>

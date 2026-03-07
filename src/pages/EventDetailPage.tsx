@@ -150,7 +150,6 @@ const EventDetailPage = () => {
 
   // Parse-on-add state
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
-  const [parseError, setParseError] = useState<string | null>(null);
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "notifying" | "done">("saving");
 
@@ -487,7 +486,7 @@ const EventDetailPage = () => {
         await new Promise(resolve => setTimeout(resolve, 2500));
 
         setParseStatus("idle");
-        setParseError(null);
+
         setPendingRecipeId(null);
         setRecipeFormData(createInitialFormData());
         setShowAddForm(false);
@@ -520,16 +519,14 @@ const EventDetailPage = () => {
 
           // Success: close dialog, reset state
           setParseStatus("idle");
-          setParseError(null);
+  
           setPendingRecipeId(null);
           setRecipeFormData(createInitialFormData());
           setShowAddForm(false);
           setParseStep("saving");
         } catch (error) {
           console.error("Error parsing recipe:", error);
-          const msg = error instanceof Error ? error.message : "Failed to parse recipe";
           setParseStatus("failed");
-          setParseError(msg);
         }
       }
     } catch (error: unknown) {
@@ -545,7 +542,7 @@ const EventDetailPage = () => {
 
   const handleKeepRecipeAnyway = () => {
     setParseStatus("idle");
-    setParseError(null);
+
     setPendingRecipeId(null);
     setParseStep("saving");
     setRecipeFormData(createInitialFormData());
@@ -561,7 +558,7 @@ const EventDetailPage = () => {
       loadEventData();
     }
     setParseStatus("idle");
-    setParseError(null);
+
     setPendingRecipeId(null);
     setParseStep("saving");
     setRecipeFormData(createInitialFormData());
@@ -572,7 +569,7 @@ const EventDetailPage = () => {
   const handleRetryParse = async () => {
     const retryRecipeId = pendingRecipeId!;
     setParseStatus("parsing");
-    setParseError(null);
+
     setParseStep("parsing");
 
     try {
@@ -582,13 +579,12 @@ const EventDetailPage = () => {
       if (retryError) throw retryError;
       if (!retryData?.success) {
         setParseStatus("failed");
-        setParseError(retryData?.error ?? "Failed to parse recipe");
         return;
       }
 
       // Success: close dialog and refresh
       setParseStatus("idle");
-      setParseError(null);
+  
       setPendingRecipeId(null);
       setParseStep("saving");
       setRecipeFormData(createInitialFormData());
@@ -598,9 +594,7 @@ const EventDetailPage = () => {
       grocery.refreshGroceries();
     } catch (error) {
       console.error("Error retrying parse:", error);
-      const msg = error instanceof Error ? error.message : "Failed to parse recipe";
       setParseStatus("failed");
-      setParseError(msg);
     }
   };
 
@@ -1030,7 +1024,7 @@ const EventDetailPage = () => {
               setShowAddForm(false);
               setRecipeFormData(createInitialFormData());
               setParseStatus("idle");
-              setParseError(null);
+      
               setPendingRecipeId(null);
               setParseStep("saving");
               loadEventData();
@@ -1042,7 +1036,7 @@ const EventDetailPage = () => {
             setShowAddForm(false);
             setRecipeFormData(createInitialFormData());
             setParseStatus("idle");
-            setParseError(null);
+    
             setPendingRecipeId(null);
             setParseStep("saving");
           }
@@ -1064,29 +1058,24 @@ const EventDetailPage = () => {
 
           {parseStatus === "failed" && (
             <div className="space-y-4 py-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-700 font-medium mb-1">Your recipe has been saved!</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm text-amber-800 font-medium mb-1">Couldn't extract ingredients</p>
                 <p className="text-xs text-muted-foreground">
-                  However, we couldn't extract ingredients automatically.
+                  Your recipe was saved, but we weren't able to extract the ingredients automatically. Try again or keep it as-is.
                 </p>
               </div>
-              {parseError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-xs text-red-600">
-                    {"Something went wrong on our end. You can try again or keep the recipe as-is."}
-                  </p>
+              <div className="flex justify-between gap-2">
+                <Button variant="outline" size="sm" onClick={handleDiscardRecipe} className="text-destructive hover:text-destructive">
+                  Discard
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleKeepRecipeAnyway}>
+                    Keep as-is
+                  </Button>
+                  <Button size="sm" onClick={handleRetryParse} className="bg-purple hover:bg-purple-dark">
+                    Try Again
+                  </Button>
                 </div>
-              )}
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button variant="outline" onClick={handleDiscardRecipe} className="text-destructive hover:text-destructive">
-                  Discard Recipe
-                </Button>
-                <Button variant="outline" onClick={handleKeepRecipeAnyway}>
-                  Continue without ingredients
-                </Button>
-                <Button onClick={handleRetryParse} className="bg-purple hover:bg-purple-dark">
-                  Try parsing again
-                </Button>
               </div>
             </div>
           )}

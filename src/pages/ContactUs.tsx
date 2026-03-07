@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -35,8 +34,8 @@ const ContactUs = () => {
   useEffect(() => {
     const loadUser = async () => {
       const currentUser = await getCurrentUser();
-      if (currentUser?.name) setName(currentUser.name);
-      if (currentUser?.email) setEmail(currentUser.email);
+      if (currentUser?.name) setName(currentUser.name); // used in email body, not shown
+      if (currentUser?.email) setEmail(currentUser.email); // used as reply-to, not shown
       setIsLoading(false);
     };
     loadUser();
@@ -102,27 +101,6 @@ const ContactUs = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="contact-name">Name</Label>
-                    <Input
-                      id="contact-name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contact-email">Email</Label>
-                    <Input
-                      id="contact-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="contact-type">Type</Label>
