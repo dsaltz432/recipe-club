@@ -46,6 +46,15 @@ describe("GroceryExportMenu", () => {
     expect(screen.getByText("CSV")).toBeInTheDocument();
     expect(screen.getByText("Copy")).toBeInTheDocument();
     expect(screen.getByText("Instacart")).toBeInTheDocument();
+    expect(screen.getByText("Coming Soon")).toBeInTheDocument();
+  });
+
+  it("Instacart button is disabled", () => {
+    render(
+      <GroceryExportMenu items={items} eventName="Test Event" />
+    );
+
+    expect(screen.getByRole("button", { name: /instacart/i })).toBeDisabled();
   });
 
   it("calls downloadCSV when CSV button is clicked", () => {
@@ -96,83 +105,4 @@ describe("GroceryExportMenu", () => {
     });
   });
 
-  it("calls sendToInstacart and opens the returned URL on success", async () => {
-    const mockOpen = vi.fn();
-    vi.stubGlobal("open", mockOpen);
-    mockSendToInstacart.mockResolvedValue("https://instacart.com/products_link");
-
-    render(
-      <GroceryExportMenu items={items} eventName="Dinner Party" />
-    );
-
-    fireEvent.click(screen.getByText("Instacart"));
-
-    await vi.waitFor(() => {
-      expect(mockSendToInstacart).toHaveBeenCalledWith(items, "Dinner Party");
-      expect(mockOpen).toHaveBeenCalledWith(
-        "https://instacart.com/products_link",
-        "_blank",
-        "noopener,noreferrer"
-      );
-    });
-  });
-
-  it("shows error toast when sendToInstacart fails", async () => {
-    mockSendToInstacart.mockRejectedValue(new Error("Network error"));
-
-    render(
-      <GroceryExportMenu items={items} eventName="Test Event" />
-    );
-
-    fireEvent.click(screen.getByText("Instacart"));
-
-    await vi.waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to send to Instacart");
-    });
-  });
-
-  it("sends only unchecked items to Instacart", async () => {
-    const mockOpen = vi.fn();
-    vi.stubGlobal("open", mockOpen);
-    mockSendToInstacart.mockResolvedValue("https://instacart.com/products_link");
-
-    const checkedItems = new Set(["flour"]);
-
-    render(
-      <GroceryExportMenu items={items} eventName="Test Event" checkedItems={checkedItems} />
-    );
-
-    fireEvent.click(screen.getByText("Instacart"));
-
-    await vi.waitFor(() => {
-      expect(mockSendToInstacart).toHaveBeenCalledWith(
-        [items[1]], // only eggs, flour is checked
-        "Test Event"
-      );
-    });
-  });
-
-  it("disables button and shows Sending... while loading", async () => {
-    let resolve!: (url: string) => void;
-    mockSendToInstacart.mockReturnValue(new Promise<string>((res) => { resolve = res; }));
-
-    render(
-      <GroceryExportMenu items={items} eventName="Test Event" />
-    );
-
-    const button = screen.getByRole("button", { name: /instacart/i });
-    fireEvent.click(button);
-
-    await vi.waitFor(() => {
-      expect(screen.getByText("Sending...")).toBeInTheDocument();
-      expect(button).toBeDisabled();
-    });
-
-    resolve("https://instacart.com/products_link");
-
-    await vi.waitFor(() => {
-      expect(screen.getByText("Instacart")).toBeInTheDocument();
-      expect(button).not.toBeDisabled();
-    });
-  });
 });

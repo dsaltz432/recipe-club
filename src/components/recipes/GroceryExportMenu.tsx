@@ -59,10 +59,13 @@ const GroceryExportMenu = ({ items, eventName, checkedItems }: GroceryExportMenu
         <Download className="h-4 w-4 sm:mr-1" />
         <span className="hidden sm:inline">CSV</span>
       </Button>
-      <Button variant="outline" size="sm" onClick={handleSendToInstacart} disabled={isSending} className="px-2 sm:px-3">
-        {isSending ? <Loader2 className="h-4 w-4 sm:mr-1 animate-spin" /> : <ShoppingCart className="h-4 w-4 sm:mr-1" />}
-        <span className="hidden sm:inline">{isSending ? "Sending..." : "Instacart"}</span>
-      </Button>
+      <div className="flex flex-col items-center gap-0.5">
+        <Button variant="outline" size="sm" disabled className="px-2 sm:px-3">
+          <ShoppingCart className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">Instacart</span>
+        </Button>
+        <span className="hidden sm:inline text-[10px] text-muted-foreground">Coming Soon</span>
+      </div>
     </div>
   );
 };
