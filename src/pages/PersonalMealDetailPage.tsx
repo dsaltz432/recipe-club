@@ -5,6 +5,7 @@ import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { useGroceryList } from "@/hooks/useGroceryList";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedAiModel } from "@/lib/userPreferences";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RecipeDetailTabs } from "@/components/shared/RecipeDetailTabs";
@@ -531,7 +532,7 @@ const PersonalMealDetailPage = () => {
       // Parse ingredients via unified parse-recipe (handles DB saves internally)
       if (text.trim()) {
         const { data, error } = await supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: insertedRecipe.id, recipeName: name, text },
+          body: { recipeId: insertedRecipe.id, recipeName: name, text, model: getCachedAiModel() },
         });
         if (error) throw error;
         if (!data?.success) throw new Error(data?.error ?? "Failed to parse ingredients");
@@ -561,6 +562,7 @@ const PersonalMealDetailPage = () => {
             recipeId: pendingParseRecipeId,
             recipeUrl: event?.recipesWithNotes.find(r => r.recipe.id === pendingParseRecipeId)?.recipe.url,
             recipeName: pendingParseName,
+            model: getCachedAiModel(),
           },
         });
         if (error) throw error;

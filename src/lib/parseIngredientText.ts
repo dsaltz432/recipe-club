@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedAiModel } from "@/lib/userPreferences";
 import type { ParsedGroceryItem } from "@/components/recipes/GroceryListSection";
 
 function fallbackParse(text: string): ParsedGroceryItem[] {
@@ -16,7 +17,7 @@ export async function parseIngredientText(
   if (!userId) throw new Error("Not authenticated");
 
   const { data, error } = await supabase.functions.invoke("parse-recipe", {
-    body: { recipeName: "General Items", text },
+    body: { recipeName: "General Items", text, model: getCachedAiModel() },
   });
 
   // If AI parsing fails or returns nothing, fall back to treating each line as a

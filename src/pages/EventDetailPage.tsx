@@ -5,6 +5,7 @@ import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { useGroceryList } from "@/hooks/useGroceryList";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedAiModel } from "@/lib/userPreferences";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -466,7 +467,7 @@ const EventDetailPage = () => {
         // Manual mode: parse pasted text via unified parse-recipe (saves to DB automatically)
         setParseStep("parsing");
         const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: newRecipeId, recipeName: savedRecipeName, text: recipeFormData.pasteText },
+          body: { recipeId: newRecipeId, recipeName: savedRecipeName, text: recipeFormData.pasteText, model: getCachedAiModel() },
         });
         if (parseError) throw parseError;
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse ingredients");
@@ -495,7 +496,7 @@ const EventDetailPage = () => {
 
         try {
           const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
-            body: { recipeId: newRecipeId, recipeUrl: savedRecipeUrl, recipeName: savedRecipeName },
+            body: { recipeId: newRecipeId, recipeUrl: savedRecipeUrl, recipeName: savedRecipeName, model: getCachedAiModel() },
           });
 
           if (parseError) throw parseError;
@@ -557,7 +558,7 @@ const EventDetailPage = () => {
 
     try {
       const { data: retryData, error: retryError } = await supabase.functions.invoke("parse-recipe", {
-        body: { recipeId: retryRecipeId, recipeUrl: recipeFormData.url.trim(), recipeName: recipeFormData.name.trim() },
+        body: { recipeId: retryRecipeId, recipeUrl: recipeFormData.url.trim(), recipeName: recipeFormData.name.trim(), model: getCachedAiModel() },
       });
       if (retryError) throw retryError;
       if (!retryData?.success) {

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { getCachedAiModel } from "@/lib/userPreferences";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,7 +44,7 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
     setIsParsing(true);
     try {
       const { data, error } = await supabase.functions.invoke("parse-recipe", {
-        body: { recipeName: "Paste Parse", text: pasteText },
+        body: { recipeName: "Paste Parse", text: pasteText, model: getCachedAiModel() },
       });
 
       if (error) throw error;

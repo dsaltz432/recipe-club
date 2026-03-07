@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCachedAiModel } from "@/lib/userPreferences";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -599,7 +600,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
     supabase.functions
       .invoke("parse-recipe", {
-        body: { recipeId, recipeUrl: recipe.url, recipeName: recipe.name },
+        body: { recipeId, recipeUrl: recipe.url, recipeName: recipe.name, model: getCachedAiModel() },
       })
       .then((result) => {
         if (result?.error) {

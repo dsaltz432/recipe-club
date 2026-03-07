@@ -17,7 +17,7 @@ import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantrySection from "@/components/pantry/PantrySection";
-import { loadUserPreferences } from "@/lib/userPreferences";
+import { loadUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import { useGroceryList } from "@/hooks/useGroceryList";
 import type { MealPlanItem, UserPreferences } from "@/types";
 
@@ -199,6 +199,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         const parseBody: Record<string, string> = {
           recipeId: pendingParseRecipeId,
           recipeName: pendingParseName,
+          model: getCachedAiModel(),
         };
         if (pendingParseText) {
           parseBody.text = pendingParseText;

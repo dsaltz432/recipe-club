@@ -18,6 +18,7 @@ import {
 } from "@/lib/generalGrocery";
 import { getPantryItems, ensureDefaultPantryItems } from "@/lib/pantry";
 import { parseIngredientText } from "@/lib/parseIngredientText";
+import { loadUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import type {
   Recipe,
   RecipeIngredient,
@@ -142,6 +143,11 @@ export function useGroceryList(
     () => [...recipeIds].sort().join(","),
     [recipeIds]
   );
+
+  // Load user preferences to populate the AI model cache
+  useEffect(() => {
+    if (userId) loadUserPreferences(userId);
+  }, [userId]);
 
   // --- Core functions ---
 
@@ -287,7 +293,8 @@ export function useGroceryList(
         const result = await smartCombineIngredients(
           currentIngredients,
           recipeNameMap,
-          extraRaw
+          extraRaw,
+          getCachedAiModel()
         );
         setSmartGroceryItems(result.items);
         setPerRecipeItems(result.perRecipeItems);
@@ -713,6 +720,7 @@ export function useGroceryList(
               recipeId,
               recipeUrl: recipe?.url,
               recipeName: recipe?.name,
+              model: getCachedAiModel(),
             },
           }
         );

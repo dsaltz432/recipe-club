@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getAllowedUser, isAdmin } from "@/lib/auth";
-import { loadUserPreferences, saveUserPreferences } from "@/lib/userPreferences";
+import { loadUserPreferences, saveUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import type { User, UserPreferences } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,8 +41,7 @@ const Settings = () => {
     mealTypes: ["breakfast", "lunch", "dinner"],
     weekStartDay: 0,
     householdSize: 2,
-    aiModelParse: "claude-sonnet-4-6",
-    aiModelCombine: "claude-sonnet-4-6",
+    aiModel: getCachedAiModel(),
   });
 
   useEffect(() => {
@@ -221,49 +220,27 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Choose which AI model powers each feature. Faster models are cheaper but may be less accurate.
+                    Choose which AI model powers recipe parsing and grocery processing. Faster models are cheaper but may be less accurate.
                   </p>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="ai-model-parse" className="text-sm">Recipe Parsing</Label>
-                      <Select
-                        value={preferences.aiModelParse}
-                        onValueChange={(value) =>
-                          setPreferences((prev) => ({ ...prev, aiModelParse: value }))
-                        }
-                      >
-                        <SelectTrigger id="ai-model-parse" className="w-full mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AI_MODEL_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="ai-model-combine" className="text-sm">Grocery Processing</Label>
-                      <Select
-                        value={preferences.aiModelCombine}
-                        onValueChange={(value) =>
-                          setPreferences((prev) => ({ ...prev, aiModelCombine: value }))
-                        }
-                      >
-                        <SelectTrigger id="ai-model-combine" className="w-full mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AI_MODEL_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="ai-model" className="text-sm">AI Model</Label>
+                    <Select
+                      value={preferences.aiModel}
+                      onValueChange={(value) =>
+                        setPreferences((prev) => ({ ...prev, aiModel: value }))
+                      }
+                    >
+                      <SelectTrigger id="ai-model" className="w-full mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AI_MODEL_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardContent>
               </Card>

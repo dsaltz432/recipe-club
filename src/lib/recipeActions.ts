@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedAiModel } from "@/lib/userPreferences";
 
 export type SaveRecipeEditResult =
   | { success: true; urlChanged: boolean }
@@ -40,7 +41,7 @@ export async function saveRecipeEdit(
     if (urlChanged && trimmedUrl) {
       supabase.functions
         .invoke("parse-recipe", {
-          body: { recipeId, recipeUrl: trimmedUrl, recipeName: trimmedName },
+          body: { recipeId, recipeUrl: trimmedUrl, recipeName: trimmedName, model: getCachedAiModel() },
         })
         .then(({ data: parseData, error: parseError }) => {
           if (parseError || !parseData?.success) {
