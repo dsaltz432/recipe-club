@@ -210,10 +210,23 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from("general_grocery_items")
-      .insert(rows)
+      .upsert(rows, { onConflict: "user_id,context_type,context_id,name", ignoreDuplicates: true })
       .select("id, name, quantity, unit, created_at");
 
     if (error) return jsonResponse({ error: error.message }, 500);
+
+    // Invalidate combined list cache so website re-combines on next load
+    await supabase
+      .from("combined_grocery_items")
+      .update({
+        items: [],
+        recipe_ids: [],
+        per_recipe_items: {},
+        updated_at: new Date(0).toISOString(),
+      })
+      .eq("context_type", contextType)
+      .eq("context_id", targetContextId)
+      .eq("user_id", userId);
 
     if (view === "simple") {
       const items = (data ?? []) as Array<{ name: string; quantity?: string | null; unit?: string | null }>;
