@@ -18,6 +18,7 @@ interface HomeSectionProps {
   onEventCreated: () => void;
   onRecipeAdded?: () => void;
   onEventUpdated?: () => void;
+  isEventLoading?: boolean;
 }
 
 const HomeSection = ({
@@ -29,6 +30,7 @@ const HomeSection = ({
   onEventCreated,
   onRecipeAdded,
   onEventUpdated,
+  isEventLoading = false,
 }: HomeSectionProps) => {
   const navigate = useNavigate();
   const [clubMemberNames, setClubMemberNames] = useState<string[]>([]);
@@ -48,10 +50,10 @@ const HomeSection = ({
     <div className="space-y-4">
       {/* Personalized Greeting */}
       <div className="text-center">
-        <h2 className="font-display text-2xl md:text-3xl font-bold text-gray-900">
+        <h2 className="font-display text-xl md:text-3xl font-bold text-gray-900">
           What's Cooking, {user?.name?.split(" ")[0] || "Chef"}?
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">
           {activeEvent
             ? "You have an upcoming event!"
             : isAdmin
@@ -61,7 +63,11 @@ const HomeSection = ({
       </div>
 
       {/* Conditional Content */}
-      {activeEvent ? (
+      {isEventLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple" />
+        </div>
+      ) : activeEvent ? (
         <CountdownCard
           event={activeEvent}
           userId={user?.id || ""}

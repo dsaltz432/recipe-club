@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [userIsMemberOrAdmin, setUserIsMemberOrAdmin] = useState(false);
   const [userIsClubMember, setUserIsClubMember] = useState(false);
   const [activeEvent, setActiveEvent] = useState<ScheduledEvent | null>(null);
+  const [isEventLoading, setIsEventLoading] = useState(false);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
   const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
@@ -173,8 +174,10 @@ const Dashboard = () => {
     }
   };
 
-  const handleEventCreated = () => {
-    loadActiveEvent();
+  const handleEventCreated = async () => {
+    setIsEventLoading(true);
+    await loadActiveEvent();
+    setIsEventLoading(false);
     loadIngredients();
   };
 
@@ -301,6 +304,7 @@ const Dashboard = () => {
               onEventCreated={handleEventCreated}
               onRecipeAdded={handleRecipeAdded}
               onEventUpdated={loadActiveEvent}
+              isEventLoading={isEventLoading}
             />
           </TabsContent>
 
