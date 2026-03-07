@@ -70,7 +70,7 @@ const GoogleSignIn = () => {
     <Button
       onClick={handleGoogleSignIn}
       disabled={isLoading}
-      className="bg-white text-black hover:bg-gray-100 border border-gray-300 flex items-center gap-2 py-6"
+      className="w-full bg-white text-black hover:bg-gray-50 border border-gray-300 flex items-center justify-center gap-3 py-6"
     >
       <svg
         width="18"
@@ -104,9 +104,7 @@ const GoogleSignIn = () => {
           fill="#EA4335"
         />
       </svg>
-      <span className="ml-2">
-        {isLoading ? "Signing in..." : "Sign in with Google"}
-      </span>
+      <span>{isLoading ? "Signing in..." : "Sign in with Google"}</span>
     </Button>
   );
 };
