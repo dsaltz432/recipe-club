@@ -63,7 +63,7 @@ const Index = () => {
           </h1>
 
           <p className="text-gray-500 leading-relaxed mb-4 md:mb-6 mx-auto md:mx-0" style={{ fontSize: "0.9rem", maxWidth: "26rem" }}>
-            Spin the wheel, share recipes, plan meals, and shop together. Your recipe hub, all in one place.
+            Share recipes, plan meals, and build grocery lists. Your recipe hub, all in one place.
           </p>
 
           {/* Sign-in panel */}
