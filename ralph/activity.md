@@ -60,6 +60,32 @@
 - CSS-only changes don't affect test pass/fail for GroceryItemRow and GroceryCategoryGroup
 
 ---
+## [2026-03-07 11:35] — US-004: Replace recipe name badges with color-coded dots in Combined view
+
+### What was implemented
+- GroceryListSection.tsx: added RECIPE_COLORS array (8 distinct bg-* Tailwind colors)
+- GroceryListSection.tsx: built recipeColorMap mapping recipesWithIngredients names + 'General' to colors
+- GroceryListSection.tsx: added color legend above Combined tab items (flex-wrap row of dots + names)
+- GroceryListSection.tsx: passes recipeColorMap to GroceryCategoryGroup in Combined tab only
+- GroceryCategoryGroup.tsx: accepts and threads recipeColorMap? prop to GroceryItemRow
+- GroceryItemRow.tsx: accepts recipeColorMap? prop; renders colored dot spans (with title tooltip) instead of Badge when provided
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx`
+- `src/components/recipes/GroceryCategoryGroup.tsx`
+- `src/components/recipes/GroceryItemRow.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: GroceryItemRow (31/31 pass), GroceryCategoryGroup (12/12 pass); other failures are pre-existing
+- Lint: N/A
+
+### Learnings for future iterations
+- recipeColorMap is only passed in Combined tab — per-recipe tabs use `items.map(i => ({ ...i, sourceRecipes: [] }))` so no badges render anyway
+- colorNames array built before JSX return so it can be reused for both legend and map
+- Dot span pattern: `<span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />`
+
+---
 ## Session Log
 
 <!-- Agent will append dated entries here -->

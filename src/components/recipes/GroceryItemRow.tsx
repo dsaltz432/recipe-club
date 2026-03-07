@@ -20,9 +20,10 @@ interface GroceryItemRowProps {
   onRemove?: (itemName: string) => void;
   isChecked?: boolean;
   onToggleChecked?: () => void;
+  recipeColorMap?: Record<string, string>;
 }
 
-const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecked, onToggleChecked }: GroceryItemRowProps) => {
+const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecked, onToggleChecked, recipeColorMap }: GroceryItemRowProps) => {
   const useSingleField = !!onEditText;
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
@@ -170,15 +171,23 @@ const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecke
         <span className={`text-sm ${isChecked ? "line-through opacity-50" : ""}`}>{displayText}</span>
       </div>
       <div className="flex gap-1 ml-2 shrink-0 items-center">
-        {item.sourceRecipes.map((recipe) => (
-          <Badge
-            key={recipe}
-            variant="secondary"
-            className="text-xs px-1.5 py-0"
-          >
-            {recipe}
-          </Badge>
-        ))}
+        {item.sourceRecipes.map((recipe) =>
+          recipeColorMap ? (
+            <span
+              key={recipe}
+              className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${recipeColorMap[recipe] ?? "bg-gray-400"}`}
+              title={recipe}
+            />
+          ) : (
+            <Badge
+              key={recipe}
+              variant="secondary"
+              className="text-xs px-1.5 py-0"
+            >
+              {recipe}
+            </Badge>
+          )
+        )}
         {(editable || onEditText || onRemove) && (
           <>
             {(editable || onEditText) && (

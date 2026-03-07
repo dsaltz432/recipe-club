@@ -13,13 +13,14 @@ interface GroceryCategoryGroupProps {
   onRemoveItem?: (itemName: string) => void;
   checkedItems?: Set<string>;
   onToggleChecked?: (itemName: string) => void;
+  recipeColorMap?: Record<string, string>;
 }
 
 function getItemKey(item: SmartGroceryItem, index: number): string {
   return `${item.name}-${item.unit ?? ""}-${index}`;
 }
 
-const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditItemText, onRemoveItem, checkedItems, onToggleChecked }: GroceryCategoryGroupProps) => {
+const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditItemText, onRemoveItem, checkedItems, onToggleChecked, recipeColorMap }: GroceryCategoryGroupProps) => {
   const displayName = GROCERY_CATEGORIES[category];
 
   return (
@@ -41,6 +42,7 @@ const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditIte
             onRemove={onRemoveItem}
             isChecked={checkedItems?.has(item.name)}
             onToggleChecked={onToggleChecked ? () => onToggleChecked(item.name) : undefined}
+            recipeColorMap={recipeColorMap}
           />
         ))}
       </div>

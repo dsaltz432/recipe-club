@@ -65,7 +65,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryListSection.tsx: RECIPE_COLORS could be ['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400', 'bg-violet-400', 'bg-cyan-400', 'bg-orange-400', 'bg-teal-400']. Build recipeColorMap by mapping recipesWithIngredients names + 'General' to colors. Legend placement: above the {Array.from(smartGrouped.entries()).map(...)} block inside TabsContent value='combined' (~line 299). Legend: <div className='flex flex-wrap gap-x-3 gap-y-1 mb-3 text-xs text-muted-foreground'>. Dot span: <span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />. GroceryCategoryGroup.tsx: add recipeColorMap prop, thread it to each GroceryItemRow. GroceryItemRow.tsx lines 173-181: when recipeColorMap provided, render dots instead of <Badge>."
     },
     {

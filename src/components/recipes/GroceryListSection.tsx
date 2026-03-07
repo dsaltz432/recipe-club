@@ -13,6 +13,17 @@ import GroceryExportMenu from "./GroceryExportMenu";
 import type { GroceryItemEdit } from "./GroceryItemRow";
 import AddIngredientInput from "./AddIngredientInput";
 
+const RECIPE_COLORS = [
+  "bg-blue-400",
+  "bg-emerald-400",
+  "bg-amber-400",
+  "bg-rose-400",
+  "bg-violet-400",
+  "bg-cyan-400",
+  "bg-orange-400",
+  "bg-teal-400",
+];
+
 export interface ParsedGroceryItem {
   name: string;
   quantity: number | null;
@@ -185,6 +196,13 @@ const GroceryListSection = ({
     (r) => (ingredientsByRecipe.get(r.id)?.length ?? 0) > 0
   );
 
+  // Color map for combined tab: recipe name → color class
+  const recipeColorMap: Record<string, string> = {};
+  const colorNames = [...recipesWithIngredients.map((r) => r.name), "General"];
+  colorNames.forEach((name, i) => {
+    recipeColorMap[name] = RECIPE_COLORS[i % RECIPE_COLORS.length];
+  });
+
   return (
     <Card className="bg-white/90 backdrop-blur-sm border border-purple/10">
       <CardContent className="pt-4 sm:pt-6 pb-4">
@@ -298,6 +316,14 @@ const GroceryListSection = ({
 
               {!isCombining && smartGrouped && (
                 <>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3 text-xs text-muted-foreground">
+                    {colorNames.filter((name) => recipeColorMap[name]).map((name) => (
+                      <span key={name} className="flex items-center gap-1">
+                        <span className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${recipeColorMap[name]}`} />
+                        {name}
+                      </span>
+                    ))}
+                  </div>
                   {Array.from(smartGrouped.entries()).map(([category, items]) => (
                     <GroceryCategoryGroup
                       key={category}
@@ -305,6 +331,7 @@ const GroceryListSection = ({
                       items={items}
                       checkedItems={checkedItems}
                       onToggleChecked={onToggleChecked}
+                      recipeColorMap={recipeColorMap}
                     />
                   ))}
                 </>
