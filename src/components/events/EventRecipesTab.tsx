@@ -108,11 +108,11 @@ const EventRecipesTab = ({
         {canManageRecipes && (
           <Button
             onClick={onAddRecipeClick}
-            className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md"
+            className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md px-2.5 sm:px-4"
             size="sm"
           >
-            <Plus className="h-4 w-4 mr-1" />
-            <span>Add Recipe</span>
+            <Plus className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Add Recipe</span>
           </Button>
         )}
       </div>
@@ -138,12 +138,12 @@ const EventRecipesTab = ({
                 key={recipe.id}
                 className="bg-white/90 backdrop-blur-sm border border-purple/10 shadow-sm hover:shadow-md transition-shadow"
               >
-                <CardContent className="p-3 sm:py-4 sm:px-6 space-y-3">
+                <CardContent className="p-2.5 sm:py-4 sm:px-6 space-y-1.5 sm:space-y-3">
                   {/* Recipe header */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
                       {recipe.createdByName && (
-                        <Avatar className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 ring-2 ring-purple/20">
+                        <Avatar className="h-7 w-7 sm:h-9 sm:w-9 shrink-0 ring-2 ring-purple/20">
                           <AvatarImage src={recipe.createdByAvatar} />
                           <AvatarFallback className="bg-purple/10 text-purple text-xs">
                             {recipe.createdByName.charAt(0).toUpperCase()}
@@ -151,10 +151,10 @@ const EventRecipesTab = ({
                         </Avatar>
                       )}
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-base sm:text-lg truncate">
+                        <h3 className="font-semibold text-sm sm:text-lg truncate">
                           {recipe.name}
                         </h3>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {recipe.createdByName && (
                             <span className="text-xs text-muted-foreground">
                               by {recipe.createdByName}
@@ -165,15 +165,36 @@ const EventRecipesTab = ({
                               href={recipe.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs sm:text-sm text-purple hover:text-purple-dark hover:underline flex items-center gap-1 font-medium"
+                              className="text-xs text-purple hover:text-purple-dark hover:underline flex items-center gap-0.5 font-medium"
                             >
                               View recipe <ExternalLink className="h-3 w-3" />
                             </a>
                           )}
+                          {/* On desktop, force Rate + Add notes to a new line */}
+                          <span className="hidden sm:block basis-full h-0" />
+                          {onRateRecipe && (!ratingSummary || ratingSummary.totalRatings === 0) && (
+                            <button
+                              className="text-xs text-muted-foreground hover:text-purple flex items-center gap-0.5"
+                              aria-label={`Rate ${recipe.name}`}
+                              onClick={() => onRateRecipe({ recipe, notes, ratingSummary })}
+                            >
+                              <Star className="h-3 w-3" />
+                              Rate
+                            </button>
+                          )}
+                          {!hasUserNote && (
+                            <button
+                              className="text-xs text-muted-foreground hover:text-purple flex items-center gap-0.5"
+                              onClick={() => onAddNotesClick(recipe)}
+                            >
+                              <Plus className="h-3 w-3" />
+                              Add notes
+                            </button>
+                          )}
                         </div>
-                        {/* Rating display */}
+                        {/* Rating display when rated */}
                         {ratingSummary && ratingSummary.totalRatings > 0 && (
-                          <div className="flex flex-col gap-1 mt-2">
+                          <div className="flex flex-col gap-0.5 mt-1 sm:mt-2">
                             <div className="flex items-center gap-2">
                               <div className="flex items-center gap-0.5">
                                 {renderStars(
@@ -221,19 +242,6 @@ const EventRecipesTab = ({
                               )}
                           </div>
                         )}
-                        {/* Rate button for unrated recipes */}
-                        {onRateRecipe && (!ratingSummary || ratingSummary.totalRatings === 0) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 mt-1 text-xs text-muted-foreground hover:text-purple"
-                            aria-label={`Rate ${recipe.name}`}
-                            onClick={() => onRateRecipe({ recipe, notes, ratingSummary })}
-                          >
-                            <Star className="h-3 w-3 mr-1" />
-                            Rate
-                          </Button>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -254,7 +262,7 @@ const EventRecipesTab = ({
                         ) : (
                           <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         )}
-                        <span className="text-[10px] sm:text-xs">Ingredients</span>
+                        <span className="hidden sm:inline text-xs">Ingredients</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -407,18 +415,7 @@ const EventRecipesTab = ({
                     </>
                   )}
 
-                  {/* Add notes button */}
-                  {!hasUserNote && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-purple border-purple/30"
-                      onClick={() => onAddNotesClick(recipe)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add notes
-                    </Button>
-                  )}
+
                 </CardContent>
               </Card>
             );
