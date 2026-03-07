@@ -39,6 +39,27 @@
 - For page-level spinners (EventDetailPage, PersonalMealDetailPage): outer div was `min-h-screen flex items-center justify-center`; replaced preserving the page gradient
 
 ---
+## [2026-03-07 11:20] — US-003: Increase grocery row padding and category spacing
+
+### What was implemented
+- GroceryItemRow.tsx: changed outer div padding from `py-px` to `py-1.5`
+- GroceryCategoryGroup.tsx: outer wrapper changed from `mb-2` to `mb-5`
+- GroceryCategoryGroup.tsx: header row changed from `mb-1` to `mb-2`
+
+### Files changed
+- `src/components/recipes/GroceryItemRow.tsx`
+- `src/components/recipes/GroceryCategoryGroup.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: GroceryItemRow (31/31 pass), GroceryCategoryGroup (12/12 pass); GroceryListSection failures are pre-existing
+- Lint: N/A
+
+### Learnings for future iterations
+- Grocery components are in `src/components/recipes/` (not `src/components/ingredients/`)
+- CSS-only changes don't affect test pass/fail for GroceryItemRow and GroceryCategoryGroup
+
+---
 ## Session Log
 
 <!-- Agent will append dated entries here -->

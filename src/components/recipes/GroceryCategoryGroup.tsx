@@ -23,8 +23,8 @@ const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditIte
   const displayName = GROCERY_CATEGORIES[category];
 
   return (
-    <div className="mb-2">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
         <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wide">
           {displayName}
         </Badge>

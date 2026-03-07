@@ -151,7 +151,7 @@ const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecke
   }
 
   return (
-    <div className="flex items-center justify-between py-px px-2 hover:bg-gray-50 rounded group">
+    <div className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded group">
       <div className="flex items-center gap-1.5 min-w-0">
         {onToggleChecked && (
           <button
