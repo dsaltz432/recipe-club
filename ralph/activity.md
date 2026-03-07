@@ -86,6 +86,29 @@
 - Dot span pattern: `<span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />`
 
 ---
+## [2026-03-07 11:50] — US-005: Replace tab bar with Select dropdown on mobile
+
+### What was implemented
+- GroceryListSection.tsx: added Select import from '@/components/ui/select'
+- GroceryListSection.tsx: outer tab header container changed from `flex items-center justify-between gap-2 mb-3` to `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3`
+- GroceryListSection.tsx: TabsList wrapped in `<div className='hidden sm:block overflow-x-auto'>` (hidden on mobile)
+- GroceryListSection.tsx: added `<div className='sm:hidden w-full'>` with Select dropdown before TabsList (includes all tabs: Combined, per-recipe, General)
+- Select uses `value={effectiveTab}` and `onValueChange={setActiveTab}` for controlled behavior
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: 58 pass / 6 fail (all 6 failures are pre-existing from before US-005)
+- Lint: N/A
+
+### Learnings for future iterations
+- Select component at '@/components/ui/select' — imports: Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+- Mobile-first responsive pattern: `sm:hidden` for mobile-only, `hidden sm:block` for desktop-only
+- Export buttons stack naturally below tab selector on mobile with `flex-col sm:flex-row` on outer container
+
+---
 ## Session Log
 
 <!-- Agent will append dated entries here -->

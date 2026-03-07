@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
 import { filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
@@ -274,8 +275,22 @@ const GroceryListSection = ({
 
         {!isLoading && (hasAnyIngredients || hasGeneralTab) && (
           <Tabs value={effectiveTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="overflow-x-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <div className="sm:hidden w-full">
+                <Select value={effectiveTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hasAnyIngredients && <SelectItem value="combined">Combined</SelectItem>}
+                    {recipesWithIngredients.map((recipe) => (
+                      <SelectItem key={recipe.id} value={recipe.id}>{recipe.name}</SelectItem>
+                    ))}
+                    {hasGeneralTab && <SelectItem value="general">General</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
                 <TabsList className="inline-flex w-auto">
                   {hasAnyIngredients && <TabsTrigger value="combined">Combined</TabsTrigger>}
                   {recipesWithIngredients.map((recipe) => (

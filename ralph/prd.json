@@ -83,7 +83,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryListSection.tsx lines 258-289: the tab header area. Import Select, SelectContent, SelectItem, SelectTrigger, SelectValue from '@/components/ui/select' (already exists). Wrap TabsList in <div className='hidden sm:block overflow-x-auto'>. Add <div className='sm:hidden w-full'><Select value={effectiveTab} onValueChange={setActiveTab}>...</Select></div> before it. Change outer container from 'flex items-center justify-between gap-2 mb-3' to 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'."
     },
     {
