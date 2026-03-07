@@ -5,21 +5,13 @@ import type { User, Ingredient, ScheduledEvent } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed, DollarSign, Settings, Mail } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LogOut, Home, Calendar, BookOpen, ShieldX, CalendarDays, DollarSign } from "lucide-react";
 import RecipeClubEvents from "@/components/events/RecipeClubEvents";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
-import PantryDialog from "@/components/pantry/PantryDialog";
+import AppHeader from "@/components/shared/AppHeader";
 
 const VALID_TABS = ["home", "events", "recipes", "meals"] as const;
 type TabValue = typeof VALID_TABS[number];
@@ -42,7 +34,6 @@ const Dashboard = () => {
   const [activeEvent, setActiveEvent] = useState<ScheduledEvent | null>(null);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
-  const [showPantryDialog, setShowPantryDialog] = useState(false);
   const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
 
   const loadActiveEvent = async () => {
@@ -231,94 +222,52 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-light/40 via-white to-orange-light/40">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-purple/10 shadow-sm">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-6">
-            <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900">
-              Recipe Club Hub
-            </h1>
-            <div className="hidden md:flex items-center gap-4 text-sm">
-              {userIsClubMember && (
-                <div className="flex items-center gap-1.5 bg-purple/5 border border-purple/20 px-3 py-1 rounded-full">
-                  <span className="font-bold text-purple">{completedEventsCount}</span>
-                  <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 bg-orange/5 border border-orange/20 px-3 py-1 rounded-full">
-                <span className="font-bold text-orange">{userRecipesCount}</span>
-                <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
+      <AppHeader
+        user={user}
+        userIsMemberOrAdmin={userIsMemberOrAdmin}
+        title={
+          <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900">
+            Recipe Club Hub
+          </h1>
+        }
+        headerContent={
+          <div className="hidden md:flex items-center gap-4 text-sm">
+            {userIsClubMember && (
+              <div className="flex items-center gap-1.5 bg-purple/5 border border-purple/20 px-3 py-1 rounded-full">
+                <span className="font-bold text-purple">{completedEventsCount}</span>
+                <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
               </div>
-              <a
-                href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 bg-green-50 border border-green-300 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
-              >
-                <DollarSign className="h-3.5 w-3.5 text-green-600" />
-                <span className="text-muted-foreground">Deposit</span>
-              </a>
+            )}
+            <div className="flex items-center gap-1.5 bg-orange/5 border border-orange/20 px-3 py-1 rounded-full">
+              <span className="font-bold text-orange">{userRecipesCount}</span>
+              <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
+            </div>
+            <a
+              href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-green-50 border border-green-300 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+            >
+              <DollarSign className="h-3.5 w-3.5 text-green-600" />
+              <span className="text-muted-foreground">Deposit</span>
+            </a>
+          </div>
+        }
+        dropdownHeader={
+          <div className="px-2 py-1.5 space-y-1">
+            {userIsClubMember && (
+              <div className="flex items-center gap-1.5 text-sm">
+                <span className="font-bold text-purple">{completedEventsCount}</span>
+                <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-sm">
+              <span className="font-bold text-orange">{userRecipesCount}</span>
+              <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-purple/5">
-                <Avatar className="h-8 w-8 ring-2 ring-purple/20">
-                  <AvatarImage src={user?.avatar_url} alt={user?.name} />
-                  <AvatarFallback className="bg-purple/10 text-purple font-semibold">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium hidden sm:inline">
-                  {user?.name}
-                </span>
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <div className="md:hidden px-2 py-1.5 space-y-1">
-                {userIsClubMember && (
-                  <div className="flex items-center gap-1.5 text-sm">
-                    <span className="font-bold text-purple">{completedEventsCount}</span>
-                    <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-1.5 text-sm">
-                  <span className="font-bold text-orange">{userRecipesCount}</span>
-                  <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
-                </div>
-              </div>
-              <DropdownMenuSeparator className="md:hidden" />
-              {userIsMemberOrAdmin && (
-                <>
-                  <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
-                    <Users className="h-4 w-4 mr-2" />
-                    Manage Users
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem onClick={() => setShowPantryDialog(true)} className="cursor-pointer">
-                <UtensilsCrossed className="h-4 w-4 mr-2" />
-                My Pantry
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/contact")} className="cursor-pointer">
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Us
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -380,13 +329,6 @@ const Dashboard = () => {
         </Tabs>
       </main>
 
-      {user?.id && (
-        <PantryDialog
-          open={showPantryDialog}
-          onOpenChange={setShowPantryDialog}
-          userId={user.id}
-        />
-      )}
     </div>
   );
 };

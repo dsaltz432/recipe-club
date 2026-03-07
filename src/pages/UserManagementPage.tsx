@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getAllowedUser, isMemberOrAdmin } from "@/lib/auth";
 import type { User } from "@/types";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import AppHeader from "@/components/shared/AppHeader";
 import UserManagement from "@/components/admin/UserManagement";
 
 const UserManagementPage = () => {
@@ -49,23 +48,16 @@ const UserManagementPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-            className="flex-shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-          </Button>
+      <AppHeader
+        user={user}
+        userIsMemberOrAdmin={userCanManage}
+        back={{ label: "Back", onClick: () => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard") }}
+        title={
           <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900 truncate">
             User Management
           </h1>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin, signOut } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin } from "@/lib/auth";
 import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { useGroceryList } from "@/hooks/useGroceryList";
@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCachedAiModel } from "@/lib/userPreferences";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,13 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import {
@@ -48,14 +40,11 @@ import {
   Pencil,
   X,
   Star,
-  Menu,
-  LogOut,
   ShoppingCart,
-  Users,
   CheckCircle,
-  Settings,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
+import AppHeader from "@/components/shared/AppHeader";
 import { cancelEvent, completeEvent, updateEvent } from "@/lib/eventActions";
 import { saveRecipeEdit } from "@/lib/recipeActions";
 import { isDevMode } from "@/lib/devMode";
@@ -717,10 +706,6 @@ const EventDetailPage = () => {
     setShowRatingDialog(true);
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
   const handlePantryChange = () => {
     grocery.refreshGroceries();
   };
@@ -806,79 +791,31 @@ const EventDetailPage = () => {
           : "linear-gradient(to bottom right, rgba(155, 135, 245, 0.15), white, rgba(249, 115, 22, 0.15))",
       }}
     >
-      {/* Header */}
-      <header
-        className="sticky top-0 z-50 backdrop-blur-md shadow-sm"
-        style={{
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
-          borderBottom: `1px solid ${headerBorderColor || "rgba(155, 135, 245, 0.1)"}`,
+      <AppHeader
+        user={user}
+        userIsMemberOrAdmin={userIsMemberOrAdmin}
+        back={{
+          label: "Events",
+          onClick: () => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard/events"),
         }}
-      >
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard/events")}
-              className="shrink-0"
-            >
-              <ArrowLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Events</span>
-            </Button>
-            <div className="flex items-center gap-2 min-w-0">
-              <ChefHat className="h-5 w-5 shrink-0" style={{ color: themeColor }} />
-              <h1 className="font-display text-base sm:text-xl md:text-2xl font-bold truncate" style={{ color: themeColor }}>
-                {event?.ingredientName || "Event Details"}
-              </h1>
-              {isUpcoming && (
-                <span
-                  className="text-[10px] sm:text-xs text-white px-2 py-0.5 rounded-full font-medium shrink-0"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  Upcoming
-                </span>
-              )}
-            </div>
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <ChefHat className="h-5 w-5 shrink-0" style={{ color: themeColor }} />
+            <h1 className="font-display text-base sm:text-xl md:text-2xl font-bold truncate" style={{ color: themeColor }}>
+              {event?.ingredientName || "Event Details"}
+            </h1>
+            {isUpcoming && (
+              <span
+                className="text-[10px] sm:text-xs text-white px-2 py-0.5 rounded-full font-medium shrink-0"
+                style={{ backgroundColor: themeColor }}
+              >
+                Upcoming
+              </span>
+            )}
           </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-purple/5 shrink-0">
-                <Avatar className="h-8 w-8 ring-2 ring-purple/20">
-                  <AvatarImage src={user?.avatar_url} alt={user?.name} />
-                  <AvatarFallback className="bg-purple/10 text-purple font-semibold">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium hidden sm:inline">
-                  {user?.name}
-                </span>
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {userIsMemberOrAdmin && (
-                <>
-                  <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
-                    <Users className="h-4 w-4 mr-2" />
-                    Manage Users
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+        }
+        style={{ borderBottom: `1px solid ${headerBorderColor || "rgba(155, 135, 245, 0.1)"}` }}
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl space-y-4 sm:space-y-6">

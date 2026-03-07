@@ -68,6 +68,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     enabled: viewTab === "groceries",
     supportsGeneralItems: true,
   });
+  const { refreshGroceries } = grocery;
 
   const loadPlan = useCallback(async () => {
     setIsLoading(true);
@@ -114,7 +115,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           };
         });
         setItems(mapped);
-        grocery.refreshGroceries();
+        refreshGroceries();
       } else {
         // Create plan — use upsert to be idempotent under StrictMode double-execution
         const { data: newPlan, error } = await supabase
@@ -133,7 +134,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (error) throw error;
         setPlanId(newPlan.id);
         setItems([]);
-        grocery.refreshGroceries();
+        refreshGroceries();
       }
     } catch (error) {
       console.error("Error loading meal plan:", error);
@@ -141,7 +142,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, weekStart, grocery.refreshGroceries]);
+  }, [userId, weekStart, refreshGroceries]);
 
   useEffect(() => {
     loadPlan();
@@ -215,7 +216,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         setPendingParseName("");
         setPendingParseText("");
         setParseStep("saving");
-        grocery.refreshGroceries();
+        refreshGroceries();
         toast.success("Recipe parsed successfully!");
       } catch (error) {
         console.error("Error parsing recipe:", error);
@@ -356,7 +357,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       };
 
       setItems((prev) => [...prev, newItem]);
-      grocery.refreshGroceries();
+      refreshGroceries();
       return linkedRecipeId;
     } catch (error) {
       console.error("Error adding meal:", error);
@@ -532,7 +533,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       )}
 
       {viewTab === "pantry" && (
-        <PantrySection userId={userId} onPantryChange={grocery.refreshGroceries} />
+        <PantrySection userId={userId} onPantryChange={refreshGroceries} />
       )}
 
       {/* Parse progress dialog */}

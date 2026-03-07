@@ -706,6 +706,11 @@ export function useGroceryList(
     [userId, recipeIngredients, groceryRecipes, invalidateCacheAndResetRefs]
   );
 
+  const refreshGroceries = useCallback(() => {
+    dirtyRef.current = true;
+    setRefreshCounter((c) => c + 1);
+  }, []);
+
   const handleParseRecipe = useCallback(
     async (recipeId: string) => {
       // Look up recipe from either the groceryRecipes state or the recipes prop
@@ -737,13 +742,8 @@ export function useGroceryList(
         toast.error("Failed to parse recipe");
       }
     },
-    [groceryRecipes, recipes]
+    [groceryRecipes, recipes, refreshGroceries]
   );
-
-  const refreshGroceries = useCallback(() => {
-    dirtyRef.current = true;
-    setRefreshCounter((c) => c + 1);
-  }, []);
 
   const invalidateCache = useCallback(() => {
     if (contextId && userId) {
@@ -770,7 +770,6 @@ export function useGroceryList(
       triggerRecombineRef.current();
     }, MARK_INGREDIENT_DEBOUNCE_MS);
     setHasPendingChanges(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ingredientDirtyKey]);
 
   // --- Effects ---

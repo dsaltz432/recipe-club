@@ -9,7 +9,6 @@ import { getCachedAiModel } from "@/lib/userPreferences";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RecipeDetailTabs } from "@/components/shared/RecipeDetailTabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,26 +30,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import {
   ArrowLeft,
   ChefHat,
   Calendar as CalendarIcon,
-  Menu,
-  LogOut,
   BookOpen,
   Star,
   ShoppingCart,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
-import { signOut } from "@/lib/auth";
+import AppHeader from "@/components/shared/AppHeader";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
@@ -699,10 +690,6 @@ const PersonalMealDetailPage = () => {
     loadEventData();
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
   const totalRecipes = event?.recipesWithNotes.length || 0;
 
   if (isLoading) {
@@ -748,47 +735,21 @@ const PersonalMealDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md shadow-sm bg-white/90 border-b border-purple/10">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard/meals")}
-              className="shrink-0"
-            >
-              <ArrowLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Meals</span>
-            </Button>
-            <div className="flex items-center gap-2 min-w-0">
-              <ChefHat className="h-5 w-5 shrink-0 text-purple" />
-              <h1 className="font-display text-base sm:text-xl md:text-2xl font-bold truncate text-purple">
-                Meal Details
-              </h1>
-            </div>
+      <AppHeader
+        user={user}
+        back={{
+          label: "Meals",
+          onClick: () => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard/meals"),
+        }}
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <ChefHat className="h-5 w-5 shrink-0 text-purple" />
+            <h1 className="font-display text-base sm:text-xl md:text-2xl font-bold truncate text-purple">
+              Meal Details
+            </h1>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-purple/5 shrink-0">
-                <Avatar className="h-8 w-8 ring-2 ring-purple/20">
-                  <AvatarImage src={user?.avatar_url} alt={user?.name} />
-                  <AvatarFallback className="bg-purple/10 text-purple font-semibold">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl space-y-4 sm:space-y-6">

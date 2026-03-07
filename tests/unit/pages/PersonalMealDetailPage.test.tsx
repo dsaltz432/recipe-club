@@ -119,6 +119,7 @@ vi.mock("@/components/events/EventRatingDialog", () => ({
   ),
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let capturedAddMealProps: {
   onAddCustomMeal?: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal?: (recipes: Array<{ id: string; name: string; url?: string }>) => void;

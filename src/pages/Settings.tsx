@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getAllowedUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin } from "@/lib/auth";
 import { loadUserPreferences, saveUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import type { User, UserPreferences } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import AppHeader from "@/components/shared/AppHeader";
 
 const MEAL_TYPE_OPTIONS = [
   { value: "breakfast", label: "Breakfast" },
@@ -37,6 +38,7 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [userIsMemberOrAdmin, setUserIsMemberOrAdmin] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
     mealTypes: ["breakfast", "lunch", "dinner"],
     weekStartDay: 0,
@@ -57,6 +59,7 @@ const Settings = () => {
       if (currentUser?.email) {
         const allowed = await getAllowedUser(currentUser.email);
         setUserIsAdmin(isAdmin(allowed));
+        setUserIsMemberOrAdmin(isMemberOrAdmin(allowed));
       }
 
       setIsLoading(false);
@@ -113,23 +116,16 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-            className="flex-shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-          </Button>
+      <AppHeader
+        user={user}
+        userIsMemberOrAdmin={userIsMemberOrAdmin}
+        back={{ label: "Back", onClick: () => window.history.state?.idx > 0 ? navigate(-1) : navigate("/dashboard") }}
+        title={
           <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900 truncate">
             Settings
           </h1>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-2xl">
