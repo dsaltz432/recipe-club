@@ -272,20 +272,20 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-1.5 rounded-xl !h-12 sm:!h-16">
-              <TabsTrigger value="home" className="h-full !py-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg">
+          <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-1.5 rounded-xl !h-auto">
+              <TabsTrigger value="home" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Home</span>
               </TabsTrigger>
-              <TabsTrigger value="events" className="h-full !py-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg">
+              <TabsTrigger value="events" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Events</span>
               </TabsTrigger>
-              <TabsTrigger value="recipes" className="h-full !py-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg">
+              <TabsTrigger value="recipes" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <BookOpen className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Recipes</span>
               </TabsTrigger>
-              <TabsTrigger value="meals" className="h-full !py-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg">
+              <TabsTrigger value="meals" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <CalendarDays className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Meals</span>
               </TabsTrigger>
