@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import type { EventRecipeWithNotes } from "@/types";
 
 interface EventRatingDialogProps {
@@ -30,6 +31,7 @@ interface EventRatingDialogProps {
 interface RatingData {
   wouldCookAgain: boolean | null;
   rating: number | null;
+  noteText: string;
 }
 
 const EventRatingDialog = ({
@@ -40,7 +42,18 @@ const EventRatingDialog = ({
   onCancel,
   mode = "completing",
 }: EventRatingDialogProps) => {
-  const [ratings, setRatings] = useState<Map<string, RatingData>>(new Map());
+  const [ratings, setRatings] = useState<Map<string, RatingData>>(() => {
+    const initial = new Map<string, RatingData>();
+    recipes.forEach(({ recipe, notes }) => {
+      const userNote = notes.find((n) => n.userId === userId);
+      initial.set(recipe.id, {
+        wouldCookAgain: null,
+        rating: null,
+        noteText: userNote?.notes ?? "",
+      });
+    });
+    return initial;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(mode === "rating");
 
@@ -65,14 +78,18 @@ const EventRatingDialog = ({
         if (error) throw error;
 
         if (data && data.length > 0) {
-          const existingRatings = new Map<string, RatingData>();
-          data.forEach(r => {
-            existingRatings.set(r.recipe_id, {
-              wouldCookAgain: r.would_cook_again,
-              rating: r.overall_rating,
+          setRatings((prev) => {
+            const updated = new Map(prev);
+            data.forEach(r => {
+              const current = updated.get(r.recipe_id);
+              updated.set(r.recipe_id, {
+                wouldCookAgain: r.would_cook_again,
+                rating: r.overall_rating,
+                noteText: current?.noteText ?? "",
+              });
             });
+            return updated;
           });
-          setRatings(existingRatings);
         }
       } catch (error) {
         console.error("Error loading existing ratings:", error);
@@ -91,8 +108,17 @@ const EventRatingDialog = ({
   ) => {
     setRatings((prev) => {
       const newMap = new Map(prev);
-      const current = newMap.get(recipeId) || { wouldCookAgain: null, rating: null };
+      const current = newMap.get(recipeId) || { wouldCookAgain: null, rating: null, noteText: "" };
       newMap.set(recipeId, { ...current, [field]: value });
+      return newMap;
+    });
+  };
+
+  const handleNoteChange = (recipeId: string, value: string) => {
+    setRatings((prev) => {
+      const newMap = new Map(prev);
+      const current = newMap.get(recipeId) || { wouldCookAgain: null, rating: null, noteText: "" };
+      newMap.set(recipeId, { ...current, noteText: value });
       return newMap;
     });
   };
@@ -118,6 +144,26 @@ const EventRatingDialog = ({
           .upsert(ratingsToUpsert, { onConflict: "recipe_id,user_id,event_id" });
         if (error) throw error;
         toast.success(`Submitted ${ratingsToUpsert.length} rating${ratingsToUpsert.length !== 1 ? "s" : ""}!`);
+      }
+
+      // Save notes for any recipe with text
+      for (const { recipe, notes } of recipes) {
+        const ratingData = ratings.get(recipe.id);
+        const noteText = ratingData?.noteText ?? "";
+        const existingNote = notes.find((n) => n.userId === userId);
+
+        if (existingNote) {
+          const { error } = await supabase
+            .from("recipe_notes")
+            .update({ notes: noteText })
+            .eq("id", existingNote.id);
+          if (error) throw error;
+        } else if (noteText.trim()) {
+          const { error } = await supabase
+            .from("recipe_notes")
+            .insert({ recipe_id: recipe.id, user_id: userId, notes: noteText });
+          if (error) throw error;
+        }
       }
 
       onComplete();
@@ -171,7 +217,7 @@ const EventRatingDialog = ({
             </p>
           ) : (
             recipes.map(({ recipe }) => {
-              const recipeRating = ratings.get(recipe.id) || { wouldCookAgain: null, rating: null };
+              const recipeRating = ratings.get(recipe.id) || { wouldCookAgain: null, rating: null, noteText: "" };
 
               return (
                 <div key={recipe.id} className="p-4 border rounded-lg space-y-4">
@@ -238,6 +284,18 @@ const EventRatingDialog = ({
                         {recipeRating.rating}/5
                       </span>
                     )}
+                  </div>
+
+                  {/* Note */}
+                  <div className="space-y-1">
+                    <span className="text-sm">Notes (optional):</span>
+                    <Textarea
+                      placeholder="Add your notes about this recipe..."
+                      value={recipeRating.noteText}
+                      onChange={(e) => handleNoteChange(recipe.id, e.target.value)}
+                      rows={3}
+                      className="resize-none"
+                    />
                   </div>
                 </div>
               );
