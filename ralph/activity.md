@@ -136,6 +136,31 @@
 
 <!-- Agent will append dated entries here -->
 
+## [2026-03-07 13:00] — US-008: Normalize background gradient opacity and fix Deposit pill colors
+
+### What was implemented
+- Dashboard.tsx: gradient changed from `from-purple-light/40 via-white to-orange-light/40` to `/30`
+- Dashboard.tsx: Deposit pill changed from `bg-green-50 border-green-300` to `bg-green/5 border-green/20`
+- Index.tsx: gradient changed from full-strength `from-purple-light via-white to-orange-light` to `/30` variants
+- NotFound.tsx: gradient changed from full-strength to `/30` variants
+
+### Files changed
+- `src/pages/Dashboard.tsx`
+- `src/pages/Index.tsx`
+- `src/pages/NotFound.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no grocery components touched)
+- Lint: N/A
+
+### Learnings for future iterations
+- Tailwind opacity modifier syntax: `bg-green/5` uses CSS color with 5% opacity (vs `bg-green-50` which is a fixed shade)
+- `border-green/20` similarly uses opacity modifier on the custom green token
+- Full-strength gradient stops become `/30` by appending the opacity modifier to each color stop
+
+---
+
 ## [2026-03-07 12:30] — US-007: Add recipe title max length and character counter
 
 ### What was implemented

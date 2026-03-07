@@ -221,7 +221,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-light/40 via-white to-orange-light/40">
+    <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
       <AppHeader
         user={user}
         userIsMemberOrAdmin={userIsMemberOrAdmin}
@@ -246,7 +246,7 @@ const Dashboard = () => {
               href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 bg-green-50 border border-green-300 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 bg-green/5 border border-green/20 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
             >
               <DollarSign className="h-3.5 w-3.5 text-green-600" />
               <span className="text-muted-foreground">Deposit</span>

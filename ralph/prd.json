@@ -129,7 +129,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Dashboard.tsx: search for 'from-purple-light/40' and 'to-orange-light/40' — change to /30. Also search for 'bg-green-50' in the stats pills section — the Deposit pill uses default Tailwind green tokens; change bg-green-50 to bg-green/5 and border-green-300 to border-green/20 (text-green-600 can stay or change to text-green). Index.tsx: search for 'from-purple-light via-white to-orange-light' — add /30 to each color stop. NotFound.tsx: same pattern. These are purely CSS class string changes."
     }
   ]

@@ -39,7 +39,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-light via-white to-orange-light overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30 overflow-hidden">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
