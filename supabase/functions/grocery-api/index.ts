@@ -23,12 +23,61 @@ function fallbackParseGroceryText(text: string): Array<{ name: string; quantity:
     .map((name) => ({ name, quantity: null, unit: null, category: "other" }));
 }
 
-function formatItemText(item: { name: string; quantity?: string | null; unit?: string | null }): string {
+// Mirrors formatGroceryItem from src/lib/groceryList.ts
+const FRACTION_MAP: [number, string][] = [
+  [0.125, "1/8"], [0.25, "1/4"], [0.333, "1/3"], [0.375, "3/8"],
+  [0.5, "1/2"], [0.625, "5/8"], [0.667, "2/3"], [0.75, "3/4"], [0.875, "7/8"],
+];
+
+function decimalToFraction(value: number): string {
+  if (Number.isInteger(value)) return value.toString();
+  const whole = Math.floor(value);
+  const decimal = value - whole;
+  for (const [target, fraction] of FRACTION_MAP) {
+    if (Math.abs(decimal - target) < 0.02) {
+      return whole > 0 ? `${whole} ${fraction}` : fraction;
+    }
+  }
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+const ABBREVIATION_UNITS = new Set(["tsp", "tbsp", "oz", "lb", "g", "kg", "ml"]);
+const NAME_FIRST_UNITS = new Set(["stalk", "strip", "ear", "clove", "head", "bunch", "sprig", "piece", "slice", "rib"]);
+const UNIT_PLURAL_MAP: Record<string, string> = {
+  stalk: "stalks", strip: "strips", ear: "ears", clove: "cloves", head: "heads",
+  bunch: "bunches", sprig: "sprigs", piece: "pieces", slice: "slices", rib: "ribs",
+  can: "cans", bottle: "bottles", cup: "cups", pinch: "pinches", dash: "dashes", liter: "liters",
+};
+
+function pluralizeUnit(unit: string, quantity: number): string {
+  if (quantity <= 1) return unit;
+  if (ABBREVIATION_UNITS.has(unit)) return unit;
+  return UNIT_PLURAL_MAP[unit] ?? unit;
+}
+
+function formatSmartItem(item: { displayName?: string; name: string; totalQuantity?: number | null; unit?: string | null }): string {
   const parts: string[] = [];
-  if (item.quantity) parts.push(item.quantity);
-  if (item.unit) parts.push(item.unit);
-  parts.push(item.name);
+  const qty = item.totalQuantity;
+  if (qty != null) parts.push(decimalToFraction(qty));
+  const name = item.displayName || item.name;
+  const isNameFirst = item.unit != null && NAME_FIRST_UNITS.has(item.unit);
+  if (isNameFirst) {
+    parts.push(name);
+    parts.push(qty != null ? pluralizeUnit(item.unit!, qty) : item.unit!);
+  } else {
+    if (item.unit) parts.push(qty != null ? pluralizeUnit(item.unit, qty) : item.unit);
+    parts.push(name);
+  }
   return parts.join(" ");
+}
+
+function formatItemText(item: { name: string; quantity?: string | null; unit?: string | null }): string {
+  const qty = item.quantity != null ? parseFloat(item.quantity) : null;
+  return formatSmartItem({
+    name: item.name,
+    totalQuantity: qty != null && !isNaN(qty) ? qty : null,
+    unit: item.unit,
+  });
 }
 
 function jsonResponse(body: unknown, status = 200) {
@@ -84,6 +133,14 @@ serve(async (req) => {
     const combinedItems = combinedRow?.items as unknown[] | null;
 
     if (view === "simple") {
+      // Use combined list when available (matches website display with pluralization etc.)
+      if (combinedItems && combinedItems.length > 0) {
+        return jsonResponse({
+          items: (combinedItems as Array<{ displayName?: string; name: string; totalQuantity?: number | null; unit?: string | null }>)
+            .map(formatSmartItem),
+        });
+      }
+      // Fall back to raw general items
       const items = (generalResult.data ?? []) as Array<{ name: string; quantity?: string | null; unit?: string | null }>;
       return jsonResponse({ items: items.map(formatItemText) });
     }
