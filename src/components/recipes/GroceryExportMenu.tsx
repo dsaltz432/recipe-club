@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { Download, Copy, ShoppingCart, Loader2 } from "lucide-react";
+import { Download, Copy, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SmartGroceryItem } from "@/types";
 import { generateCSV, generatePlainText, downloadCSV, groupByCategory } from "@/lib/groceryList";
-import { sendToInstacart } from "@/lib/instacart";
 import { toast } from "sonner";
 
 interface GroceryExportMenuProps {
@@ -13,8 +11,6 @@ interface GroceryExportMenuProps {
 }
 
 const GroceryExportMenu = ({ items, eventName, checkedItems }: GroceryExportMenuProps) => {
-  const [isSending, setIsSending] = useState(false);
-
   const uncheckedItems = checkedItems?.size
     ? items.filter((item) => !checkedItems.has(item.name))
     : items;
@@ -34,18 +30,6 @@ const GroceryExportMenu = ({ items, eventName, checkedItems }: GroceryExportMenu
       toast.success("Copied to clipboard!");
     } catch {
       toast.error("Failed to copy to clipboard");
-    }
-  };
-
-  const handleSendToInstacart = async () => {
-    setIsSending(true);
-    try {
-      const url = await sendToInstacart(uncheckedItems, eventName);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch {
-      toast.error("Failed to send to Instacart");
-    } finally {
-      setIsSending(false);
     }
   };
 
