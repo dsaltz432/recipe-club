@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCachedAiModel } from "@/lib/userPreferences";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -735,8 +736,22 @@ const EventDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
+        <div className="container mx-auto px-4 py-6 space-y-4">
+          <div className="rounded-lg border bg-white/80 p-6 space-y-3">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-24" />
+            </div>
+            <Skeleton className="h-40 w-full" />
+          </div>
+        </div>
       </div>
     );
   }

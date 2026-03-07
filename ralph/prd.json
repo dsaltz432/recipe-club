@@ -1,0 +1,136 @@
+{
+  "project": "Recipe Club Hub",
+  "branchName": "ralph/ux-polish",
+  "description": "UX polish pass addressing the grocery list density on mobile and desktop, loading states, recipe title length enforcement, and minor theme inconsistencies. Based on full desktop + mobile video walkthrough.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create skeleton UI component",
+      "description": "As a developer, I want a reusable Skeleton component so that I can replace bare spinners with polished loading states throughout the app.",
+      "acceptanceCriteria": [
+        "src/components/ui/skeleton.tsx exists and exports a Skeleton component",
+        "Skeleton renders a div with animate-pulse rounded-md bg-muted classes",
+        "Skeleton accepts className and other div props",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Standard shadcn/ui skeleton pattern. Use cn() from '@/lib/utils' for className merging. This is a prerequisite for US-002. File should be minimal — ~10 lines."
+    },
+    {
+      "id": "US-002",
+      "title": "Replace bare spinners with skeleton loading states",
+      "description": "As a user, I want to see meaningful skeleton layouts while pages load instead of a blank white screen with a tiny spinner.",
+      "acceptanceCriteria": [
+        "RecipeClubEvents.tsx: bare spinner replaced with 3 skeleton event card placeholders matching event card shape (avatar circle, title bar, date/time bars, action buttons bar)",
+        "MealPlanPage.tsx: bare spinner in meal plan view replaced with skeleton week grid (7 column headers + placeholder cells)",
+        "EventDetailPage.tsx: bare spinner replaced with skeleton header card + Recipes/Groceries/Pantry tab skeleton",
+        "PersonalMealDetailPage.tsx: bare spinner replaced with skeleton header card + tab skeleton",
+        "RecipeHub.tsx: bare spinner replaced with skeleton recipe card placeholders (3 cards matching recipe card shape: title bar, author bar, action row, tag bar)",
+        "All skeletons use the Skeleton component from US-001",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Spinner locations: RecipeClubEvents.tsx ~line 208 (animate-spin div inside flex py-12). MealPlanPage.tsx ~line 427 (animate-spin div). EventDetailPage.tsx — search for animate-spin in the main loading return. PersonalMealDetailPage.tsx — search for animate-spin in the main loading return. RecipeHub.tsx ~line 688 (animate-spin div inside flex py-12). Each skeleton should preserve the page background gradient and header so the page doesn't flash. Keep skeletons simple: a few rounded rectangles of appropriate widths/heights. Import Skeleton from '@/components/ui/skeleton'."
+    },
+    {
+      "id": "US-003",
+      "title": "Increase grocery row padding and category spacing",
+      "description": "As a user, I want grocery list items to have more breathing room so the list is easier to read and scan.",
+      "acceptanceCriteria": [
+        "GroceryItemRow.tsx: outer div class changes from 'py-px px-2' to 'py-1.5 px-2'",
+        "GroceryCategoryGroup.tsx: outer wrapper div class changes from 'mb-2' to 'mb-5'",
+        "GroceryCategoryGroup.tsx: header row div class changes from 'mb-1' to 'mb-2'",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "GroceryItemRow.tsx line 154: the outer div with 'flex items-center justify-between py-px px-2 hover:bg-gray-50 rounded group'. GroceryCategoryGroup.tsx line 26: outer wrapper div with 'mb-2'. Line 27: header div with 'flex items-center gap-2 mb-1'. CSS-only changes, no logic changes needed."
+    },
+    {
+      "id": "US-004",
+      "title": "Replace recipe name badges with color-coded dots in Combined view",
+      "description": "As a user, I want recipe sources shown as small colored dots instead of full recipe name badges so the grocery list is much more compact, especially on mobile where long names wrap to multiple lines.",
+      "acceptanceCriteria": [
+        "GroceryListSection.tsx defines RECIPE_COLORS array with 8 distinct Tailwind bg-* color classes",
+        "GroceryListSection.tsx builds recipeColorMap: Record<string, string> mapping each recipe name to a color from RECIPE_COLORS",
+        "GroceryListSection.tsx renders a color legend above the Combined tab items: flex-wrap row of dots + recipe names",
+        "recipeColorMap is passed through GroceryCategoryGroup to GroceryItemRow in the Combined tab only",
+        "GroceryCategoryGroup.tsx accepts and threads recipeColorMap?: Record<string, string> prop to GroceryItemRow",
+        "GroceryItemRow.tsx accepts recipeColorMap?: Record<string, string> prop",
+        "When recipeColorMap is provided, render colored dot spans instead of Badge components for each sourceRecipe",
+        "Each dot has a title={recipe} attribute for hover tooltip",
+        "Per-recipe tabs are unaffected (sourceRecipes: [] already means no badges render)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "GroceryListSection.tsx: RECIPE_COLORS could be ['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400', 'bg-violet-400', 'bg-cyan-400', 'bg-orange-400', 'bg-teal-400']. Build recipeColorMap by mapping recipesWithIngredients names + 'General' to colors. Legend placement: above the {Array.from(smartGrouped.entries()).map(...)} block inside TabsContent value='combined' (~line 299). Legend: <div className='flex flex-wrap gap-x-3 gap-y-1 mb-3 text-xs text-muted-foreground'>. Dot span: <span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />. GroceryCategoryGroup.tsx: add recipeColorMap prop, thread it to each GroceryItemRow. GroceryItemRow.tsx lines 173-181: when recipeColorMap provided, render dots instead of <Badge>."
+    },
+    {
+      "id": "US-005",
+      "title": "Replace tab bar with Select dropdown on mobile",
+      "description": "As a mobile user, I want to use a dropdown to switch between recipe tabs so I can access all tabs instead of only seeing 1-2 truncated tab names.",
+      "acceptanceCriteria": [
+        "On mobile (below sm breakpoint), the TabsList is hidden and a Select dropdown appears instead",
+        "On desktop (sm and above), the original TabsList shows and the Select is hidden",
+        "The Select includes all tabs: Combined (if hasAnyIngredients), per-recipe tabs, General (if hasGeneralTab)",
+        "Selecting an option in the Select calls setActiveTab with the correct value",
+        "The Select shows the currently active tab as its selected value",
+        "Export buttons (GroceryExportMenu + Recombine) stack below the tab selector on mobile",
+        "On desktop, export buttons remain on the same row as the tab list (current behavior preserved)",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "GroceryListSection.tsx lines 258-289: the tab header area. Import Select, SelectContent, SelectItem, SelectTrigger, SelectValue from '@/components/ui/select' (already exists). Wrap TabsList in <div className='hidden sm:block overflow-x-auto'>. Add <div className='sm:hidden w-full'><Select value={effectiveTab} onValueChange={setActiveTab}>...</Select></div> before it. Change outer container from 'flex items-center justify-between gap-2 mb-3' to 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'."
+    },
+    {
+      "id": "US-006",
+      "title": "Collapse checked items within grocery categories",
+      "description": "As a user, I want checked items to collapse into a summary so I can focus on what I still need to buy.",
+      "acceptanceCriteria": [
+        "GroceryCategoryGroup.tsx splits items into unchecked and checked arrays based on checkedItems Set",
+        "Unchecked items render normally",
+        "When checked.length > 0, a native <details>/<summary> element renders below unchecked items",
+        "Summary text shows '{n} item checked' or '{n} items checked' (correct pluralization)",
+        "Checked items inside <details> render at reduced opacity (opacity-50)",
+        "When checkedItems is undefined (non-interactive mode), all items render as before with no change",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "GroceryCategoryGroup.tsx: add const unchecked = checkedItems ? items.filter(i => !checkedItems.has(i.name)) : items and const checked = checkedItems ? items.filter(i => checkedItems.has(i.name)) : []. Render unchecked normally. Then: {checkedItems && checked.length > 0 && (<details className='mt-1'><summary className='text-xs text-gray-400 cursor-pointer hover:text-gray-500 px-2 py-1 select-none'>{checked.length} item{checked.length !== 1 ? 's' : ''} checked</summary><div className='opacity-50'>{checked.map(...)}</div></details>)}. The existing GroceryItemRow renders in both lists unchanged."
+    },
+    {
+      "id": "US-007",
+      "title": "Add recipe title max length and character counter",
+      "description": "As a user creating a recipe, I want the title input to enforce a 50-character limit so recipe names don't break grocery tab layouts.",
+      "acceptanceCriteria": [
+        "Recipe name Input in RecipeInputForm.tsx has maxLength={50}",
+        "A character count indicator appears below the Input showing '{n}/50'",
+        "Character count text is text-xs text-muted-foreground",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "RecipeInputForm.tsx ~line 138-143: the Input with id='recipe-input-name'. Add maxLength={50} prop. Add <p className='text-xs text-muted-foreground mt-1'>{formData.name.length}/50</p> below the Input (or below the FormItem wrapping it). The form data field is formData.name."
+    },
+    {
+      "id": "US-008",
+      "title": "Normalize background gradient opacity and fix Deposit pill colors",
+      "description": "As a user, I want consistent visual styling across all pages with matching gradient strength and color palette.",
+      "acceptanceCriteria": [
+        "Dashboard.tsx: background gradient classes change from '/40' opacity to '/30' (from-purple-light/40 via-white to-orange-light/40 → /30)",
+        "src/pages/Index.tsx: background gradient changes from full-strength 'from-purple-light via-white to-orange-light' to '/30' variants",
+        "src/pages/NotFound.tsx: background gradient changes from full-strength to '/30' variants",
+        "Dashboard.tsx: Deposit stats pill changes from 'bg-green-50 border-green-300 text-green-600' to 'bg-green/5 border-green/20 text-green-600'",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Dashboard.tsx: search for 'from-purple-light/40' and 'to-orange-light/40' — change to /30. Also search for 'bg-green-50' in the stats pills section — the Deposit pill uses default Tailwind green tokens; change bg-green-50 to bg-green/5 and border-green-300 to border-green/20 (text-green-600 can stay or change to text-green). Index.tsx: search for 'from-purple-light via-white to-orange-light' — add /30 to each color stop. NotFound.tsx: same pattern. These are purely CSS class string changes."
+    }
+  ]
+}

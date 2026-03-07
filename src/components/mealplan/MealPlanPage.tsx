@@ -12,6 +12,7 @@ import PantrySection from "@/components/pantry/PantrySection";
 import { loadUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import { useGroceryList } from "@/hooks/useGroceryList";
 import type { MealPlanItem, UserPreferences } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MealPlanPageProps {
   userId: string;
@@ -426,8 +427,17 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple"></div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-7 gap-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <Skeleton key={day} className="h-6 w-full" />
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {Array.from({ length: 14 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
