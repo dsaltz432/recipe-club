@@ -223,7 +223,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
   return (
     <>
     <Card className="bg-gradient-to-br from-purple/15 via-white to-orange/15 border-2 border-purple/20 shadow-lg overflow-hidden">
-      <CardContent className="p-4 sm:p-6 md:p-8">
+      <CardContent className="p-3 sm:p-6 md:p-8">
         {/* Mobile: compact stacked layout */}
         {/* Desktop: side-by-side with countdown on right */}
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
@@ -238,19 +238,13 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
               </span>
             </div>
 
-            {/* Mobile: ingredient name + date/time inline */}
-            <div className="flex items-baseline justify-between gap-2 sm:block">
+            {/* Ingredient name + date/time pills side by side */}
+            <div className="flex items-start justify-between gap-2 sm:block mb-1 sm:mb-0">
               <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 sm:mb-1">
                 {event.ingredientName || "Mystery Ingredient"}
               </h3>
-              {clubMemberNames && clubMemberNames.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
-                  <span className="font-medium">Members:</span>
-                  <span>{clubMemberNames.join(", ")}</span>
-                </div>
-              )}
-              {/* Date/time pills - inline on mobile, below on desktop */}
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:mb-4">
+              {/* Date/time pills - right-aligned on mobile, below name on desktop */}
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 sm:mb-4 shrink-0">
                 <div className="flex items-center gap-1 sm:gap-1.5 bg-purple/5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
                   <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple" />
                   <span className="font-medium text-[11px] sm:text-sm text-muted-foreground">{format(parseISO(event.eventDate), "EEE, MMM d")}</span>
@@ -263,16 +257,23 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
                 )}
               </div>
             </div>
+            {/* Members below the name row */}
+            {clubMemberNames && clubMemberNames.length > 0 && (
+              <div className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+                <span className="font-medium">Members:</span> {clubMemberNames.join(", ")}
+              </div>
+            )}
 
             {/* Countdown - inline on mobile between header and buttons */}
             <div className="md:hidden my-3">
               {renderCountdown()}
             </div>
 
-            {/* Action Buttons - full width on mobile */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2 sm:w-fit">
               <Button
-                className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md w-full sm:w-auto"
+                className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white shadow-md w-full text-sm"
+                size="sm"
                 onClick={() => navigate(`/events/${event.id}`)}
               >
                 View Event Details
@@ -283,27 +284,27 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
                     variant="outline"
                     size="sm"
                     onClick={handleEditEventClick}
-                    className="h-9 sm:h-8 px-3 text-xs flex-1 sm:flex-none"
+                    className="h-8 px-2.5 text-xs flex-1 sm:flex-none"
                   >
-                    <Pencil className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />
+                    <Pencil className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowCompleteConfirm(true)}
-                    className="h-9 sm:h-8 px-3 text-xs bg-purple/5 hover:bg-purple/10 flex-1 sm:flex-none"
+                    className="h-8 px-2.5 text-xs bg-purple/5 hover:bg-purple/10 flex-1 sm:flex-none"
                   >
-                    <CheckCircle className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />
+                    <CheckCircle className="h-3 w-3 mr-1" />
                     Complete
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowCancelConfirm(true)}
-                    className="h-9 sm:h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50 flex-1 sm:flex-none"
+                    className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50 flex-1 sm:flex-none"
                   >
-                    <X className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />
+                    <X className="h-3 w-3 mr-1" />
                     Cancel
                   </Button>
                 </div>

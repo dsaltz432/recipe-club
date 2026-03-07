@@ -41,12 +41,22 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
     />
   );
 
-  const mobileGridCols = `grid-cols-[56px_${"1fr_".repeat(activeMealTypes.length).trim()}]`;
   // Expand slot heights when fewer meal types are shown
   const mealCount = activeMealTypes.length;
-  const mobileMinH = mealCount === 1 ? "min-h-[96px]" : mealCount === 2 ? "min-h-[64px]" : "min-h-[48px]";
-  const desktopMinH = mealCount === 1 ? "md:min-h-[120px]" : mealCount === 2 ? "md:min-h-[80px]" : "md:min-h-[60px]";
-  const slotMinH = `${mobileMinH} ${desktopMinH}`;
+  const mobileGridCols =
+    mealCount === 1 ? "grid-cols-[56px_1fr]" :
+    mealCount === 2 ? "grid-cols-[56px_1fr_1fr]" :
+    "grid-cols-[56px_1fr_1fr_1fr]";
+  const mobileMinH = mealCount === 1 ? "h-14" : mealCount === 2 ? "h-11" : "h-10";
+  const desktopMinH = mealCount === 1 ? "md:min-h-[72px]" : mealCount === 2 ? "md:min-h-[60px]" : "md:min-h-[52px]";
+
+  const today = new Date();
+  const isToday = (displayIndex: number) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + displayIndex);
+    return d.toDateString() === today.toDateString();
+  };
+  const slotMinH = `${mobileMinH} md:min-h-0 ${desktopMinH}`;
 
   return (
     <>
@@ -56,8 +66,8 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
         <div className={`grid ${mobileGridCols} gap-1 mb-1`}>
           <div />
           {activeMealTypes.map((mt) => (
-            <div key={mt} className="text-center text-xs font-medium text-muted-foreground capitalize py-1">
-              {mt.charAt(0).toUpperCase()}
+            <div key={mt} className="text-center text-xs font-medium text-muted-foreground py-1 capitalize">
+              {mt}
             </div>
           ))}
         </div>
@@ -66,8 +76,8 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
           {dayLabels.map((day, displayIndex) => (
             <div key={day} className={`grid ${mobileGridCols} gap-1 items-stretch`}>
               <div className="flex flex-col justify-center py-1">
-                <span className="text-xs font-semibold">{day}</span>
-                <span className="text-[10px] text-muted-foreground">{getDateLabel(displayIndex)}</span>
+                <span className={`text-xs font-semibold ${isToday(displayIndex) ? "text-purple" : ""}`}>{day}</span>
+                <span className={`text-[10px] ${isToday(displayIndex) ? "text-purple/70" : "text-muted-foreground"}`}>{getDateLabel(displayIndex)}</span>
               </div>
               {activeMealTypes.map((mealType) => (
                 <div key={mealType} className={mobileMinH}>
@@ -86,9 +96,9 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
           <div className="grid grid-cols-8 gap-1 mb-1">
             <div className="p-2 text-xs font-medium text-muted-foreground"></div>
             {dayLabels.map((day, displayIndex) => (
-              <div key={day} className="p-2 text-center">
-                <div className="text-xs font-semibold">{day}</div>
-                <div className="text-sm text-muted-foreground">{getDateLabel(displayIndex)}</div>
+              <div key={day} className={`p-2 text-center rounded-md ${isToday(displayIndex) ? "bg-purple/5" : ""}`}>
+                <div className={`text-xs font-semibold ${isToday(displayIndex) ? "text-purple" : ""}`}>{day}</div>
+                <div className={`text-sm ${isToday(displayIndex) ? "text-purple/70" : "text-muted-foreground"}`}>{getDateLabel(displayIndex)}</div>
               </div>
             ))}
           </div>

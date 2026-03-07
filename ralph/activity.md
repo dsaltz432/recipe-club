@@ -1,85 +1,193 @@
-# Recipe Club Hub - Ingredient Sync & Cleanup - Activity Log
+# Recipe Club Hub - UX Polish - Activity Log
 
 ## Codebase Patterns
-- **GroceryListSection** at `src/components/recipes/GroceryListSection.tsx` — accepts `hasPendingChanges`, `onRecombine`, `generalItems`, `onAddGeneralItemDirect`, `onBulkParseGroceryText`, `isAddingGeneral`, `onAddingGeneralChange`; `hasGeneralTab = !!onBulkParseGroceryText`
-- **useGroceryList** at `src/hooks/useGroceryList.ts` — returns `hasPendingChanges`, `triggerRecombine`, `generalItems`, `handleAddGeneralItemDirect`, `handleBulkParseGroceryText`, `isAddingGeneral`, `setIsAddingGeneral`, `refreshGroceries`, `invalidateCache`; accepts `supportsGeneralItems?: boolean` (default false)
-- **RecipeIngredientList** at `src/components/recipes/RecipeIngredientList.tsx` — props: `recipeId`, `userId`, `editable?`, `onIngredientsChange?`, `cacheContext?`; handleAdd guards with `if (!userId) return` then calls deleteGroceryCache when cacheContext set; handleEditItemText and handleRemoveItem also call deleteGroceryCache when cacheContext set
-- **EventRecipesTab** at `src/components/events/EventRecipesTab.tsx` — renders RecipeIngredientList at ~line 282; currently passes `userId ?? ''`; does NOT pass cacheContext
-- **RecipeDetailTabs** at `src/components/shared/RecipeDetailTabs.tsx` — recipes TabsContent has `forceMount className="data-[state=inactive]:hidden"`; grocery and pantry tabs are standard
-- **isPantryItem + DEFAULT_PANTRY_ITEMS** pattern: `import { isPantryItem } from '@/lib/groceryList'` and `import { DEFAULT_PANTRY_ITEMS } from '@/lib/pantry'`; merge with `[...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]` then filter
-- **npm run build** runs `tsc -b && vite build` — use for typecheck verification
-- **parseIngredientText** at `src/lib/parseIngredientText.ts` — throws 'Not authenticated' when userId is falsy
+- Skeleton import: `import { Skeleton } from "@/components/ui/skeleton"`
+- Skeleton loading pattern: replace spinner div with JSX using `<Skeleton className="h-N w-N" />` — no logic changes needed, just swap the return block
+- Page-level loading skeletons (EventDetailPage, PersonalMealDetailPage) should preserve the page background gradient class in the outer div
 
 ## Current Status
-**Last Updated:** 2026-03-05
-**Tasks Completed:** 7
-**Current Task:** Awaiting next iteration
+**Last Updated:** 2026-03-07
+**Tasks Completed:** 2
+**Current Task:** US-003
 
 ---
 
-## Session Log
-
-## [2026-03-05 09:00] — US-009: Clean up dead props in GroceryListSection
+## [2026-03-07 00:01] — US-002: Replace bare spinners with skeleton loading states
 
 ### What was implemented
-- Removed `onRemoveGeneralItem?: (itemId: string) => void` from `GroceryListSectionProps`
-- Removed `onUpdateGeneralItem?: (itemId: string, updates: {...}) => void` from `GroceryListSectionProps`
-- Removed `onRemoveGeneralItem={grocery.handleRemoveGeneralItem}` from GroceryListSection in MealPlanPage
-- Removed `onUpdateGeneralItem={grocery.handleUpdateGeneralItem}` from GroceryListSection in MealPlanPage
+- RecipeClubEvents.tsx: 3 skeleton event cards (avatar circle, title bar, date bars, action bar)
+- MealPlanPage.tsx: skeleton week grid (7 column headers + 14 placeholder cells)
+- EventDetailPage.tsx: skeleton header card + tab skeleton (preserves bg gradient)
+- PersonalMealDetailPage.tsx: skeleton header card + tab skeleton (preserves bg gradient)
+- RecipeHub.tsx: 3 skeleton recipe cards (title, author, action row, tag row)
+
+### Files changed
+- `src/components/events/RecipeClubEvents.tsx`
+- `src/components/mealplan/MealPlanPage.tsx`
+- `src/pages/EventDetailPage.tsx`
+- `src/pages/PersonalMealDetailPage.tsx`
+- `src/components/recipes/RecipeHub.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no grocery components touched)
+- Lint: N/A
+
+### Learnings for future iterations
+- Skeleton import path: `@/components/ui/skeleton`
+- For inline component spinners (RecipeClubEvents, RecipeHub): outer div was `flex items-center justify-center py-12`; replaced with `space-y-4` div
+- For page-level spinners (EventDetailPage, PersonalMealDetailPage): outer div was `min-h-screen flex items-center justify-center`; replaced preserving the page gradient
+
+---
+## [2026-03-07 11:20] — US-003: Increase grocery row padding and category spacing
+
+### What was implemented
+- GroceryItemRow.tsx: changed outer div padding from `py-px` to `py-1.5`
+- GroceryCategoryGroup.tsx: outer wrapper changed from `mb-2` to `mb-5`
+- GroceryCategoryGroup.tsx: header row changed from `mb-1` to `mb-2`
+
+### Files changed
+- `src/components/recipes/GroceryItemRow.tsx`
+- `src/components/recipes/GroceryCategoryGroup.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: GroceryItemRow (31/31 pass), GroceryCategoryGroup (12/12 pass); GroceryListSection failures are pre-existing
+- Lint: N/A
+
+### Learnings for future iterations
+- Grocery components are in `src/components/recipes/` (not `src/components/ingredients/`)
+- CSS-only changes don't affect test pass/fail for GroceryItemRow and GroceryCategoryGroup
+
+---
+## [2026-03-07 11:35] — US-004: Replace recipe name badges with color-coded dots in Combined view
+
+### What was implemented
+- GroceryListSection.tsx: added RECIPE_COLORS array (8 distinct bg-* Tailwind colors)
+- GroceryListSection.tsx: built recipeColorMap mapping recipesWithIngredients names + 'General' to colors
+- GroceryListSection.tsx: added color legend above Combined tab items (flex-wrap row of dots + names)
+- GroceryListSection.tsx: passes recipeColorMap to GroceryCategoryGroup in Combined tab only
+- GroceryCategoryGroup.tsx: accepts and threads recipeColorMap? prop to GroceryItemRow
+- GroceryItemRow.tsx: accepts recipeColorMap? prop; renders colored dot spans (with title tooltip) instead of Badge when provided
 
 ### Files changed
 - `src/components/recipes/GroceryListSection.tsx`
-- `src/components/mealplan/MealPlanPage.tsx`
+- `src/components/recipes/GroceryCategoryGroup.tsx`
+- `src/components/recipes/GroceryItemRow.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: N/A
+- Tests: GroceryItemRow (31/31 pass), GroceryCategoryGroup (12/12 pass); other failures are pre-existing
 - Lint: N/A
 
 ### Learnings for future iterations
-- These props were only in the interface definition, never destructured or used in the component body — TypeScript did not warn about them since they were optional
-- When removing props from an interface, always check all call sites with Grep to find all pass-through locations
+- recipeColorMap is only passed in Combined tab — per-recipe tabs use `items.map(i => ({ ...i, sourceRecipes: [] }))` so no badges render anyway
+- colorNames array built before JSX return so it can be reused for both legend and map
+- Dot span pattern: `<span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />`
+
+---
+## [2026-03-07 11:50] — US-005: Replace tab bar with Select dropdown on mobile
+
+### What was implemented
+- GroceryListSection.tsx: added Select import from '@/components/ui/select'
+- GroceryListSection.tsx: outer tab header container changed from `flex items-center justify-between gap-2 mb-3` to `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3`
+- GroceryListSection.tsx: TabsList wrapped in `<div className='hidden sm:block overflow-x-auto'>` (hidden on mobile)
+- GroceryListSection.tsx: added `<div className='sm:hidden w-full'>` with Select dropdown before TabsList (includes all tabs: Combined, per-recipe, General)
+- Select uses `value={effectiveTab}` and `onValueChange={setActiveTab}` for controlled behavior
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: 58 pass / 6 fail (all 6 failures are pre-existing from before US-005)
+- Lint: N/A
+
+### Learnings for future iterations
+- Select component at '@/components/ui/select' — imports: Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+- Mobile-first responsive pattern: `sm:hidden` for mobile-only, `hidden sm:block` for desktop-only
+- Export buttons stack naturally below tab selector on mobile with `flex-col sm:flex-row` on outer container
+
+---
+## [2026-03-07 12:10] — US-006: Collapse checked items within grocery categories
+
+### What was implemented
+- GroceryCategoryGroup.tsx: split items into `unchecked` and `checked` arrays based on `checkedItems` Set
+- Unchecked items render normally in the main list
+- Checked items collapse into a `<details>/<summary>` element with correct pluralization
+- Checked items render at `opacity-50` inside `<details>`
+- When `checkedItems` is undefined, all items render as before (unchecked = items, checked = [])
+
+### Files changed
+- `src/components/recipes/GroceryCategoryGroup.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: GroceryItemRow (31/31 pass), GroceryCategoryGroup (12/12 pass); GroceryListSection 6 failures are pre-existing
+- Lint: N/A
+
+### Learnings for future iterations
+- `<details>/<summary>` is native HTML — no import needed, works with Tailwind classes on wrapper
+- Key for checked items uses `unchecked.length + index` to avoid key collisions
+- `isChecked` prop explicitly set to `false`/`true` for unchecked/checked lists instead of relying on `checkedItems?.has()`
+
+---
+## Session Log
+
+<!-- Agent will append dated entries here -->
+
+## [2026-03-07 13:00] — US-008: Normalize background gradient opacity and fix Deposit pill colors
+
+### What was implemented
+- Dashboard.tsx: gradient changed from `from-purple-light/40 via-white to-orange-light/40` to `/30`
+- Dashboard.tsx: Deposit pill changed from `bg-green-50 border-green-300` to `bg-green/5 border-green/20`
+- Index.tsx: gradient changed from full-strength `from-purple-light via-white to-orange-light` to `/30` variants
+- NotFound.tsx: gradient changed from full-strength to `/30` variants
+
+### Files changed
+- `src/pages/Dashboard.tsx`
+- `src/pages/Index.tsx`
+- `src/pages/NotFound.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no grocery components touched)
+- Lint: N/A
+
+### Learnings for future iterations
+- Tailwind opacity modifier syntax: `bg-green/5` uses CSS color with 5% opacity (vs `bg-green-50` which is a fixed shade)
+- `border-green/20` similarly uses opacity modifier on the custom green token
+- Full-strength gradient stops become `/30` by appending the opacity modifier to each color stop
 
 ---
 
-## [2026-03-05 07:00] — US-008: Remove Rate Recipes button from PersonalMealDetailPage header card
+## [2026-03-07 12:30] — US-007: Add recipe title max length and character counter
 
 ### What was implemented
-- Removed the `mealItems.length > 0 && totalRecipes > 0 ?` else branch (lines ~830-844) from the isCooked ternary in PersonalMealDetailPage — replaced with `: null`
-- Removed unused `Star` import from lucide-react in PersonalMealDetailPage
+- RecipeInputForm.tsx: added `maxLength={50}` to the recipe name Input
+- RecipeInputForm.tsx: added `<p className='text-xs text-muted-foreground'>{formData.name.length}/50</p>` below the Input
 
 ### Files changed
-- `src/pages/PersonalMealDetailPage.tsx`
+- `src/components/recipes/RecipeInputForm.tsx`
 
 ### Quality checks
 - Build: pass
-- Tests: N/A
+- Tests: N/A (no grocery components touched)
 - Lint: N/A
 
 ### Learnings for future iterations
-- When removing a button that uses a lucide icon, also check if the icon import becomes unused — TypeScript will catch it as TS6133
-- The ternary `isCooked ? ... : mealItems.length > 0 && totalRecipes > 0 ? ... : null` simplifies to `isCooked ? ... : null` when removing the middle branch
+- Character counter placed directly after Input, inside the same wrapping div (no extra wrapper needed)
+- formData.name.length gives current character count; maxLength enforces limit natively in browser
 
 ---
 
-## [2026-03-05 06:00] — US-007: Add pantry filtering to RecipeIngredientList
+## [2026-03-07 00:00] — US-001: Create skeleton UI component
 
 ### What was implemented
-- Added `isPantryItem` to `@/lib/groceryList` import and `DEFAULT_PANTRY_ITEMS` from `@/lib/pantry` import in RecipeIngredientList
-- Added `pantryItems?: string[]` to `RecipeIngredientListProps`
-- Added `pantryItems` to RecipeIngredientList destructure
-- Filter applied before `groupByCategory`: merges `DEFAULT_PANTRY_ITEMS` with prop using same pattern as RecipeCard lines 64-69
-- Empty check now uses `displayedIngredients.length === 0` instead of `ingredients.length === 0`
-- Added `pantryItems?: string[]` to `EventRecipesTabProps`
-- EventRecipesTab destructures and passes `pantryItems` to RecipeIngredientList
-- EventDetailPage passes `pantryItems={grocery.pantryItems}` to EventRecipesTab
-- PersonalMealDetailPage passes `pantryItems={grocery.pantryItems}` to EventRecipesTab
+- Created `src/components/ui/skeleton.tsx` with standard shadcn/ui skeleton pattern
 
 ### Files changed
-- `src/components/recipes/RecipeIngredientList.tsx`
-- `src/components/events/EventRecipesTab.tsx`
-- `src/pages/EventDetailPage.tsx`
-- `src/pages/PersonalMealDetailPage.tsx`
+- `src/components/ui/skeleton.tsx` (new file)
 
 ### Quality checks
 - Build: pass
@@ -87,145 +195,6 @@
 - Lint: N/A
 
 ### Learnings for future iterations
-- RecipeCard pantry pattern: `allPantryItems = pantryItems?.length > 0 ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])] : DEFAULT_PANTRY_ITEMS`; then filter with `isPantryItem(name, allPantryItems, unit)`
-- Filter must be applied before `groupByCategory` and the empty check must use the filtered array
-
----
-
-## [2026-03-05 05:00] — US-006: Add General Items support to EventDetailPage and PersonalMealDetailPage
-
-### What was implemented
-- Added `supportsGeneralItems: true` to `useGroceryList` in EventDetailPage
-- Added `supportsGeneralItems: true` to `useGroceryList` in PersonalMealDetailPage
-- Added `generalItems`, `onAddGeneralItemDirect`, `onBulkParseGroceryText`, `isAddingGeneral`, `onAddingGeneralChange` to GroceryListSection in EventDetailPage
-- Added same 5 General props to GroceryListSection in PersonalMealDetailPage
-
-### Files changed
-- `src/pages/EventDetailPage.tsx`
-- `src/pages/PersonalMealDetailPage.tsx`
-
-### Quality checks
-- Build: pass
-- Tests: N/A
-- Lint: N/A
-
-### Learnings for future iterations
-- Pattern: add `supportsGeneralItems: true` to useGroceryList options, then pass the 5 General props (generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange) to GroceryListSection
-- Reference: MealPlanPage lines 77 and 516-526
-
----
-
-## [2026-03-05 04:00] — US-005: Fix AddIngredientInput error when userId is empty
-
-### What was implemented
-- Added `if (!userId) return;` guard at the top of `handleAdd` in RecipeIngredientList
-
-### Files changed
-- `src/components/recipes/RecipeIngredientList.tsx`
-
-### Quality checks
-- Build: pass
-- Tests: N/A
-- Lint: N/A
-
-### Learnings for future iterations
-- EventRecipesTab passes `userId ?? ''` so an empty string reaches handleAdd when user is not loaded; early return prevents the `parseIngredientText` 'Not authenticated' throw
-
----
-
-## [2026-03-05 03:00] — US-004: Consistent grocery refresh on recipe add/delete across all pages
-
-### What was implemented
-- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddCustomMeal` in PersonalMealDetailPage
-- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddRecipeMeal` in PersonalMealDetailPage
-- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleAddManualMeal` in PersonalMealDetailPage
-- Added `grocery.refreshGroceries()` after `loadEventData()` in parse-completion useEffect success path in PersonalMealDetailPage
-- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleKeepRecipeAnyway` in EventDetailPage
-- Added `grocery.refreshGroceries()` after `loadEventData()` in `handleRetryParse` success path in EventDetailPage
-
-### Files changed
-- `src/pages/PersonalMealDetailPage.tsx`
-- `src/pages/EventDetailPage.tsx`
-
-### Quality checks
-- Build: pass
-- Tests: N/A
-- Lint: N/A
-
-### Learnings for future iterations
-- Pattern: follow EventDetailPage handleSubmitRecipe which already calls grocery.refreshGroceries() after loadEventData() on line 476
-
----
-
-## [2026-03-05 02:00] — US-003: Wire onIngredientsChange to grocery.refreshGroceries and remove forceMount
-
-### What was implemented
-- Removed `forceMount` and `data-[state=inactive]:hidden` from recipes TabsContent in RecipeDetailTabs
-- Replaced `onIngredientsChange={() => {}}` with `onIngredientsChange={() => grocery.refreshGroceries()}` in EventDetailPage (~line 954)
-- Replaced `onIngredientsChange={() => {}}` with `onIngredientsChange={() => grocery.refreshGroceries()}` in PersonalMealDetailPage (~line 863)
-- Updated RecipeDetailTabs.test.tsx: changed forceMount test to assert recipes content is NOT in DOM after switching tabs
-
-### Files changed
-- `src/components/shared/RecipeDetailTabs.tsx`
-- `src/pages/EventDetailPage.tsx`
-- `src/pages/PersonalMealDetailPage.tsx`
-- `tests/unit/components/shared/RecipeDetailTabs.test.tsx`
-
-### Quality checks
-- Build: pass
-- Tests: N/A
-- Lint: N/A
-
-### Learnings for future iterations
-- Removing forceMount means RecipeIngredientList remounts on tab switch, which will re-fetch fresh data
-- Test for forceMount needed inversion: `queryByText(...).not.toBeInTheDocument()` instead of `getByText(...).toBeInTheDocument()`
-
----
-
-## [2026-03-05 01:00] — US-002: Add cache invalidation to RecipeIngredientList edit/delete and pass cacheContext
-
-### What was implemented
-- Added `deleteGroceryCache(cacheContext...)` call in `handleEditItemText` in RecipeIngredientList (same pattern as handleAdd)
-- Added `deleteGroceryCache(cacheContext...)` call in `handleRemoveItem` in RecipeIngredientList
-- Added `cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string }` to `EventRecipesTabProps`
-- Added `cacheContext` to EventRecipesTab destructure and pass-through to RecipeIngredientList
-- EventDetailPage passes `cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}` to EventRecipesTab
-- PersonalMealDetailPage passes `cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}` to EventRecipesTab
-
-### Files changed
-- `src/components/recipes/RecipeIngredientList.tsx`
-- `src/components/events/EventRecipesTab.tsx`
-- `src/pages/EventDetailPage.tsx`
-- `src/pages/PersonalMealDetailPage.tsx`
-
-### Quality checks
-- Build: pass
-- Tests: N/A
-- Lint: N/A
-
-### Learnings for future iterations
-- `eventId` from `useParams` is `string | undefined` — always use `eventId ?? ""` when passing to typed string fields
-- handleEditItemText and handleRemoveItem needed `cacheContext` added to their useCallback dependency arrays
-
----
-
-## [2026-03-05 00:00] — US-001: Wire hasPendingChanges and onRecombine to GroceryListSection
-
-### What was implemented
-- Added `hasPendingChanges={grocery.hasPendingChanges}` and `onRecombine={grocery.triggerRecombine}` to GroceryListSection in EventDetailPage (~line 975-976)
-- Added same two props to GroceryListSection in PersonalMealDetailPage (~line 884-885)
-
-### Files changed
-- `src/pages/EventDetailPage.tsx`
-- `src/pages/PersonalMealDetailPage.tsx`
-
-### Quality checks
-- Build: pass
-- Tests: N/A
-- Lint: N/A
-
-### Learnings for future iterations
-- Both detail pages use `grocery.hasPendingChanges` and `grocery.triggerRecombine` from `useGroceryList` hook
-- The GroceryListSection block in both pages ends at the `onAddItemsToRecipe` line before the empty-state Card
+- Standard skeleton: `animate-pulse rounded-md bg-muted` div accepting `React.HTMLAttributes<HTMLDivElement>` + `cn()` for className merging
 
 ---

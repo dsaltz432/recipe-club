@@ -1,143 +1,136 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/ingredient-sync-and-cleanup",
-  "description": "Fix synchronization bugs and feature gaps between MealPlanPage, EventDetailPage, and PersonalMealDetailPage. After the previous PRD introduced inline ingredient editing and shared tabs, several props were left as no-ops, cache invalidation was incomplete, and General Items / pantry filtering were missing on Event and Meal detail pages.",
+  "branchName": "ralph/ux-polish",
+  "description": "UX polish pass addressing the grocery list density on mobile and desktop, loading states, recipe title length enforcement, and minor theme inconsistencies. Based on full desktop + mobile video walkthrough.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Wire hasPendingChanges and onRecombine to GroceryListSection",
-      "description": "Add hasPendingChanges={grocery.hasPendingChanges} and onRecombine={grocery.triggerRecombine} to GroceryListSection in EventDetailPage and PersonalMealDetailPage so the Reprocess button appears after ingredient edits.",
+      "title": "Create skeleton UI component",
+      "description": "As a developer, I want a reusable Skeleton component so that I can replace bare spinners with polished loading states throughout the app.",
       "acceptanceCriteria": [
-        "hasPendingChanges and onRecombine props are passed to GroceryListSection in EventDetailPage (~line 959–976)",
-        "hasPendingChanges and onRecombine props are passed to GroceryListSection in PersonalMealDetailPage (~line 868–885)",
+        "src/components/ui/skeleton.tsx exists and exports a Skeleton component",
+        "Skeleton renders a div with animate-pulse rounded-md bg-muted classes",
+        "Skeleton accepts className and other div props",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Reference: MealPlanPage lines 523-524 already passes these props correctly. EventDetailPage GroceryListSection is at ~line 959; PersonalMealDetailPage GroceryListSection is at ~line 868. Both are missing hasPendingChanges and onRecombine."
+      "notes": "Standard shadcn/ui skeleton pattern. Use cn() from '@/lib/utils' for className merging. This is a prerequisite for US-002. File should be minimal — ~10 lines."
     },
     {
       "id": "US-002",
-      "title": "Add cache invalidation to RecipeIngredientList edit/delete and pass cacheContext",
-      "description": "RecipeIngredientList should call deleteGroceryCache in handleEditItemText and handleRemoveItem (not just handleAdd). EventRecipesTab accepts and passes a cacheContext prop to RecipeIngredientList. EventDetailPage and PersonalMealDetailPage pass cacheContext to EventRecipesTab.",
+      "title": "Replace bare spinners with skeleton loading states",
+      "description": "As a user, I want to see meaningful skeleton layouts while pages load instead of a blank white screen with a tiny spinner.",
       "acceptanceCriteria": [
-        "handleEditItemText in RecipeIngredientList calls deleteGroceryCache(cacheContext...) when cacheContext is set",
-        "handleRemoveItem in RecipeIngredientList calls deleteGroceryCache(cacheContext...) when cacheContext is set",
-        "EventRecipesTabProps has cacheContext?: { type: 'event' | 'meal_plan'; id: string; userId: string }",
-        "EventRecipesTab passes cacheContext to RecipeIngredientList",
-        "EventDetailPage passes cacheContext={{ type: 'event', id: eventId, userId: user?.id ?? '' }} to EventRecipesTab",
-        "PersonalMealDetailPage passes cacheContext={{ type: 'event', id: eventId, userId: user?.id ?? '' }} to EventRecipesTab",
+        "RecipeClubEvents.tsx: bare spinner replaced with 3 skeleton event card placeholders matching event card shape (avatar circle, title bar, date/time bars, action buttons bar)",
+        "MealPlanPage.tsx: bare spinner in meal plan view replaced with skeleton week grid (7 column headers + placeholder cells)",
+        "EventDetailPage.tsx: bare spinner replaced with skeleton header card + Recipes/Groceries/Pantry tab skeleton",
+        "PersonalMealDetailPage.tsx: bare spinner replaced with skeleton header card + tab skeleton",
+        "RecipeHub.tsx: bare spinner replaced with skeleton recipe card placeholders (3 cards matching recipe card shape: title bar, author bar, action row, tag bar)",
+        "All skeletons use the Skeleton component from US-001",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "RecipeIngredientList is at src/components/recipes/RecipeIngredientList.tsx. handleAdd already calls deleteGroceryCache when cacheContext is set (lines 127-129). handleEditItemText (~line 79) and handleRemoveItem (~line 95) need the same pattern. EventRecipesTab is at src/components/events/EventRecipesTab.tsx — it renders RecipeIngredientList at line ~282. Both detail pages pass userId to EventRecipesTab already; add cacheContext alongside."
+      "notes": "Spinner locations: RecipeClubEvents.tsx ~line 208 (animate-spin div inside flex py-12). MealPlanPage.tsx ~line 427 (animate-spin div). EventDetailPage.tsx — search for animate-spin in the main loading return. PersonalMealDetailPage.tsx — search for animate-spin in the main loading return. RecipeHub.tsx ~line 688 (animate-spin div inside flex py-12). Each skeleton should preserve the page background gradient and header so the page doesn't flash. Keep skeletons simple: a few rounded rectangles of appropriate widths/heights. Import Skeleton from '@/components/ui/skeleton'."
     },
     {
       "id": "US-003",
-      "title": "Wire onIngredientsChange to grocery.refreshGroceries and remove forceMount",
-      "description": "Replace onIngredientsChange={() => {}} no-ops with onIngredientsChange={() => grocery.refreshGroceries()} in both detail pages. Remove forceMount and data-[state=inactive]:hidden from the recipes TabsContent in RecipeDetailTabs so switching tabs remounts RecipeIngredientList with fresh data.",
+      "title": "Increase grocery row padding and category spacing",
+      "description": "As a user, I want grocery list items to have more breathing room so the list is easier to read and scan.",
       "acceptanceCriteria": [
-        "EventDetailPage passes onIngredientsChange={() => grocery.refreshGroceries()} to EventRecipesTab",
-        "PersonalMealDetailPage passes onIngredientsChange={() => grocery.refreshGroceries()} to EventRecipesTab",
-        "RecipeDetailTabs recipes TabsContent no longer has forceMount or data-[state=inactive]:hidden",
+        "GroceryItemRow.tsx: outer div class changes from 'py-px px-2' to 'py-1.5 px-2'",
+        "GroceryCategoryGroup.tsx: outer wrapper div class changes from 'mb-2' to 'mb-5'",
+        "GroceryCategoryGroup.tsx: header row div class changes from 'mb-1' to 'mb-2'",
         "Typecheck passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "RecipeDetailTabs is at src/components/shared/RecipeDetailTabs.tsx line 29 — the recipes TabsContent has forceMount className='data-[state=inactive]:hidden'. Both pages pass onIngredientsChange={() => {}} to EventRecipesTab — replace with grocery.refreshGroceries(). The test file RecipeDetailTabs.test.tsx tests forceMount behavior and will need updating to remove that assertion."
+      "notes": "GroceryItemRow.tsx line 154: the outer div with 'flex items-center justify-between py-px px-2 hover:bg-gray-50 rounded group'. GroceryCategoryGroup.tsx line 26: outer wrapper div with 'mb-2'. Line 27: header div with 'flex items-center gap-2 mb-1'. CSS-only changes, no logic changes needed."
     },
     {
       "id": "US-004",
-      "title": "Consistent grocery refresh on recipe add/delete across all pages",
-      "description": "PersonalMealDetailPage: add grocery.refreshGroceries() after loadEventData() in handleAddCustomMeal, handleAddRecipeMeal, handleAddManualMeal, and the parse-completion useEffect success path. EventDetailPage: add grocery.refreshGroceries() in handleKeepRecipeAnyway and handleRetryParse success flow.",
+      "title": "Replace recipe name badges with color-coded dots in Combined view",
+      "description": "As a user, I want recipe sources shown as small colored dots instead of full recipe name badges so the grocery list is much more compact, especially on mobile where long names wrap to multiple lines.",
       "acceptanceCriteria": [
-        "handleAddCustomMeal in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
-        "handleAddRecipeMeal in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
-        "handleAddManualMeal in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
-        "The parse-completion useEffect success path in PersonalMealDetailPage calls grocery.refreshGroceries() after loadEventData()",
-        "handleKeepRecipeAnyway in EventDetailPage calls grocery.refreshGroceries() after loadEventData()",
-        "handleRetryParse success path in EventDetailPage calls grocery.refreshGroceries() after loadEventData()",
+        "GroceryListSection.tsx defines RECIPE_COLORS array with 8 distinct Tailwind bg-* color classes",
+        "GroceryListSection.tsx builds recipeColorMap: Record<string, string> mapping each recipe name to a color from RECIPE_COLORS",
+        "GroceryListSection.tsx renders a color legend above the Combined tab items: flex-wrap row of dots + recipe names",
+        "recipeColorMap is passed through GroceryCategoryGroup to GroceryItemRow in the Combined tab only",
+        "GroceryCategoryGroup.tsx accepts and threads recipeColorMap?: Record<string, string> prop to GroceryItemRow",
+        "GroceryItemRow.tsx accepts recipeColorMap?: Record<string, string> prop",
+        "When recipeColorMap is provided, render colored dot spans instead of Badge components for each sourceRecipe",
+        "Each dot has a title={recipe} attribute for hover tooltip",
+        "Per-recipe tabs are unaffected (sourceRecipes: [] already means no badges render)",
         "Typecheck passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "PersonalMealDetailPage: handleAddCustomMeal ~line 440, handleAddRecipeMeal ~line 483, handleAddManualMeal ~line 539 — each has loadEventData() near the end; add grocery.refreshGroceries() after each. Parse-completion useEffect: the doParse() function calls loadEventData() at ~line 567. EventDetailPage: handleKeepRecipeAnyway ~line 539 calls loadEventData(); handleRetryParse success ~line 574 calls loadEventData(). Reference: EventDetailPage handleSubmitRecipe already calls grocery.refreshGroceries() after loadEventData() on line 476 — follow that pattern."
+      "notes": "GroceryListSection.tsx: RECIPE_COLORS could be ['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400', 'bg-violet-400', 'bg-cyan-400', 'bg-orange-400', 'bg-teal-400']. Build recipeColorMap by mapping recipesWithIngredients names + 'General' to colors. Legend placement: above the {Array.from(smartGrouped.entries()).map(...)} block inside TabsContent value='combined' (~line 299). Legend: <div className='flex flex-wrap gap-x-3 gap-y-1 mb-3 text-xs text-muted-foreground'>. Dot span: <span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />. GroceryCategoryGroup.tsx: add recipeColorMap prop, thread it to each GroceryItemRow. GroceryItemRow.tsx lines 173-181: when recipeColorMap provided, render dots instead of <Badge>."
     },
     {
       "id": "US-005",
-      "title": "Fix AddIngredientInput error when userId is empty",
-      "description": "parseIngredientText throws 'Not authenticated' when userId is an empty string. Add a guard in RecipeIngredientList.handleAdd to return early if userId is falsy.",
+      "title": "Replace tab bar with Select dropdown on mobile",
+      "description": "As a mobile user, I want to use a dropdown to switch between recipe tabs so I can access all tabs instead of only seeing 1-2 truncated tab names.",
       "acceptanceCriteria": [
-        "handleAdd in RecipeIngredientList returns early if !userId",
-        "No unhandled error is thrown when AddIngredientInput is submitted with empty userId",
+        "On mobile (below sm breakpoint), the TabsList is hidden and a Select dropdown appears instead",
+        "On desktop (sm and above), the original TabsList shows and the Select is hidden",
+        "The Select includes all tabs: Combined (if hasAnyIngredients), per-recipe tabs, General (if hasGeneralTab)",
+        "Selecting an option in the Select calls setActiveTab with the correct value",
+        "The Select shows the currently active tab as its selected value",
+        "Export buttons (GroceryExportMenu + Recombine) stack below the tab selector on mobile",
+        "On desktop, export buttons remain on the same row as the tab list (current behavior preserved)",
         "Typecheck passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "RecipeIngredientList handleAdd is at ~line 111. parseIngredientText (src/lib/parseIngredientText.ts line 8) throws 'Not authenticated' when userId is falsy. EventRecipesTab passes userId ?? '' so an empty string reaches handleAdd when user is not loaded. Fix: add 'if (!userId) return;' at the top of handleAdd."
+      "notes": "GroceryListSection.tsx lines 258-289: the tab header area. Import Select, SelectContent, SelectItem, SelectTrigger, SelectValue from '@/components/ui/select' (already exists). Wrap TabsList in <div className='hidden sm:block overflow-x-auto'>. Add <div className='sm:hidden w-full'><Select value={effectiveTab} onValueChange={setActiveTab}>...</Select></div> before it. Change outer container from 'flex items-center justify-between gap-2 mb-3' to 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'."
     },
     {
       "id": "US-006",
-      "title": "Add General Items support to EventDetailPage and PersonalMealDetailPage",
-      "description": "Pass supportsGeneralItems: true to useGroceryList in both pages. Wire all General tab props to GroceryListSection: generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange.",
+      "title": "Collapse checked items within grocery categories",
+      "description": "As a user, I want checked items to collapse into a summary so I can focus on what I still need to buy.",
       "acceptanceCriteria": [
-        "useGroceryList in EventDetailPage is called with supportsGeneralItems: true",
-        "useGroceryList in PersonalMealDetailPage is called with supportsGeneralItems: true",
-        "GroceryListSection in EventDetailPage receives generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange",
-        "GroceryListSection in PersonalMealDetailPage receives generalItems, onAddGeneralItemDirect, onBulkParseGroceryText, isAddingGeneral, onAddingGeneralChange",
+        "GroceryCategoryGroup.tsx splits items into unchecked and checked arrays based on checkedItems Set",
+        "Unchecked items render normally",
+        "When checked.length > 0, a native <details>/<summary> element renders below unchecked items",
+        "Summary text shows '{n} item checked' or '{n} items checked' (correct pluralization)",
+        "Checked items inside <details> render at reduced opacity (opacity-50)",
+        "When checkedItems is undefined (non-interactive mode), all items render as before with no change",
         "Typecheck passes"
       ],
       "priority": 6,
       "passes": true,
-      "notes": "Reference: MealPlanPage lines 516-526 shows the full set of General props to pass. useGroceryList options interface already has supportsGeneralItems?: boolean (default false). EventDetailPage useGroceryList is at ~line 183; PersonalMealDetailPage at ~line 145. Both GroceryListSection render blocks are in the groceryContent prop of RecipeDetailTabs."
+      "notes": "GroceryCategoryGroup.tsx: add const unchecked = checkedItems ? items.filter(i => !checkedItems.has(i.name)) : items and const checked = checkedItems ? items.filter(i => checkedItems.has(i.name)) : []. Render unchecked normally. Then: {checkedItems && checked.length > 0 && (<details className='mt-1'><summary className='text-xs text-gray-400 cursor-pointer hover:text-gray-500 px-2 py-1 select-none'>{checked.length} item{checked.length !== 1 ? 's' : ''} checked</summary><div className='opacity-50'>{checked.map(...)}</div></details>)}. The existing GroceryItemRow renders in both lists unchanged."
     },
     {
       "id": "US-007",
-      "title": "Add pantry filtering to RecipeIngredientList",
-      "description": "RecipeIngredientList accepts an optional pantryItems prop and filters displayed ingredients using isPantryItem + DEFAULT_PANTRY_ITEMS (same logic as RecipeCard). EventRecipesTab accepts and passes pantryItems to RecipeIngredientList.",
+      "title": "Add recipe title max length and character counter",
+      "description": "As a user creating a recipe, I want the title input to enforce a 50-character limit so recipe names don't break grocery tab layouts.",
       "acceptanceCriteria": [
-        "RecipeIngredientListProps has pantryItems?: string[]",
-        "RecipeIngredientList filters displayed ingredients: items where isPantryItem(name, allPantryItems, unit) are hidden",
-        "allPantryItems merges DEFAULT_PANTRY_ITEMS with the pantryItems prop (same as RecipeCard lines 64-69)",
-        "EventRecipesTabProps has pantryItems?: string[]",
-        "EventRecipesTab passes pantryItems to RecipeIngredientList",
-        "EventDetailPage passes pantryItems={grocery.pantryItems} to EventRecipesTab",
-        "PersonalMealDetailPage passes pantryItems={grocery.pantryItems} to EventRecipesTab",
+        "Recipe name Input in RecipeInputForm.tsx has maxLength={50}",
+        "A character count indicator appears below the Input showing '{n}/50'",
+        "Character count text is text-xs text-muted-foreground",
         "Typecheck passes"
       ],
       "priority": 7,
       "passes": true,
-      "notes": "RecipeCard at src/components/recipes/RecipeCard.tsx lines 64-69 shows the allPantryItems merge and isPantryItem filter pattern — copy it exactly. isPantryItem is from '@/lib/groceryList'; DEFAULT_PANTRY_ITEMS is from '@/lib/pantry'. RecipeIngredientList renders grouped items at line ~150; apply filter before groupByCategory. The count shown on the toggle button in EventRecipesTab (~line 251) is just the label 'Ingredients' with no count — so no count update needed there."
+      "notes": "RecipeInputForm.tsx ~line 138-143: the Input with id='recipe-input-name'. Add maxLength={50} prop. Add <p className='text-xs text-muted-foreground mt-1'>{formData.name.length}/50</p> below the Input (or below the FormItem wrapping it). The form data field is formData.name."
     },
     {
       "id": "US-008",
-      "title": "Remove Rate Recipes button from PersonalMealDetailPage header card",
-      "description": "Remove the ternary branch (~lines 825-839) rendering the Rate Recipes button in the header card of PersonalMealDetailPage. The Cooked/Undo status block should remain. Per-recipe rating via onRateRecipe in EventRecipesTab is unaffected.",
+      "title": "Normalize background gradient opacity and fix Deposit pill colors",
+      "description": "As a user, I want consistent visual styling across all pages with matching gradient strength and color palette.",
       "acceptanceCriteria": [
-        "The Rate Recipes Button and its wrapping div are removed from PersonalMealDetailPage",
-        "The isCooked block (Cooked badge + Undo button) is still present",
-        "The mealItems.length > 0 && totalRecipes > 0 ternary branch that previously showed Rate Recipes is removed",
+        "Dashboard.tsx: background gradient classes change from '/40' opacity to '/30' (from-purple-light/40 via-white to-orange-light/40 → /30)",
+        "src/pages/Index.tsx: background gradient changes from full-strength 'from-purple-light via-white to-orange-light' to '/30' variants",
+        "src/pages/NotFound.tsx: background gradient changes from full-strength to '/30' variants",
+        "Dashboard.tsx: Deposit stats pill changes from 'bg-green-50 border-green-300 text-green-600' to 'bg-green/5 border-green/20 text-green-600'",
         "Typecheck passes"
       ],
       "priority": 8,
       "passes": true,
-      "notes": "PersonalMealDetailPage ~lines 825-839: the else branch of the isCooked ternary renders a Rate Recipes button. Remove just that else branch (the div with Button). The isCooked true-branch (Cooked badge + Undo) at ~lines 809-824 must stay. The null fallback at line 840 stays."
-    },
-    {
-      "id": "US-009",
-      "title": "Clean up dead props in GroceryListSection",
-      "description": "Remove onRemoveGeneralItem and onUpdateGeneralItem from GroceryListSectionProps (defined but never used in the component body). Remove from MealPlanPage where they are passed.",
-      "acceptanceCriteria": [
-        "GroceryListSectionProps no longer includes onRemoveGeneralItem",
-        "GroceryListSectionProps no longer includes onUpdateGeneralItem",
-        "GroceryListSection destructured props no longer include onRemoveGeneralItem or onUpdateGeneralItem",
-        "MealPlanPage no longer passes onRemoveGeneralItem or onUpdateGeneralItem to GroceryListSection",
-        "Typecheck passes"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "GroceryListSection is at src/components/recipes/GroceryListSection.tsx. Props interface lines ~44-45 define onRemoveGeneralItem and onUpdateGeneralItem. They are destructured in the component args but never referenced in the component body. MealPlanPage passes them at lines 518-519. Safe to delete both from interface, destructure, and call site."
+      "notes": "Dashboard.tsx: search for 'from-purple-light/40' and 'to-orange-light/40' — change to /30. Also search for 'bg-green-50' in the stats pills section — the Deposit pill uses default Tailwind green tokens; change bg-green-50 to bg-green/5 and border-green-300 to border-green/20 (text-green-600 can stay or change to text-green). Index.tsx: search for 'from-purple-light via-white to-orange-light' — add /30 to each color stop. NotFound.tsx: same pattern. These are purely CSS class string changes."
     }
   ]
 }

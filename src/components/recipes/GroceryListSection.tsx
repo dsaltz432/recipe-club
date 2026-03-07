@@ -4,14 +4,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
 import { filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
 import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
+import GroceryItemRow from "./GroceryItemRow";
 import type { GroceryItemEdit } from "./GroceryItemRow";
 import AddIngredientInput from "./AddIngredientInput";
+
+const RECIPE_COLORS = [
+  "bg-blue-400",
+  "bg-emerald-400",
+  "bg-amber-400",
+  "bg-rose-400",
+  "bg-violet-400",
+  "bg-cyan-400",
+  "bg-orange-400",
+  "bg-teal-400",
+];
 
 export interface ParsedGroceryItem {
   name: string;
@@ -48,6 +61,39 @@ interface GroceryListSectionProps {
   onAddingGeneralChange?: (v: boolean) => void;
   onAddItemsToRecipe?: (recipeId: string, text: string) => Promise<void>;
 }
+
+const CheckedSummary = ({
+  items,
+  checkedItems,
+  onToggleChecked,
+  recipeColorMap,
+}: {
+  items: SmartGroceryItem[];
+  checkedItems: Set<string>;
+  onToggleChecked?: (name: string) => void;
+  recipeColorMap?: Record<string, string>;
+}) => {
+  const checked = items.filter((i) => checkedItems.has(i.name));
+  if (checked.length === 0) return null;
+  return (
+    <details className="mb-3">
+      <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-500 px-2 py-1 select-none">
+        {checked.length} item{checked.length !== 1 ? "s" : ""} checked
+      </summary>
+      <div className="opacity-50 mt-1">
+        {checked.map((item, index) => (
+          <GroceryItemRow
+            key={`checked-${item.name}-${index}`}
+            item={item}
+            isChecked={true}
+            onToggleChecked={onToggleChecked ? () => onToggleChecked(item.name) : undefined}
+            recipeColorMap={recipeColorMap}
+          />
+        ))}
+      </div>
+    </details>
+  );
+};
 
 function groupSmartByCategory(
   items: SmartGroceryItem[]
@@ -185,6 +231,13 @@ const GroceryListSection = ({
     (r) => (ingredientsByRecipe.get(r.id)?.length ?? 0) > 0
   );
 
+  // Color map for combined tab: recipe name → color class
+  const recipeColorMap: Record<string, string> = {};
+  const colorNames = [...recipesWithIngredients.map((r) => r.name), "General"];
+  colorNames.forEach((name, i) => {
+    recipeColorMap[name] = RECIPE_COLORS[i % RECIPE_COLORS.length];
+  });
+
   return (
     <Card className="bg-white/90 backdrop-blur-sm border border-purple/10">
       <CardContent className="pt-4 sm:pt-6 pb-4">
@@ -256,8 +309,44 @@ const GroceryListSection = ({
 
         {!isLoading && (hasAnyIngredients || hasGeneralTab) && (
           <Tabs value={effectiveTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="overflow-x-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              {/* Mobile: Select + export on one row */}
+              <div className="flex sm:hidden items-center gap-2">
+                <div className="flex-1">
+                  <Select value={effectiveTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hasAnyIngredients && <SelectItem value="combined">Combined</SelectItem>}
+                      {recipesWithIngredients.map((recipe) => (
+                        <SelectItem key={recipe.id} value={recipe.id}>{recipe.name}</SelectItem>
+                      ))}
+                      {hasGeneralTab && <SelectItem value="general">General</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {hasPendingChanges && !isCombining && !isParsing && onRecombine && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onRecombine}
+                      className="text-xs border-purple/30 text-purple hover:bg-purple/5 animate-in fade-in duration-300"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Recombine
+                    </Button>
+                  )}
+                  <GroceryExportMenu
+                    items={filteredSmartItems || []}
+                    eventName={eventName}
+                    checkedItems={checkedItems}
+                  />
+                </div>
+              </div>
+              {/* Desktop: TabsList */}
+              <div className="hidden sm:block overflow-x-auto">
                 <TabsList className="inline-flex w-auto">
                   {hasAnyIngredients && <TabsTrigger value="combined">Combined</TabsTrigger>}
                   {recipesWithIngredients.map((recipe) => (
@@ -268,7 +357,8 @@ const GroceryListSection = ({
                   {hasGeneralTab && <TabsTrigger value="general">General</TabsTrigger>}
                 </TabsList>
               </div>
-              <div className="flex items-center gap-2">
+              {/* Desktop: Recombine + export */}
+              <div className="hidden sm:flex items-center gap-2">
                 {hasPendingChanges && !isCombining && !isParsing && onRecombine && (
                   <Button
                     variant="outline"
@@ -298,6 +388,22 @@ const GroceryListSection = ({
 
               {!isCombining && smartGrouped && (
                 <>
+                  {checkedItems && filteredSmartItems && (
+                    <CheckedSummary
+                      items={filteredSmartItems}
+                      checkedItems={checkedItems}
+                      onToggleChecked={onToggleChecked}
+                      recipeColorMap={recipeColorMap}
+                    />
+                  )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3 text-xs text-muted-foreground">
+                    {colorNames.filter((name) => recipeColorMap[name]).map((name) => (
+                      <span key={name} className="flex items-center gap-1">
+                        <span className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${recipeColorMap[name]}`} />
+                        {name}
+                      </span>
+                    ))}
+                  </div>
                   {Array.from(smartGrouped.entries()).map(([category, items]) => (
                     <GroceryCategoryGroup
                       key={category}
@@ -305,6 +411,7 @@ const GroceryListSection = ({
                       items={items}
                       checkedItems={checkedItems}
                       onToggleChecked={onToggleChecked}
+                      recipeColorMap={recipeColorMap}
                     />
                   ))}
                 </>
@@ -342,7 +449,15 @@ const GroceryListSection = ({
                       <span className="text-sm">Combining ingredients...</span>
                     </div>
                   ) : (
-                    Array.from(recipeGrouped.entries()).map(([category, items]) => (
+                    <>
+                      {checkedItems && (
+                        <CheckedSummary
+                          items={filteredRecipeItems}
+                          checkedItems={checkedItems}
+                          onToggleChecked={onToggleChecked}
+                        />
+                      )}
+                    {Array.from(recipeGrouped.entries()).map(([category, items]) => (
                       <GroceryCategoryGroup
                         key={`${recipe.id}-${category}`}
                         category={category}
@@ -354,7 +469,8 @@ const GroceryListSection = ({
                         checkedItems={checkedItems}
                         onToggleChecked={onToggleChecked}
                       />
-                    ))
+                    ))}
+                    </>
                   )}
                   {onAddItemsToRecipe && (
                     <AddIngredientInput
@@ -391,7 +507,15 @@ const GroceryListSection = ({
                         <span className="text-sm">Combining ingredients...</span>
                       </div>
                     ) : !isParsing ? (
-                      Array.from(generalGrouped.entries()).map(([category, items]) => (
+                      <>
+                        {checkedItems && (
+                          <CheckedSummary
+                            items={filteredGeneralItems}
+                            checkedItems={checkedItems}
+                            onToggleChecked={onToggleChecked}
+                          />
+                        )}
+                      {Array.from(generalGrouped.entries()).map(([category, items]) => (
                         <GroceryCategoryGroup
                           key={`general-${category}`}
                           category={category}
@@ -401,7 +525,8 @@ const GroceryListSection = ({
                           checkedItems={checkedItems}
                           onToggleChecked={onToggleChecked}
                         />
-                      ))
+                      ))}
+                      </>
                     ) : null
                   )}
 

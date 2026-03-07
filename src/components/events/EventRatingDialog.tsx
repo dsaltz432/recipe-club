@@ -196,16 +196,16 @@ const EventRatingDialog = ({
   return (
     <Dialog open={true} onOpenChange={() => onCancel()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">Rate the Recipes</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="text-left">
+          <DialogTitle className="font-display text-lg sm:text-xl">Rate the Recipes</DialogTitle>
+          <DialogDescription className={mode === "rating" ? "sr-only" : "text-xs sm:text-sm"}>
             {mode === "completing"
-              ? `How did you like the recipes from the ${event.ingredientName} event? Your ratings help everyone discover great recipes.`
-              : `Rate the recipes from the ${event.ingredientName} event. You can update your ratings anytime.`}
+              ? "How did you like the recipes? Your ratings help everyone discover great recipes."
+              : "Rate your recipes."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-3 sm:space-y-6 py-2 sm:py-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple"></div>
@@ -219,57 +219,59 @@ const EventRatingDialog = ({
               const recipeRating = ratings.get(recipe.id) || { wouldCookAgain: null, rating: null, noteText: "" };
 
               return (
-                <div key={recipe.id} className="p-4 border rounded-lg space-y-4">
-                  <div>
-                    <h4 className="font-semibold">{recipe.name}</h4>
-                    {recipe.url && (
-                      <a
-                        href={recipe.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-purple hover:underline"
-                      >
-                        View recipe
-                      </a>
-                    )}
+                <div key={recipe.id} className="p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-semibold text-sm sm:text-base">{recipe.name}</h4>
+                      {recipe.url && (
+                        <a
+                          href={recipe.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs sm:text-sm text-purple hover:underline"
+                        >
+                          View recipe
+                        </a>
+                      )}
+                    </div>
                   </div>
 
                   {/* Would cook again */}
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm">Would you make this again?</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                    <span className="text-xs sm:text-sm text-muted-foreground">Make this again?</span>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant={recipeRating.wouldCookAgain === true ? "default" : "outline"}
                         onClick={() => handleRatingChange(recipe.id, "wouldCookAgain", true)}
-                        className={recipeRating.wouldCookAgain === true ? "bg-green-500 hover:bg-green-600" : ""}
+                        className={`h-8 text-xs ${recipeRating.wouldCookAgain === true ? "bg-green-500 hover:bg-green-600" : ""}`}
                       >
-                        <ThumbsUp className="h-4 w-4 mr-1" /> Yes
+                        <ThumbsUp className="h-3.5 w-3.5 mr-1" /> Yes
                       </Button>
                       <Button
                         size="sm"
                         variant={recipeRating.wouldCookAgain === false ? "default" : "outline"}
                         onClick={() => handleRatingChange(recipe.id, "wouldCookAgain", false)}
-                        className={recipeRating.wouldCookAgain === false ? "bg-red-500 hover:bg-red-600" : ""}
+                        className={`h-8 text-xs ${recipeRating.wouldCookAgain === false ? "bg-red-500 hover:bg-red-600" : ""}`}
                       >
-                        <ThumbsDown className="h-4 w-4 mr-1" /> No
+                        <ThumbsDown className="h-3.5 w-3.5 mr-1" /> No
                       </Button>
                     </div>
                   </div>
 
                   {/* Star rating */}
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm">Overall rating:</span>
-                    <div className="flex gap-1">
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Overall:</span>
+                    <div className="flex gap-0.5 sm:gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           onClick={() => handleRatingChange(recipe.id, "rating", star)}
-                          className="p-1 hover:scale-110 transition-transform"
+                          className="p-0.5 sm:p-1 hover:scale-110 transition-transform"
                           aria-label={`Rate ${star} out of 5 stars`}
                         >
                           <Star
-                            className={`h-6 w-6 ${
+                            className={`h-5 w-5 sm:h-6 sm:w-6 ${
                               (recipeRating.rating || 0) >= star
                                 ? "fill-yellow-400 text-yellow-400"
                                 : "text-gray-300"
@@ -279,7 +281,7 @@ const EventRatingDialog = ({
                       ))}
                     </div>
                     {recipeRating.rating && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground">
                         {recipeRating.rating}/5
                       </span>
                     )}
@@ -287,13 +289,13 @@ const EventRatingDialog = ({
 
                   {/* Note */}
                   <div className="space-y-1">
-                    <span className="text-sm">Notes (optional):</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Notes (optional):</span>
                     <Textarea
                       placeholder="Add your notes about this recipe..."
                       value={recipeRating.noteText}
                       onChange={(e) => handleNoteChange(recipe.id, e.target.value)}
-                      rows={3}
-                      className="resize-none"
+                      rows={2}
+                      className="resize-none text-sm"
                     />
                   </div>
                 </div>

@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -341,33 +340,34 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
               You landed on: {selectedIngredient?.name}
             </DialogTitle>
             <DialogDescription>
-              Choose a date for your recipe club event, or spin again for a
-              different ingredient.
+              Choose a date, or spin again for a different ingredient.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-center py-4">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
-              initialFocus
-            />
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
+                initialFocus
+              />
+            </div>
+
+            <div className="flex items-center gap-4 px-4">
+              <Label htmlFor="event-time" className="whitespace-nowrap">Event Time</Label>
+              <Input
+                id="event-time"
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="w-32"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 px-4">
-            <Label htmlFor="event-time" className="whitespace-nowrap">Event Time</Label>
-            <Input
-              id="event-time"
-              type="time"
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-              className="w-32"
-            />
-          </div>
-
-          <DialogFooter className="flex gap-2 sm:gap-0">
+          <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleSpinAgain} disabled={isLockingIn}>
               Spin Again
             </Button>
@@ -378,7 +378,7 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
             >
               {isLockingIn ? "Creating Event..." : "Lock In Ingredient"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>

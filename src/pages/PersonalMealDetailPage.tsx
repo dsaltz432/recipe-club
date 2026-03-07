@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCachedAiModel } from "@/lib/userPreferences";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RecipeDetailTabs } from "@/components/shared/RecipeDetailTabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -694,8 +695,22 @@ const PersonalMealDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
+        <div className="container mx-auto px-4 py-6 space-y-4">
+          <div className="rounded-lg border bg-white/80 p-6 space-y-3">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-24" />
+            </div>
+            <Skeleton className="h-40 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -755,8 +770,8 @@ const PersonalMealDetailPage = () => {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl space-y-4 sm:space-y-6">
         {/* Event Info */}
         <Card className="backdrop-blur-sm border-2 shadow-md bg-white/90 border-purple/10">
-          <CardContent className="py-4 sm:py-6">
-            <div className="space-y-2">
+          <CardContent className="py-3 sm:py-6 px-3 sm:px-6">
+            <div className="space-y-1.5 sm:space-y-2">
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
                 <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-purple/5">
                   <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple" />
@@ -780,10 +795,10 @@ const PersonalMealDetailPage = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => setShowRatingDialog(true)}
-                    className="text-xs border-purple/30 text-purple hover:bg-purple/5"
+                    className="text-xs border-purple/30 text-purple hover:bg-purple/5 px-2 sm:px-3"
                   >
-                    <Star className="h-3.5 w-3.5 mr-1.5" />
-                    Rate Recipes
+                    <Star className="h-3.5 w-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Rate Recipes</span>
                   </Button>
                 )}
               </div>

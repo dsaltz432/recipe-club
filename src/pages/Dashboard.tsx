@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [userIsMemberOrAdmin, setUserIsMemberOrAdmin] = useState(false);
   const [userIsClubMember, setUserIsClubMember] = useState(false);
   const [activeEvent, setActiveEvent] = useState<ScheduledEvent | null>(null);
+  const [isEventLoading, setIsEventLoading] = useState(false);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [userRecipesCount, setUserRecipesCount] = useState(0);
   const activeTab: TabValue = VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "home";
@@ -173,8 +174,10 @@ const Dashboard = () => {
     }
   };
 
-  const handleEventCreated = () => {
-    loadActiveEvent();
+  const handleEventCreated = async () => {
+    setIsEventLoading(true);
+    await loadActiveEvent();
+    setIsEventLoading(false);
     loadIngredients();
   };
 
@@ -221,7 +224,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-light/40 via-white to-orange-light/40">
+    <div className="min-h-screen bg-gradient-to-br from-purple-light/30 via-white to-orange-light/30">
       <AppHeader
         user={user}
         userIsMemberOrAdmin={userIsMemberOrAdmin}
@@ -246,7 +249,7 @@ const Dashboard = () => {
               href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 bg-green-50 border border-green-300 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 bg-green/5 border border-green/20 px-3 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
             >
               <DollarSign className="h-3.5 w-3.5 text-green-600" />
               <span className="text-muted-foreground">Deposit</span>
@@ -272,22 +275,22 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-2 rounded-xl !h-16">
-              <TabsTrigger value="home" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
+          <TabsList className="grid w-full max-w-lg mx-auto mb-4 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-1.5 rounded-xl !h-auto">
+              <TabsTrigger value="home" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <Home className="h-4 w-4" />
-                <span className="text-[10px] sm:text-sm">Home</span>
+                <span className="hidden sm:inline text-sm">Home</span>
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
+              <TabsTrigger value="events" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <Calendar className="h-4 w-4" />
-                <span className="text-[10px] sm:text-sm">Events</span>
+                <span className="hidden sm:inline text-sm">Events</span>
               </TabsTrigger>
-              <TabsTrigger value="recipes" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
+              <TabsTrigger value="recipes" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <BookOpen className="h-4 w-4" />
-                <span className="text-[10px] sm:text-sm">Recipes</span>
+                <span className="hidden sm:inline text-sm">Recipes</span>
               </TabsTrigger>
-              <TabsTrigger value="meals" className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white rounded-lg py-1.5 sm:py-2.5">
+              <TabsTrigger value="meals" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
                 <CalendarDays className="h-4 w-4" />
-                <span className="text-[10px] sm:text-sm">Meals</span>
+                <span className="hidden sm:inline text-sm">Meals</span>
               </TabsTrigger>
             </TabsList>
 
@@ -301,6 +304,7 @@ const Dashboard = () => {
               onEventCreated={handleEventCreated}
               onRecipeAdded={handleRecipeAdded}
               onEventUpdated={loadActiveEvent}
+              isEventLoading={isEventLoading}
             />
           </TabsContent>
 

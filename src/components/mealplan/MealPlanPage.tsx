@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, LayoutGrid } from "lucide-react";
 import ParseProgressDialog from "./ParseProgressDialog";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
@@ -12,6 +12,7 @@ import PantrySection from "@/components/pantry/PantrySection";
 import { loadUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import { useGroceryList } from "@/hooks/useGroceryList";
 import type { MealPlanItem, UserPreferences } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MealPlanPageProps {
   userId: string;
@@ -426,58 +427,67 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple"></div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-7 gap-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <Skeleton key={day} className="h-6 w-full" />
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {Array.from({ length: 14 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        <div className="flex gap-1 bg-muted rounded-lg p-1">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <WeekNavigation
+          weekStart={weekStart}
+          onPreviousWeek={handlePreviousWeek}
+          onNextWeek={handleNextWeek}
+          onCurrentWeek={handleCurrentWeek}
+          weekStartDay={userPreferences?.weekStartDay}
+        />
+        <div className="flex gap-1 bg-muted rounded-lg p-1 shrink-0">
           <button
             onClick={() => setViewTab("plan")}
-            className={`px-3 py-2.5 sm:py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-2 sm:px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
               viewTab === "plan"
                 ? "bg-white shadow-sm font-medium"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Meal Plan
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Plan</span>
           </button>
           <button
             onClick={() => setViewTab("groceries")}
-            className={`px-3 py-2.5 sm:py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+            className={`px-2 sm:px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
               viewTab === "groceries"
                 ? "bg-white shadow-sm font-medium"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <ShoppingCart className="h-3.5 w-3.5" />
-            Groceries
+            <span className="hidden sm:inline">Groceries</span>
           </button>
           <button
             onClick={() => setViewTab("pantry")}
-            className={`px-3 py-2.5 sm:py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+            className={`px-2 sm:px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
               viewTab === "pantry"
                 ? "bg-white shadow-sm font-medium"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <UtensilsCrossed className="h-3.5 w-3.5" />
-            Pantry
+            <span className="hidden sm:inline">Pantry</span>
           </button>
         </div>
       </div>
-
-      <WeekNavigation
-        weekStart={weekStart}
-        onPreviousWeek={handlePreviousWeek}
-        onNextWeek={handleNextWeek}
-        onCurrentWeek={handleCurrentWeek}
-        weekStartDay={userPreferences?.weekStartDay}
-      />
 
       {viewTab === "plan" && (
         <>
