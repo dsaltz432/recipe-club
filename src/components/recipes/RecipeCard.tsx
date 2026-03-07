@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
@@ -126,6 +127,18 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                     <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
                   </a>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  aria-label={`Copy share link for ${recipe.name}`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/recipes/${recipe.id}`);
+                    toast.success("Link copied!");
+                  }}
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                </Button>
                 {onAddNote && (
                   <Button
                     variant="ghost"

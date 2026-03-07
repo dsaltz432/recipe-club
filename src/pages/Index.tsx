@@ -15,7 +15,13 @@ const Index = () => {
       const authenticated = await isAuthenticated();
       if (!mounted) return;
       if (authenticated) {
-        navigate("/dashboard");
+        const redirect = sessionStorage.getItem("postLoginRedirect");
+        if (redirect) {
+          sessionStorage.removeItem("postLoginRedirect");
+          navigate(redirect);
+        } else {
+          navigate("/dashboard");
+        }
       }
       setIsLoading(false);
     };

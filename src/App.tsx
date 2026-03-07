@@ -9,6 +9,7 @@ import PersonalMealDetailPage from "./pages/PersonalMealDetailPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Settings from "./pages/Settings";
+import SharedRecipePage from "./pages/SharedRecipePage";
 import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient({
@@ -66,6 +67,7 @@ function App() {
               </AuthGuard>
             }
           />
+          <Route path="/recipes/:recipeId" element={<SharedRecipePage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -14,7 +14,9 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
+  Share2,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary } from "@/types";
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
 
@@ -253,6 +255,18 @@ const EventRecipesTab = ({
                           <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         )}
                         <span className="text-[10px] sm:text-xs">Ingredients</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 sm:h-8 sm:w-8"
+                        aria-label={`Copy share link for ${recipe.name}`}
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/recipes/${recipe.id}`);
+                          toast.success("Link copied!");
+                        }}
+                      >
+                        <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </Button>
                       {(recipe.createdBy === user?.id || canManageRecipes) && (
                         <>

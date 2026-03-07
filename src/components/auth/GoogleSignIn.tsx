@@ -18,7 +18,9 @@ const GoogleSignIn = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      const pending = sessionStorage.getItem("postLoginRedirect");
+      const redirectTo = pending ? window.location.origin + pending : undefined;
+      await signInWithGoogle(false, redirectTo);
       // Supabase handles the redirect
     } catch (error) {
       console.error("Error signing in:", error);
@@ -31,7 +33,9 @@ const GoogleSignIn = () => {
     try {
       setIsLoading(true);
       await signInWithEmail(email, password);
-      navigate("/dashboard");
+      const pending = sessionStorage.getItem("postLoginRedirect");
+      sessionStorage.removeItem("postLoginRedirect");
+      navigate(pending || "/dashboard");
     } catch (error) {
       console.error("Error signing in:", error);
       toast.error("Sign in failed. Please try again.");
