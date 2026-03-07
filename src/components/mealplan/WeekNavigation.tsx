@@ -46,21 +46,21 @@ const WeekNavigation = ({
   weekStartDay = 0,
 }: WeekNavigationProps) => {
   return (
-    <div className="flex items-center justify-between mb-4">
-      <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" onClick={onPreviousWeek} aria-label="Previous week">
+    <div className="flex items-center gap-1">
+      <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-foreground" onClick={onPreviousWeek} aria-label="Previous week">
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      <div className="flex items-center gap-2">
-        <span className="font-display text-lg font-semibold">
+      <div className="flex items-center gap-1">
+        <span className="font-display text-sm sm:text-base font-semibold whitespace-nowrap">
           {formatWeekRange(weekStart)}
         </span>
         {!isCurrentWeek(weekStart, weekStartDay) && (
-          <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={onCurrentWeek}>
+          <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0 text-xs px-1.5" onClick={onCurrentWeek}>
             Today
           </Button>
         )}
       </div>
-      <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" onClick={onNextWeek} aria-label="Next week">
+      <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-foreground" onClick={onNextWeek} aria-label="Next week">
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

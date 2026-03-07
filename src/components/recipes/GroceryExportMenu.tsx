@@ -34,22 +34,16 @@ const GroceryExportMenu = ({ items, eventName, checkedItems }: GroceryExportMenu
   };
 
   return (
-    <div className="flex gap-1">
-      <Button variant="outline" size="sm" onClick={handleCopyToClipboard} className="px-2 sm:px-3">
-        <Copy className="h-4 w-4 sm:mr-1" />
-        <span className="hidden sm:inline">Copy</span>
+    <div className="flex gap-0.5">
+      <Button variant="ghost" size="sm" onClick={handleCopyToClipboard} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" title="Copy to clipboard">
+        <Copy className="h-3.5 w-3.5" />
       </Button>
-      <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="px-2 sm:px-3">
-        <Download className="h-4 w-4 sm:mr-1" />
-        <span className="hidden sm:inline">CSV</span>
+      <Button variant="ghost" size="sm" onClick={handleDownloadCSV} className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" title="Download CSV">
+        <Download className="h-3.5 w-3.5" />
       </Button>
-      <div className="flex flex-col items-center gap-0.5">
-        <Button variant="outline" size="sm" disabled className="px-2 sm:px-3">
-          <ShoppingCart className="h-4 w-4 sm:mr-1" />
-          <span className="hidden sm:inline">Instacart</span>
-        </Button>
-        <span className="hidden sm:inline text-[10px] text-muted-foreground">Coming Soon</span>
-      </div>
+      <Button variant="ghost" size="sm" disabled className="h-7 w-7 p-0 text-muted-foreground/40" title="Instacart (Coming Soon)">
+        <ShoppingCart className="h-3.5 w-3.5" />
+      </Button>
     </div>
   );
 };

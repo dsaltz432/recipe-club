@@ -152,20 +152,21 @@ const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecke
   }
 
   return (
-    <div className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded group">
+    <div className="flex items-center justify-between py-0.5 px-2 hover:bg-gray-50 rounded group">
       <div className="flex items-center gap-1.5 min-w-0">
         {onToggleChecked && (
           <button
             type="button"
             onClick={onToggleChecked}
-            className={`h-4 w-4 shrink-0 rounded border transition-colors ${
+            style={{ minHeight: 0, minWidth: 0 }}
+            className={`h-5 w-5 shrink-0 self-center appearance-none rounded inline-flex items-center justify-center border transition-colors cursor-pointer ${
               isChecked
                 ? "bg-purple border-purple"
                 : "border-gray-300 hover:border-gray-400"
             }`}
             aria-label={isChecked ? "Uncheck item" : "Check item"}
           >
-            {isChecked && <Check className="h-3 w-3 text-white mx-auto" />}
+            {isChecked && <Check className="h-3 w-3 text-white" />}
           </button>
         )}
         <span className={`text-sm ${isChecked ? "line-through opacity-50" : ""}`}>{displayText}</span>
