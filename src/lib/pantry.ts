@@ -2,7 +2,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const DEFAULT_PANTRY_ITEMS = ["salt", "pepper", "water"];
 
+// Module-level cache keyed by userId. Multiple components (useGroceryList,
+// PantryContent, RecipeHub) call getPantryItems on the same page load — this
+// prevents redundant DB round-trips. Invalidated on any mutation.
+let pantryCache: { userId: string; items: { id: string; name: string }[] } | null = null;
+
+function invalidatePantryCache(): void {
+  pantryCache = null;
+}
+
 export async function getPantryItems(userId: string): Promise<{ id: string; name: string }[]> {
+  if (pantryCache?.userId === userId) return pantryCache.items;
+
   const { data, error } = await supabase
     .from("user_pantry_items")
     .select("id, name")
@@ -10,7 +21,9 @@ export async function getPantryItems(userId: string): Promise<{ id: string; name
     .order("name");
 
   if (error) throw error;
-  return data || [];
+  const items = data || [];
+  pantryCache = { userId, items };
+  return items;
 }
 
 export async function addPantryItem(userId: string, name: string): Promise<void> {
@@ -19,6 +32,7 @@ export async function addPantryItem(userId: string, name: string): Promise<void>
     .insert({ user_id: userId, name: name.toLowerCase().trim() });
 
   if (error) throw error;
+  invalidatePantryCache();
 }
 
 export async function removePantryItem(userId: string, itemId: string): Promise<void> {
@@ -29,6 +43,7 @@ export async function removePantryItem(userId: string, itemId: string): Promise<
     .eq("user_id", userId);
 
   if (error) throw error;
+  invalidatePantryCache();
 }
 
 export async function ensureDefaultPantryItems(userId: string): Promise<void> {
@@ -44,4 +59,5 @@ export async function ensureDefaultPantryItems(userId: string): Promise<void> {
     );
 
   if (error) throw error;
+  invalidatePantryCache();
 }

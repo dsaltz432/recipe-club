@@ -15,7 +15,7 @@
     "dev:local": "supabase start && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt & vite",
     "dev:reset": "supabase db reset",
     "dev:stop": "supabase stop",
-    "deploy:functions": "supabase functions deploy parse-recipe --no-verify-jwt && supabase functions deploy process-grocery-list --no-verify-jwt && supabase functions deploy google-calendar && supabase functions deploy instacart-recipe && supabase functions deploy notify-recipe-change && supabase functions deploy recipe-club-product-update && supabase functions deploy send-event-reminders"
+    "deploy:functions": "supabase functions deploy parse-recipe --no-verify-jwt && supabase functions deploy process-grocery-list --no-verify-jwt && supabase functions deploy google-calendar && supabase functions deploy instacart-recipe && supabase functions deploy notify-recipe-change && supabase functions deploy recipe-club-product-update && supabase functions deploy send-event-reminders && supabase functions deploy grocery-api --no-verify-jwt"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
