@@ -21,7 +21,14 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      if (event === "SIGNED_OUT" || (!session && event === "INITIAL_SESSION")) {
+      if (event === "SIGNED_OUT") {
+        navigate("/");
+        setIsAuthed(false);
+        setIsChecking(false);
+        return;
+      }
+
+      if (!session && event === "INITIAL_SESSION") {
         toast.info("Your session has expired. Please sign in again.");
         navigate("/");
         setIsAuthed(false);

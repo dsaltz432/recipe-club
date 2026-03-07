@@ -143,7 +143,7 @@ const AddMealDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => handleClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:p-6 gap-3 sm:gap-4 sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:p-6 gap-3 sm:gap-4 sm:max-w-lg" hideClose>
         <DialogHeader className="space-y-1">
           <DialogTitle className="font-display text-lg sm:text-xl">
             Add Meal

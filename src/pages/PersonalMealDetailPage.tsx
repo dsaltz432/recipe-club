@@ -45,8 +45,7 @@ import {
   Menu,
   LogOut,
   BookOpen,
-  Check,
-  RotateCcw,
+  Star,
   ShoppingCart,
 } from "lucide-react";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
@@ -86,6 +85,7 @@ const PersonalMealDetailPage = () => {
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
   const [pendingParseName, setPendingParseName] = useState<string>("");
+  const [pendingParseUrl, setPendingParseUrl] = useState<string>("");
   const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "done">("saving");
 
   // Edit Recipe state
@@ -127,7 +127,6 @@ const PersonalMealDetailPage = () => {
 
   // Cooked state
   const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
-  const [uncookConfirmOpen, setUncookConfirmOpen] = useState(false);
 
   // Notes expansion state
   const [expandedRecipeNotes, setExpandedRecipeNotes] = useState<Set<string>>(new Set());
@@ -169,25 +168,6 @@ const PersonalMealDetailPage = () => {
   };
 
   const isCooked = mealItems.length > 0 && mealItems.every((item) => item.cooked_at);
-
-  const handleConfirmUncook = async () => {
-    if (!eventId) return;
-    setUncookConfirmOpen(false);
-    try {
-      const { error } = await supabase
-        .from("meal_plan_items")
-        .update({ cooked_at: null } as Record<string, unknown>)
-        .or(`event_id.eq.${eventId}`);
-
-      if (error) throw error;
-
-      setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: null })));
-      toast.success("Marked as uncooked");
-    } catch (error) {
-      console.error("Error marking as uncooked:", error);
-      toast.error("Failed to mark as uncooked");
-    }
-  };
 
   const loadEventData = async () => {
     if (!eventId) return;
@@ -433,6 +413,7 @@ const PersonalMealDetailPage = () => {
       if (shouldParse && url) {
         setPendingParseRecipeId(insertedRecipe.id);
         setPendingParseName(name);
+        setPendingParseUrl(url);
         setParseStatus("parsing");
       } else {
         toast.success("Recipe added!");
@@ -493,6 +474,8 @@ const PersonalMealDetailPage = () => {
   const handleAddManualMeal = async (name: string, text: string) => {
     if (!user?.id || !event) return;
 
+    let insertedRecipeId: string | null = null;
+
     try {
       const { data: insertedRecipe, error: recipeError } = await supabase
         .from("recipes")
@@ -506,6 +489,7 @@ const PersonalMealDetailPage = () => {
         .single();
 
       if (recipeError) throw recipeError;
+      insertedRecipeId = insertedRecipe.id;
 
       // Create meal_plan_item
       if (slotPlanId) {
@@ -542,6 +526,10 @@ const PersonalMealDetailPage = () => {
       loadEventData();
       grocery.refreshGroceries();
     } catch (error) {
+      if (insertedRecipeId) {
+        await supabase.from("meal_plan_items").delete().eq("recipe_id", insertedRecipeId);
+        await supabase.from("recipes").delete().eq("id", insertedRecipeId);
+      }
       console.error("Error adding manual meal:", error);
       toast.error("Failed to add meal");
     }
@@ -560,7 +548,7 @@ const PersonalMealDetailPage = () => {
         const { data: parseData, error } = await supabase.functions.invoke("parse-recipe", {
           body: {
             recipeId: pendingParseRecipeId,
-            recipeUrl: event?.recipesWithNotes.find(r => r.recipe.id === pendingParseRecipeId)?.recipe.url,
+            recipeUrl: pendingParseUrl,
             recipeName: pendingParseName,
             model: getCachedAiModel(),
           },
@@ -578,6 +566,7 @@ const PersonalMealDetailPage = () => {
         setParseStatus("idle");
         setPendingParseRecipeId(null);
         setPendingParseName("");
+        setPendingParseUrl("");
         setParseStep("saving");
         toast.success("Recipe parsed successfully!");
       } catch (error) {
@@ -599,8 +588,23 @@ const PersonalMealDetailPage = () => {
     setParseStatus("idle");
     setPendingParseRecipeId(null);
     setPendingParseName("");
+    setPendingParseUrl("");
     setParseStep("saving");
     toast.success("Recipe saved without parsing");
+  };
+
+  const handleParseDiscard = async () => {
+    if (pendingParseRecipeId) {
+      await supabase.from("meal_plan_items").delete().eq("recipe_id", pendingParseRecipeId);
+      await supabase.from("recipes").delete().eq("id", pendingParseRecipeId);
+      loadEventData();
+    }
+    setParseStatus("idle");
+    setPendingParseRecipeId(null);
+    setPendingParseName("");
+    setPendingParseUrl("");
+    setParseStep("saving");
+    toast.success("Recipe discarded");
   };
 
   const handleEditRecipeClick = (recipe: Recipe) => {
@@ -675,6 +679,8 @@ const PersonalMealDetailPage = () => {
   };
 
   const handleRatingsSubmitted = async () => {
+    const count = ratingRecipes?.length ?? 0;
+    const label = count === 1 ? "Recipe rated" : "Recipes rated";
     setShowRatingDialog(false);
     setRatingRecipes(null);
     // Auto-mark meal as cooked after rating
@@ -687,13 +693,13 @@ const PersonalMealDetailPage = () => {
 
         if (error) throw error;
         setMealItems((prev) => prev.map((item) => ({ ...item, cooked_at: new Date().toISOString() })));
-        toast.success("Recipes rated and meal marked as cooked!");
+        toast.success(`${label} and meal marked as cooked!`);
       } catch (error) {
         console.error("Error marking as cooked after rating:", error);
-        toast.success("Recipes rated!");
+        toast.success(`${label}!`);
       }
     } else {
-      toast.success("Recipes rated!");
+      toast.success(`${label}!`);
     }
     loadEventData();
   };
@@ -806,29 +812,25 @@ const PersonalMealDetailPage = () => {
                   Personal
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>
-                  <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
-                </span>
-              </div>
-              {isCooked ? (
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-medium">
-                    <Check className="h-3.5 w-3.5" />
-                    Cooked
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span>
+                    <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setUncookConfirmOpen(true)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                    Undo
-                  </Button>
                 </div>
-              ) : null}
+                {mealItems.length > 0 && totalRecipes > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowRatingDialog(true)}
+                    className="text-xs border-purple/30 text-purple hover:bg-purple/5"
+                  >
+                    <Star className="h-3.5 w-3.5 mr-1.5" />
+                    Rate Recipes
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -911,11 +913,18 @@ const PersonalMealDetailPage = () => {
 
       {/* Parse progress dialog */}
       <Dialog open={parseStatus === "parsing" || parseStatus === "failed"} onOpenChange={() => {
-        if (parseStatus === "failed") {
-          handleParseKeep();
+        if (parseStatus === "failed" && pendingParseRecipeId) {
+          supabase.from("meal_plan_items").delete().eq("recipe_id", pendingParseRecipeId);
+          supabase.from("recipes").delete().eq("id", pendingParseRecipeId);
+          setParseStatus("idle");
+          setPendingParseRecipeId(null);
+          setPendingParseName("");
+          setPendingParseUrl("");
+          setParseStep("saving");
+          loadEventData();
         }
       }}>
-        <DialogContent>
+        <DialogContent hideClose>
           <DialogHeader>
             <DialogTitle>
               {parseStatus === "failed" ? "Parsing Failed" : "Adding Recipe"}
@@ -938,6 +947,9 @@ const PersonalMealDetailPage = () => {
           )}
           {parseStatus === "failed" && (
             <div className="flex gap-2 justify-end pt-2">
+              <Button variant="outline" onClick={handleParseDiscard} className="text-destructive hover:text-destructive">
+                Discard Recipe
+              </Button>
               <Button variant="outline" onClick={handleParseKeep}>
                 Keep Recipe Anyway
               </Button>
@@ -1099,23 +1111,6 @@ const PersonalMealDetailPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Undo Cook Confirmation */}
-      <AlertDialog open={uncookConfirmOpen} onOpenChange={setUncookConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Undo cooked status?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will mark the meal as uncooked.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmUncook}>
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Rating Dialog */}
       {showRatingDialog && event && (

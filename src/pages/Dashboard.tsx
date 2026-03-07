@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed, DollarSign, Settings } from "lucide-react";
+import { LogOut, Home, Calendar, BookOpen, Users, ShieldX, Menu, CalendarDays, UtensilsCrossed, DollarSign, Settings, Mail } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,9 +90,8 @@ const Dashboard = () => {
         setUserIsAdmin(isAdmin(allowed));
         setUserIsMemberOrAdmin(isMemberOrAdmin(allowed));
         setUserIsClubMember(allowed?.is_club_member ?? false);
-
         if (allowed && currentUser.id) {
-          loadStats(currentUser.id);
+          loadStats(currentUser.id, allowed?.is_club_member ?? false);
         }
       } else {
         setIsAllowed(false);
@@ -136,39 +135,48 @@ const Dashboard = () => {
     }
   };
 
-  const loadStats = async (userId: string) => {
+  const loadStats = async (userId: string, isClubMember = true) => {
     try {
-      // Count events and recipes in parallel
-      // Total recipes = all club event recipes + user's personal recipes (no overlap)
-      const [eventsResult, clubRecipesResult, personalRecipesResult] = await Promise.all([
-        supabase
-          .from("scheduled_events")
-          .select("*", { count: "exact", head: true })
-          .eq("type", "club")
-          .in("status", ["scheduled", "completed"]),
-        supabase
-          .from("recipes")
-          .select("id, scheduled_events!event_id (type)")
-          .not("event_id", "is", null),
-        supabase
+      if (isClubMember) {
+        const [eventsResult, clubRecipesResult, personalRecipesResult] = await Promise.all([
+          supabase
+            .from("scheduled_events")
+            .select("*", { count: "exact", head: true })
+            .eq("type", "club")
+            .in("status", ["scheduled", "completed"]),
+          supabase
+            .from("recipes")
+            .select("id, scheduled_events!event_id (type)")
+            .not("event_id", "is", null),
+          supabase
+            .from("recipes")
+            .select("id, event_id, scheduled_events!event_id (type)")
+            .eq("created_by", userId)
+        ]);
+
+        setCompletedEventsCount(eventsResult.count || 0);
+
+        const clubCount = (clubRecipesResult.data || []).filter(
+          (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
+        ).length;
+
+        const personalCount = (personalRecipesResult.data || []).filter(
+          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+        ).length;
+
+        setUserRecipesCount(clubCount + personalCount);
+      } else {
+        const personalRecipesResult = await supabase
           .from("recipes")
           .select("id, event_id, scheduled_events!event_id (type)")
-          .eq("created_by", userId)
-      ]);
+          .eq("created_by", userId);
 
-      setCompletedEventsCount(eventsResult.count || 0);
+        const personalCount = (personalRecipesResult.data || []).filter(
+          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+        ).length;
 
-      // Club recipes: have an event_id and event type is not 'personal'
-      const clubCount = (clubRecipesResult.data || []).filter(
-        (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
-      ).length;
-
-      // Personal recipes: created by user, with no event_id or event type is 'personal'
-      const personalCount = (personalRecipesResult.data || []).filter(
-        (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
-      ).length;
-
-      setUserRecipesCount(clubCount + personalCount);
+        setUserRecipesCount(personalCount);
+      }
     } catch (error) {
       console.error("Error loading stats:", error);
     }
@@ -181,7 +189,7 @@ const Dashboard = () => {
 
   const handleRecipeAdded = () => {
     if (user?.id) {
-      loadStats(user.id);
+      loadStats(user.id, userIsClubMember);
     }
   };
 
@@ -231,10 +239,12 @@ const Dashboard = () => {
               Recipe Club Hub
             </h1>
             <div className="hidden md:flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5 bg-purple/5 border border-purple/20 px-3 py-1 rounded-full">
-                <span className="font-bold text-purple">{completedEventsCount}</span>
-                <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
-              </div>
+              {userIsClubMember && (
+                <div className="flex items-center gap-1.5 bg-purple/5 border border-purple/20 px-3 py-1 rounded-full">
+                  <span className="font-bold text-purple">{completedEventsCount}</span>
+                  <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 bg-orange/5 border border-orange/20 px-3 py-1 rounded-full">
                 <span className="font-bold text-orange">{userRecipesCount}</span>
                 <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
@@ -267,10 +277,12 @@ const Dashboard = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <div className="md:hidden px-2 py-1.5 space-y-1">
-                <div className="flex items-center gap-1.5 text-sm">
-                  <span className="font-bold text-purple">{completedEventsCount}</span>
-                  <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
-                </div>
+                {userIsClubMember && (
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="font-bold text-purple">{completedEventsCount}</span>
+                    <span className="text-muted-foreground">{completedEventsCount === 1 ? 'Club Event' : 'Club Events'}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="font-bold text-orange">{userRecipesCount}</span>
                   <span className="text-muted-foreground">{userRecipesCount === 1 ? 'Total Recipe' : 'Total Recipes'}</span>
@@ -293,6 +305,10 @@ const Dashboard = () => {
               <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/contact")} className="cursor-pointer">
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Us
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
@@ -352,7 +368,7 @@ const Dashboard = () => {
               userId={user?.id}
               isAdmin={userIsAdmin}
               canEdit={userIsMemberOrAdmin}
-              isClubMember={userIsClubMember}
+              isClubMember={userIsMemberOrAdmin}
             />
           </TabsContent>
 

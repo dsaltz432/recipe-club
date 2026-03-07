@@ -9,6 +9,7 @@ import PersonalMealDetailPage from "./pages/PersonalMealDetailPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Settings from "./pages/Settings";
+import ContactUs from "./pages/ContactUs";
 import SharedRecipePage from "./pages/SharedRecipePage";
 import AuthGuard from "./components/auth/AuthGuard";
 
@@ -64,6 +65,14 @@ function App() {
             element={
               <AuthGuard>
                 <Settings />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <AuthGuard>
+                <ContactUs />
               </AuthGuard>
             }
           />

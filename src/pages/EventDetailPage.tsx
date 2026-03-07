@@ -439,6 +439,7 @@ const EventDetailPage = () => {
     setParseStep("saving");
     setParseStatus("parsing");
     setIsSubmitting(true);
+    let insertedRecipeId: string | null = null;
     try {
       // Create new recipe with event_id and ingredient_id, returning the new ID
       const { data: insertedRecipe, error: recipeError } = await supabase
@@ -456,6 +457,7 @@ const EventDetailPage = () => {
       if (recipeError) throw recipeError;
 
       const newRecipeId = insertedRecipe.id;
+      insertedRecipeId = newRecipeId;
       setPendingRecipeId(newRecipeId);
 
       setIsSubmitting(false);
@@ -532,6 +534,9 @@ const EventDetailPage = () => {
       }
     } catch (error: unknown) {
       console.error("Error saving recipe:", error);
+      if (insertedRecipeId) {
+        await supabase.from("recipes").delete().eq("id", insertedRecipeId);
+      }
       const errorMessage = error instanceof Error ? error.message : "Failed to save recipe";
       toast.error(errorMessage);
       setIsSubmitting(false);
@@ -548,6 +553,20 @@ const EventDetailPage = () => {
     toast.success("Recipe added (parsing skipped)");
     loadEventData();
     grocery.refreshGroceries();
+  };
+
+  const handleDiscardRecipe = async () => {
+    if (pendingRecipeId) {
+      await supabase.from("recipes").delete().eq("id", pendingRecipeId);
+      loadEventData();
+    }
+    setParseStatus("idle");
+    setParseError(null);
+    setPendingRecipeId(null);
+    setParseStep("saving");
+    setRecipeFormData(createInitialFormData());
+    setShowAddForm(false);
+    toast.success("Recipe discarded");
   };
 
   const handleRetryParse = async () => {
@@ -1017,6 +1036,9 @@ const EventDetailPage = () => {
               loadEventData();
             }
           } else {
+            if (parseStatus === "failed" && pendingRecipeId) {
+              supabase.from("recipes").delete().eq("id", pendingRecipeId);
+            }
             setShowAddForm(false);
             setRecipeFormData(createInitialFormData());
             setParseStatus("idle");
@@ -1026,7 +1048,7 @@ const EventDetailPage = () => {
           }
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" hideClose>
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
               Add a Recipe
@@ -1050,10 +1072,15 @@ const EventDetailPage = () => {
               </div>
               {parseError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-xs text-red-600">{parseError}</p>
+                  <p className="text-xs text-red-600">
+                    {"Something went wrong on our end. You can try again or keep the recipe as-is."}
+                  </p>
                 </div>
               )}
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button variant="outline" onClick={handleDiscardRecipe} className="text-destructive hover:text-destructive">
+                  Discard Recipe
+                </Button>
                 <Button variant="outline" onClick={handleKeepRecipeAnyway}>
                   Continue without ingredients
                 </Button>

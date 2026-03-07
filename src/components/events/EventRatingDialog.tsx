@@ -143,7 +143,6 @@ const EventRatingDialog = ({
           .from("recipe_ratings")
           .upsert(ratingsToUpsert, { onConflict: "recipe_id,user_id,event_id" });
         if (error) throw error;
-        toast.success(`Submitted ${ratingsToUpsert.length} rating${ratingsToUpsert.length !== 1 ? "s" : ""}!`);
       }
 
       // Save notes for any recipe with text

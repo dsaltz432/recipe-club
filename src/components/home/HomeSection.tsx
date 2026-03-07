@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, BookOpen } from "lucide-react";
 import CountdownCard from "./CountdownCard";
+import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
 
@@ -29,6 +31,18 @@ const HomeSection = ({
   onEventUpdated,
 }: HomeSectionProps) => {
   const navigate = useNavigate();
+  const [clubMemberNames, setClubMemberNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchClubMemberNames = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc("get_club_member_names");
+      if (!error && Array.isArray(data)) {
+        setClubMemberNames(data as string[]);
+      }
+    };
+    fetchClubMemberNames();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -55,6 +69,7 @@ const HomeSection = ({
           onRecipeAdded={onRecipeAdded}
           onEventUpdated={onEventUpdated}
           onEventCanceled={onEventUpdated}
+          clubMemberNames={clubMemberNames}
         />
       ) : isAdmin ? (
         <div className="grid lg:grid-cols-2 gap-6">

@@ -35,10 +35,11 @@ interface CountdownCardProps {
   onRecipeAdded?: () => void;
   onEventUpdated?: () => void;
   onEventCanceled?: () => void;
+  clubMemberNames?: string[];
   _testNullDate?: boolean;
 }
 
-const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEventCanceled, _testNullDate }: CountdownCardProps) => {
+const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEventCanceled, clubMemberNames, _testNullDate }: CountdownCardProps) => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -239,9 +240,15 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
             {/* Mobile: ingredient name + date/time inline */}
             <div className="flex items-baseline justify-between gap-2 sm:block">
-              <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 sm:mb-3">
+              <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 sm:mb-1">
                 {event.ingredientName || "Mystery Ingredient"}
               </h3>
+              {clubMemberNames && clubMemberNames.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+                  <span className="font-medium">Members:</span>
+                  <span>{clubMemberNames.join(", ")}</span>
+                </div>
+              )}
               {/* Date/time pills - inline on mobile, below on desktop */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:mb-4">
                 <div className="flex items-center gap-1 sm:gap-1.5 bg-purple/5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
