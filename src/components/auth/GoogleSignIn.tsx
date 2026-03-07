@@ -13,7 +13,6 @@ const GoogleSignIn = () => {
 
   // Dev mode state
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const handleGoogleSignIn = async () => {
     try {
@@ -32,7 +31,7 @@ const GoogleSignIn = () => {
   const handleEmailSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithEmail(email, password);
+      await signInWithEmail(email, "test123");
       const pending = sessionStorage.getItem("postLoginRedirect");
       sessionStorage.removeItem("postLoginRedirect");
       navigate(pending || "/dashboard");
@@ -56,19 +55,9 @@ const GoogleSignIn = () => {
             placeholder="dev@example.com"
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="dev-password">Password</Label>
-          <Input
-            id="dev-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-          />
-        </div>
         <Button
           onClick={handleEmailSignIn}
-          disabled={isLoading || !email || !password}
+          disabled={isLoading || !email}
           className="w-full py-6"
         >
           {isLoading ? "Signing in..." : "Sign in (Dev Mode)"}
