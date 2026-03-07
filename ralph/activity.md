@@ -109,6 +109,29 @@
 - Export buttons stack naturally below tab selector on mobile with `flex-col sm:flex-row` on outer container
 
 ---
+## [2026-03-07 12:10] — US-006: Collapse checked items within grocery categories
+
+### What was implemented
+- GroceryCategoryGroup.tsx: split items into `unchecked` and `checked` arrays based on `checkedItems` Set
+- Unchecked items render normally in the main list
+- Checked items collapse into a `<details>/<summary>` element with correct pluralization
+- Checked items render at `opacity-50` inside `<details>`
+- When `checkedItems` is undefined, all items render as before (unchecked = items, checked = [])
+
+### Files changed
+- `src/components/recipes/GroceryCategoryGroup.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: GroceryItemRow (31/31 pass), GroceryCategoryGroup (12/12 pass); GroceryListSection 6 failures are pre-existing
+- Lint: N/A
+
+### Learnings for future iterations
+- `<details>/<summary>` is native HTML — no import needed, works with Tailwind classes on wrapper
+- Key for checked items uses `unchecked.length + index` to avoid key collisions
+- `isChecked` prop explicitly set to `false`/`true` for unchecked/checked lists instead of relying on `checkedItems?.has()`
+
+---
 ## Session Log
 
 <!-- Agent will append dated entries here -->

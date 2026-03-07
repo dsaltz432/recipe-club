@@ -100,7 +100,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryCategoryGroup.tsx: add const unchecked = checkedItems ? items.filter(i => !checkedItems.has(i.name)) : items and const checked = checkedItems ? items.filter(i => checkedItems.has(i.name)) : []. Render unchecked normally. Then: {checkedItems && checked.length > 0 && (<details className='mt-1'><summary className='text-xs text-gray-400 cursor-pointer hover:text-gray-500 px-2 py-1 select-none'>{checked.length} item{checked.length !== 1 ? 's' : ''} checked</summary><div className='opacity-50'>{checked.map(...)}</div></details>)}. The existing GroceryItemRow renders in both lists unchanged."
     },
     {

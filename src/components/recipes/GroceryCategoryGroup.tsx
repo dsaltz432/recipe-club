@@ -22,6 +22,8 @@ function getItemKey(item: SmartGroceryItem, index: number): string {
 
 const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditItemText, onRemoveItem, checkedItems, onToggleChecked, recipeColorMap }: GroceryCategoryGroupProps) => {
   const displayName = GROCERY_CATEGORIES[category];
+  const unchecked = checkedItems ? items.filter(i => !checkedItems.has(i.name)) : items;
+  const checked = checkedItems ? items.filter(i => checkedItems.has(i.name)) : [];
 
   return (
     <div className="mb-5">
@@ -32,7 +34,7 @@ const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditIte
         <span className="text-xs text-gray-400">({items.length})</span>
       </div>
       <div>
-        {items.map((item, index) => (
+        {unchecked.map((item, index) => (
           <GroceryItemRow
             key={getItemKey(item, index)}
             item={item}
@@ -40,11 +42,33 @@ const GroceryCategoryGroup = ({ category, items, editable, onEditItem, onEditIte
             onEdit={onEditItem}
             onEditText={onEditItemText}
             onRemove={onRemoveItem}
-            isChecked={checkedItems?.has(item.name)}
+            isChecked={false}
             onToggleChecked={onToggleChecked ? () => onToggleChecked(item.name) : undefined}
             recipeColorMap={recipeColorMap}
           />
         ))}
+        {checkedItems && checked.length > 0 && (
+          <details className="mt-1">
+            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-500 px-2 py-1 select-none">
+              {checked.length} item{checked.length !== 1 ? 's' : ''} checked
+            </summary>
+            <div className="opacity-50">
+              {checked.map((item, index) => (
+                <GroceryItemRow
+                  key={getItemKey(item, unchecked.length + index)}
+                  item={item}
+                  editable={editable}
+                  onEdit={onEditItem}
+                  onEditText={onEditItemText}
+                  onRemove={onRemoveItem}
+                  isChecked={true}
+                  onToggleChecked={onToggleChecked ? () => onToggleChecked(item.name) : undefined}
+                  recipeColorMap={recipeColorMap}
+                />
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </div>
   );
