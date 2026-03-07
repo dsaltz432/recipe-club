@@ -15,6 +15,22 @@ function getCurrentWeekStart(): string {
   return weekStart.toISOString().split("T")[0];
 }
 
+function fallbackParseGroceryText(text: string): Array<{ name: string; quantity: string | null; unit: string | null; category: string }> {
+  return text
+    .split(/\n|,/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, quantity: null, unit: null, category: "other" }));
+}
+
+function formatItemText(item: { name: string; quantity?: string | null; unit?: string | null }): string {
+  const parts: string[] = [];
+  if (item.quantity) parts.push(item.quantity);
+  if (item.unit) parts.push(item.unit);
+  parts.push(item.name);
+  return parts.join(" ");
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -41,6 +57,7 @@ serve(async (req) => {
 
   const url = new URL(req.url);
   const week = url.searchParams.get("week") ?? getCurrentWeekStart();
+  const view = url.searchParams.get("view");
   const contextType = "meal_plan";
   const contextId = week;
 
@@ -66,6 +83,11 @@ serve(async (req) => {
     const combinedRow = combinedResult.data as Record<string, unknown> | null;
     const combinedItems = combinedRow?.items as unknown[] | null;
 
+    if (view === "simple") {
+      const items = (generalResult.data ?? []) as Array<{ name: string; quantity?: string | null; unit?: string | null }>;
+      return jsonResponse({ items: items.map(formatItemText) });
+    }
+
     return jsonResponse({
       week,
       generalItems: generalResult.data ?? [],
@@ -74,40 +96,74 @@ serve(async (req) => {
     });
   }
 
-  // POST — add item to general list
+  // POST — add item(s) to general list via freeform text
   if (req.method === "POST") {
-    let body: { name?: string; quantity?: string; unit?: string; week?: string };
+    let body: { text?: string; week?: string };
     try {
       body = await req.json();
     } catch {
       return jsonResponse({ error: "Invalid JSON body" }, 400);
     }
 
-    const name = body.name?.trim();
-    if (!name) {
-      return jsonResponse({ error: "name is required" }, 400);
+    const text = body.text?.trim();
+    if (!text) {
+      return jsonResponse({ error: "text is required" }, 400);
     }
 
     // Use week from body if provided, otherwise fall back to query param / current week
     const targetWeek = body.week ?? week;
     const targetContextId = targetWeek;
 
+    // Delegate to parse-recipe in parse-only mode (no recipeId = no DB writes)
+    let parsedItems: Array<{ name: string; quantity: string | null; unit: string | null; category: string }>;
+
+    const { data: parseResult, error: parseError } = await supabase.functions.invoke("parse-recipe", {
+      body: { recipeName: "Grocery Items", text },
+    });
+
+    if (parseError || !parseResult?.success || parseResult.skipped) {
+      parsedItems = fallbackParseGroceryText(text);
+    } else {
+      const ingredients = parseResult.parsed?.ingredients ?? [];
+      if (ingredients.length > 0) {
+        parsedItems = ingredients.map((item: Record<string, unknown>) => ({
+          name: String(item.name || "").trim(),
+          quantity: item.quantity != null ? String(item.quantity) : null,
+          unit: item.unit != null ? String(item.unit) : null,
+          category: String(item.category || "other"),
+        })).filter((item: { name: string }) => item.name.length > 0);
+      } else {
+        parsedItems = fallbackParseGroceryText(text);
+      }
+    }
+
+    if (parsedItems.length === 0) {
+      return jsonResponse({ error: "No items could be parsed from text" }, 400);
+    }
+
+    // Insert all parsed items
+    const rows = parsedItems.map((item) => ({
+      user_id: userId,
+      context_type: contextType,
+      context_id: targetContextId,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+    }));
+
     const { data, error } = await supabase
       .from("general_grocery_items")
-      .insert({
-        user_id: userId,
-        context_type: contextType,
-        context_id: targetContextId,
-        name,
-        quantity: body.quantity ?? null,
-        unit: body.unit ?? null,
-      })
-      .select("id, name, quantity, unit, created_at")
-      .single();
+      .insert(rows)
+      .select("id, name, quantity, unit, created_at");
 
     if (error) return jsonResponse({ error: error.message }, 500);
 
-    return jsonResponse({ success: true, week: targetWeek, item: data });
+    if (view === "simple") {
+      const items = (data ?? []) as Array<{ name: string; quantity?: string | null; unit?: string | null }>;
+      return jsonResponse({ items: items.map(formatItemText) });
+    }
+
+    return jsonResponse({ success: true, week: targetWeek, items: data });
   }
 
   // DELETE — remove item from general list by id

@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface ParseRequest {
-  recipeId: string;
+  recipeId?: string;
   recipeUrl?: string;
   recipeName: string;
   text?: string;
@@ -130,8 +130,23 @@ serve(async (req) => {
 
     recipeId = body.recipeId;
     const { recipeUrl, recipeName } = body;
+    const parseOnly = !recipeId;
 
-    if (!recipeId || (!recipeUrl && !body.text)) {
+    if (parseOnly && !body.text) {
+      return new Response(
+        JSON.stringify({ success: false, error: "text is required when recipeId is not provided" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (parseOnly && recipeUrl) {
+      return new Response(
+        JSON.stringify({ success: false, error: "URL/image parsing requires recipeId" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (!parseOnly && !recipeUrl && !body.text) {
       return new Response(
         JSON.stringify({ success: false, error: "recipeId and either recipeUrl or text are required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
@@ -143,14 +158,16 @@ serve(async (req) => {
     const defaultModel = isTextOnly ? "claude-haiku-4-5-20251001" : "claude-sonnet-4-6";
     const model = body.model || defaultModel;
 
-    // Upsert recipe_content with status 'parsing'
-    await supabase
-      .from("recipe_content")
-      .upsert({
-        recipe_id: recipeId,
-        status: "parsing",
-        error_message: null,
-      }, { onConflict: "recipe_id" });
+    // Upsert recipe_content with status 'parsing' (skip in parse-only mode)
+    if (!parseOnly) {
+      await supabase
+        .from("recipe_content")
+        .upsert({
+          recipe_id: recipeId,
+          status: "parsing",
+          error_message: null,
+        }, { onConflict: "recipe_id" });
+    }
 
     // Fetch recipe content
     let recipeText = "";
@@ -449,45 +466,48 @@ For ingredient names:
     }
 
     // Save to DB — errors here don't prevent returning the parsed result
+    // Skip all DB writes in parse-only mode
     const dbWarnings: string[] = [];
 
-    // BUG-014: Use RPC for transactional ingredient replacement
-    // (empty ingredients are rejected above, so this always has items)
-    const ingredientRows = parsed.ingredients.map((ing, index) => ({
-      name: ing.name,
-      quantity: ing.quantity,
-      unit: ing.unit,
-      category: ing.category || "other",
-      raw_text: ing.raw_text,
-      sort_order: index,
-    }));
+    if (!parseOnly) {
+      // BUG-014: Use RPC for transactional ingredient replacement
+      // (empty ingredients are rejected above, so this always has items)
+      const ingredientRows = parsed.ingredients.map((ing, index) => ({
+        name: ing.name,
+        quantity: ing.quantity,
+        unit: ing.unit,
+        category: ing.category || "other",
+        raw_text: ing.raw_text,
+        sort_order: index,
+      }));
 
-    const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
-      p_recipe_id: recipeId,
-      p_ingredients: ingredientRows,
-    });
-    if (rpcError) dbWarnings.push(`Replace ingredients: ${rpcError.message}`);
+      const { error: rpcError } = await supabase.rpc("replace_recipe_ingredients", {
+        p_recipe_id: recipeId,
+        p_ingredients: ingredientRows,
+      });
+      if (rpcError) dbWarnings.push(`Replace ingredients: ${rpcError.message}`);
 
-    // Upsert recipe_content with parsed data
-    const { error: contentError } = await supabase
-      .from("recipe_content")
-      .upsert({
-        recipe_id: recipeId,
-        description: parsed.description,
-        servings: parsed.servings,
-        prep_time: parsed.prep_time,
-        cook_time: parsed.cook_time,
-        total_time: parsed.total_time,
-        instructions: parsed.instructions ? JSON.stringify(parsed.instructions) : null,
-        source_title: parsed.source_title,
-        parsed_at: new Date().toISOString(),
-        status: "completed",
-        error_message: null,
-      }, { onConflict: "recipe_id" });
+      // Upsert recipe_content with parsed data
+      const { error: contentError } = await supabase
+        .from("recipe_content")
+        .upsert({
+          recipe_id: recipeId,
+          description: parsed.description,
+          servings: parsed.servings,
+          prep_time: parsed.prep_time,
+          cook_time: parsed.cook_time,
+          total_time: parsed.total_time,
+          instructions: parsed.instructions ? JSON.stringify(parsed.instructions) : null,
+          source_title: parsed.source_title,
+          parsed_at: new Date().toISOString(),
+          status: "completed",
+          error_message: null,
+        }, { onConflict: "recipe_id" });
 
-    if (contentError) dbWarnings.push(`Upsert content: ${contentError.message}`);
+      if (contentError) dbWarnings.push(`Upsert content: ${contentError.message}`);
+    }
 
-    console.log(`Parsed recipe ${recipeId}: ${parsed.ingredients?.length || 0} ingredients, ${dbWarnings.length} db warnings`);
+    console.log(`Parsed recipe ${recipeId ?? "parse-only"}: ${parsed.ingredients?.length || 0} ingredients, ${dbWarnings.length} db warnings`);
 
     return new Response(
       JSON.stringify({

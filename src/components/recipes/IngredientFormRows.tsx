@@ -42,20 +42,9 @@ const IngredientFormRows = ({ rows, onRowsChange }: IngredientFormRowsProps) => 
     if (!pasteText.trim()) return;
     setIsParsing(true);
     try {
-      // Create a temporary recipe entry for parsing
-      const { data: tempRecipe, error: recipeError } = await supabase
-        .from("recipes")
-        .insert({ name: "Paste Parse", created_by: null, event_id: null, ingredient_id: null })
-        .select("id")
-        .single();
-      if (recipeError) throw recipeError;
-
       const { data, error } = await supabase.functions.invoke("parse-recipe", {
-        body: { recipeId: tempRecipe.id, recipeName: "Paste Parse", text: pasteText },
+        body: { recipeName: "Paste Parse", text: pasteText },
       });
-
-      // Clean up temp recipe
-      supabase.from("recipes").delete().eq("id", tempRecipe.id).then(() => {});
 
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error ?? "Failed to parse ingredients");

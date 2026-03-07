@@ -1,24 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockSingle, mockInsert, mockEq, mockInvoke } = vi.hoisted(() => {
-  const mockSingle = vi.fn();
-  const mockInsert = vi.fn(() => ({ select: () => ({ single: mockSingle }) }));
-  const mockEq = vi.fn().mockResolvedValue({ error: null });
-  const mockInvoke = vi.fn();
-  return { mockSingle, mockInsert, mockEq, mockInvoke };
-});
+const mockInvoke = vi.hoisted(() => vi.fn());
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: (table: string) => {
-      if (table === "recipes") {
-        return {
-          insert: mockInsert,
-          delete: () => ({ eq: mockEq }),
-        };
-      }
-      return {};
-    },
     functions: {
       invoke: mockInvoke,
     },
@@ -30,9 +15,6 @@ import { parseIngredientText } from "@/lib/parseIngredientText";
 describe("parseIngredientText", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSingle.mockResolvedValue({ data: { id: "temp-recipe-1" }, error: null });
-    mockInsert.mockReturnValue({ select: () => ({ single: mockSingle }) });
-    mockEq.mockResolvedValue({ error: null });
   });
 
   it("returns parsed ingredients on success", async () => {
@@ -56,50 +38,51 @@ describe("parseIngredientText", () => {
     expect(result[1].name).toBe("eggs");
   });
 
-  it("returns empty array when data.skipped is true", async () => {
+  it("falls back to line splitting when data.skipped is true", async () => {
     mockInvoke.mockResolvedValue({
       data: { success: true, skipped: true },
       error: null,
     });
 
-    const result = await parseIngredientText("some text", "user-1");
+    const result = await parseIngredientText("flour, sugar", "user-1");
 
-    expect(result).toEqual([]);
+    expect(result).toEqual([
+      { name: "flour", quantity: null, unit: null, category: "other" },
+      { name: "sugar", quantity: null, unit: null, category: "other" },
+    ]);
   });
 
-  it("throws when supabase insert returns error", async () => {
-    mockSingle.mockResolvedValue({ data: null, error: { message: "Insert failed" } });
-
-    await expect(parseIngredientText("flour", "user-1")).rejects.toEqual({
-      message: "Insert failed",
-    });
-  });
-
-  it("throws when edge function returns error", async () => {
+  it("falls back to line splitting on edge function error", async () => {
     mockInvoke.mockResolvedValue({
       data: null,
       error: { message: "Function error" },
     });
 
-    await expect(parseIngredientText("flour", "user-1")).rejects.toEqual({
-      message: "Function error",
-    });
+    const result = await parseIngredientText("flour", "user-1");
+
+    expect(result).toEqual([
+      { name: "flour", quantity: null, unit: null, category: "other" },
+    ]);
   });
 
-  it("throws when data.success is false", async () => {
+  it("falls back to line splitting when data.success is false", async () => {
     mockInvoke.mockResolvedValue({
       data: { success: false, error: "Parse failed" },
       error: null,
     });
 
-    await expect(parseIngredientText("flour", "user-1")).rejects.toThrow("Parse failed");
+    const result = await parseIngredientText("flour", "user-1");
+
+    expect(result).toEqual([
+      { name: "flour", quantity: null, unit: null, category: "other" },
+    ]);
   });
 
   it("throws when userId is empty", async () => {
     await expect(parseIngredientText("flour", "")).rejects.toThrow("Not authenticated");
   });
 
-  it("returns empty array when data.parsed is missing", async () => {
+  it("falls back when data.parsed is missing", async () => {
     mockInvoke.mockResolvedValue({
       data: { success: true },
       error: null,
@@ -107,10 +90,26 @@ describe("parseIngredientText", () => {
 
     const result = await parseIngredientText("some text", "user-1");
 
-    expect(result).toEqual([]);
+    expect(result).toEqual([
+      { name: "some text", quantity: null, unit: null, category: "other" },
+    ]);
   });
 
-  it("invokes parse-recipe with recipeId, recipeName, and text", async () => {
+  it("falls back when parsed ingredients is empty array", async () => {
+    mockInvoke.mockResolvedValue({
+      data: { success: true, parsed: { ingredients: [] } },
+      error: null,
+    });
+
+    const result = await parseIngredientText("flour, sugar", "user-1");
+
+    expect(result).toEqual([
+      { name: "flour", quantity: null, unit: null, category: "other" },
+      { name: "sugar", quantity: null, unit: null, category: "other" },
+    ]);
+  });
+
+  it("invokes parse-recipe without recipeId", async () => {
     mockInvoke.mockResolvedValue({
       data: { success: true, parsed: { ingredients: [] } },
       error: null,
@@ -120,10 +119,23 @@ describe("parseIngredientText", () => {
 
     expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
       body: {
-        recipeId: "temp-recipe-1",
         recipeName: "General Items",
         text: "2 cups flour",
       },
     });
+  });
+
+  it("splits on newlines in fallback", async () => {
+    mockInvoke.mockResolvedValue({
+      data: { success: false },
+      error: null,
+    });
+
+    const result = await parseIngredientText("flour\nsugar\neggs", "user-1");
+
+    expect(result).toHaveLength(3);
+    expect(result[0].name).toBe("flour");
+    expect(result[1].name).toBe("sugar");
+    expect(result[2].name).toBe("eggs");
   });
 });

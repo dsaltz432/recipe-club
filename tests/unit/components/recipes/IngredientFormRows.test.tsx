@@ -32,16 +32,6 @@ vi.mock("@/components/ui/select", () => ({
 // Mock supabase client (imported transitively by groceryList)
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: vi.fn().mockReturnValue({
-      insert: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: { id: "temp-recipe-id" }, error: null }),
-        }),
-      }),
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      }),
-    }),
     functions: {
       invoke: vi.fn().mockResolvedValue({ error: null }),
     },
