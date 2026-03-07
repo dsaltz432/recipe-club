@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getAllowedUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import type { User, Recipe, RecipeRatingsSummary } from "@/types";
 import { useRecipeNotes } from "@/hooks/useRecipeNotes";
 import { useGroceryList } from "@/hooks/useGroceryList";
@@ -73,7 +73,6 @@ const PersonalMealDetailPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
 
   const [user, setUser] = useState<User | null>(null);
-  const [isClubMember, setIsClubMember] = useState(false);
   const [event, setEvent] = useState<PersonalEventData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -352,10 +351,6 @@ const PersonalMealDetailPage = () => {
     const loadUser = async () => {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
-      if (currentUser?.email) {
-        const allowed = await getAllowedUser(currentUser.email);
-        setIsClubMember(allowed?.is_club_member ?? false);
-      }
       await loadEventData();
       setIsLoading(false);
     };
