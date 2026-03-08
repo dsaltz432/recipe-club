@@ -416,6 +416,8 @@ The JSON should have this structure:
   ]
 }
 
+For instructions: rewrite vague steps for clarity (e.g., "Cook until done" → "Cook for 10–12 minutes until golden brown"). Standardize timing references with specific durations ("Cook for 10 minutes", not "Cook for awhile"). Make each step self-contained and actionable — include the ingredient, action, and expected result. Split compound steps into separate numbered steps when they involve distinct actions.
+
 Categories must be one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other.
 Category guidance:
 - All cooking oils (olive oil, vegetable oil, canola oil, sesame oil, coconut oil) → "pantry"
