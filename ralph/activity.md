@@ -23,10 +23,21 @@
 - Anthropic API call with model selection from request body
 - parse-recipe system prompt is lines 333-395
 
+### cookModeColors pattern
+- `src/lib/cookModeColors.ts` — `getRecipeColor(index: number): RecipeColor` wraps 8-color palette with `% length`
+- Colors: purple, blue, emerald, orange, rose, teal, amber, indigo — all in `-50`/`-700`/`-200` variants
+- `RecipeColor` interface exported: `{ bg: string, text: string, border: string }`
+
+### MultiRecipeView layout pattern
+- Mobile: `md:hidden` wrapper with shadcn Tabs; tab trigger color class applied inline (Tailwind purge-safe via static class strings)
+- Desktop: `hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3` side-by-side panels
+- Color-coded header strip: `rounded-t-lg px-4 py-3 border-b` + color.bg + color.border
+- `cn()` utility concatenates conditional color classes from `getRecipeColor`
+
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 6
-**Current Task:** US-007
+**Tasks Completed:** 7
+**Current Task:** US-008
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -57,6 +68,35 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:00] — US-007: Create color utility and MultiRecipeView component
+
+### What was implemented
+- Created `src/lib/cookModeColors.ts` with `getRecipeColor(index)` returning `{ bg, text, border }` Tailwind classes
+- 8-color palette: purple, blue, emerald, orange, rose, teal, amber, indigo (wraps with modulo)
+- Created `src/components/cookmode/MultiRecipeView.tsx` with responsive dual layout:
+  - Mobile (`md:hidden`): shadcn Tabs, one tab per recipe, color-coded tab triggers
+  - Desktop (`hidden md:grid`): CSS grid with `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+- Each panel has a color-coded header strip using recipe's bg/text/border color classes
+- Each panel renders `RecipeInstructions` with full recipe content
+- Created `tests/unit/components/cookmode/MultiRecipeView.test.tsx` with 10 passing tests
+
+### Files changed
+- `src/lib/cookModeColors.ts` (new)
+- `src/components/cookmode/MultiRecipeView.tsx` (new)
+- `tests/unit/components/cookmode/MultiRecipeView.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (10/10)
+- Lint: N/A
+
+### Learnings for future iterations
+- Tailwind JIT purges dynamic class strings — but since classes come from a static palette array, all classes are present at build time
+- shadcn Tabs renders tab triggers in the DOM regardless of mobile/desktop CSS visibility, so `getAllByRole("tab")` works in tests
+- `cn()` with `"data-[state=active]:" + color.bg` produces valid Tailwind arbitrary variant strings
+
+---
 
 ## [2026-03-08 18:10] — US-006: Add instructions to SharedRecipePage
 

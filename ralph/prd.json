@@ -112,7 +112,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Color palette: use 6-8 distinct, accessible colors that work on white backgrounds (e.g., purple, blue, green, orange, pink, teal). getRecipeColor should return { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' } style objects using Tailwind classes. MultiRecipeView props: { recipes: Array<{ id: string, name: string, content: RecipeContent }> }. Use CSS grid with grid-cols-1 md:grid-cols-2 lg:grid-cols-3 for desktop responsive layout. On mobile (below md), use shadcn Tabs with one tab per recipe name. IMPORTANT: Before writing MultiRecipeView, invoke the /frontend-design skill to get design guidance for the color palette, color-coded headers, and responsive layout that fits the app's purple brand."
     },
     {
