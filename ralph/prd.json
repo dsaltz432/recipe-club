@@ -66,7 +66,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "EventRecipesTab is at src/components/events/EventRecipesTab.tsx. The existing 'Ingredients' toggle pattern (lines 88-100, 253-266) should be duplicated for instructions — add expandedInstructions state (Set<string>), a toggleInstructions function, and a new button. The button should use a ListOrdered or BookOpen icon from lucide-react. EventDetailPage.tsx and PersonalMealDetailPage.tsx both use EventRecipesTab — add useRecipeContent(recipeIds) call in both and pass the map down. Keep the content map prop optional so the component doesn't break without it."
     },
     {

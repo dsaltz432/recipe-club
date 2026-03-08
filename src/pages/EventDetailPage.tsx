@@ -51,6 +51,7 @@ import { saveRecipeEdit } from "@/lib/recipeActions";
 import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
+import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
@@ -170,6 +171,8 @@ const EventDetailPage = () => {
     enabled: !!event,
     supportsGeneralItems: true,
   });
+
+  const { contentMap: recipeContentMap } = useRecipeContent(groceryRecipeIds);
 
   const toggleRecipeNotes = (recipeId: string) => {
     setExpandedRecipeNotes(prev => {
@@ -917,6 +920,7 @@ const EventDetailPage = () => {
               onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
               pantryItems={grocery.pantryItems}
+              recipeContentMap={recipeContentMap}
             />
           }
           groceryContent={

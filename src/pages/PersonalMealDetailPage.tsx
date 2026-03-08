@@ -45,6 +45,7 @@ import PhotoUpload from "@/components/recipes/PhotoUpload";
 import AppHeader from "@/components/shared/AppHeader";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
+import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { saveRecipeEdit } from "@/lib/recipeActions";
@@ -135,6 +136,8 @@ const PersonalMealDetailPage = () => {
     enabled: !!event,
     supportsGeneralItems: true,
   });
+
+  const { contentMap: recipeContentMap } = useRecipeContent(groceryRecipeIds);
 
   const handlePantryChange = () => {
     grocery.refreshGroceries();
@@ -821,6 +824,7 @@ const PersonalMealDetailPage = () => {
               onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
               pantryItems={grocery.pantryItems}
+              recipeContentMap={recipeContentMap}
             />
           }
           groceryContent={

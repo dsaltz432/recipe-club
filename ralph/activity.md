@@ -25,8 +25,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 3
-**Current Task:** US-004
+**Tasks Completed:** 4
+**Current Task:** US-005
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -41,9 +41,42 @@
 - Step numbers are purple-600 rounded-full circles (w-7 h-7)
 - Empty state: `<p className="text-sm text-muted-foreground">No instructions available</p>`
 
+### EventRecipesTab instructions pattern
+- Added `recipeContentMap?: Map<string, RecipeContent>` optional prop to `EventRecipesTab`
+- Added `expandedInstructions` state (Set<string>) + `toggleInstructions` function — same toggle pattern as `expandedIngredients`
+- Instructions button uses `ListOrdered` icon from lucide-react
+- `RecipeInstructions` rendered inline below ingredients section when expanded
+- Pages reuse `groceryRecipeIds` (already computed via useMemo) as input to `useRecipeContent`
+
 ---
 
 ## Session Log
+
+## [2026-03-08 17:52] — US-004: Add inline instructions to EventRecipesTab
+
+### What was implemented
+- Added `recipeContentMap?: Map<string, RecipeContent>` optional prop to `EventRecipesTab`
+- Added `expandedInstructions` state (Set<string>) and `toggleInstructions` function using same toggle pattern as ingredients
+- Added Instructions toggle button (ListOrdered icon) next to existing Ingredients button
+- Expandable `RecipeInstructions` section renders below ingredients when toggled open
+- `EventDetailPage` imports and calls `useRecipeContent(groceryRecipeIds)`, passes `recipeContentMap` to `EventRecipesTab`
+- `PersonalMealDetailPage` does the same
+
+### Files changed
+- `src/components/events/EventRecipesTab.tsx` (modified)
+- `src/pages/EventDetailPage.tsx` (modified)
+- `src/pages/PersonalMealDetailPage.tsx` (modified)
+
+### Quality checks
+- Build: pass
+- Tests: pass (50/50 EventRecipesTab tests)
+- Lint: N/A
+
+### Learnings for future iterations
+- Pages already had `groceryRecipeIds` (via useMemo) — reuse it as input to `useRecipeContent`, no duplication needed
+- Optional prop pattern keeps component backward-compatible; existing tests pass without changes
+
+---
 
 ## [2026-03-08 17:49] — US-003: Create RecipeInstructions component
 
