@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 16
-**Current Task:** US-017
+**Tasks Completed:** 17
+**Current Task:** Complete
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +80,36 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 22:15] — US-017: Create backfill re-parse script
+
+### What was implemented
+- Created `scripts/backfill-reparse.ts` Node.js script (run with `npx tsx`)
+- Uses `createClient` from `@supabase/supabase-js` directly with service role key from `SUPABASE_SERVICE_ROLE_KEY` env var
+- Queries `recipes` with `recipe_content!inner(status) = 'completed'` and `url` not null
+- Skips recipes without a URL both via query filter and defensive inline check
+- Calls `parse-recipe` edge function for each recipe sequentially via `supabase.functions.invoke`
+- 2-second delay between calls (`setTimeout`-based `sleep()` utility)
+- Logs progress: `Re-parsing "[name]"... OK/FAILED` with error detail on failure
+- Per-recipe error handling — does not stop on individual failures
+- Idempotent: re-running re-parses same recipes safely (parse-recipe handles upsert)
+- Summary line at end: `Done. N succeeded, N failed.`
+
+### Files changed
+- `scripts/backfill-reparse.ts` (new)
+
+### Quality checks
+- Build: pass (`npm run build` — scripts/ not in tsconfig include)
+- Tests: N/A — no test file required for a one-time CLI script
+- Lint: N/A
+
+### Learnings for future iterations
+- Node scripts outside `src/` use `process.env` not `import.meta.env`
+- Create a standalone `createClient` call in the script (don't import from `src/integrations/supabase/client.ts` which uses Vite-specific env vars)
+- `npm run build` type-checks only `src/` — scripts/ is safe to write in plain TypeScript
+- `supabase.functions.invoke` is available on the client and works in Node.js scripts with the Supabase JS client
+
+---
 
 ## [2026-03-08 22:00] — US-016: Write tests for generate-cook-timeline edge function
 

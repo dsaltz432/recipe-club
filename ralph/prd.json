@@ -284,7 +284,7 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "This is a Node script run manually (not an edge function). Use the Supabase JS client with the service role key from env vars. Query: supabase.from('recipes').select('id, name, url, recipe_content!inner(status)').eq('recipe_content.status', 'completed').not('url', 'is', null). For each recipe, call supabase.functions.invoke('parse-recipe', { body: { recipeId: recipe.id, url: recipe.url, model: 'claude-sonnet-4-6' } }). Add a 2-second delay between calls. Log: 'Re-parsing [name]... OK/FAILED'. Handle errors per-recipe (don't stop on failure). Usage: npx tsx scripts/backfill-reparse.ts"
     }
   ]
