@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 14
-**Current Task:** US-015
+**Tasks Completed:** 15
+**Current Task:** US-016
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +80,33 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 19:45] — US-015: Add Cook Mode entry point to RecipeCard
+
+### What was implemented
+- Added `ChefHat` icon import and `CookModeDialog` import to `RecipeCard.tsx`
+- Added `CookModeStep` type import for inline step mapping
+- Added `cookModeOpen` and `cookModeSteps` state variables
+- Added Cook button (ChefHat icon, h-7 w-7) in the action button row of the card header
+- Button only shown when `hasInstructions` is true (i.e., `content?.instructions?.length > 0`)
+- Updated action button div condition to include `|| hasInstructions` so the div renders even when no other action props are present
+- On click: maps recipe instructions to `CookModeStep[]` inline (no hook/edge function call)
+- Rendered `CookModeDialog` inline inside the Card, below CardContent
+
+### Files changed
+- `src/components/recipes/RecipeCard.tsx` (modified)
+
+### Quality checks
+- Build: pass
+- Tests: pass (74/74 RecipeCard)
+- Lint: N/A
+
+### Learnings for future iterations
+- The action button wrapper `div` has a condition — must include `|| hasInstructions` to show the Cook button even when recipe has no URL, no edit/delete callbacks
+- For single-recipe Cook Mode in RecipeCard, map steps inline: no need for `useCookMode` hook
+- `CookModeDialog` is rendered inside `<Card>` directly — Radix Dialog portals correctly even when nested
+
+---
 
 ## [2026-03-08 19:30] — US-014: Wire up Start Cooking button on event pages
 

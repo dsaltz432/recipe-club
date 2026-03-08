@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat } from "lucide-react";
 import { toast } from "sonner";
-import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
+import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 import RecipeIngredientList from "./RecipeIngredientList";
 import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
+import CookModeDialog from "@/components/cookmode/CookModeDialog";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -64,6 +65,8 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const [cookModeOpen, setCookModeOpen] = useState(false);
+  const [cookModeSteps, setCookModeSteps] = useState<CookModeStep[]>([]);
 
   const allPantryItems = pantryItems && pantryItems.length > 0
     ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
@@ -118,7 +121,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
               )}
             </div>
             {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onDelete || onEdit) && (
+            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions) && (
               <div className="flex items-center gap-0 -ml-1 mt-0.5">
                 {recipe.url && (
                   <a
@@ -174,6 +177,25 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                     onClick={() => onDelete(recipe.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {hasInstructions && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={`Start cooking ${recipe.name}`}
+                    onClick={() => {
+                      const steps: CookModeStep[] = (content!.instructions!).map((instruction) => ({
+                        recipeId: recipe.id,
+                        recipeName: recipe.name,
+                        instruction,
+                      }));
+                      setCookModeSteps(steps);
+                      setCookModeOpen(true);
+                    }}
+                  >
+                    <ChefHat className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>
@@ -420,6 +442,13 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
           </>
         )}
       </CardContent>
+
+      <CookModeDialog
+        open={cookModeOpen}
+        onClose={() => setCookModeOpen(false)}
+        steps={cookModeSteps}
+        recipeNames={new Map([[recipe.id, recipe.name]])}
+      />
     </Card>
   );
 };

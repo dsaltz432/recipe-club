@@ -252,7 +252,7 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeCard is at src/components/recipes/RecipeCard.tsx. It already receives content data (from US-005). Add a small 'Cook' button with ChefHat icon in the card action area, only visible when content?.instructions?.length > 0. On click, open CookModeDialog with steps mapped from the recipe's instructions (same single-recipe mapping from useCookMode: { recipeId, recipeName: recipe.name, instruction: step }). RecipeCard renders the dialog inline — no need to lift state to RecipeHub."
     },
     {
