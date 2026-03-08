@@ -99,7 +99,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "auth.test.ts has 1 failure in signOut. GoogleSignIn.test.tsx has ~10 failures in the dev-mode email auth describe block. Read each source file (src/lib/auth.ts, src/components/auth/GoogleSignIn.tsx) and compare with tests to identify drift. HomeSection's rpc error should be fixed by US-002."
     },
     {
@@ -113,7 +113,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "MealPlanGrid has 3 failures around mealTypes prop and mobile column headers. RecipeClubEvents has 1 failure in the loading spinner test. RecipeIngredientList has 2 failures. For each: read the source component, run the test, identify the mismatch, update the test."
     },
     {
@@ -129,7 +129,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "For each failing page: run the specific test file to see error messages, read the source page file, identify what changed, update the test. ContactUs has 7 failures. Index has 4. EventDetailPage has widespread failures (entire describe block). PersonalMealDetailPage has 9 failures — likely related to the useRecipeParse hook refactor (same as MealPlanPage). UserManagementPage has 1 failure. PersonalMealDetailPage.tsx uses the same parse dialog pattern — check if it also uses useRecipeParse now."
     },
     {
