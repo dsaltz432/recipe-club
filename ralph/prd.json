@@ -165,7 +165,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the patterns from parse-recipe/index.ts: CORS handling (lines 1-20), Supabase client creation with service role key, Anthropic API call with model selection. The AI prompt should say: 'You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish.' Hash recipe IDs with a simple approach: sort IDs, join with comma, use as the hash string (no need for SHA — UUIDs are already unique). Use the model parameter or default to claude-sonnet-4-6."
     },
     {

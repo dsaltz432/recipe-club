@@ -36,8 +36,18 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 9
-**Current Task:** US-010
+**Tasks Completed:** 10
+**Current Task:** US-011
+
+### generate-cook-timeline edge function pattern
+- Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
+- Hash: `[...recipeIds].sort().join(",")` — deterministic, no SHA needed
+- Cache check: `supabase.from("cook_mode_timelines").select("steps").eq("event_id", ...).eq("recipe_ids_hash", ...).maybeSingle()`
+- Fetches recipe names from `recipes` table + instructions/times from `recipe_content` table separately
+- AI prompt returns JSON array of CookModeStep objects
+- JSON parsing: tries regex for ```json blocks first, falls back to raw text
+- Stores with `insert` (not upsert) since UNIQUE constraint handles duplicates via cache check
+- Returns `{ success: true, steps: CookModeStep[] }` on success
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -68,6 +78,38 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:35] — US-010: Create generate-cook-timeline edge function
+
+### What was implemented
+- Created `supabase/functions/generate-cook-timeline/index.ts`
+- Accepts `{ eventId, recipeIds, model? }` (model defaults to `claude-sonnet-4-6`)
+- Returns 400 when recipeIds is missing or empty
+- Hash = sorted recipeIds joined with comma (deterministic, no SHA needed)
+- Cache check via `cook_mode_timelines` table with `event_id` + `recipe_ids_hash`
+- Fetches recipe names from `recipes` table and instructions/times from `recipe_content` table
+- Builds per-recipe summaries for AI prompt with instructions numbered
+- Calls Anthropic API with interleaved timeline prompt; AI returns JSON array of CookModeStep
+- Parses response: tries ````json` block first, falls back to raw text
+- Stores result in `cook_mode_timelines` with `insert`
+- Returns `{ success: true, steps: CookModeStep[] }`
+- Full error handling with try/catch; all errors return JSON with CORS headers
+
+### Files changed
+- `supabase/functions/generate-cook-timeline/index.ts` (new)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (tests covered by US-016)
+- Lint: N/A
+
+### Learnings for future iterations
+- Edge functions don't need TypeScript checking from the npm build — `npm run build` only checks `src/`
+- Use `[...recipeIds].sort().join(",")` for deterministic hash without crypto
+- Insert (not upsert) into cook_mode_timelines: cache check happens before insert, so duplicates won't occur
+- AI response parsing: always try regex for markdown code blocks first
+
+---
 
 ## [2026-03-08 18:20] — US-009: Create cook_mode_timelines migration and types
 
