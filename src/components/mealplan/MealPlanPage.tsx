@@ -9,8 +9,9 @@ import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantrySection from "@/components/pantry/PantrySection";
-import { loadUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
+import { loadUserPreferences } from "@/lib/userPreferences";
 import { useGroceryList } from "@/hooks/useGroceryList";
+import { useRecipeParse } from "@/hooks/useRecipeParse";
 import type { MealPlanItem, UserPreferences } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -45,13 +46,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [viewTab, setViewTab] = useState<"plan" | "groceries" | "pantry">("plan");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
-
-  // Parse progress state
-  const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "failed">("idle");
-  const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
-  const [pendingParseName, setPendingParseName] = useState<string>("");
-  const [pendingParseText, setPendingParseText] = useState<string>("");
-  const [parseStep, setParseStep] = useState<"saving" | "parsing" | "loading" | "done">("saving");
 
   const navigate = useNavigate();
 
@@ -179,80 +173,21 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     setWeekStart(getWeekStart(new Date(), userPreferences?.weekStartDay ?? 0));
   };
 
-  // Execute parse when parseStatus transitions to "parsing"
-  useEffect(() => {
-    if (parseStatus !== "parsing" || !pendingParseRecipeId) return;
-
-    const doParse = async () => {
-      try {
-        setParseStep("saving");
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        setParseStep("parsing");
-        const recipe = items.find((i) => i.recipeId === pendingParseRecipeId);
-        const parseBody: Record<string, string> = {
-          recipeId: pendingParseRecipeId,
-          recipeName: pendingParseName,
-          model: getCachedAiModel(),
-        };
-        if (pendingParseText) {
-          parseBody.text = pendingParseText;
-        } else {
-          parseBody.recipeUrl = recipe?.recipeUrl || recipe?.customUrl || "";
-        }
-        const { data: parseData, error } = await supabase.functions.invoke("parse-recipe", {
-          body: parseBody,
-        });
-        if (error) throw error;
-        if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse recipe");
-
-        setParseStep("loading");
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        setParseStep("done");
-        await new Promise(resolve => setTimeout(resolve, 2500));
-
-        setParseStatus("idle");
-        setPendingParseRecipeId(null);
-        setPendingParseName("");
-        setPendingParseText("");
-        setParseStep("saving");
-        refreshGroceries();
-        toast.success("Recipe parsed successfully!");
-      } catch (error) {
-        console.error("Error parsing recipe:", error);
-        setParseStatus("failed");
-      }
-    };
-
-    doParse();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parseStatus, pendingParseRecipeId]);
-
-  const handleParseRetry = () => {
-    setParseStep("saving");
-    setParseStatus("parsing");
-  };
-
-  const handleParseKeep = () => {
-    setParseStatus("idle");
-    setPendingParseRecipeId(null);
-    setPendingParseName("");
-    setParseStep("saving");
-    toast.success("Recipe saved without parsing");
-  };
-
-  const handleParseDiscard = async () => {
-    if (pendingParseRecipeId) {
-      await supabase.from("meal_plan_items").delete().eq("recipe_id", pendingParseRecipeId);
-      await supabase.from("recipes").delete().eq("id", pendingParseRecipeId);
-    }
-    setParseStatus("idle");
-    setPendingParseRecipeId(null);
-    setPendingParseName("");
-    setParseStep("saving");
-    loadPlan();
-  };
+  const {
+    parseStatus,
+    parseStep,
+    pendingParseName,
+    startParse,
+    handleRetry: handleParseRetry,
+    handleKeep: handleParseKeep,
+    handleDiscard: handleParseDiscard,
+  } = useRecipeParse({
+    onSuccess: refreshGroceries,
+    onBeforeDiscard: async (recipeId) => {
+      await supabase.from("meal_plan_items").delete().eq("recipe_id", recipeId);
+    },
+    onDiscard: loadPlan,
+  });
 
   const handleAddMeal = (dayOfWeek: number, mealType: string) => {
     setPendingSlot({ dayOfWeek, mealType });
@@ -263,9 +198,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     // pendingSlot is always set when the dialog is mounted
     const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType, url);
     if (shouldParse && recipeId && url) {
-      setPendingParseRecipeId(recipeId);
-      setPendingParseName(name);
-      setParseStatus("parsing");
+      startParse(recipeId, name, { url });
     }
     setPendingSlot(null);
   };
@@ -282,10 +215,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const handleAddManualMeal = async (name: string, text: string) => {
     const recipeId = await addItemToPlan(name, pendingSlot!.dayOfWeek, pendingSlot!.mealType);
     if (recipeId && text.trim()) {
-      setPendingParseRecipeId(recipeId);
-      setPendingParseName(name);
-      setPendingParseText(text);
-      setParseStatus("parsing");
+      startParse(recipeId, name, { text });
     }
     setPendingSlot(null);
   };

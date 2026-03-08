@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getCachedAiModel } from "@/lib/userPreferences";
+import { useRecipeParse } from "@/hooks/useRecipeParse";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -32,8 +33,15 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, SlidersHorizontal } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal, Plus } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
+import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
+import RecipeInputForm, {
+  createInitialFormData,
+  canSubmitRecipeForm,
+  buildIngredientPayload,
+  type RecipeFormData,
+} from "./RecipeInputForm";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
@@ -103,6 +111,73 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Add Recipe dialog state
+  const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  const [addRecipeFormData, setAddRecipeFormData] = useState<RecipeFormData>(createInitialFormData());
+  const [isAddingRecipe, setIsAddingRecipe] = useState(false);
+  const [isUploadingAddRecipeFile, setIsUploadingAddRecipeFile] = useState(false);
+
+  const handleAddPersonalRecipe = async () => {
+    if (!userId) return;
+    setIsAddingRecipe(true);
+    try {
+      const { data: newRecipe, error: recipeError } = await supabase
+        .from("recipes")
+        .insert({
+          name: addRecipeFormData.name.trim(),
+          url: addRecipeFormData.url.trim() || null,
+          created_by: userId,
+          event_id: null,
+          ingredient_id: null,
+        })
+        .select("id")
+        .single();
+
+      if (recipeError) throw recipeError;
+      const recipeId = newRecipe.id;
+
+      if (addRecipeFormData.inputMode === "manual") {
+        // Row-by-row: insert ingredients directly, no parse needed
+        const payload = buildIngredientPayload(addRecipeFormData.ingredientRows).map((row) => ({
+          ...row,
+          recipe_id: recipeId,
+        }));
+        if (payload.length > 0) {
+          await supabase.from("recipe_ingredients").insert(payload);
+        }
+        toast.success("Recipe added!");
+        setShowAddRecipeDialog(false);
+        setAddRecipeFormData(createInitialFormData());
+        setIsLoading(true);
+        loadRecipes();
+      } else {
+        // URL or upload: close dialog and trigger ParseProgressDialog
+        setShowAddRecipeDialog(false);
+        setAddRecipeFormData(createInitialFormData());
+        startParse(recipeId, addRecipeFormData.name.trim(), { url: addRecipeFormData.url.trim() });
+      }
+    } catch (error) {
+      console.error("Error adding recipe:", error);
+      toast.error("Failed to add recipe");
+    } finally {
+      setIsAddingRecipe(false);
+    }
+  };
+
+  const {
+    parseStatus,
+    parseStep,
+    pendingParseName,
+    startParse,
+    handleRetry: handleParseRetry,
+    handleKeep: handleParseKeep,
+    handleDiscard: handleParseDiscard,
+  } = useRecipeParse({
+    onSuccess: () => { setIsLoading(true); loadRecipes(); },
+    onKeep: () => { setIsLoading(true); loadRecipes(); },
+    onDiscard: () => { setIsLoading(true); loadRecipes(); },
+  });
 
   const handleIngredientsChange = async (recipeId: string) => {
     const { data } = await supabase
@@ -734,7 +809,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         {/* Header with Search and Add */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full sm:w-auto">
-            {/* Search + mobile filter button */}
+            {/* Search + mobile icon buttons */}
             <div className="flex gap-2 w-full sm:flex-1 sm:max-w-md">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -746,6 +821,16 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                   className="pl-10"
                 />
               </div>
+              {subTab === "personal" && userId && (
+                <Button
+                  size="icon"
+                  className="sm:hidden shrink-0 bg-purple hover:bg-purple-dark"
+                  onClick={() => setShowAddRecipeDialog(true)}
+                  aria-label="Add Recipe"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="icon"
@@ -817,6 +902,15 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
               </Select>
             )}
           </div>
+          {subTab === "personal" && userId && (
+            <Button
+              onClick={() => setShowAddRecipeDialog(true)}
+              className="hidden sm:inline-flex bg-purple hover:bg-purple-dark shrink-0"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Recipe
+            </Button>
+          )}
         </div>
 
         {/* Recipe Grid */}
@@ -828,7 +922,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 {searchTerm || ingredientFilter !== "all"
                   ? "No recipes found matching your search."
                   : subTab === "personal"
-                  ? "No personal recipes yet. Add recipes from events or meal plans."
+                  ? "No personal recipes yet. Click \"Add Recipe\" to get started."
                   : "No recipes yet. Recipes are added through events."}
               </p>
             </CardContent>
@@ -1019,6 +1113,68 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Recipe Dialog */}
+      <Dialog
+        open={showAddRecipeDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowAddRecipeDialog(false);
+            setAddRecipeFormData(createInitialFormData());
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Add Recipe</DialogTitle>
+            <DialogDescription>Add a personal recipe to your collection.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <RecipeInputForm
+              formData={addRecipeFormData}
+              onFormDataChange={setAddRecipeFormData}
+              isUploading={isUploadingAddRecipeFile}
+              onUploadingChange={setIsUploadingAddRecipeFile}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddRecipeDialog(false);
+                setAddRecipeFormData(createInitialFormData());
+              }}
+              disabled={isAddingRecipe}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddPersonalRecipe}
+              disabled={!canSubmitRecipeForm(addRecipeFormData, isAddingRecipe) || isUploadingAddRecipeFile}
+              className="bg-purple hover:bg-purple-dark"
+            >
+              {isAddingRecipe ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add Recipe"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Parse Progress Dialog */}
+      <ParseProgressDialog
+        parseStatus={parseStatus}
+        parseStep={parseStep}
+        recipeName={pendingParseName}
+        onDiscard={handleParseDiscard}
+        onKeep={handleParseKeep}
+        onRetry={handleParseRetry}
+      />
 
       {/* Edit Rating Dialog */}
       {ratingDialogOpen && ratingRecipe && ratingRecipe.eventId && userId && (

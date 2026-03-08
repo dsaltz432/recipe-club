@@ -1401,7 +1401,7 @@ describe("RecipeHub - Sub-tabs", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/no personal recipes yet\. add recipes from events or meal plans\./i)
+        screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)
       ).toBeInTheDocument();
     });
   });
@@ -1542,7 +1542,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet\. add recipes from events or meal plans\./i)).toBeInTheDocument();
+      expect(screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)).toBeInTheDocument();
     });
   });
 
@@ -1557,7 +1557,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet\. add recipes from events or meal plans\./i)).toBeInTheDocument();
+      expect(screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)).toBeInTheDocument();
     });
   });
 
@@ -1584,7 +1584,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet\. add recipes from events or meal plans\./i)).toBeInTheDocument();
+      expect(screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)).toBeInTheDocument();
     });
   });
 
@@ -4299,5 +4299,165 @@ describe("RecipeHub - Mobile Filter Panel", () => {
     await waitFor(() => {
       expect(container.querySelector('[class*="flex-col"][class*="gap-3"]')).not.toBeNull();
     });
+  });
+});
+
+describe("RecipeHub - Add Recipe", () => {
+  const mockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon" },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  const mockInsertBuilder = (recipeId = "new-recipe-id") => ({
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({ data: { id: recipeId }, error: null }),
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows Add Recipe button only on My Recipes tab", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Not visible on Club tab
+    expect(screen.queryByRole("button", { name: /add recipe/i })).not.toBeInTheDocument();
+
+    // Switch to My Recipes tab
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add recipe/i })).toBeInTheDocument();
+    });
+
+    // Switch back to Club tab — button disappears
+    fireEvent.click(screen.getByRole("button", { name: /^Club/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /add recipe/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not show Add Recipe button when no userId", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/no personal recipes/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("button", { name: /add recipe/i })).not.toBeInTheDocument();
+  });
+
+  it("opens Add Recipe dialog when button is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add recipe/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByText("Add a personal recipe to your collection.")).toBeInTheDocument();
+    });
+  });
+
+  it("inserts recipe and calls parse-recipe when URL is submitted", async () => {
+    const newRecipeId = "new-recipe-abc";
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        const builder = createMockQueryBuilder(mockRecipesData);
+        builder.insert = vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: { id: newRecipeId }, error: null }),
+        });
+        return builder;
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    // Wait for initial load then switch to My Recipes
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /My Recipes/ })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add recipe/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    // Fill in name
+    const nameInput = screen.getByPlaceholderText(/enter recipe name/i);
+    fireEvent.change(nameInput, { target: { value: "My New Recipe" } });
+
+    // Fill in URL
+    const urlInput = screen.getByPlaceholderText("https://...");
+    fireEvent.change(urlInput, { target: { value: "https://example.com/recipe" } });
+
+    // Submit
+    const submitBtn = screen.getByRole("button", { name: /^add recipe$/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith(
+        "parse-recipe",
+        expect.objectContaining({
+          body: expect.objectContaining({
+            recipeId: newRecipeId,
+            recipeName: "My New Recipe",
+            recipeUrl: "https://example.com/recipe",
+          }),
+        })
+      );
+    }, { timeout: 5000 });
   });
 });
