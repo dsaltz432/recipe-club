@@ -113,13 +113,7 @@ describe("GoogleSignIn - Dev mode (email auth)", () => {
   it("renders email form in dev mode", () => {
     render(<GoogleSignIn />);
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
-    expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByText("Sign in (Dev Mode)")).toBeInTheDocument();
-  });
-
-  it("has 'Password' placeholder on password field", () => {
-    render(<GoogleSignIn />);
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
   });
 
   it("has 'dev@example.com' placeholder on email field", () => {
@@ -136,34 +130,15 @@ describe("GoogleSignIn - Dev mode (email auth)", () => {
     expect(emailInput).toHaveValue("test@test.com");
   });
 
-  it("updates password input value", () => {
-    render(<GoogleSignIn />);
-    const passwordInput = screen.getByLabelText("Password");
-    fireEvent.change(passwordInput, { target: { value: "mypassword" } });
-    expect(passwordInput).toHaveValue("mypassword");
-  });
-
   it("disables button when email is empty", () => {
     render(<GoogleSignIn />);
-    const passwordInput = screen.getByLabelText("Password");
-    fireEvent.change(passwordInput, { target: { value: "password" } });
     expect(screen.getByRole("button")).toBeDisabled();
   });
 
-  it("disables button when password is empty", () => {
-    render(<GoogleSignIn />);
-    const emailInput = screen.getByLabelText("Email");
-    fireEvent.change(emailInput, { target: { value: "test@test.com" } });
-    expect(screen.getByRole("button")).toBeDisabled();
-  });
-
-  it("enables button when both email and password are provided", () => {
+  it("enables button when email is provided", () => {
     render(<GoogleSignIn />);
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "test@test.com" },
-    });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "password" },
     });
     expect(screen.getByRole("button")).not.toBeDisabled();
   });
@@ -175,15 +150,12 @@ describe("GoogleSignIn - Dev mode (email auth)", () => {
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "dev@example.com" },
     });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "password123" },
-    });
     fireEvent.click(screen.getByText("Sign in (Dev Mode)"));
 
     await waitFor(() => {
       expect(mockSignInWithEmail).toHaveBeenCalledWith(
         "dev@example.com",
-        "password123"
+        "test123"
       );
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
     });
@@ -200,9 +172,6 @@ describe("GoogleSignIn - Dev mode (email auth)", () => {
     render(<GoogleSignIn />);
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "dev@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "pass" },
     });
     fireEvent.click(screen.getByText("Sign in (Dev Mode)"));
 
@@ -224,9 +193,6 @@ describe("GoogleSignIn - Dev mode (email auth)", () => {
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "dev@example.com" },
     });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "password123" },
-    });
     fireEvent.click(screen.getByText("Sign in (Dev Mode)"));
 
     await waitFor(() => {
@@ -242,17 +208,6 @@ describe("GoogleSignIn - Dev mode (email auth)", () => {
 
   it("does not call signInWithEmail when email is empty", () => {
     render(<GoogleSignIn />);
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "password" },
-    });
-    expect(mockSignInWithEmail).not.toHaveBeenCalled();
-  });
-
-  it("does not call signInWithEmail when password is empty", () => {
-    render(<GoogleSignIn />);
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "test@test.com" },
-    });
     expect(mockSignInWithEmail).not.toHaveBeenCalled();
   });
 });

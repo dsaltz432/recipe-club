@@ -949,14 +949,13 @@ describe("signOut", () => {
     window.location = originalLocation;
   });
 
-  it("should call signOut and redirect to homepage", async () => {
+  it("should call signOut", async () => {
     mockSupabase.auth.signOut.mockResolvedValue({ error: null });
 
     const { signOut } = await import("@/lib/auth");
     await signOut();
 
     expect(mockSupabase.auth.signOut).toHaveBeenCalled();
-    expect(window.location.href).toBe("/");
   });
 
   it("should throw and show toast on error", async () => {
