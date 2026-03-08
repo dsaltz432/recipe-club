@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 15
-**Current Task:** US-016
+**Tasks Completed:** 16
+**Current Task:** US-017
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +80,28 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 22:00] — US-016: Write tests for generate-cook-timeline edge function
+
+### What was implemented
+- Created `tests/unit/edge-functions/generate-cook-timeline.test.ts` with 9 passing tests
+- Tests cover: OPTIONS preflight CORS, cached timeline (cache hit, no Anthropic call), Anthropic API called on cache miss, result stored in cook_mode_timelines, 400 for missing recipeIds, 400 for empty recipeIds, Anthropic API failure returns 500, CORS headers on success, CORS headers on error
+
+### Files changed
+- `tests/unit/edge-functions/generate-cook-timeline.test.ts` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (9/9)
+- Lint: N/A
+
+### Learnings for future iterations
+- For edge functions that call `from()` on multiple tables, use `mockSupabase.from.mockImplementation((table) => switch(table))` to return different builders per table
+- Expose per-table builder references (e.g. `cacheBuilder`) in test module scope so insert/update call assertions can be made after handler runs
+- `vi.stubGlobal("fetch", ...)` is restored by `vi.restoreAllMocks()` in `beforeEach` — no need for explicit cleanup
+- Cache-hit tests can simply call `setupDefaultSupabaseMock({ steps: ... })` without reloading the handler — the existing handler picks up the updated mock
+
+---
 
 ## [2026-03-08 19:45] — US-015: Add Cook Mode entry point to RecipeCard
 

@@ -266,7 +266,7 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the pattern from tests/unit/edge-functions/parse-recipe.test.ts — it uses vi.stubGlobal('fetch', ...) to mock the Anthropic API and mocks @/integrations/supabase/client for DB calls. Mock the Supabase client to return empty data (cache miss) or existing data (cache hit). For the Anthropic mock, return a valid JSON response with a steps array. Test the cache-hit path separately to verify no Anthropic call is made. The edge function lives at supabase/functions/generate-cook-timeline/index.ts (created in US-010)."
     },
     {
