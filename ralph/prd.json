@@ -183,7 +183,7 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "For single recipe, map instructions to CookModeStep[]: { recipeId, recipeName, instruction: step, category: undefined }. For multi-recipe: first check cook_mode_timelines table with the recipe IDs hash. If cache miss, call supabase.functions.invoke('generate-cook-timeline', { body: { eventId, recipeIds, model } }). getCachedAiModel is in src/lib/userPreferences.ts. Follow patterns from useRecipeParse.ts for edge function invocation."
     },
     {

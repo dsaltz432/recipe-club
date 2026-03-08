@@ -1,0 +1,84 @@
+import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { CookModeStep } from "@/types";
+import { getCachedAiModel } from "@/lib/userPreferences";
+
+// cook_mode_timelines not yet in generated Supabase types — bypass with cast
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
+interface CookModeRecipe {
+  id: string;
+  name: string;
+  instructions?: string[];
+}
+
+interface UseCookModeOptions {
+  eventId?: string;
+  recipes: CookModeRecipe[];
+}
+
+export function useCookMode({ eventId, recipes }: UseCookModeOptions) {
+  const [timeline, setTimeline] = useState<CookModeStep[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generateTimeline = useCallback(async () => {
+    if (recipes.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (recipes.length === 1) {
+        // Single recipe: map instructions directly without calling edge function
+        const recipe = recipes[0];
+        const steps: CookModeStep[] = (recipe.instructions ?? []).map((instruction) => ({
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          instruction,
+        }));
+        setTimeline(steps);
+      } else {
+        // Multiple recipes: check DB cache first
+        const recipeIds = recipes.map((r) => r.id);
+        const hash = [...recipeIds].sort().join(",");
+
+        if (eventId) {
+          const { data: cached } = await db
+            .from("cook_mode_timelines")
+            .select("steps")
+            .eq("event_id", eventId)
+            .eq("recipe_ids_hash", hash)
+            .maybeSingle();
+
+          if (cached?.steps) {
+            setTimeline(cached.steps as CookModeStep[]);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Cache miss — call edge function
+        const model = getCachedAiModel();
+        const { data, error: fnError } = await supabase.functions.invoke(
+          "generate-cook-timeline",
+          { body: { eventId, recipeIds, model } }
+        );
+
+        if (fnError) throw fnError;
+        if (!data?.success) throw new Error(data?.error ?? "Failed to generate timeline");
+
+        setTimeline(data.steps as CookModeStep[]);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to generate cooking timeline"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId, recipes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { timeline, loading, error, generateTimeline };
+}

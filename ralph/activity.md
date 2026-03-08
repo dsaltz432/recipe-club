@@ -11,6 +11,8 @@
 - `getCachedAiModel` from `src/lib/userPreferences.ts` must be included in mocks for any test that imports modules using it
 - Use `expect.objectContaining` for edge function body assertions to avoid fragility when fields change
 - Test env has `VITE_DEV_MODE=true` — mock devMode when testing production defaults
+- `vi.hoisted()` is required when mock variables are referenced inside `vi.mock()` factories — avoids "Cannot access before initialization" errors
+- Tables added via migration but not yet in Supabase generated types need `const db = supabase as any` cast (see `userPreferences.ts` pattern)
 
 ### recipe_content table
 - Columns: id, recipe_id, description, servings, prep_time, cook_time, total_time, instructions (JSONB), source_title, parsed_at, status, error_message, created_at
@@ -36,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 10
-**Current Task:** US-011
+**Tasks Completed:** 11
+**Current Task:** US-012
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -78,6 +80,33 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:45] — US-011: Create useCookMode hook
+
+### What was implemented
+- Created `src/hooks/useCookMode.ts` with `useCookMode({ eventId?, recipes })` hook
+- Single recipe path: maps instructions directly to `CookModeStep[]` without calling edge function
+- Multi-recipe path: checks `cook_mode_timelines` DB cache first (using sorted recipeIds hash), then calls `generate-cook-timeline` edge function on cache miss
+- Skips cache check when `eventId` is undefined
+- Exposes `timeline`, `loading`, `error`, `generateTimeline` states/function
+- Uses `getCachedAiModel()` for model preference
+- Bypasses Supabase TypeScript types for `cook_mode_timelines` using `const db = supabase as any` (table not yet in generated types)
+- Created `tests/unit/hooks/useCookMode.test.ts` with 8 passing tests using `vi.hoisted()` pattern
+
+### Files changed
+- `src/hooks/useCookMode.ts` (new)
+- `tests/unit/hooks/useCookMode.test.ts` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (8/8)
+- Lint: N/A
+
+### Learnings for future iterations
+- `vi.hoisted()` is required when mock variables are used inside `vi.mock()` factories — avoids "Cannot access before initialization" errors
+- Tables added via migration but not regenerated in Supabase types need `const db = supabase as any` cast (same pattern as `userPreferences.ts`)
+
+---
 
 ## [2026-03-08 18:35] — US-010: Create generate-cook-timeline edge function
 
