@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 13
-**Current Task:** US-014
+**Tasks Completed:** 14
+**Current Task:** US-015
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +80,33 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 19:30] — US-014: Wire up Start Cooking button on event pages
+
+### What was implemented
+- Added `useCookMode` hook and `CookModeDialog` imports to both `EventDetailPage.tsx` and `PersonalMealDetailPage.tsx`
+- Added `cookModeOpen` state, `useCookMode` hook call, `cookModeRecipeNames` Map, and `handleStartCooking` handler in both pages
+- `cookModeRecipes` was already computed in both pages (from US-008) — reused it to feed `useCookMode`
+- Added "Start Cooking" button with `ChefHat` icon near event action buttons (outline/secondary variant, purple styling)
+- Button only shown when `cookModeRecipes.length > 0` (i.e., any recipe has parsed instructions)
+- On click: sets `cookModeOpen(true)` and calls `generateTimeline()` (single recipe → maps directly, multi → calls edge function)
+- Rendered `CookModeDialog` in both pages with `steps={cookTimeline}`, `loading={cookModeLoading}`, `error={cookModeError}`
+
+### Files changed
+- `src/pages/EventDetailPage.tsx` (modified)
+- `src/pages/PersonalMealDetailPage.tsx` (modified)
+
+### Quality checks
+- Build: pass
+- Tests: pass (317/317, 9 test files)
+- Lint: N/A
+
+### Learnings for future iterations
+- `cookModeRecipes` was already computed in both pages for `MultiRecipeView`/`cookContent` — reuse it directly
+- `useCookMode` expects `{ id, name, instructions? }` — map from `cookModeRecipes` which has `{ id, name, content: RecipeContent }`
+- `cookModeError` is `string | null` but `CookModeDialog` expects `string | undefined` — use `?? undefined` to convert
+
+---
 
 ## [2026-03-08 19:15] — US-013: Create CookModeDialog full-screen cooking interface
 

@@ -54,6 +54,8 @@ import EventRecipesTab from "@/components/events/EventRecipesTab";
 import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
+import CookModeDialog from "@/components/cookmode/CookModeDialog";
+import { useCookMode } from "@/hooks/useCookMode";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
@@ -187,6 +189,21 @@ const EventDetailPage = () => {
         content: recipeContentMap.get(r.recipe.id)!,
       }));
   }, [event?.recipesWithNotes, recipeContentMap]);
+
+  const [cookModeOpen, setCookModeOpen] = useState(false);
+  const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline } = useCookMode({
+    eventId,
+    recipes: cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+  });
+  const cookModeRecipeNames = useMemo(
+    () => new Map(cookModeRecipes.map((r) => [r.id, r.name])),
+    [cookModeRecipes]
+  );
+
+  const handleStartCooking = () => {
+    setCookModeOpen(true);
+    generateTimeline();
+  };
 
   const toggleRecipeNotes = (recipeId: string) => {
     setExpandedRecipeNotes(prev => {
@@ -879,6 +896,17 @@ const EventDetailPage = () => {
 
               {/* Event action buttons */}
               <div className="flex gap-1 sm:gap-2 shrink-0">
+                {cookModeRecipes.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartCooking}
+                    className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs border-purple/30 text-purple hover:bg-purple/5"
+                  >
+                    <ChefHat className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Start Cooking</span>
+                  </Button>
+                )}
                 {isUpcoming && userIsMemberOrAdmin && user?.id === event?.createdBy && (
                   <>
                     <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs">
@@ -977,6 +1005,16 @@ const EventDetailPage = () => {
           cookContent={cookModeRecipes.length >= 2 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
         />
       </main>
+
+      {/* Cook Mode Dialog */}
+      <CookModeDialog
+        open={cookModeOpen}
+        onClose={() => setCookModeOpen(false)}
+        steps={cookTimeline}
+        recipeNames={cookModeRecipeNames}
+        loading={cookModeLoading}
+        error={cookModeError ?? undefined}
+      />
 
       {/* Add Recipe Dialog */}
       <Dialog

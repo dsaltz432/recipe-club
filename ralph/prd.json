@@ -237,7 +237,7 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Add the Start Cooking button in the event info card header area, near existing action buttons. Use ChefHat icon from lucide-react. Wire up useCookMode hook: on button click, set dialog open, trigger timeline generation if multi-recipe. For single recipe, pass instructions directly as steps (no edge function call). Both pages should use identical patterns — the hook and dialog are shared. Button should be prominent but not overwhelming — a secondary/outline variant with the ChefHat icon."
     },
     {
