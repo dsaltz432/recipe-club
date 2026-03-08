@@ -288,20 +288,25 @@ const SharedRecipePage = () => {
                 </Link>
               </div>
             ) : (
-              <>
+              <div className="w-full flex flex-col gap-3">
                 <p className="text-sm text-muted-foreground">Want to cook this? Save it to your collection.</p>
-                <Button
-                  onClick={handleAddClick}
-                  disabled={isAdding}
-                  className="bg-purple hover:bg-purple-dark shrink-0 w-full sm:w-auto"
-                >
-                  {isAdding ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding...</>
-                  ) : (
-                    "Add to My Recipes"
-                  )}
-                </Button>
-              </>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    onClick={handleAddClick}
+                    disabled={isAdding}
+                    className="bg-purple hover:bg-purple-dark w-full sm:w-auto"
+                  >
+                    {isAdding ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding...</>
+                    ) : (
+                      "Add to My Recipes"
+                    )}
+                  </Button>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/dashboard")}>
+                    Just log me in
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 
