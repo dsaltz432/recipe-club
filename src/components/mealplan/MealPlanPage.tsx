@@ -466,6 +466,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
           isAddingGeneral={grocery.isAddingGeneral}
           onAddingGeneralChange={grocery.setIsAddingGeneral}
           onAddItemsToRecipe={grocery.handleAddItemsToRecipe}
+          onRemoveGeneralItem={grocery.handleRemoveGeneralItem}
+          onUpdateGeneralItem={grocery.handleUpdateGeneralItem}
         />
       )}
 

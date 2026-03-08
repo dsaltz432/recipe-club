@@ -59,7 +59,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "MealPlanPage was refactored to use the shared useRecipeParse hook (src/hooks/useRecipeParse.ts). The parse state, effect, and handlers (handleParseRetry, handleParseKeep, handleParseDiscard) were extracted to the hook. Tests that stub or assert on those internal functions may need updating. Also, loadPlan likely uses .limit() — this should be fixed by US-002. Read MealPlanPage.test.tsx and MealPlanPage.tsx to understand what changed, then update tests. Many tests may just need the mock query builder to have limit() (US-002 prerequisite)."
     },
     {

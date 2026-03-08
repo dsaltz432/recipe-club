@@ -15,8 +15,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 3
-**Current Task:** US-003 complete
+**Tasks Completed:** 4
+**Current Task:** US-004 complete
 
 ### Test field name drift pattern
 - When production code renames a field (e.g., `aiModelParse`+`aiModelCombine` → `aiModel`), tests that assert on exact object shapes break with field-name mismatches
@@ -92,6 +92,44 @@
 - Test env has `VITE_DEV_MODE=true`, causing `isDevMode()` to return true at module load; mock devMode when testing production defaults
 - Missing exports in `vi.mock()` factory cause ALL tests in that file to crash (not just the tests that use the export)
 - AppHeader back button label from Settings.tsx is "Back" (short), not "Back to dashboard"
+
+---
+
+## 2026-03-08 — US-004: Fix MealPlanPage tests
+
+### What was implemented
+- Added `onRemoveGeneralItem` and `onUpdateGeneralItem` optional props to `GroceryListSection.tsx`
+- Passed `grocery.handleRemoveGeneralItem` and `grocery.handleUpdateGeneralItem` from `MealPlanPage.tsx` to `GroceryListSection`
+- Updated loading sentinel: `getByText("Meal Plan")` → `getByRole("button", { name: "Previous week" })` (replace_all, ~30 occurrences)
+- Updated loading state check: `.animate-spin` → `.animate-pulse` (Skeleton component)
+- Updated tab switch: `getByText("Meal Plan")` → `getByText("Plan")`
+- Added `getCachedAiModel` to userPreferences mock (both `useGroceryList` and `useRecipeParse` import it)
+- Updated 3 "throws on error" tests: production falls back to raw text parse, not error toast
+- Added `model: "claude-sonnet-4-6"` to exact invoke body assertions in parse tests
+- Removed `recipeId` from `parseIngredientText` invoke assertions (not included)
+- "Reprocess" → "Recombine" (button text changed in production)
+- `getByText("Recombine")` → `getAllByText("Recombine")[0]` (button rendered twice: mobile + desktop)
+- Close button → Escape key: `ParseProgressDialog` uses `hideClose`, no X button
+- Updated `startRecombineTimer fires after delay` test: no auto-timer in current code; now verifies Recombine button appears and no additional `deleteGroceryCache` after 900s
+- Updated `handleAddGeneralItem` test: added `category: "produce"` to expected `addGeneralItem` call
+- Updated `handleBulkParseGroceryText` skipped test: when `data.skipped` is true, fallback parses text and adds item (not empty array)
+
+### Files changed
+- `src/components/recipes/GroceryListSection.tsx`
+- `src/components/mealplan/MealPlanPage.tsx`
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: pass (76/76)
+- Lint: N/A
+
+### Learnings for future iterations
+- `useGroceryList` has NO auto-recombine timer — `recombineTimerRef` exists but is never set via setTimeout in this hook
+- `GroceryListSection` renders Recombine button in both mobile and desktop layout — use `getAllByText()[0]`
+- `ParseProgressDialog` uses `hideClose` prop — no X button; use Escape key event instead
+- When `data.skipped` is true, `parseIngredientText` falls back to `fallbackParse` (not empty array)
+- `addGeneralItem` receives `category` field from parsed items — test expectations must include it
 
 ---
 

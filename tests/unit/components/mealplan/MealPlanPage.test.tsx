@@ -115,8 +115,10 @@ const mockLoadUserPreferences = vi.fn().mockResolvedValue({
   weekStartDay: 0,
   householdSize: 2,
 });
+const mockGetCachedAiModel = vi.fn().mockReturnValue("claude-sonnet-4-6");
 vi.mock("@/lib/userPreferences", () => ({
   loadUserPreferences: (...args: unknown[]) => mockLoadUserPreferences(...args),
+  getCachedAiModel: (...args: unknown[]) => mockGetCachedAiModel(...args),
 }));
 
 // Mock sonner toast
@@ -234,14 +236,14 @@ describe("MealPlanPage", () => {
 
     render(<MealPlanPage {...defaultProps} />);
 
-    expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+    expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   it("renders Meals header after loading", async () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
   });
 
@@ -249,7 +251,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click previous week button (first chevron button)
@@ -264,7 +266,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // ChevronLeft and ChevronRight are icon-only buttons (no text content)
@@ -279,7 +281,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click an empty meal slot
@@ -332,7 +334,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click an empty dinner slot
@@ -396,7 +398,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     const slotButtons = screen.getAllByRole("button").filter(
@@ -459,7 +461,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click an empty dinner slot
@@ -590,7 +592,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click an empty meal slot to open dialog
@@ -668,7 +670,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Should have day headers
@@ -701,7 +703,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click slot to open dialog
@@ -755,7 +757,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Click slot to open dialog
@@ -784,7 +786,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Navigate away from current week (click ChevronLeft)
@@ -905,7 +907,7 @@ describe("MealPlanPage", () => {
     render(<MealPlanPage {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
     });
 
     // Should render with no items (empty grid)
@@ -1134,7 +1136,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       expect(screen.getByText("Groceries")).toBeInTheDocument();
@@ -1144,7 +1146,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Switch to Groceries tab
@@ -1161,7 +1163,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Pantry tab should be visible
@@ -1440,7 +1442,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Should show meal grid by default (check for day headers)
@@ -1461,7 +1463,7 @@ describe("MealPlanPage", () => {
       expect(screen.queryByText("No meals planned this week. Add meals to see a grocery list.")).not.toBeInTheDocument();
 
       // Switch back to Meal Plan tab
-      fireEvent.click(screen.getByText("Meal Plan"));
+      fireEvent.click(screen.getByText("Plan"));
 
       // Day headers should be back
       expect(screen.getAllByText("Sun")[0]).toBeInTheDocument();
@@ -1969,7 +1971,7 @@ describe("MealPlanPage", () => {
       });
 
       // Switch back to Meal Plan
-      fireEvent.click(screen.getByText("Meal Plan"));
+      fireEvent.click(screen.getByText("Plan"));
 
       // Record how many times recipe_ingredients was queried (proxy for loadGroceryData calls)
       const groceryCallsBefore = mockSupabaseFrom.mock.calls.filter(
@@ -2087,7 +2089,7 @@ describe("MealPlanPage", () => {
       });
 
       // Switch back to Meal Plan
-      fireEvent.click(screen.getByText("Meal Plan"));
+      fireEvent.click(screen.getByText("Plan"));
 
       // Add a non-URL meal (marks grocery dirty)
       const slotButtons = screen.getAllByRole("button").filter(
@@ -2685,7 +2687,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Open Add Meal dialog
@@ -2712,6 +2714,7 @@ describe("MealPlanPage", () => {
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
           body: {
+            model: "claude-sonnet-4-6",
             recipeId: "recipe-upload-1",
             recipeUrl: "https://storage.example.com/recipe-images/mock-uuid-456.jpg",
             recipeName: "recipe",
@@ -2724,7 +2727,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -2788,7 +2791,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -2863,7 +2866,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -2927,7 +2930,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -2948,9 +2951,8 @@ describe("MealPlanPage", () => {
         expect(screen.getByText("Parsing Failed")).toBeInTheDocument();
       }, { timeout: 3000 });
 
-      // Close button (X) on the dialog triggers onOpenChange which calls handleParseKeep
-      const closeButton = screen.getByRole("button", { name: /close/i });
-      fireEvent.click(closeButton);
+      // Pressing Escape triggers onOpenChange which calls handleParseKeep (parseStatus === "failed")
+      fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Recipe saved without parsing");
@@ -3001,7 +3003,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       const slotButtons = screen.getAllByRole("button").filter(
@@ -3027,10 +3029,9 @@ describe("MealPlanPage", () => {
         expect(mockInvoke).toHaveBeenCalled();
       });
 
-      // Close button fires onOpenChange, but since parseStatus is "parsing" (not "failed"),
+      // Pressing Escape fires onOpenChange, but since parseStatus is "parsing" (not "failed"),
       // handleParseKeep should NOT be called — dialog stays open
-      const closeButton = screen.getByRole("button", { name: /close/i });
-      fireEvent.click(closeButton);
+      fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
 
       // Dialog should still be showing "Adding Recipe"
       expect(screen.getByText("Adding Recipe")).toBeInTheDocument();
@@ -3111,7 +3112,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Add a new meal with URL to trigger parse
@@ -3332,7 +3333,7 @@ describe("MealPlanPage", () => {
 
       // Wait for initial load (empty plan)
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Add a meal with URL to trigger parse (this is the only recipe with URL)
@@ -3439,7 +3440,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Click an empty dinner slot
@@ -3469,7 +3470,7 @@ describe("MealPlanPage", () => {
       // Should call parse-recipe which handles DB saves internally
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
-          body: { recipeId: "recipe-manual-1", recipeName: "Manual Pasta", text: "1 lb spaghetti" },
+          body: { model: "claude-sonnet-4-6", recipeId: "recipe-manual-1", recipeName: "Manual Pasta", text: "1 lb spaghetti" },
         });
       });
     });
@@ -3530,7 +3531,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Click an empty dinner slot
@@ -3621,7 +3622,7 @@ describe("MealPlanPage", () => {
       render(<MealPlanPage {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Click an empty dinner slot
@@ -3827,7 +3828,7 @@ describe("MealPlanPage", () => {
       // startRecombineTimer was invoked — verify pending changes flag is set
       // The Recombine button should appear because hasPendingChanges is true
       await waitFor(() => {
-        expect(screen.getByText("Reprocess")).toBeInTheDocument();
+        expect(screen.getAllByText("Recombine")[0]).toBeInTheDocument();
       });
 
       // Advance the timer to trigger recombine
@@ -3943,7 +3944,7 @@ describe("MealPlanPage", () => {
       // Should call parse-recipe with the text
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
-          body: { recipeId: "temp-recipe-1", recipeName: "General Items", text: "2 lbs potatoes" },
+          body: { model: "claude-sonnet-4-6", recipeName: "General Items", text: "2 lbs potatoes" },
         });
       });
 
@@ -3953,7 +3954,7 @@ describe("MealPlanPage", () => {
           "meal_plan",
           expect.any(String),
           "user-123",
-          { name: "potatoes", quantity: "2", unit: "lb" }
+          { name: "potatoes", quantity: "2", unit: "lb", category: "produce" }
         );
       });
 
@@ -4164,7 +4165,7 @@ describe("MealPlanPage", () => {
 
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
-          body: { recipeId: "temp-recipe-id", recipeName: "General Items", text: "3 tomatoes\n1 bunch basil" },
+          body: { model: "claude-sonnet-4-6", recipeName: "General Items", text: "3 tomatoes\n1 bunch basil" },
         });
       });
 
@@ -4173,7 +4174,7 @@ describe("MealPlanPage", () => {
       });
     });
 
-    it("handleBulkParseGroceryText returns empty array when data.skipped is true", async () => {
+    it("handleBulkParseGroceryText falls back to raw text parse when data.skipped is true", async () => {
       mockInvoke.mockResolvedValue({
         data: { success: true, skipped: true },
         error: null,
@@ -4229,17 +4230,22 @@ describe("MealPlanPage", () => {
 
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
-          body: { recipeId: "temp-recipe-id", recipeName: "General Items", text: "nothing useful" },
+          body: { model: "claude-sonnet-4-6", recipeName: "General Items", text: "nothing useful" },
         });
       });
 
-      // Skipped returns empty array — no items added
+      // Skipped falls back to raw text parse — item is added with fallback name
       await waitFor(() => {
-        expect(mockAddGeneralItem).not.toHaveBeenCalled();
+        expect(mockAddGeneralItem).toHaveBeenCalledWith(
+          "meal_plan",
+          expect.any(String),
+          "user-123",
+          { name: "nothing useful", quantity: undefined, unit: undefined, category: "other" }
+        );
       });
     });
 
-    it("handleBulkParseGroceryText throws on error from invoke", async () => {
+    it("falls back to raw text parse when invoke errors", async () => {
       mockInvoke.mockResolvedValue({
         data: null,
         error: new Error("Edge function error"),
@@ -4293,13 +4299,14 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "some text" } });
       fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-      // handleBulkAdd catches the thrown error and shows toast
+      // parseIngredientText falls back to raw parse — items are added, no error toast
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
+        expect(mockAddGeneralItem).toHaveBeenCalled();
       });
+      expect(toast.error).not.toHaveBeenCalled();
     });
 
-    it("handleBulkParseGroceryText throws when data.success is false", async () => {
+    it("falls back to raw text parse when data.success is false", async () => {
       mockInvoke.mockResolvedValue({
         data: { success: false, error: "Bad input" },
         error: null,
@@ -4353,9 +4360,11 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "bad text" } });
       fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
+      // parseIngredientText falls back to raw parse — items are added, no error toast
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
+        expect(mockAddGeneralItem).toHaveBeenCalled();
       });
+      expect(toast.error).not.toHaveBeenCalled();
     });
   });
 
@@ -4437,14 +4446,14 @@ describe("MealPlanPage", () => {
       // After remove, hasPendingChanges is set and startRecombineTimer is called
       // The Recombine button should appear before the timer fires
       await waitFor(() => {
-        expect(screen.getByText("Reprocess")).toBeInTheDocument();
+        expect(screen.getAllByText("Recombine")[0]).toBeInTheDocument();
       });
 
       // Clear the delete cache mock to verify triggerRecombine calls it fresh
       mockDeleteGroceryCache.mockClear();
 
       // Click Recombine to trigger triggerRecombine directly
-      fireEvent.click(screen.getByText("Reprocess"));
+      fireEvent.click(screen.getAllByText("Recombine")[0]);
 
       await waitFor(() => {
         expect(mockDeleteGroceryCache).toHaveBeenCalledWith(
@@ -4524,19 +4533,18 @@ describe("MealPlanPage", () => {
         expect(capturedGroceryListProps).not.toBeNull();
       });
 
-      // Remove an item — this triggers invalidateCacheAndResetRefs (synchronous) + startRecombineTimer
+      // Remove an item — this triggers invalidateCacheAndResetRefs and sets hasPendingChanges
       (capturedGroceryListProps!.onRemoveItem as (name: string) => void)("onion");
 
-      // Clear the synchronous deleteGroceryCache call so we can detect the timer-triggered one
-      mockDeleteGroceryCache.mockClear();
-
-      // Advance the timer to trigger recombine (RECOMBINE_DELAY_MS = 15 min = 900,000ms)
-      vi.advanceTimersByTime(900000);
-
-      // Now triggerRecombine should have fired, calling deleteGroceryCache again
+      // hasPendingChanges is now true — the Recombine button should appear
       await waitFor(() => {
-        expect(mockDeleteGroceryCache).toHaveBeenCalled();
+        expect(screen.getAllByText("Recombine")[0]).toBeInTheDocument();
       });
+
+      // No auto-timer fires — advancing time does not trigger an additional recombine
+      mockDeleteGroceryCache.mockClear();
+      vi.advanceTimersByTime(900000);
+      expect(mockDeleteGroceryCache).not.toHaveBeenCalled();
     });
   });
 
@@ -4755,8 +4763,8 @@ describe("MealPlanPage", () => {
     });
   });
 
-  describe("handleBulkParseGroceryText fallback error message", () => {
-    it("uses fallback error when data.success is false and data.error is absent", async () => {
+  describe("handleBulkParseGroceryText fallback behavior", () => {
+    it("uses fallback raw parse when data.success is false and data.error is absent", async () => {
       mockInvoke.mockResolvedValue({
         data: { success: false },
         error: null,
@@ -4810,10 +4818,11 @@ describe("MealPlanPage", () => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: "some grocery items" } });
       fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-      // Should show error toast when parse fails
+      // parseIngredientText falls back to raw parse — items added silently, no error toast
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to add items. Please try again.");
+        expect(mockAddGeneralItem).toHaveBeenCalled();
       });
+      expect(toast.error).not.toHaveBeenCalled();
     });
   });
 
@@ -4851,7 +4860,7 @@ describe("MealPlanPage", () => {
       // The component should render with the "Meal Plan" tab visible
       // The weekStart gets recalculated with Monday start due to weekStartDay: 1
       await waitFor(() => {
-        expect(screen.getByText("Meal Plan")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Previous week" })).toBeInTheDocument();
       });
 
       // Verify the plan was loaded (which means weekStart was applied and used)

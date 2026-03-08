@@ -57,6 +57,8 @@ interface GroceryListSectionProps {
   isAddingGeneral?: boolean;
   onAddingGeneralChange?: (v: boolean) => void;
   onAddItemsToRecipe?: (recipeId: string, text: string) => Promise<void>;
+  onRemoveGeneralItem?: (itemId: string) => Promise<void>;
+  onUpdateGeneralItem?: (itemId: string, updates: { name?: string; quantity?: string; unit?: string }) => Promise<void>;
 }
 
 const CheckedSummary = ({
