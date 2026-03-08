@@ -221,7 +221,7 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Use shadcn Dialog with custom full-screen styling (fixed inset-0, z-50). Props: { open: boolean, onClose: () => void, steps: CookModeStep[], recipeNames: Map<string, string>, loading?: boolean, error?: string }. State: currentStep (index), viewMode ('step' | 'list'). Navigation buttons should be at the bottom of the screen, full-width on mobile, with 48px+ touch targets. Wake Lock: try { await navigator.wakeLock.request('screen') } catch { /* graceful fallback */ } — request on open, release on close. Color-code steps using getRecipeColor with a recipe-to-index map. Show loading spinner while timeline generates. IMPORTANT: Before writing this component, invoke the /frontend-design skill — this is the most important UI in the feature. It needs to look exceptional on mobile (kitchen use with messy hands), support both step-by-step and list views, and feel like an intentional 'cooking mode' experience distinct from the rest of the app."
     },
     {

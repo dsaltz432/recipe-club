@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 12
-**Current Task:** US-013
+**Tasks Completed:** 13
+**Current Task:** US-014
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +80,37 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 19:15] — US-013: Create CookModeDialog full-screen cooking interface
+
+### What was implemented
+- Created `src/components/cookmode/CookModeDialog.tsx` — full-screen dialog using `@radix-ui/react-dialog` primitives directly (DialogPrimitive.Content with `fixed inset-0 z-50`)
+- Dark theme (slate-950 bg) for kitchen readability, purple-500 progress bar and purple-600 Next button
+- Step-by-step view (default): shows one `CookModeStep` at a time, centered with full-width nav buttons (h-12, 48px touch targets)
+- List view: scrollable timeline of all steps rendered as buttons; clicking jumps to that step in step view
+- Progress bar (role="progressbar") fills from left as steps advance
+- Header shows ChefHat icon, "Cook Mode" label, step count (N / total), view toggle button, and close button
+- Wake Lock: requests `navigator.wakeLock.request('screen')` on open, releases on close/unmount with graceful try/catch fallback
+- Recipe-to-color map built from step order via `useRef<Map<string, number>>()` with `getRecipeColor(index)`
+- Handles loading spinner, error message, and empty state
+- Created `tests/unit/components/cookmode/CookModeDialog.test.tsx` with 18 passing tests
+
+### Files changed
+- `src/components/cookmode/CookModeDialog.tsx` (new)
+- `tests/unit/components/cookmode/CookModeDialog.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (18/18)
+- Lint: N/A
+
+### Learnings for future iterations
+- Use `DialogPrimitive` from `@radix-ui/react-dialog` directly (not shadcn's DialogContent wrapper) for full-screen dialogs — the wrapper enforces centered positioning
+- `DialogPrimitive.Title` is required for accessibility; use `className="sr-only"` if you want a separate visible header
+- "Cook Mode" text appears twice (sr-only title + visible span) — use `getAllByText` in tests
+- Wake Lock type: cast navigator with intersection type to access `wakeLock.request`
+
+---
 
 ## [2026-03-08 18:55] — US-012: Create CookModeStep component
 
