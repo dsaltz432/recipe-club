@@ -15,8 +15,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 1
-**Current Task:** US-001 complete
+**Tasks Completed:** 2
+**Current Task:** US-002 complete
 
 ---
 
@@ -53,5 +53,32 @@
 - `onParseRecipe` in RecipeCard.tsx + RecipeHub.tsx is a SEPARATE live feature — don't confuse with the removed GroceryListSection parse buttons
 - Removing a prop cascades: prop → callers → state → functions → dependent state
 - TypeScript build only checks `src/` — test files can have TS errors without failing build
+
+---
+
+## 2026-03-08 — US-002: Fix shared test mock infrastructure
+
+### What was implemented
+- `createMockQueryBuilder` in `tests/mocks/supabase.ts` already had `limit()` — no change needed
+- Added `rpc: vi.fn().mockResolvedValue({ data: [], error: null })` to `createMockSupabase` in `tests/mocks/supabase.ts`
+- Added `rpc` to inline supabase mock in `HomeSection.test.tsx`
+- Exported `invalidatePantryCache` from `src/lib/pantry.ts` (was private) to allow test reset
+- Updated `pantry.test.ts` `beforeEach` to call `invalidatePantryCache()` — fixes module-level cache pollution between tests
+
+### Files changed
+- `tests/mocks/supabase.ts`
+- `tests/unit/components/home/HomeSection.test.tsx`
+- `src/lib/pantry.ts`
+- `tests/unit/lib/pantry.test.ts`
+
+### Quality checks
+- Build: pass
+- Tests: pass (pantry: 9/9, HomeSection: 14/14)
+- Lint: N/A
+
+### Learnings for future iterations
+- PRD notes said pantry fails due to missing `limit()` — actual root cause was module-level cache (`pantryCache`) persisting between test cases
+- Always check for module-level state in lib files when tests share a module; `vi.clearAllMocks()` doesn't reset module state
+- Fix: export cache-clear function from production code and call in `beforeEach`
 
 ---

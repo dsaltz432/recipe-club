@@ -19,11 +19,12 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { getPantryItems, addPantryItem, removePantryItem, ensureDefaultPantryItems } from "@/lib/pantry";
+import { getPantryItems, addPantryItem, removePantryItem, ensureDefaultPantryItems, invalidatePantryCache } from "@/lib/pantry";
 
 describe("pantry", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidatePantryCache();
 
     // Default chain: select -> eq -> order
     mockSelect.mockReturnValue({ eq: mockEq });

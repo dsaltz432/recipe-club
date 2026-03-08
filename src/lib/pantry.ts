@@ -7,7 +7,7 @@ export const DEFAULT_PANTRY_ITEMS = ["salt", "pepper", "water"];
 // prevents redundant DB round-trips. Invalidated on any mutation.
 let pantryCache: { userId: string; items: { id: string; name: string }[] } | null = null;
 
-function invalidatePantryCache(): void {
+export function invalidatePantryCache(): void {
   pantryCache = null;
 }
 

@@ -11,7 +11,7 @@ vi.mock("react-router-dom", async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-// Mock supabase (needed by CountdownCard)
+// Mock supabase (needed by CountdownCard and HomeSection rpc)
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn().mockReturnValue({
@@ -21,6 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
     }),
+    rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
   },
 }));
 

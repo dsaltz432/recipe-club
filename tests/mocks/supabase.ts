@@ -61,6 +61,7 @@ export const createMockAuth = (session = mockSession) => ({
 // Mock Supabase client
 export const createMockSupabase = (queryBuilder = createMockQueryBuilder()) => ({
   from: vi.fn().mockReturnValue(queryBuilder),
+  rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
   auth: createMockAuth(),
   storage: {
     from: vi.fn().mockReturnValue({

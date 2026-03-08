@@ -34,7 +34,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "tests/utils.tsx contains createMockQueryBuilder — add `limit: vi.fn().mockReturnThis()` to the returned object alongside select/insert/eq etc. The HomeSection test fails with 'supabase.rpc is not a function' — add `rpc: vi.fn().mockResolvedValue({ data: [], error: null })` to the supabase mock object. pantry.test.ts fails because getPantryItems likely uses .limit() internally. Run each test file after fixing to confirm."
     },
     {
