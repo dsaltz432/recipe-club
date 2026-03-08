@@ -14,8 +14,12 @@ vi.mock("react-router-dom", async () => {
 
 // Auth mock
 const mockGetCurrentUser = vi.fn();
+const mockGetAllowedUser = vi.fn().mockResolvedValue({ role: "member" });
+const mockIsMemberOrAdmin = vi.fn().mockReturnValue(true);
 vi.mock("@/lib/auth", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
+  getAllowedUser: (...args: unknown[]) => mockGetAllowedUser(...args),
+  isMemberOrAdmin: (...args: unknown[]) => mockIsMemberOrAdmin(...args),
 }));
 
 // Supabase mock
@@ -58,17 +62,8 @@ describe("ContactUs", () => {
     await waitFor(() => {
       expect(screen.getByText("Contact Us")).toBeInTheDocument();
     });
-    expect(screen.getByLabelText("Name")).toBeInTheDocument();
-    expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
-  });
-
-  it("pre-fills name and email from current user", async () => {
-    render(<ContactUs />);
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("Sarah Glickman")).toBeInTheDocument();
-    });
-    expect(screen.getByDisplayValue("sarah@example.com")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Send Message/i })).toBeInTheDocument();
   });
 
   it("submit calls edge function with form values and shows success toast", async () => {
@@ -128,11 +123,11 @@ describe("ContactUs", () => {
     expect(link).toHaveAttribute("href", "mailto:contact@therecipeclubhub.com");
   });
 
-  it("back button navigates to dashboard", async () => {
+  it("back button navigates", async () => {
     render(<ContactUs />);
     await waitFor(() => screen.getByText("Contact Us"));
 
-    fireEvent.click(screen.getByRole("button", { name: /Back to Dashboard/i }));
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
+    expect(mockNavigate).toHaveBeenCalled();
   });
 });

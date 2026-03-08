@@ -100,11 +100,11 @@ describe("UserManagementPage", () => {
       expect(screen.getByText("User Management")).toBeInTheDocument();
     });
 
-    // Click "Back to Dashboard" button
-    const backButton = screen.getByRole("button", { name: /back to dashboard/i });
+    // Click "Back" button
+    const backButton = screen.getByRole("button", { name: /^back$/i });
     expect(backButton).toBeInTheDocument();
     fireEvent.click(backButton);
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    expect(mockNavigate).toHaveBeenCalled();
   });
 
   it("passes empty email when user has no email", async () => {

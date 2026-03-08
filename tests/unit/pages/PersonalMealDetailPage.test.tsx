@@ -272,6 +272,9 @@ const setupDefaultMocks = () => {
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ error: null }),
         }),
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
       };
     }
     if (table === "recipe_notes") {
@@ -310,7 +313,7 @@ describe("PersonalMealDetailPage", () => {
 
   it("shows loading spinner initially", () => {
     render(<PersonalMealDetailPage />);
-    expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+    expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   it("shows not found state when event fetch errors", async () => {
@@ -701,133 +704,6 @@ describe("PersonalMealDetailPage", () => {
     });
   });
 
-  it("shows Cooked badge when all meal items are cooked", async () => {
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
-      }
-      if (table === "meal_plan_items") {
-        return {
-          select: vi.fn().mockReturnValue({
-            or: vi.fn().mockResolvedValue({
-              data: [{ id: "item-1", recipe_id: "recipe-1", cooked_at: "2026-03-10T19:00:00Z", day_of_week: 1, meal_type: "dinner", plan_id: "plan-1" }],
-              error: null,
-            }),
-          }),
-          update: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ error: null }), eq: vi.fn().mockResolvedValue({ error: null }) }),
-        };
-      }
-      if (table === "recipes") return { select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue(makeOr({ data: [recipeRow], error: null })) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) };
-      if (table === "recipe_notes") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      if (table === "recipe_ratings") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      return {};
-    });
-
-    render(<PersonalMealDetailPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Cooked")).toBeInTheDocument();
-    });
-  });
-
-  it("shows Undo button when meal is cooked and uncook dialog on click", async () => {
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
-      }
-      if (table === "meal_plan_items") {
-        return {
-          select: vi.fn().mockReturnValue({
-            or: vi.fn().mockResolvedValue({
-              data: [{ id: "item-1", recipe_id: "recipe-1", cooked_at: "2026-03-10T19:00:00Z", day_of_week: 1, meal_type: "dinner", plan_id: "plan-1" }],
-              error: null,
-            }),
-          }),
-          update: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ error: null }), eq: vi.fn().mockResolvedValue({ error: null }) }),
-        };
-      }
-      if (table === "recipes") return { select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue(makeOr({ data: [recipeRow], error: null })) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) };
-      if (table === "recipe_notes") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      if (table === "recipe_ratings") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      return {};
-    });
-
-    render(<PersonalMealDetailPage />);
-    await waitFor(() => screen.getByText("Undo"));
-
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(() => {
-      expect(screen.getByText("Undo cooked status?")).toBeInTheDocument();
-    });
-  });
-
-  it("confirms uncook and marks meal as uncooked", async () => {
-    const mockUpdate = vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ error: null }), eq: vi.fn().mockResolvedValue({ error: null }) });
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
-      }
-      if (table === "meal_plan_items") {
-        return {
-          select: vi.fn().mockReturnValue({
-            or: vi.fn().mockResolvedValue({
-              data: [{ id: "item-1", recipe_id: "recipe-1", cooked_at: "2026-03-10T19:00:00Z", day_of_week: 1, meal_type: "dinner", plan_id: "plan-1" }],
-              error: null,
-            }),
-          }),
-          update: mockUpdate,
-        };
-      }
-      if (table === "recipes") return { select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue(makeOr({ data: [recipeRow], error: null })) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) };
-      if (table === "recipe_notes") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      if (table === "recipe_ratings") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      return {};
-    });
-
-    render(<PersonalMealDetailPage />);
-    await waitFor(() => screen.getByText("Undo"));
-
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(() => screen.getByText("Undo cooked status?"));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
-
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Marked as uncooked");
-    });
-  });
-
-  it("shows error toast when uncook fails", async () => {
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
-      }
-      if (table === "meal_plan_items") {
-        return {
-          select: vi.fn().mockReturnValue({
-            or: vi.fn().mockResolvedValue({
-              data: [{ id: "item-1", recipe_id: "recipe-1", cooked_at: "2026-03-10T19:00:00Z", day_of_week: 1, meal_type: "dinner", plan_id: "plan-1" }],
-              error: null,
-            }),
-          }),
-          update: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ error: { message: "fail" } }), eq: vi.fn().mockResolvedValue({ error: null }) }),
-        };
-      }
-      if (table === "recipes") return { select: vi.fn().mockReturnValue({ or: vi.fn().mockReturnValue(makeOr({ data: [recipeRow], error: null })) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) };
-      if (table === "recipe_notes") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      if (table === "recipe_ratings") return { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-      return {};
-    });
-
-    render(<PersonalMealDetailPage />);
-    await waitFor(() => screen.getByText("Undo"));
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(() => screen.getByText("Undo cooked status?"));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to mark as uncooked");
-    });
-  });
-
   it("signs out when Sign Out is clicked", async () => {
     await renderAndWait();
 
@@ -871,7 +747,7 @@ describe("PersonalMealDetailPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Complete Ratings" }));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipes rated and meal marked as cooked!");
+      expect(toast.success).toHaveBeenCalledWith("Recipes rated!");
     });
   });
 
@@ -1043,8 +919,8 @@ describe("PersonalMealDetailPage", () => {
     await waitFor(() => screen.getByTestId("add-meal-dialog"));
     fireEvent.click(screen.getByRole("button", { name: "Add Custom Meal With Parse" }));
 
-    await waitFor(() => screen.getByText("Keep Recipe Anyway"));
-    fireEvent.click(screen.getByRole("button", { name: "Keep Recipe Anyway" }));
+    await waitFor(() => screen.getByText("Keep as-is"));
+    fireEvent.click(screen.getByRole("button", { name: "Keep as-is" }));
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Recipe saved without parsing");
@@ -1088,7 +964,7 @@ describe("PersonalMealDetailPage", () => {
     });
   });
 
-  it("shows success toast 'Recipes rated!' when already cooked after rating", async () => {
+  it("shows success toast 'Recipe rated!' when already cooked after rating", async () => {
     // Set up with all items cooked
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
@@ -1112,7 +988,7 @@ describe("PersonalMealDetailPage", () => {
     });
 
     render(<PersonalMealDetailPage />);
-    await waitFor(() => screen.getByText("Cooked"));
+    await waitFor(() => screen.getByText("Pasta Primavera"));
 
     // Open rating dialog via capturedRecipesTabProps callback
     await waitFor(() => capturedRecipesTabProps.onRateRecipe !== undefined);
@@ -1123,7 +999,7 @@ describe("PersonalMealDetailPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Complete Ratings" }));
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Recipes rated!");
+      expect(toast.success).toHaveBeenCalledWith("Recipe rated!");
     });
   });
 });

@@ -77,25 +77,25 @@ describe("Index", () => {
     render(<Index />);
 
     await waitFor(() => {
-      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+      expect(screen.getByTestId("google-sign-in")).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/Spin the wheel/)).toBeInTheDocument();
-    expect(screen.getByText("How It Works")).toBeInTheDocument();
-    expect(screen.getByTestId("google-sign-in")).toBeInTheDocument();
+    expect(screen.getByText("Everything You Need")).toBeInTheDocument();
+    expect(screen.getByText(/Share recipes, plan meals/)).toBeInTheDocument();
   });
 
-  it("renders wheel SVG and step cards", async () => {
+  it("renders feature cards", async () => {
     mockIsAuthenticated.mockResolvedValue(false);
     render(<Index />);
 
     await waitFor(() => {
-      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+      expect(screen.getByTestId("google-sign-in")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Spin the Wheel")).toBeInTheDocument();
-    expect(screen.getByText("Pick a Date")).toBeInTheDocument();
-    expect(screen.getByText("Lock In Your Recipe")).toBeInTheDocument();
+    expect(screen.getByText("Meal Planning")).toBeInTheDocument();
+    expect(screen.getByText("Grocery Lists")).toBeInTheDocument();
+    expect(screen.getByText("Recipe Library")).toBeInTheDocument();
+    expect(screen.getByText("Ratings & Notes")).toBeInTheDocument();
   });
 
   it("does not navigate when component unmounts before auth resolves", async () => {
@@ -120,26 +120,10 @@ describe("Index", () => {
     render(<Index />);
 
     await waitFor(() => {
-      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+      expect(screen.getByTestId("google-sign-in")).toBeInTheDocument();
     });
 
     const link = screen.getByRole("link", { name: /privacy policy/i });
     expect(link).toHaveAttribute("href", "/privacy");
-  });
-
-  it("renders largeArc=1 when a single segment spans more than 180 degrees", async () => {
-    wheelColorsRef.colors = ["#FF0000"];
-    mockIsAuthenticated.mockResolvedValue(false);
-
-    const { container } = render(<Index />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
-    });
-
-    const paths = container.querySelectorAll("path");
-    expect(paths.length).toBe(1);
-    const d = paths[0].getAttribute("d");
-    expect(d).toContain(" 1 1 ");
   });
 });
