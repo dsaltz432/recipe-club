@@ -15,8 +15,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 4
-**Current Task:** US-004 complete
+**Tasks Completed:** 5
+**Current Task:** US-005 complete
 
 ### Test field name drift pattern
 - When production code renames a field (e.g., `aiModelParse`+`aiModelCombine` → `aiModel`), tests that assert on exact object shapes break with field-name mismatches
@@ -92,6 +92,37 @@
 - Test env has `VITE_DEV_MODE=true`, causing `isDevMode()` to return true at module load; mock devMode when testing production defaults
 - Missing exports in `vi.mock()` factory cause ALL tests in that file to crash (not just the tests that use the export)
 - AppHeader back button label from Settings.tsx is "Back" (short), not "Back to dashboard"
+
+---
+
+## 2026-03-08 — US-005: Fix EventRatingDialog tests
+
+### What was implemented
+- Changed import from `EventRecipeWithContributions` (doesn't exist) to `EventRecipeWithNotes`
+- Changed `contributions` → `notes` in all mock recipe objects across 4 describe blocks
+- Set `userId: "other-user"` on mock notes so they don't match the test's `userId="user-123"` (avoids DB update call in tests)
+- Added `update()` and `insert()` handlers to supabase mock (for recipe_notes path)
+- Updated description test: "salmon event" → "how did you like the recipes" (actual text)
+- Updated "Would you make this again?" → "Make this again?" (actual label)
+- Updated "overall rating" → "Overall:" (actual label)
+- Updated all star selectors: `svg.h-6.w-6` → `svg.lucide-star` (stars have responsive `h-5 w-5 sm:h-6 sm:w-6`)
+- Updated "you can update your ratings anytime" → "Rate your recipes." (actual rating mode description)
+- Removed `toast.success` expectations from Branch Coverage tests — component doesn't call it; replaced with `expect(mockOnComplete).toHaveBeenCalled()`
+
+### Files changed
+- `tests/unit/components/events/EventRatingDialog.test.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: pass (33/33)
+- Lint: N/A
+
+### Learnings for future iterations
+- `EventRecipeWithContributions` was deleted; production uses `EventRecipeWithNotes` with `notes: RecipeNote[]`
+- `createMockContribution` is an alias for `createMockNote` (backward compat) — both return `RecipeNote` with `userId: "user-123"` by default
+- When passing notes with matching userId, production code will try to `update` the note in DB — set `userId: "other-user"` to avoid this in tests that don't mock `update()`
+- Lucide Star icon renders with class `lucide-star`, not `h-6 w-6` (responsive variant not applied in jsdom)
+- Component never calls `toast.success` — success just triggers `onComplete()`
 
 ---
 

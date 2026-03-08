@@ -71,7 +71,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "All EventRatingDialog tests are failing. Read the current src/components/events/EventRatingDialog.tsx to understand its current props/behavior, then read tests/unit/components/events/EventRatingDialog.test.tsx to see what's out of date. Update the tests to match the current component API and rendered output."
     },
     {

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@tests/utils";
-import { createMockRecipe, createMockContribution } from "@tests/utils";
+import { createMockRecipe, createMockNote } from "@tests/utils";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
-import type { EventRecipeWithContributions } from "@/types";
+import type { EventRecipeWithNotes } from "@/types";
 
 // Mock Supabase
 const mockUpsert = vi.fn();
@@ -11,6 +11,8 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: () => ({
       upsert: mockUpsert,
+      update: () => ({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
       select: () => ({
         eq: () => ({
           in: mockSelect,
@@ -41,17 +43,17 @@ describe("EventRatingDialog", () => {
     ingredientName: "Salmon",
   };
 
-  const mockRecipes: EventRecipeWithContributions[] = [
+  const mockRecipes: EventRecipeWithNotes[] = [
     {
       recipe: createMockRecipe({ id: "recipe-1", name: "Grilled Salmon", url: "https://example.com/salmon" }),
-      contributions: [
-        createMockContribution({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1" }),
+      notes: [
+        createMockNote({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1", userId: "other-user" }),
       ],
     },
     {
       recipe: createMockRecipe({ id: "recipe-2", name: "Salmon Teriyaki" }),
-      contributions: [
-        createMockContribution({ id: "contrib-2", recipeId: "recipe-2", userName: "User 2" }),
+      notes: [
+        createMockNote({ id: "contrib-2", recipeId: "recipe-2", userName: "User 2", userId: "other-user" }),
       ],
     },
   ];
@@ -76,7 +78,7 @@ describe("EventRatingDialog", () => {
     expect(screen.getByText("Rate the Recipes")).toBeInTheDocument();
   });
 
-  it("shows the event ingredient name in description", () => {
+  it("shows description text in completing mode", () => {
     render(
       <EventRatingDialog
         event={mockEvent}
@@ -87,7 +89,7 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    expect(screen.getByText(/salmon event/i)).toBeInTheDocument();
+    expect(screen.getByText(/how did you like the recipes/i)).toBeInTheDocument();
   });
 
   it("displays all recipes to rate", () => {
@@ -131,7 +133,7 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    const questions = screen.getAllByText(/would you make this again/i);
+    const questions = screen.getAllByText(/make this again\?/i);
     expect(questions.length).toBe(mockRecipes.length);
   });
 
@@ -146,7 +148,7 @@ describe("EventRatingDialog", () => {
       />
     );
 
-    const ratingLabels = screen.getAllByText(/overall rating/i);
+    const ratingLabels = screen.getAllByText(/overall:/i);
     expect(ratingLabels.length).toBe(mockRecipes.length);
   });
 
@@ -237,7 +239,7 @@ describe("EventRatingDialog", () => {
     fireEvent.click(yesButtons[0]);
 
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
     fireEvent.click(starButtons[4]); // 5th star for first recipe
 
@@ -263,7 +265,7 @@ describe("EventRatingDialog", () => {
     fireEvent.click(yesButtons[1]);
 
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
     fireEvent.click(starButtons[4]); // First recipe: 5 stars
     fireEvent.click(starButtons[9]); // Second recipe: 5 stars
@@ -384,7 +386,7 @@ describe("EventRatingDialog", () => {
 
     // Click stars for both recipes
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
     fireEvent.click(starButtons[4]); // First recipe: 5 stars
     fireEvent.click(starButtons[9]); // Second recipe: 5 stars
@@ -416,7 +418,7 @@ describe("EventRatingDialog", () => {
     fireEvent.click(yesButtons[1]);
 
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
     fireEvent.click(starButtons[4]); // First recipe
     fireEvent.click(starButtons[9]); // Second recipe
@@ -439,10 +441,10 @@ describe("EventRatingDialog - Star Ratings", () => {
     ingredientName: "Chicken",
   };
 
-  const mockRecipes: EventRecipeWithContributions[] = [
+  const mockRecipes: EventRecipeWithNotes[] = [
     {
       recipe: createMockRecipe({ id: "recipe-1", name: "Test Recipe" }),
-      contributions: [createMockContribution({ id: "contrib-1" })],
+      notes: [createMockNote({ id: "contrib-1", userId: "other-user" })],
     },
   ];
 
@@ -479,7 +481,7 @@ describe("EventRatingDialog - Star Ratings", () => {
     );
 
     // Count star SVGs
-    const stars = document.querySelectorAll("svg.h-6.w-6");
+    const stars = document.querySelectorAll("svg.lucide-star");
     expect(stars.length).toBe(5);
   });
 
@@ -496,7 +498,7 @@ describe("EventRatingDialog - Star Ratings", () => {
 
     // Click the 4th star
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
 
     if (starButtons.length >= 4) {
@@ -519,23 +521,23 @@ describe("EventRatingDialog - Branch Coverage", () => {
     ingredientName: "Salmon",
   };
 
-  const singleRecipe: EventRecipeWithContributions[] = [
+  const singleRecipe: EventRecipeWithNotes[] = [
     {
       recipe: createMockRecipe({ id: "recipe-1", name: "Test Recipe" }),
-      contributions: [
-        createMockContribution({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1" }),
+      notes: [
+        createMockNote({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1", userId: "other-user" }),
       ],
     },
   ];
 
-  const multipleRecipes: EventRecipeWithContributions[] = [
+  const multipleRecipes: EventRecipeWithNotes[] = [
     {
       recipe: createMockRecipe({ id: "recipe-1", name: "Recipe One" }),
-      contributions: [createMockContribution({ id: "contrib-1", recipeId: "recipe-1" })],
+      notes: [createMockNote({ id: "contrib-1", recipeId: "recipe-1", userId: "other-user" })],
     },
     {
       recipe: createMockRecipe({ id: "recipe-2", name: "Recipe Two" }),
-      contributions: [createMockContribution({ id: "contrib-2", recipeId: "recipe-2" })],
+      notes: [createMockNote({ id: "contrib-2", recipeId: "recipe-2", userId: "other-user" })],
     },
   ];
 
@@ -562,7 +564,7 @@ describe("EventRatingDialog - Branch Coverage", () => {
     expect(screen.getByText(/1 recipe still needs rating/i)).toBeInTheDocument();
   });
 
-  it("shows singular message when submitting exactly 1 rating", async () => {
+  it("completes when exactly 1 recipe is rated and submitted", async () => {
     render(
       <EventRatingDialog
         event={mockEvent}
@@ -579,7 +581,7 @@ describe("EventRatingDialog - Branch Coverage", () => {
 
     // Select a star rating
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
     if (starButtons.length > 0) {
       fireEvent.click(starButtons[0]); // 1 star
@@ -589,12 +591,11 @@ describe("EventRatingDialog - Branch Coverage", () => {
     fireEvent.click(screen.getByText(/submit ratings/i));
 
     await waitFor(() => {
-      // Should show singular "rating" (not "ratings")
-      expect(mockToast.success).toHaveBeenCalledWith("Submitted 1 rating!");
+      expect(mockOnComplete).toHaveBeenCalled();
     });
   });
 
-  it("shows plural message when submitting multiple ratings", async () => {
+  it("completes when multiple recipes are rated and submitted", async () => {
     render(
       <EventRatingDialog
         event={mockEvent}
@@ -611,7 +612,7 @@ describe("EventRatingDialog - Branch Coverage", () => {
     fireEvent.click(yesButtons[1]);
 
     const starButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.querySelector("svg.h-6.w-6")
+      (btn) => btn.querySelector("svg.lucide-star")
     );
     // Each recipe has 5 stars, so click first star for each recipe
     if (starButtons.length >= 6) {
@@ -622,7 +623,7 @@ describe("EventRatingDialog - Branch Coverage", () => {
     fireEvent.click(screen.getByText(/submit ratings/i));
 
     await waitFor(() => {
-      expect(mockToast.success).toHaveBeenCalledWith("Submitted 2 ratings!");
+      expect(mockOnComplete).toHaveBeenCalled();
     });
   });
 });
@@ -637,17 +638,17 @@ describe("EventRatingDialog - Rating Mode", () => {
     ingredientName: "Salmon",
   };
 
-  const mockRecipes: EventRecipeWithContributions[] = [
+  const mockRecipes: EventRecipeWithNotes[] = [
     {
       recipe: createMockRecipe({ id: "recipe-1", name: "Grilled Salmon", url: "https://example.com/salmon" }),
-      contributions: [
-        createMockContribution({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1" }),
+      notes: [
+        createMockNote({ id: "contrib-1", recipeId: "recipe-1", userName: "User 1", userId: "other-user" }),
       ],
     },
     {
       recipe: createMockRecipe({ id: "recipe-2", name: "Salmon Teriyaki" }),
-      contributions: [
-        createMockContribution({ id: "contrib-2", recipeId: "recipe-2", userName: "User 2" }),
+      notes: [
+        createMockNote({ id: "contrib-2", recipeId: "recipe-2", userName: "User 2", userId: "other-user" }),
       ],
     },
   ];
@@ -671,7 +672,7 @@ describe("EventRatingDialog - Rating Mode", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/you can update your ratings anytime/i)).toBeInTheDocument();
+      expect(screen.getByText(/rate your recipes/i)).toBeInTheDocument();
     });
   });
 
