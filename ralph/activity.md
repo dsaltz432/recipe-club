@@ -15,8 +15,18 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 2
-**Current Task:** US-002 complete
+**Tasks Completed:** 3
+**Current Task:** US-003 complete
+
+### Test field name drift pattern
+- When production code renames a field (e.g., `aiModelParse`+`aiModelCombine` → `aiModel`), tests that assert on exact object shapes break with field-name mismatches
+- Also: when a component imports a new export from a mocked module (e.g., `getCachedAiModel`), every test in that file fails with "No X export is defined on the mock"
+- Fix: add the missing export to the `vi.mock()` factory
+
+### Dev mode affects module-level constants in tests
+- `isDevMode()` is called at module load time in some files (e.g., `DEFAULT_AI_MODEL` in `userPreferences.ts`)
+- Test env has `VITE_DEV_MODE=true`, so defaults differ from production
+- Fix: add `vi.mock("@/lib/devMode", () => ({ isDevMode: () => false }))` when testing production defaults
 
 ---
 
@@ -53,6 +63,35 @@
 - `onParseRecipe` in RecipeCard.tsx + RecipeHub.tsx is a SEPARATE live feature — don't confuse with the removed GroceryListSection parse buttons
 - Removing a prop cascades: prop → callers → state → functions → dependent state
 - TypeScript build only checks `src/` — test files can have TS errors without failing build
+
+---
+
+## 2026-03-08 — US-003: Fix userPreferences and Settings tests
+
+### What was implemented
+- Updated `userPreferences.test.ts` to use single `aiModel` field (replacing `aiModelParse`/`aiModelCombine`)
+- Added `vi.mock("@/lib/devMode", () => ({ isDevMode: () => false }))` to get production defaults in tests
+- Updated `saveUserPreferences` test expectation: `aiModel` maps to both `ai_model_parse` and `ai_model_combine` in DB upsert
+- Added `getCachedAiModel: vi.fn().mockReturnValue("claude-sonnet-4-6")` to Settings test userPreferences mock
+- Added `isMemberOrAdmin` to Settings test auth mock (was missing, would crash on call)
+- Updated `defaultPrefs` in Settings test to use `aiModel` instead of `aiModelParse`/`aiModelCombine`
+- Updated Settings save expectation to use `aiModel`
+- Updated "shows AI Models section for admin users" test: checks for "AI Model" label instead of old "Recipe Parsing"/"Grocery Processing" labels
+- Updated "renders back to dashboard button" test: button label is "Back" not "Back to dashboard"
+
+### Files changed
+- `tests/unit/lib/userPreferences.test.ts`
+- `tests/unit/pages/Settings.test.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: pass (userPreferences: 8/8, Settings: 20/20)
+- Lint: N/A
+
+### Learnings for future iterations
+- Test env has `VITE_DEV_MODE=true`, causing `isDevMode()` to return true at module load; mock devMode when testing production defaults
+- Missing exports in `vi.mock()` factory cause ALL tests in that file to crash (not just the tests that use the export)
+- AppHeader back button label from Settings.tsx is "Back" (short), not "Back to dashboard"
 
 ---
 

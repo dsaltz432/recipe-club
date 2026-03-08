@@ -14,6 +14,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("@/lib/devMode", () => ({
+  isDevMode: () => false,
+}));
+
 import {
   loadUserPreferences,
   saveUserPreferences,
@@ -42,8 +46,7 @@ describe("userPreferences", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
-        aiModelParse: "claude-sonnet-4-6",
-        aiModelCombine: "claude-sonnet-4-6",
+        aiModel: "claude-sonnet-4-6",
       });
     });
 
@@ -54,7 +57,6 @@ describe("userPreferences", () => {
           week_start_day: 1,
           household_size: 4,
           ai_model_parse: "gpt-4o",
-          ai_model_combine: "gpt-4o-mini",
         },
         error: null,
       });
@@ -65,8 +67,7 @@ describe("userPreferences", () => {
         mealTypes: ["lunch", "dinner"],
         weekStartDay: 1,
         householdSize: 4,
-        aiModelParse: "gpt-4o",
-        aiModelCombine: "gpt-4o-mini",
+        aiModel: "gpt-4o",
       });
     });
 
@@ -85,8 +86,7 @@ describe("userPreferences", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
-        aiModelParse: "claude-sonnet-4-6",
-        aiModelCombine: "claude-sonnet-4-6",
+        aiModel: "claude-sonnet-4-6",
       });
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -99,7 +99,6 @@ describe("userPreferences", () => {
           week_start_day: 0,
           household_size: 2,
           ai_model_parse: "claude-sonnet-4-6",
-          ai_model_combine: "claude-sonnet-4-6",
         },
         error: null,
       });
@@ -116,7 +115,6 @@ describe("userPreferences", () => {
           week_start_day: null,
           household_size: 2,
           ai_model_parse: "claude-sonnet-4-6",
-          ai_model_combine: "claude-sonnet-4-6",
         },
         error: null,
       });
@@ -133,7 +131,6 @@ describe("userPreferences", () => {
           week_start_day: 0,
           household_size: null,
           ai_model_parse: "claude-sonnet-4-6",
-          ai_model_combine: "claude-sonnet-4-6",
         },
         error: null,
       });
@@ -150,8 +147,7 @@ describe("userPreferences", () => {
         mealTypes: ["dinner"],
         weekStartDay: 1,
         householdSize: 3,
-        aiModelParse: "gpt-4o",
-        aiModelCombine: "gpt-4o-mini",
+        aiModel: "gpt-4o",
       });
 
       expect(mockUpsert).toHaveBeenCalledWith(
@@ -161,7 +157,7 @@ describe("userPreferences", () => {
           week_start_day: 1,
           household_size: 3,
           ai_model_parse: "gpt-4o",
-          ai_model_combine: "gpt-4o-mini",
+          ai_model_combine: "gpt-4o",
         }),
         { onConflict: "user_id" }
       );
@@ -179,8 +175,7 @@ describe("userPreferences", () => {
           mealTypes: ["breakfast"],
           weekStartDay: 0,
           householdSize: 2,
-          aiModelParse: "claude-sonnet-4-6",
-          aiModelCombine: "claude-sonnet-4-6",
+          aiModel: "claude-sonnet-4-6",
         })
       ).rejects.toThrow("DB error");
 

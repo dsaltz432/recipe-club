@@ -15,6 +15,8 @@ vi.mock("@/lib/auth", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
   getAllowedUser: (...args: unknown[]) => mockGetAllowedUser(...args),
   isAdmin: (user: { role: string } | null) => user?.role === "admin",
+  isMemberOrAdmin: (user: { role: string } | null) =>
+    user?.role === "admin" || user?.role === "member",
 }));
 
 const mockLoadUserPreferences = vi.fn();
@@ -24,6 +26,7 @@ vi.mock("@/lib/userPreferences", () => ({
     mockLoadUserPreferences(...args),
   saveUserPreferences: (...args: unknown[]) =>
     mockSaveUserPreferences(...args),
+  getCachedAiModel: vi.fn().mockReturnValue("claude-sonnet-4-6"),
 }));
 
 // Mock Select to make it testable in jsdom
@@ -56,8 +59,7 @@ const defaultPrefs = {
   mealTypes: ["breakfast", "lunch", "dinner"],
   weekStartDay: 0,
   householdSize: 2,
-  aiModelParse: "claude-sonnet-4-6",
-  aiModelCombine: "claude-sonnet-4-6",
+  aiModel: "claude-sonnet-4-6",
 };
 
 describe("Settings", () => {
@@ -106,7 +108,7 @@ describe("Settings", () => {
     });
 
     const backButton = screen.getByRole("button", {
-      name: /back to dashboard/i,
+      name: /back/i,
     });
     expect(backButton).toBeInTheDocument();
     fireEvent.click(backButton);
@@ -161,8 +163,7 @@ describe("Settings", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
-        aiModelParse: "claude-sonnet-4-6",
-        aiModelCombine: "claude-sonnet-4-6",
+        aiModel: "claude-sonnet-4-6",
       });
     });
   });
@@ -385,7 +386,6 @@ describe("Settings", () => {
       expect(screen.getByText("AI Models")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Recipe Parsing")).toBeInTheDocument();
-    expect(screen.getByText("Grocery Processing")).toBeInTheDocument();
+    expect(screen.getByText("AI Model")).toBeInTheDocument();
   });
 });

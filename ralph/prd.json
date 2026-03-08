@@ -47,7 +47,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "userPreferences.test.ts expects `aiModelCombine` and `aiModelParse` fields but the production code now uses a single `aiModel` field. Update test expectations to match. Settings.test.tsx likely fails because its mock of @/lib/userPreferences does not export `getCachedAiModel` — check what exports the actual module has and update the mock accordingly. Read src/lib/userPreferences.ts first to understand the current shape, then update the tests."
     },
     {
