@@ -53,6 +53,7 @@ import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
+import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
@@ -173,6 +174,19 @@ const EventDetailPage = () => {
   });
 
   const { contentMap: recipeContentMap } = useRecipeContent(groceryRecipeIds);
+
+  const cookModeRecipes = useMemo(() => {
+    return (event?.recipesWithNotes ?? [])
+      .filter((r) => {
+        const content = recipeContentMap.get(r.recipe.id);
+        return content?.instructions && content.instructions.length > 0;
+      })
+      .map((r) => ({
+        id: r.recipe.id,
+        name: r.recipe.name,
+        content: recipeContentMap.get(r.recipe.id)!,
+      }));
+  }, [event?.recipesWithNotes, recipeContentMap]);
 
   const toggleRecipeNotes = (recipeId: string) => {
     setExpandedRecipeNotes(prev => {
@@ -960,6 +974,7 @@ const EventDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
+          cookContent={cookModeRecipes.length >= 2 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
         />
       </main>
 

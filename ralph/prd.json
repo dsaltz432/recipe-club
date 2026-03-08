@@ -129,7 +129,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeDetailTabs is at src/components/shared/RecipeDetailTabs.tsx (simple component, 42 lines). Add optional cookContent?: React.ReactNode prop. Conditionally render the 4th tab. Use dynamic grid: className={`grid w-full max-w-lg grid-cols-${cookContent ? '4' : '3'} ...`}. ChefHat icon is already imported in EventRecipesTab.tsx so it's available in lucide-react. Both EventDetailPage.tsx and PersonalMealDetailPage.tsx already use RecipeDetailTabs — wire up the cookContent prop using MultiRecipeView with the recipe content data from useRecipeContent."
     },
     {

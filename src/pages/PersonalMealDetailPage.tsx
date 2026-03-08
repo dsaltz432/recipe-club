@@ -47,6 +47,7 @@ import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
+import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { saveRecipeEdit } from "@/lib/recipeActions";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
@@ -138,6 +139,19 @@ const PersonalMealDetailPage = () => {
   });
 
   const { contentMap: recipeContentMap } = useRecipeContent(groceryRecipeIds);
+
+  const cookModeRecipes = useMemo(() => {
+    return (event?.recipesWithNotes ?? [])
+      .filter((r) => {
+        const content = recipeContentMap.get(r.recipe.id);
+        return content?.instructions && content.instructions.length > 0;
+      })
+      .map((r) => ({
+        id: r.recipe.id,
+        name: r.recipe.name,
+        content: recipeContentMap.get(r.recipe.id)!,
+      }));
+  }, [event?.recipesWithNotes, recipeContentMap]);
 
   const handlePantryChange = () => {
     grocery.refreshGroceries();
@@ -864,6 +878,7 @@ const PersonalMealDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
+          cookContent={cookModeRecipes.length >= 2 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
         />
       </main>
 

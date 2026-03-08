@@ -1,17 +1,18 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { BookOpen, ChefHat, ShoppingCart, UtensilsCrossed } from "lucide-react";
 
 interface RecipeDetailTabsProps {
   recipesContent: React.ReactNode;
   groceryContent: React.ReactNode;
   pantryContent: React.ReactNode;
+  cookContent?: React.ReactNode;
 }
 
-export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent }: RecipeDetailTabsProps) {
+export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent, cookContent }: RecipeDetailTabsProps) {
   return (
     <Tabs defaultValue="recipes" className="w-full">
-      <TabsList className="grid w-full max-w-lg grid-cols-3 mb-4 h-auto rounded-lg">
+      <TabsList className={`grid w-full max-w-lg ${cookContent ? "grid-cols-4" : "grid-cols-3"} mb-4 h-auto rounded-lg`}>
         <TabsTrigger value="recipes" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
           <BookOpen className="h-3.5 w-3.5" />
           <span className="text-xs sm:text-sm">Recipes</span>
@@ -24,6 +25,12 @@ export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent
           <UtensilsCrossed className="h-3.5 w-3.5" />
           <span className="text-xs sm:text-sm">Pantry</span>
         </TabsTrigger>
+        {cookContent && (
+          <TabsTrigger value="cook" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
+            <ChefHat className="h-3.5 w-3.5" />
+            <span className="text-xs sm:text-sm">Cook</span>
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="recipes">
@@ -37,6 +44,12 @@ export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent
       <TabsContent value="pantry">
         {pantryContent}
       </TabsContent>
+
+      {cookContent && (
+        <TabsContent value="cook">
+          {cookContent}
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

@@ -36,8 +36,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 7
-**Current Task:** US-008
+**Tasks Completed:** 8
+**Current Task:** US-009
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -68,6 +68,33 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:02] — US-008: Add Cook tab to RecipeDetailTabs
+
+### What was implemented
+- Added optional `cookContent?: React.ReactNode` prop to `RecipeDetailTabs`
+- When `cookContent` is provided, a 4th "Cook" tab appears with `ChefHat` icon from lucide-react
+- Grid adjusts dynamically: `grid-cols-3` without Cook tab, `grid-cols-4` with it (using template literal string in className)
+- Added `cookModeRecipes` useMemo in both `EventDetailPage` and `PersonalMealDetailPage` that filters recipes with instructions from `recipeContentMap`
+- Both pages pass `<MultiRecipeView recipes={cookModeRecipes} />` as `cookContent` when 2+ recipes have instructions
+- Added 3 new tests to RecipeDetailTabs test file (Cook tab hidden without prop, shown with prop, content renders on click)
+
+### Files changed
+- `src/components/shared/RecipeDetailTabs.tsx` (modified)
+- `src/pages/EventDetailPage.tsx` (modified — import MultiRecipeView, add cookModeRecipes useMemo, pass cookContent)
+- `src/pages/PersonalMealDetailPage.tsx` (modified — same pattern)
+- `tests/unit/components/shared/RecipeDetailTabs.test.tsx` (modified — 3 new tests)
+
+### Quality checks
+- Build: pass
+- Tests: pass (8/8 RecipeDetailTabs)
+- Lint: N/A
+
+### Learnings for future iterations
+- Template literal in className (`grid-cols-${...}`) works fine with Tailwind when values are known static strings — Tailwind can see `grid-cols-4` in the template literal
+- Cook tab only appears for 2+ recipes with instructions — single recipe inline expansion still works via EventRecipesTab
+
+---
 
 ## [2026-03-08 18:00] — US-007: Create color utility and MultiRecipeView component
 
