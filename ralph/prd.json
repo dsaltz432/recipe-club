@@ -81,7 +81,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "RecipeHub.tsx (src/components/recipes/RecipeHub.tsx) currently fetches recipe_content at line ~441 with select('id, recipe_id, status'). Change this to select('*') or explicitly include instructions, description, servings, prep_time, cook_time, total_time. Build a contentMap and pass per-recipe content to RecipeCard. RecipeCard.tsx (src/components/recipes/RecipeCard.tsx) already has an expandable ingredients section — add a similar toggle for instructions. Follow the same expand/collapse pattern."
     },
     {

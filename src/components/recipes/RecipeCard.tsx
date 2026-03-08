@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2 } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
 import RecipeIngredientList from "./RecipeIngredientList";
+import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -53,14 +54,16 @@ interface RecipeCardProps {
   ingredients?: RecipeIngredient[];
   pantryItems?: string[];
   contentStatus?: RecipeContent["status"];
+  content?: RecipeContent;
   onParseRecipe?: (recipeId: string) => void;
   userId?: string;
   onIngredientsChange?: () => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
 
   const allPantryItems = pantryItems && pantryItems.length > 0
     ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
@@ -69,6 +72,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
     (ing) => !isPantryItem(ing.name, allPantryItems, ing.unit)
   );
   const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
+  const hasInstructions = content?.instructions && content.instructions.length > 0;
   const hasDetails = recipe.notes.length > 0;
 
   // Get colors from ingredient
@@ -312,6 +316,37 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             </Button>
           </div>
         ) : null}
+
+        {/* Instructions Section */}
+        {hasInstructions && (
+          <div className="mb-2 sm:mb-3">
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+              aria-label={instructionsExpanded ? `Collapse instructions for ${recipe.name}` : `Expand instructions for ${recipe.name}`}
+            >
+              {instructionsExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              <ListOrdered className="h-3.5 w-3.5 ml-0.5" />
+              <span>Instructions</span>
+            </button>
+            {instructionsExpanded && (
+              <div className="mt-2">
+                <RecipeInstructions
+                  instructions={content!.instructions}
+                  servings={content!.servings}
+                  prepTime={content!.prepTime}
+                  cookTime={content!.cookTime}
+                  totalTime={content!.totalTime}
+                  description={content!.description}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Expandable Details */}
         {hasDetails && (

@@ -25,8 +25,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 4
-**Current Task:** US-005
+**Tasks Completed:** 5
+**Current Task:** US-006
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -48,9 +48,41 @@
 - `RecipeInstructions` rendered inline below ingredients section when expanded
 - Pages reuse `groceryRecipeIds` (already computed via useMemo) as input to `useRecipeContent`
 
+### RecipeHub content mapping pattern
+- `RecipeContentRow` interface in RecipeHub.tsx includes all snake_case DB columns
+- `select("*")` on recipe_content fetches all fields; map snake_case to camelCase in contentMap build loop
+- Use `Array.isArray(row.instructions) ? (row.instructions as string[]) : undefined` for JSONB instructions
+- Pass `content={recipeContentMap[recipe.id]}` to RecipeCard alongside existing `contentStatus` prop
+
 ---
 
 ## Session Log
+
+## [2026-03-08 17:54] — US-005: Add inline instructions to RecipeCard and RecipeHub
+
+### What was implemented
+- Updated `RecipeContentRow` interface in RecipeHub.tsx to include all DB columns (description, servings, prep_time, cook_time, total_time, instructions, source_title, etc.)
+- Changed `select("id, recipe_id, status")` to `select("*")` for recipe_content fetching
+- Extended contentMap building to map all camelCase RecipeContent fields
+- Added `content?: RecipeContent` prop to RecipeCard
+- Added `instructionsExpanded` state and `ListOrdered` icon toggle button
+- Renders `RecipeInstructions` component when instructions toggle is expanded
+- Passed `content={recipeContentMap[recipe.id]}` from RecipeHub to RecipeCard
+
+### Files changed
+- `src/components/recipes/RecipeHub.tsx` (modified)
+- `src/components/recipes/RecipeCard.tsx` (modified)
+
+### Quality checks
+- Build: pass
+- Tests: pass (195/195 — RecipeHub 121, RecipeCard 74)
+- Lint: N/A
+
+### Learnings for future iterations
+- Test mocks only return `{ id, recipe_id, status }` for recipe_content — adding more fields to the query doesn't break tests since mock returns what was defined
+- `content` and `contentStatus` are separate props in RecipeCard — contentStatus is used for parsing state display, content for instructions
+
+---
 
 ## [2026-03-08 17:52] — US-004: Add inline instructions to EventRecipesTab
 

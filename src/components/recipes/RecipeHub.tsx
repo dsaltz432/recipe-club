@@ -72,6 +72,16 @@ interface RecipeContentRow {
   id: string;
   recipe_id: string;
   status: string;
+  description?: string | null;
+  servings?: string | null;
+  prep_time?: string | null;
+  cook_time?: string | null;
+  total_time?: string | null;
+  instructions?: unknown;
+  source_title?: string | null;
+  parsed_at?: string | null;
+  error_message?: string | null;
+  created_at?: string | null;
 }
 
 type RecipeSubTab = "club" | "personal";
@@ -453,7 +463,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         .in("recipe_id", recipeIds),
       supabase
         .from("recipe_content")
-        .select("id, recipe_id, status")
+        .select("*")
         .in("recipe_id", recipeIds),
     ]);
 
@@ -488,6 +498,16 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
           id: row.id,
           recipeId: row.recipe_id,
           status: row.status as RecipeContent["status"],
+          description: row.description ?? undefined,
+          servings: row.servings ?? undefined,
+          prepTime: row.prep_time ?? undefined,
+          cookTime: row.cook_time ?? undefined,
+          totalTime: row.total_time ?? undefined,
+          instructions: Array.isArray(row.instructions) ? (row.instructions as string[]) : undefined,
+          sourceTitle: row.source_title ?? undefined,
+          parsedAt: row.parsed_at ?? undefined,
+          errorMessage: row.error_message ?? undefined,
+          createdAt: row.created_at ?? undefined,
         };
       });
     }
@@ -927,6 +947,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 ingredients={recipeIngredientsMap[recipe.id]}
                 pantryItems={pantryItemNames}
                 contentStatus={recipeContentMap[recipe.id]?.status}
+                content={recipeContentMap[recipe.id]}
                 onParseRecipe={isAdmin ? handleParseRecipe : undefined}
                 userId={userId}
                 onIngredientsChange={() => handleIngredientsChange(recipe.id)}
