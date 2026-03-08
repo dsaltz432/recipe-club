@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import type { RecipeIngredient, RecipeContent, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
+import type { RecipeIngredient, SmartGroceryItem, GroceryCategory, Recipe, GeneralGroceryItem } from "@/types";
 import { filterSmartPantryItems, CATEGORY_ORDER } from "@/lib/groceryList";
-import { SHOW_PARSE_BUTTONS } from "@/lib/constants";
 import GroceryCategoryGroup from "./GroceryCategoryGroup";
 import GroceryExportMenu from "./GroceryExportMenu";
 import GroceryItemRow from "./GroceryItemRow";
@@ -36,8 +35,6 @@ export interface ParsedGroceryItem {
 interface GroceryListSectionProps {
   recipes: Recipe[];
   recipeIngredients: RecipeIngredient[];
-  recipeContentMap: Record<string, RecipeContent>;
-  onParseRecipe: (recipeId: string) => Promise<void>;
   eventName: string;
   isLoading?: boolean;
   pantryItems?: string[];
@@ -111,8 +108,6 @@ function groupSmartByCategory(
 const GroceryListSection = ({
   recipes,
   recipeIngredients,
-  recipeContentMap,
-  onParseRecipe,
   eventName,
   isLoading,
   pantryItems = [],
@@ -136,7 +131,6 @@ const GroceryListSection = ({
   onAddingGeneralChange,
   onAddItemsToRecipe,
 }: GroceryListSectionProps) => {
-  const [parsingRecipeId, setParsingRecipeId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
@@ -152,15 +146,6 @@ const GroceryListSection = ({
     ? filterSmartPantryItems(smartGroceryItems, pantryItems)
     : smartGroceryItems;
   const smartGrouped = filteredSmartItems ? groupSmartByCategory(filteredSmartItems) : null;
-
-  const handleParse = async (recipeId: string) => {
-    setParsingRecipeId(recipeId);
-    try {
-      await onParseRecipe(recipeId);
-    } finally {
-      setParsingRecipeId(null);
-    }
-  };
 
   const handleAddItem = () => {
     const trimmedName = newItemName.trim();
@@ -210,7 +195,6 @@ const GroceryListSection = ({
     }
   };
 
-  const recipesWithUrl = recipes.filter((r) => r.url);
   const hasAnyIngredients = recipeIngredients.length > 0;
   const hasGeneralTab = !!onBulkParseGroceryText;
 
@@ -241,60 +225,6 @@ const GroceryListSection = ({
   return (
     <Card className="bg-white/90 backdrop-blur-sm border border-purple/10">
       <CardContent className="pt-4 sm:pt-6 pb-4">
-        {/* Parse buttons for unparsed recipes */}
-        {SHOW_PARSE_BUTTONS && recipesWithUrl.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {recipesWithUrl.map((recipe) => {
-              const content = recipeContentMap[recipe.id];
-              const isParsing = parsingRecipeId === recipe.id || content?.status === "parsing";
-              const isParsed = content?.status === "completed";
-              const isFailed = content?.status === "failed";
-
-              return (
-                <div key={recipe.id} className="flex items-center gap-1.5">
-                  {!isParsed && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleParse(recipe.id)}
-                      disabled={isParsing}
-                      className="text-xs"
-                    >
-                      {isParsing ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Parsing...
-                        </>
-                      ) : (
-                        <>Parse "{recipe.name}"</>
-                      )}
-                    </Button>
-                  )}
-                  {isParsed && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleParse(recipe.id)}
-                      disabled={parsingRecipeId === recipe.id}
-                      className="text-xs text-gray-500"
-                      title="Re-parse recipe"
-                    >
-                      <RefreshCw className={`h-3 w-3 mr-1 ${parsingRecipeId === recipe.id ? "animate-spin" : ""}`} />
-                      {recipe.name}
-                    </Button>
-                  )}
-                  {isFailed && (
-                    <span className="flex items-center text-xs text-red-500">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Failed
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
         {isLoading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-purple" />

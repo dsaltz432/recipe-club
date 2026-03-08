@@ -1,136 +1,152 @@
 {
   "project": "Recipe Club Hub",
-  "branchName": "ralph/ux-polish",
-  "description": "UX polish pass addressing the grocery list density on mobile and desktop, loading states, recipe title length enforcement, and minor theme inconsistencies. Based on full desktop + mobile video walkthrough.",
+  "branchName": "ralph/codebase-cleanup",
+  "description": "Two-track cleanup: (1) remove all dead/unused code, variables, functions, and imports across the codebase; (2) fix all 170 failing unit tests across 21 test files so the full suite is green.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create skeleton UI component",
-      "description": "As a developer, I want a reusable Skeleton component so that I can replace bare spinners with polished loading states throughout the app.",
+      "title": "Remove all unused code, variables, functions, files, and flows",
+      "description": "As a developer, I want the codebase free of all unused code so it is easier to maintain, navigate, and reason about.",
       "acceptanceCriteria": [
-        "src/components/ui/skeleton.tsx exists and exports a Skeleton component",
-        "Skeleton renders a div with animate-pulse rounded-md bg-muted classes",
-        "Skeleton accepts className and other div props",
+        "npm run lint passes with 0 errors",
+        "npm run build passes with 0 TypeScript errors",
+        "No unused imports or variables remain in src/ or tests/",
+        "No exported functions or components exist that are never imported anywhere",
+        "No source files exist that are never imported anywhere (dead files)",
+        "No unreachable code blocks or dead conditional branches remain",
+        "No commented-out blocks of code remain (comments explaining why are fine)",
+        "No feature flags, constants, or config values that are never read remain",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Standard shadcn/ui skeleton pattern. Use cn() from '@/lib/utils' for className merging. This is a prerequisite for US-002. File should be minimal — ~10 lines."
+      "notes": "Multi-step approach: (1) Run `npm run lint` — fix all ESLint unused-var violations. (2) Run `npm run build` — fix all TypeScript unused variable errors. (3) For each file in src/: grep for its exports across the whole codebase to find any that are never imported — delete or consolidate. (4) For each src/ file: check if the file itself is ever imported anywhere — if not, delete it. (5) Search for dead conditional flows: feature flags, env vars, or boolean constants that are always one value. (6) Search for commented-out code blocks (multi-line // or /* */ blocks containing logic). Use `grep -r` carefully and verify before deleting — a function only used in tests still counts as used. Do NOT remove code that is exported and imported elsewhere. After all removals, re-run lint and build to confirm clean."
     },
     {
       "id": "US-002",
-      "title": "Replace bare spinners with skeleton loading states",
-      "description": "As a user, I want to see meaningful skeleton layouts while pages load instead of a blank white screen with a tiny spinner.",
+      "title": "Fix shared test mock infrastructure",
+      "description": "As a developer, I want the shared Supabase mock in tests/utils.tsx to support all query builder methods used in production code so tests don't fail due to missing mock methods.",
       "acceptanceCriteria": [
-        "RecipeClubEvents.tsx: bare spinner replaced with 3 skeleton event card placeholders matching event card shape (avatar circle, title bar, date/time bars, action buttons bar)",
-        "MealPlanPage.tsx: bare spinner in meal plan view replaced with skeleton week grid (7 column headers + placeholder cells)",
-        "EventDetailPage.tsx: bare spinner replaced with skeleton header card + Recipes/Groceries/Pantry tab skeleton",
-        "PersonalMealDetailPage.tsx: bare spinner replaced with skeleton header card + tab skeleton",
-        "RecipeHub.tsx: bare spinner replaced with skeleton recipe card placeholders (3 cards matching recipe card shape: title bar, author bar, action row, tag bar)",
-        "All skeletons use the Skeleton component from US-001",
+        "createMockQueryBuilder in tests/utils.tsx includes a chainable limit() method",
+        "The Supabase client mock includes an rpc() method that returns a mock response",
+        "npm run test:run -- tests/unit/lib/pantry.test.ts passes",
+        "npm run test:run -- tests/unit/components/home/HomeSection.test.tsx no longer throws 'rpc is not a function'",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Spinner locations: RecipeClubEvents.tsx ~line 208 (animate-spin div inside flex py-12). MealPlanPage.tsx ~line 427 (animate-spin div). EventDetailPage.tsx — search for animate-spin in the main loading return. PersonalMealDetailPage.tsx — search for animate-spin in the main loading return. RecipeHub.tsx ~line 688 (animate-spin div inside flex py-12). Each skeleton should preserve the page background gradient and header so the page doesn't flash. Keep skeletons simple: a few rounded rectangles of appropriate widths/heights. Import Skeleton from '@/components/ui/skeleton'."
+      "passes": false,
+      "notes": "tests/utils.tsx contains createMockQueryBuilder — add `limit: vi.fn().mockReturnThis()` to the returned object alongside select/insert/eq etc. The HomeSection test fails with 'supabase.rpc is not a function' — add `rpc: vi.fn().mockResolvedValue({ data: [], error: null })` to the supabase mock object. pantry.test.ts fails because getPantryItems likely uses .limit() internally. Run each test file after fixing to confirm."
     },
     {
       "id": "US-003",
-      "title": "Increase grocery row padding and category spacing",
-      "description": "As a user, I want grocery list items to have more breathing room so the list is easier to read and scan.",
+      "title": "Fix userPreferences and Settings tests",
+      "description": "As a developer, I want the userPreferences and Settings tests to match the current schema so they pass reliably.",
       "acceptanceCriteria": [
-        "GroceryItemRow.tsx: outer div class changes from 'py-px px-2' to 'py-1.5 px-2'",
-        "GroceryCategoryGroup.tsx: outer wrapper div class changes from 'mb-2' to 'mb-5'",
-        "GroceryCategoryGroup.tsx: header row div class changes from 'mb-1' to 'mb-2'",
+        "npm run test:run -- tests/unit/lib/userPreferences.test.ts passes (all 8 tests)",
+        "npm run test:run -- tests/unit/pages/Settings.test.tsx passes (all tests)",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "GroceryItemRow.tsx line 154: the outer div with 'flex items-center justify-between py-px px-2 hover:bg-gray-50 rounded group'. GroceryCategoryGroup.tsx line 26: outer wrapper div with 'mb-2'. Line 27: header div with 'flex items-center gap-2 mb-1'. CSS-only changes, no logic changes needed."
+      "passes": false,
+      "notes": "userPreferences.test.ts expects `aiModelCombine` and `aiModelParse` fields but the production code now uses a single `aiModel` field. Update test expectations to match. Settings.test.tsx likely fails because its mock of @/lib/userPreferences does not export `getCachedAiModel` — check what exports the actual module has and update the mock accordingly. Read src/lib/userPreferences.ts first to understand the current shape, then update the tests."
     },
     {
       "id": "US-004",
-      "title": "Replace recipe name badges with color-coded dots in Combined view",
-      "description": "As a user, I want recipe sources shown as small colored dots instead of full recipe name badges so the grocery list is much more compact, especially on mobile where long names wrap to multiple lines.",
+      "title": "Fix MealPlanPage tests",
+      "description": "As a developer, I want MealPlanPage tests to reflect the current component implementation so all ~63 tests pass.",
       "acceptanceCriteria": [
-        "GroceryListSection.tsx defines RECIPE_COLORS array with 8 distinct Tailwind bg-* color classes",
-        "GroceryListSection.tsx builds recipeColorMap: Record<string, string> mapping each recipe name to a color from RECIPE_COLORS",
-        "GroceryListSection.tsx renders a color legend above the Combined tab items: flex-wrap row of dots + recipe names",
-        "recipeColorMap is passed through GroceryCategoryGroup to GroceryItemRow in the Combined tab only",
-        "GroceryCategoryGroup.tsx accepts and threads recipeColorMap?: Record<string, string> prop to GroceryItemRow",
-        "GroceryItemRow.tsx accepts recipeColorMap?: Record<string, string> prop",
-        "When recipeColorMap is provided, render colored dot spans instead of Badge components for each sourceRecipe",
-        "Each dot has a title={recipe} attribute for hover tooltip",
-        "Per-recipe tabs are unaffected (sourceRecipes: [] already means no badges render)",
+        "npm run test:run -- tests/unit/components/mealplan/MealPlanPage.test.tsx passes (all tests)",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "GroceryListSection.tsx: RECIPE_COLORS could be ['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400', 'bg-violet-400', 'bg-cyan-400', 'bg-orange-400', 'bg-teal-400']. Build recipeColorMap by mapping recipesWithIngredients names + 'General' to colors. Legend placement: above the {Array.from(smartGrouped.entries()).map(...)} block inside TabsContent value='combined' (~line 299). Legend: <div className='flex flex-wrap gap-x-3 gap-y-1 mb-3 text-xs text-muted-foreground'>. Dot span: <span className={cn('inline-block h-2.5 w-2.5 rounded-full shrink-0', color)} title={recipe} />. GroceryCategoryGroup.tsx: add recipeColorMap prop, thread it to each GroceryItemRow. GroceryItemRow.tsx lines 173-181: when recipeColorMap provided, render dots instead of <Badge>."
+      "passes": false,
+      "notes": "MealPlanPage was refactored to use the shared useRecipeParse hook (src/hooks/useRecipeParse.ts). The parse state, effect, and handlers (handleParseRetry, handleParseKeep, handleParseDiscard) were extracted to the hook. Tests that stub or assert on those internal functions may need updating. Also, loadPlan likely uses .limit() — this should be fixed by US-002. Read MealPlanPage.test.tsx and MealPlanPage.tsx to understand what changed, then update tests. Many tests may just need the mock query builder to have limit() (US-002 prerequisite)."
     },
     {
       "id": "US-005",
-      "title": "Replace tab bar with Select dropdown on mobile",
-      "description": "As a mobile user, I want to use a dropdown to switch between recipe tabs so I can access all tabs instead of only seeing 1-2 truncated tab names.",
+      "title": "Fix EventRatingDialog tests",
+      "description": "As a developer, I want all EventRatingDialog tests to match the current component so they pass.",
       "acceptanceCriteria": [
-        "On mobile (below sm breakpoint), the TabsList is hidden and a Select dropdown appears instead",
-        "On desktop (sm and above), the original TabsList shows and the Select is hidden",
-        "The Select includes all tabs: Combined (if hasAnyIngredients), per-recipe tabs, General (if hasGeneralTab)",
-        "Selecting an option in the Select calls setActiveTab with the correct value",
-        "The Select shows the currently active tab as its selected value",
-        "Export buttons (GroceryExportMenu + Recombine) stack below the tab selector on mobile",
-        "On desktop, export buttons remain on the same row as the tab list (current behavior preserved)",
+        "npm run test:run -- tests/unit/components/events/EventRatingDialog.test.tsx passes (all tests)",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "GroceryListSection.tsx lines 258-289: the tab header area. Import Select, SelectContent, SelectItem, SelectTrigger, SelectValue from '@/components/ui/select' (already exists). Wrap TabsList in <div className='hidden sm:block overflow-x-auto'>. Add <div className='sm:hidden w-full'><Select value={effectiveTab} onValueChange={setActiveTab}>...</Select></div> before it. Change outer container from 'flex items-center justify-between gap-2 mb-3' to 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'."
+      "passes": false,
+      "notes": "All EventRatingDialog tests are failing. Read the current src/components/events/EventRatingDialog.tsx to understand its current props/behavior, then read tests/unit/components/events/EventRatingDialog.test.tsx to see what's out of date. Update the tests to match the current component API and rendered output."
     },
     {
       "id": "US-006",
-      "title": "Collapse checked items within grocery categories",
-      "description": "As a user, I want checked items to collapse into a summary so I can focus on what I still need to buy.",
+      "title": "Fix GroceryExportMenu, GroceryListSection, and RecipeHub tests",
+      "description": "As a developer, I want recipe/grocery component tests to match the current UI so they pass.",
       "acceptanceCriteria": [
-        "GroceryCategoryGroup.tsx splits items into unchecked and checked arrays based on checkedItems Set",
-        "Unchecked items render normally",
-        "When checked.length > 0, a native <details>/<summary> element renders below unchecked items",
-        "Summary text shows '{n} item checked' or '{n} items checked' (correct pluralization)",
-        "Checked items inside <details> render at reduced opacity (opacity-50)",
-        "When checkedItems is undefined (non-interactive mode), all items render as before with no change",
+        "npm run test:run -- tests/unit/components/recipes/GroceryExportMenu.test.tsx passes",
+        "npm run test:run -- tests/unit/components/recipes/GroceryListSection.test.tsx passes",
+        "npm run test:run -- tests/unit/components/recipes/RecipeHub.test.tsx passes",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "GroceryCategoryGroup.tsx: add const unchecked = checkedItems ? items.filter(i => !checkedItems.has(i.name)) : items and const checked = checkedItems ? items.filter(i => checkedItems.has(i.name)) : []. Render unchecked normally. Then: {checkedItems && checked.length > 0 && (<details className='mt-1'><summary className='text-xs text-gray-400 cursor-pointer hover:text-gray-500 px-2 py-1 select-none'>{checked.length} item{checked.length !== 1 ? 's' : ''} checked</summary><div className='opacity-50'>{checked.map(...)}</div></details>)}. The existing GroceryItemRow renders in both lists unchanged."
+      "passes": false,
+      "notes": "GroceryExportMenu tests look for 'CSV' text that no longer exists in the component — read GroceryExportMenu.tsx to see current button labels and update tests. GroceryListSection tests may have drifted due to the Select dropdown added for mobile in the UX polish pass. RecipeHub tests fail on the new Add Recipe dialog tests — investigate specific failures by running the test file and reading error output. All three files are in src/components/recipes/."
     },
     {
       "id": "US-007",
-      "title": "Add recipe title max length and character counter",
-      "description": "As a user creating a recipe, I want the title input to enforce a 50-character limit so recipe names don't break grocery tab layouts.",
+      "title": "Fix auth, GoogleSignIn, and HomeSection tests",
+      "description": "As a developer, I want auth-related tests to reflect the current component and library implementations.",
       "acceptanceCriteria": [
-        "Recipe name Input in RecipeInputForm.tsx has maxLength={50}",
-        "A character count indicator appears below the Input showing '{n}/50'",
-        "Character count text is text-xs text-muted-foreground",
+        "npm run test:run -- tests/unit/lib/auth.test.ts passes",
+        "npm run test:run -- tests/unit/components/auth/GoogleSignIn.test.tsx passes",
+        "npm run test:run -- tests/unit/components/home/HomeSection.test.tsx passes (after US-002)",
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "RecipeInputForm.tsx ~line 138-143: the Input with id='recipe-input-name'. Add maxLength={50} prop. Add <p className='text-xs text-muted-foreground mt-1'>{formData.name.length}/50</p> below the Input (or below the FormItem wrapping it). The form data field is formData.name."
+      "passes": false,
+      "notes": "auth.test.ts has 1 failure in signOut. GoogleSignIn.test.tsx has ~10 failures in the dev-mode email auth describe block. Read each source file (src/lib/auth.ts, src/components/auth/GoogleSignIn.tsx) and compare with tests to identify drift. HomeSection's rpc error should be fixed by US-002."
     },
     {
       "id": "US-008",
-      "title": "Normalize background gradient opacity and fix Deposit pill colors",
-      "description": "As a user, I want consistent visual styling across all pages with matching gradient strength and color palette.",
+      "title": "Fix MealPlanGrid, RecipeClubEvents, and RecipeIngredientList tests",
+      "description": "As a developer, I want these component tests to match the current implementations.",
       "acceptanceCriteria": [
-        "Dashboard.tsx: background gradient classes change from '/40' opacity to '/30' (from-purple-light/40 via-white to-orange-light/40 → /30)",
-        "src/pages/Index.tsx: background gradient changes from full-strength 'from-purple-light via-white to-orange-light' to '/30' variants",
-        "src/pages/NotFound.tsx: background gradient changes from full-strength to '/30' variants",
-        "Dashboard.tsx: Deposit stats pill changes from 'bg-green-50 border-green-300 text-green-600' to 'bg-green/5 border-green/20 text-green-600'",
+        "npm run test:run -- tests/unit/components/mealplan/MealPlanGrid.test.tsx passes",
+        "npm run test:run -- tests/unit/components/events/RecipeClubEvents.test.tsx passes",
+        "npm run test:run -- tests/unit/components/recipes/RecipeIngredientList.test.tsx passes",
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Dashboard.tsx: search for 'from-purple-light/40' and 'to-orange-light/40' — change to /30. Also search for 'bg-green-50' in the stats pills section — the Deposit pill uses default Tailwind green tokens; change bg-green-50 to bg-green/5 and border-green-300 to border-green/20 (text-green-600 can stay or change to text-green). Index.tsx: search for 'from-purple-light via-white to-orange-light' — add /30 to each color stop. NotFound.tsx: same pattern. These are purely CSS class string changes."
+      "passes": false,
+      "notes": "MealPlanGrid has 3 failures around mealTypes prop and mobile column headers. RecipeClubEvents has 1 failure in the loading spinner test. RecipeIngredientList has 2 failures. For each: read the source component, run the test, identify the mismatch, update the test."
+    },
+    {
+      "id": "US-009",
+      "title": "Fix page-level tests (ContactUs, Index, EventDetailPage, PersonalMealDetailPage, UserManagementPage)",
+      "description": "As a developer, I want all page-level tests to match the current page implementations.",
+      "acceptanceCriteria": [
+        "npm run test:run -- tests/unit/pages/ContactUs.test.tsx passes",
+        "npm run test:run -- tests/unit/pages/Index.test.tsx passes",
+        "npm run test:run -- tests/unit/pages/EventDetailPage.test.tsx passes",
+        "npm run test:run -- tests/unit/pages/PersonalMealDetailPage.test.tsx passes",
+        "npm run test:run -- tests/unit/pages/UserManagementPage.test.tsx passes",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "For each failing page: run the specific test file to see error messages, read the source page file, identify what changed, update the test. ContactUs has 7 failures. Index has 4. EventDetailPage has widespread failures (entire describe block). PersonalMealDetailPage has 9 failures — likely related to the useRecipeParse hook refactor (same as MealPlanPage). UserManagementPage has 1 failure. PersonalMealDetailPage.tsx uses the same parse dialog pattern — check if it also uses useRecipeParse now."
+    },
+    {
+      "id": "US-010",
+      "title": "Fix remaining lib and edge-function tests",
+      "description": "As a developer, I want all remaining lib and edge-function tests to pass.",
+      "acceptanceCriteria": [
+        "npm run test:run -- tests/unit/lib/pantry.test.ts passes (after US-002)",
+        "npm run test:run -- tests/unit/lib/parseIngredientText.test.ts passes",
+        "npm run test:run -- tests/unit/lib/recipeActions.test.ts passes",
+        "npm run test:run -- tests/unit/edge-functions/parse-recipe.test.ts passes",
+        "npm run test:run passes with 0 failures",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "pantry.test.ts (2 failures) should be fixed by US-002 limit() fix. parseIngredientText.test.ts has 1 failure in 'invokes parse-recipe without recipeId'. recipeActions.test.ts has 1 failure in saveRecipeEdit. parse-recipe edge function test has 1 failure for missing recipeId 400 response. For each: run the test, read the error, read the source, update the test or fix the source as appropriate. Final criterion is full suite green."
     }
   ]
 }

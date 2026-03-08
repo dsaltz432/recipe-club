@@ -59,7 +59,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     contextId: weekStart.toISOString().split("T")[0],
     userId,
     recipeIds,
-    recipes: [],
     enabled: viewTab === "groceries",
     supportsGeneralItems: true,
   });
@@ -448,8 +447,6 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         <GroceryListSection
           recipes={grocery.groceryRecipes}
           recipeIngredients={grocery.recipeIngredients}
-          recipeContentMap={grocery.recipeContentMap}
-          onParseRecipe={grocery.handleParseRecipe}
           eventName={getWeekLabel(weekStart)}
           isLoading={grocery.isLoading}
           pantryItems={grocery.pantryItems}

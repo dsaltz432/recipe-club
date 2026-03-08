@@ -60,7 +60,6 @@ vi.mock("sonner", () => ({
 
 vi.mock("@/lib/constants", () => ({
   RECOMBINE_DELAY_MS: 60000,
-  SHOW_PARSE_BUTTONS: false,
 }));
 
 import { useGroceryList } from "@/hooks/useGroceryList";
@@ -76,7 +75,6 @@ describe("useGroceryList - handleAddItemsToRecipe", () => {
     contextId: "event-1",
     userId: "user-1",
     recipeIds: [],
-    recipes: [],
     enabled: false,
   };
 

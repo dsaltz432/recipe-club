@@ -34,7 +34,6 @@ export interface UseGroceryListOptions {
   contextId: string | undefined;
   userId: string | undefined;
   recipeIds: string[];
-  recipes: Recipe[];
   enabled?: boolean;
   supportsGeneralItems?: boolean;
 }
@@ -42,7 +41,6 @@ export interface UseGroceryListOptions {
 export interface UseGroceryListReturn {
   // State
   recipeIngredients: RecipeIngredient[];
-  recipeContentMap: Record<string, RecipeContent>;
   groceryRecipes: Recipe[];
   pantryItems: string[];
   isLoading: boolean;
@@ -77,7 +75,6 @@ export interface UseGroceryListReturn {
   ) => Promise<void>;
   handleBulkParseGroceryText: (text: string) => Promise<ParsedGroceryItem[]>;
   handleAddItemsToRecipe: (recipeId: string, text: string) => Promise<void>;
-  handleParseRecipe: (recipeId: string) => Promise<void>;
   triggerRecombine: () => Promise<void>;
 
   // Control
@@ -94,7 +91,6 @@ export function useGroceryList(
     contextId,
     userId,
     recipeIds,
-    recipes,
     enabled = true,
     supportsGeneralItems = false,
   } = options;
@@ -104,9 +100,6 @@ export function useGroceryList(
   const [recipeIngredients, setRecipeIngredients] = useState<
     RecipeIngredient[]
   >([]);
-  const [recipeContentMap, setRecipeContentMap] = useState<
-    Record<string, RecipeContent>
-  >({});
   const [pantryItems, setPantryItems] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [smartGroceryItems, setSmartGroceryItems] =
@@ -162,7 +155,6 @@ export function useGroceryList(
       if (ids.length === 0) {
         setGroceryRecipes([]);
         setRecipeIngredients([]);
-        setRecipeContentMap({});
         return null;
       }
 
@@ -215,7 +207,6 @@ export function useGroceryList(
               createdAt: row.created_at,
             };
           }
-          setRecipeContentMap(contentMap);
         }
 
         let loadedRecipes: Recipe[] = [];
@@ -711,40 +702,6 @@ export function useGroceryList(
     setRefreshCounter((c) => c + 1);
   }, []);
 
-  const handleParseRecipe = useCallback(
-    async (recipeId: string) => {
-      // Look up recipe from either the groceryRecipes state or the recipes prop
-      const recipe =
-        groceryRecipes.find((r) => r.id === recipeId) ||
-        recipes.find((r) => r.id === recipeId);
-      try {
-        const { data, error } = await supabase.functions.invoke(
-          "parse-recipe",
-          {
-            body: {
-              recipeId,
-              recipeUrl: recipe?.url,
-              recipeName: recipe?.name,
-              model: getCachedAiModel(),
-            },
-          }
-        );
-
-        if (error) throw error;
-        if (!data?.success) {
-          toast.error(data?.error ?? "Failed to parse recipe");
-          return;
-        }
-        toast.success("Recipe parsed successfully!");
-        refreshGroceries();
-      } catch (error) {
-        console.error("Error parsing recipe:", error);
-        toast.error("Failed to parse recipe");
-      }
-    },
-    [groceryRecipes, recipes, refreshGroceries]
-  );
-
   const invalidateCache = useCallback(() => {
     if (contextId && userId) {
       deleteGroceryCache(contextType, contextId, userId);
@@ -891,7 +848,6 @@ export function useGroceryList(
 
   return {
     recipeIngredients,
-    recipeContentMap,
     groceryRecipes,
     pantryItems,
     isLoading,
@@ -913,7 +869,6 @@ export function useGroceryList(
     handleUpdateGeneralItem,
     handleBulkParseGroceryText,
     handleAddItemsToRecipe,
-    handleParseRecipe,
     triggerRecombine,
 
     refreshGroceries,

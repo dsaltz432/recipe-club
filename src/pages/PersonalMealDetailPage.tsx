@@ -127,17 +127,11 @@ const PersonalMealDetailPage = () => {
     () => event?.recipesWithNotes.map((r) => r.recipe.id) ?? [],
     [event?.recipesWithNotes]
   );
-  const groceryRecipes = useMemo(
-    () => event?.recipesWithNotes.map((r) => r.recipe) ?? [],
-    [event?.recipesWithNotes]
-  );
-
   const grocery = useGroceryList({
     contextType: "event",
     contextId: eventId,
     userId: user?.id,
     recipeIds: groceryRecipeIds,
-    recipes: groceryRecipes,
     enabled: !!event,
     supportsGeneralItems: true,
   });
@@ -834,8 +828,6 @@ const PersonalMealDetailPage = () => {
               <GroceryListSection
                 recipes={event.recipesWithNotes.map((r) => r.recipe)}
                 recipeIngredients={grocery.recipeIngredients}
-                recipeContentMap={grocery.recipeContentMap}
-                onParseRecipe={grocery.handleParseRecipe}
                 eventName={event.ingredientName || "Meal"}
                 isLoading={grocery.isLoading}
                 pantryItems={grocery.pantryItems}

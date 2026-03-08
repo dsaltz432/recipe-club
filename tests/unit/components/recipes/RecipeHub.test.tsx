@@ -4317,13 +4317,6 @@ describe("RecipeHub - Add Recipe", () => {
     },
   ];
 
-  const mockInsertBuilder = (recipeId = "new-recipe-id") => ({
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({ data: { id: recipeId }, error: null }),
-  });
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });

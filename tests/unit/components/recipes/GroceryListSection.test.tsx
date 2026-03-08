@@ -24,15 +24,7 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-// Mock constants to enable parse buttons in tests
-vi.mock("@/lib/constants", async () => {
-  const actual = await vi.importActual("@/lib/constants");
-  return { ...actual, SHOW_PARSE_BUTTONS: true };
-});
-
 describe("GroceryListSection", () => {
-  const mockParseRecipe = vi.fn().mockResolvedValue(undefined);
-
   const recipes: Recipe[] = [
     createMockRecipe({ id: "recipe-1", name: "Tomato Soup", url: "https://example.com/soup" }),
     createMockRecipe({ id: "recipe-2", name: "Caesar Salad", url: "https://example.com/salad" }),
@@ -61,7 +53,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={[]}
         recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
         isLoading={true}
@@ -78,157 +70,13 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={[]}
         recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
       />
     );
 
     expect(screen.getByText(/No ingredients parsed yet/)).toBeInTheDocument();
-  });
-
-  it("shows parse buttons for recipes with URLs that are not parsed", () => {
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={[]}
-        recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    expect(screen.getByText('Parse "Tomato Soup"')).toBeInTheDocument();
-    expect(screen.getByText('Parse "Caesar Salad"')).toBeInTheDocument();
-    // Recipe without URL should not show parse button
-    expect(screen.queryByText('Parse "Bread"')).not.toBeInTheDocument();
-  });
-
-  it("shows re-parse button for completed recipes", () => {
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    // Completed recipes show name as re-parse button (not "Parse" button)
-    expect(screen.queryByText('Parse "Tomato Soup"')).not.toBeInTheDocument();
-    // Re-parse buttons have title="Re-parse recipe"
-    const reparseButtons = screen.getAllByTitle("Re-parse recipe");
-    expect(reparseButtons.length).toBe(2);
-  });
-
-  it("calls onParseRecipe when re-parse button is clicked", async () => {
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={ingredients}
-        recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    const reparseButtons = screen.getAllByTitle("Re-parse recipe");
-    fireEvent.click(reparseButtons[0]);
-
-    await waitFor(() => {
-      expect(mockParseRecipe).toHaveBeenCalledWith("recipe-1");
-    });
-  });
-
-  it("shows failed indicator for failed parses", () => {
-    const failedContentMap: Record<string, RecipeContent> = {
-      "recipe-1": createMockRecipeContent({ recipeId: "recipe-1", status: "failed" }),
-    };
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={[]}
-        recipeContentMap={failedContentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    expect(screen.getByText("Failed")).toBeInTheDocument();
-  });
-
-  it("calls onParseRecipe when parse button is clicked", async () => {
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={[]}
-        recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    fireEvent.click(screen.getByText('Parse "Tomato Soup"'));
-
-    await waitFor(() => {
-      expect(mockParseRecipe).toHaveBeenCalledWith("recipe-1");
-    });
-  });
-
-  it("shows parsing state while recipe is being parsed", async () => {
-    // Make onParseRecipe hang
-    let resolvePromise: () => void;
-    const parsePromise = new Promise<void>((resolve) => {
-      resolvePromise = resolve;
-    });
-    const slowParseRecipe = vi.fn().mockReturnValue(parsePromise);
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={[]}
-        recipeContentMap={{}}
-        onParseRecipe={slowParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    fireEvent.click(screen.getByText('Parse "Tomato Soup"'));
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsing...")).toBeInTheDocument();
-    });
-
-    // Resolve the promise to clean up
-    resolvePromise!();
-  });
-
-  it("shows parsing state for recipe with parsing status in content map", () => {
-    const parsingContentMap: Record<string, RecipeContent> = {
-      "recipe-1": createMockRecipeContent({ recipeId: "recipe-1", status: "parsing" }),
-    };
-
-    render(
-      <GroceryListSection
-        recipes={recipes}
-        recipeIngredients={[]}
-        recipeContentMap={parsingContentMap}
-        onParseRecipe={mockParseRecipe}
-        eventName="Test Event"
-
-      />
-    );
-
-    // Should show as disabled/parsing
-    expect(screen.getByText("Parsing...")).toBeInTheDocument();
   });
 
   it("renders combined view with grouped smart ingredients", () => {
@@ -242,7 +90,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={smartItems}
       />
@@ -259,7 +107,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
       />
@@ -285,7 +133,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={perRecipeItems}
       />
@@ -302,7 +150,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
       />
@@ -317,7 +165,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={[]}
         recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
       />
@@ -343,7 +191,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredientsWithNulls}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={perRecipeItems}
       />
@@ -365,7 +213,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={smartItems}
         pantryItems={["salt"]}
@@ -387,7 +235,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={partialIngredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
       />
@@ -408,7 +256,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
         smartGroceryItems={smartItems}
@@ -429,7 +277,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
         smartGroceryItems={smartItems}
@@ -447,7 +295,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
 
         isCombining={true}
@@ -478,7 +326,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredientsWithPantry}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         pantryItems={["salt", "olive oil"]}
         perRecipeItems={perRecipeItems}
@@ -514,7 +362,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredientsWithSpices}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={perRecipeItems}
       />
@@ -532,7 +380,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         combineError="AI service unavailable"
       />
@@ -549,7 +397,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={{}}
       />
@@ -569,7 +417,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
       />
@@ -584,7 +432,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
       />
     );
@@ -598,7 +446,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         isLoading
@@ -614,7 +462,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={[]}
         recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
       />
@@ -629,7 +477,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
       />
@@ -652,7 +500,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         onAddItem={onAddItem}
@@ -682,7 +530,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         onAddItem={onAddItem}
@@ -706,7 +554,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
       />
@@ -726,7 +574,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
       />
@@ -746,7 +594,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         onAddItem={onAddItem}
@@ -767,7 +615,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         onAddItem={onAddItem}
@@ -800,7 +648,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         onEditItem={onEditItem}
@@ -825,7 +673,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         editable
         onAddItem={onAddItem}
@@ -853,7 +701,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={smartItems}
         checkedItems={new Set<string>()}
@@ -875,7 +723,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={smartItems}
         checkedItems={new Set(["tomato"])}
@@ -899,7 +747,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={smartItems}
         checkedItems={new Set<string>()}
@@ -922,7 +770,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={smartItems}
       />
@@ -944,7 +792,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
@@ -960,7 +808,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
       />
     );
@@ -976,7 +824,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
@@ -1003,7 +851,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={generalItems}
@@ -1029,7 +877,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={onBulkParseGroceryText}
         onAddGeneralItemDirect={onAddGeneralItemDirect}
@@ -1068,7 +916,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={generalItems}
@@ -1089,7 +937,7 @@ describe("GroceryListSection", () => {
         recipes={[]}
         recipeIngredients={[]}
         recipeContentMap={{}}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
@@ -1109,7 +957,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
@@ -1132,7 +980,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={vi.fn().mockResolvedValue([])}
         generalItems={[]}
@@ -1150,7 +998,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onAddGeneralItemDirect={vi.fn()}
         generalItems={[]}
@@ -1170,7 +1018,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={mockParse}
         onAddGeneralItemDirect={vi.fn().mockResolvedValue(undefined)}
@@ -1202,7 +1050,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={mockParse}
         onAddGeneralItemDirect={onAddGeneralItemDirect}
@@ -1243,7 +1091,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={mockParse}
         onAddGeneralItemDirect={onAddGeneralItemDirect}
@@ -1279,7 +1127,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         onBulkParseGroceryText={mockParse}
         onAddGeneralItemDirect={onAddGeneralItemDirect}
@@ -1309,7 +1157,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={recombineSmartItems}
         hasPendingChanges
@@ -1330,7 +1178,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={recombineSmartItems}
         hasPendingChanges={false}
@@ -1351,7 +1199,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={recombineSmartItems}
         isCombining
@@ -1374,7 +1222,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         smartGroceryItems={recombineSmartItems}
         hasPendingChanges
@@ -1401,7 +1249,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={editPerRecipeItems}
         onEditItemText={onEditItemText}
@@ -1434,7 +1282,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={removePerRecipeItems}
         onRemoveItem={onRemoveItem}
@@ -1464,7 +1312,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={perRecipeItems}
         onAddItemsToRecipe={onAddItemsToRecipe}
@@ -1490,7 +1338,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={perRecipeItems}
         onAddItemsToRecipe={onAddItemsToRecipe}
@@ -1519,7 +1367,7 @@ describe("GroceryListSection", () => {
         recipes={recipes}
         recipeIngredients={ingredients}
         recipeContentMap={contentMap}
-        onParseRecipe={mockParseRecipe}
+
         eventName="Test Event"
         perRecipeItems={perRecipeItems}
       />
