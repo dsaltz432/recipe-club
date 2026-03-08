@@ -38,8 +38,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 11
-**Current Task:** US-012
+**Tasks Completed:** 12
+**Current Task:** US-013
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +80,33 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:55] — US-012: Create CookModeStep component
+
+### What was implemented
+- Created `src/components/cookmode/CookModeStep.tsx` with props `{ step: CookModeStep, color: RecipeColor, isActive?: boolean }`
+- Recipe name badge: inline `span` with color.bg + color.text classes
+- Instruction text: `text-lg sm:text-xl` for kitchen readability
+- Timing hint: smaller text in color.text when `step.timing` is present
+- Category icons map: `prep=Scissors`, `active=Flame`, `passive=Timer`, `finish=CheckCircle2` from lucide-react
+- Active state: applies `color.bg` background when `isActive=true`, white background otherwise
+- Created `tests/unit/components/cookmode/CookModeStep.test.tsx` with 11 passing tests
+
+### Files changed
+- `src/components/cookmode/CookModeStep.tsx` (new)
+- `tests/unit/components/cookmode/CookModeStep.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (11/11)
+- Lint: N/A
+
+### Learnings for future iterations
+- Import `CookModeStep` type with `import type` (verbatimModuleSyntax) — alias it to avoid name collision with the component
+- `CATEGORY_ICONS` const map with `as const` makes TypeScript happy for indexed access by category union type
+- Test icon presence via `container.querySelector("svg")` — lucide-react renders SVGs
+
+---
 
 ## [2026-03-08 18:45] — US-011: Create useCookMode hook
 

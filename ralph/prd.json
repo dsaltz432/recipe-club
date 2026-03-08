@@ -200,7 +200,7 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Props: { step: CookModeStep, color: { bg, text, border }, isActive?: boolean }. Use lucide-react icons: Scissors, Flame, Timer, CheckCircle2. Instruction text should be text-lg sm:text-xl for kitchen readability. The color prop comes from getRecipeColor (src/lib/cookModeColors.ts from US-007). Keep it simple — this component is rendered inside CookModeDialog."
     },
     {
