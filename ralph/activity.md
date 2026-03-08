@@ -25,8 +25,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 2
-**Current Task:** US-003
+**Tasks Completed:** 3
+**Current Task:** US-004
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -34,9 +34,42 @@
 - Cancellation pattern: `let cancelled = true` + cleanup function sets it to true
 - Import `RecipeContent` as `type` (verbatimModuleSyntax requires type-only imports)
 
+### cookmode component patterns
+- `src/components/cookmode/` — new directory for cook mode components
+- RecipeInstructions uses `Card` + `CardContent` from shadcn, `Clock` + `Users` from lucide-react
+- Metadata header uses purple-50 bg, purple-700 text, purple-500 icons
+- Step numbers are purple-600 rounded-full circles (w-7 h-7)
+- Empty state: `<p className="text-sm text-muted-foreground">No instructions available</p>`
+
 ---
 
 ## Session Log
+
+## [2026-03-08 17:49] — US-003: Create RecipeInstructions component
+
+### What was implemented
+- Created `src/components/cookmode/RecipeInstructions.tsx` with numbered instruction list
+- Props: `{ instructions?, servings?, prepTime?, cookTime?, totalTime?, description? }`
+- Metadata header with purple-50 background, Clock (times) + Users (servings) icons from lucide-react
+- Step numbers as purple-600 circular badges for visual hierarchy
+- 'No instructions available' empty state for null/empty instructions
+- Created `tests/unit/components/cookmode/RecipeInstructions.test.tsx` with 7 passing tests
+
+### Files changed
+- `src/components/cookmode/RecipeInstructions.tsx` (new)
+- `tests/unit/components/cookmode/RecipeInstructions.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: pass (7/7)
+- Lint: N/A
+
+### Learnings for future iterations
+- Write tool creates parent directories automatically when writing new files
+- The `mkdir` Bash command is blocked by session security; use Write tool to create new files instead
+- Invoke /frontend-design skill per notes before building UI components
+
+---
 
 ## [2026-03-08 17:46] — US-002: Create useRecipeContent hook
 

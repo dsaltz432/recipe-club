@@ -49,7 +49,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Create src/components/cookmode/ directory. Use existing shadcn components (Card, CardContent). Follow the visual patterns from RecipeIngredientList (src/components/recipes/RecipeIngredientList.tsx) for consistency. Props should be: { instructions?: string[], servings?: string, prepTime?: string, cookTime?: string, totalTime?: string, description?: string }. Use lucide-react icons: Clock for times, Users for servings. IMPORTANT: Before writing this component, invoke the /frontend-design skill to get design guidance for a polished, mobile-first numbered step list with metadata header that fits the app's purple brand aesthetic."
     },
     {
