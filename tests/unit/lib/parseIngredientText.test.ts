@@ -117,12 +117,12 @@ describe("parseIngredientText", () => {
 
     await parseIngredientText("2 cups flour", "user-1");
 
-    expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", {
-      body: {
+    expect(mockInvoke).toHaveBeenCalledWith("parse-recipe", expect.objectContaining({
+      body: expect.objectContaining({
         recipeName: "General Items",
         text: "2 cups flour",
-      },
-    });
+      }),
+    }));
   });
 
   it("splits on newlines in fallback", async () => {

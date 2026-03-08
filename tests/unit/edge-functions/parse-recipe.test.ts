@@ -139,7 +139,7 @@ describe("parse-recipe edge function", () => {
 
     expect(status).toBe(400);
     expect(data).toMatchObject({ success: false });
-    expect((data as { error: string }).error).toContain("recipeId and either recipeUrl or text are required");
+    expect((data as { error: string }).error).toContain("text is required when recipeId is not provided");
   });
 
   it("returns 400 when recipeUrl is missing", async () => {

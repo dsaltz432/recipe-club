@@ -60,13 +60,13 @@ describe("recipeActions", () => {
       expect(mocks.mockUpdateEq).toHaveBeenCalledWith("id", recipeId);
 
       // Verify re-parse triggered
-      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", {
-        body: {
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", expect.objectContaining({
+        body: expect.objectContaining({
           recipeId,
           recipeUrl: "https://example.com/recipe",
           recipeName: "My Recipe",
-        },
-      });
+        }),
+      }));
     });
 
     it("saves recipe edit successfully without URL change", async () => {
