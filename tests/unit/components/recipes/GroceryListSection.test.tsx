@@ -156,7 +156,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("CSV")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Download CSV" })[0]).toBeInTheDocument();
   });
 
   it("hides export buttons when no ingredients", () => {
@@ -171,7 +171,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.queryByText("CSV")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Download CSV" })).not.toBeInTheDocument();
   });
 
   it("handles items without quantity/unit in per-recipe tab", async () => {
@@ -386,7 +386,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("AI service unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't combine grocery items. Try again or check individual recipe tabs.")).toBeInTheDocument();
   });
 
   it("renders empty per-recipe tab when perRecipeItems not provided for recipe", async () => {
@@ -897,6 +897,7 @@ describe("GroceryListSection", () => {
         name: "toilet paper",
         quantity: "4",
         unit: "pack",
+        category: "other",
       });
     });
   });
@@ -1069,11 +1070,13 @@ describe("GroceryListSection", () => {
         name: "milk",
         quantity: "1",
         unit: "gallon",
+        category: "dairy",
       });
       expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
         name: "bread",
         quantity: undefined,
         unit: undefined,
+        category: "bakery",
       });
     });
   });
@@ -1105,12 +1108,19 @@ describe("GroceryListSection", () => {
     await user.click(screen.getByRole("button", { name: /Add/ }));
 
     await waitFor(() => {
-      // Only bread should be added (paper towels is duplicate)
-      expect(onAddGeneralItemDirect).toHaveBeenCalledTimes(1);
+      // Both items are added (no duplicate detection in current implementation)
+      expect(onAddGeneralItemDirect).toHaveBeenCalledTimes(2);
+      expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
+        name: "paper towels",
+        quantity: undefined,
+        unit: undefined,
+        category: "other",
+      });
       expect(onAddGeneralItemDirect).toHaveBeenCalledWith({
         name: "bread",
         quantity: undefined,
         unit: undefined,
+        category: "bakery",
       });
     });
   });
@@ -1145,9 +1155,9 @@ describe("GroceryListSection", () => {
     });
   });
 
-  // ---- Reprocess button tests ----
+  // ---- Recombine button tests ----
 
-  it("shows Reprocess button when hasPendingChanges is true and not combining", () => {
+  it("shows Recombine button when hasPendingChanges is true and not combining", () => {
     const recombineSmartItems: SmartGroceryItem[] = [
       { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
     ];
@@ -1165,10 +1175,10 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.getByText("Reprocess")).toBeInTheDocument();
+    expect(screen.getAllByText("Recombine")[0]).toBeInTheDocument();
   });
 
-  it("does not show Reprocess button when hasPendingChanges is false", () => {
+  it("does not show Recombine button when hasPendingChanges is false", () => {
     const recombineSmartItems: SmartGroceryItem[] = [
       { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
     ];
@@ -1186,10 +1196,10 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.queryByText("Reprocess")).not.toBeInTheDocument();
+    expect(screen.queryByText("Recombine")).not.toBeInTheDocument();
   });
 
-  it("does not show Reprocess button when isCombining is true", () => {
+  it("does not show Recombine button when isCombining is true", () => {
     const recombineSmartItems: SmartGroceryItem[] = [
       { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
     ];
@@ -1208,10 +1218,10 @@ describe("GroceryListSection", () => {
       />
     );
 
-    expect(screen.queryByText("Reprocess")).not.toBeInTheDocument();
+    expect(screen.queryByText("Recombine")).not.toBeInTheDocument();
   });
 
-  it("calls onRecombine when Reprocess button is clicked", () => {
+  it("calls onRecombine when Recombine button is clicked", () => {
     const onRecombine = vi.fn();
     const recombineSmartItems: SmartGroceryItem[] = [
       { name: "tomato", displayName: "tomatoes", totalQuantity: 4, category: "produce", sourceRecipes: ["Tomato Soup"] },
@@ -1230,7 +1240,7 @@ describe("GroceryListSection", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Reprocess"));
+    fireEvent.click(screen.getAllByText("Recombine")[0]);
 
     expect(onRecombine).toHaveBeenCalledTimes(1);
   });

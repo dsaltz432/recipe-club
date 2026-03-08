@@ -38,15 +38,14 @@ describe("GroceryExportMenu", () => {
     vi.clearAllMocks();
   });
 
-  it("renders CSV, Copy, and Instacart buttons", () => {
+  it("renders Download CSV, Copy, and Instacart buttons", () => {
     render(
       <GroceryExportMenu items={items} eventName="Test Event" />
     );
 
-    expect(screen.getByText("CSV")).toBeInTheDocument();
-    expect(screen.getByText("Copy")).toBeInTheDocument();
-    expect(screen.getByText("Instacart")).toBeInTheDocument();
-    expect(screen.getByText("Coming Soon")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download CSV" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy to clipboard" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /instacart/i })).toBeInTheDocument();
   });
 
   it("Instacart button is disabled", () => {
@@ -62,7 +61,7 @@ describe("GroceryExportMenu", () => {
       <GroceryExportMenu items={items} eventName="Test Event" />
     );
 
-    fireEvent.click(screen.getByText("CSV"));
+    fireEvent.click(screen.getByRole("button", { name: "Download CSV" }));
 
     expect(mockDownloadCSV).toHaveBeenCalledWith(
       "mock-csv-content",
@@ -80,7 +79,7 @@ describe("GroceryExportMenu", () => {
       <GroceryExportMenu items={items} eventName="Test Event" />
     );
 
-    fireEvent.click(screen.getByText("Copy"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy to clipboard" }));
 
     await vi.waitFor(() => {
       expect(mockWriteText).toHaveBeenCalledWith("PRODUCE\n  2 cup flour");
@@ -98,7 +97,7 @@ describe("GroceryExportMenu", () => {
       <GroceryExportMenu items={items} eventName="Test Event" />
     );
 
-    fireEvent.click(screen.getByText("Copy"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy to clipboard" }));
 
     await vi.waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to copy to clipboard");

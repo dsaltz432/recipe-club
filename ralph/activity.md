@@ -15,8 +15,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 5
-**Current Task:** US-005 complete
+**Tasks Completed:** 6
+**Current Task:** US-006 complete
 
 ### Test field name drift pattern
 - When production code renames a field (e.g., `aiModelParse`+`aiModelCombine` → `aiModel`), tests that assert on exact object shapes break with field-name mismatches
@@ -27,6 +27,11 @@
 - `isDevMode()` is called at module load time in some files (e.g., `DEFAULT_AI_MODEL` in `userPreferences.ts`)
 - Test env has `VITE_DEV_MODE=true`, so defaults differ from production
 - Fix: add `vi.mock("@/lib/devMode", () => ({ isDevMode: () => false }))` when testing production defaults
+
+### Mobile+desktop duplicate button pattern
+- GroceryListSection and RecipeHub render buttons in both mobile and desktop layouts
+- `getByText("Recombine")`, `getByRole("button", { name: "Download CSV" })`, `getByRole("button", { name: /add recipe/i })` all throw "Found multiple elements"
+- Fix: use `getAllByText(...)[0]` or `getAllByRole(...)[0]`
 
 ---
 
@@ -123,6 +128,30 @@
 - When passing notes with matching userId, production code will try to `update` the note in DB — set `userId: "other-user"` to avoid this in tests that don't mock `update()`
 - Lucide Star icon renders with class `lucide-star`, not `h-6 w-6` (responsive variant not applied in jsdom)
 - Component never calls `toast.success` — success just triggers `onComplete()`
+
+---
+
+## 2026-03-08 — US-006: Fix GroceryExportMenu, GroceryListSection, and RecipeHub tests
+
+### What was implemented
+- GroceryExportMenu tests: updated button queries from text-based (`"CSV"`, `"Copy"`, `"Instacart"`) to accessible name (`getByRole("button", { name: "Download CSV" })` etc.) since buttons are now icon-only with `title` attributes
+- GroceryListSection tests: fixed `getAllByRole("button", { name: "Download CSV" })[0]` (mobile+desktop duplicate); `getAllByText("Recombine")[0]` for Recombine button; combineError message is fixed text not error value; `onAddGeneralItemDirect` now receives `category` field; no dedup in `handleBulkAdd`; "Reprocess" → "Recombine" replace_all
+- RecipeHub tests: added `invalidatePantryCache()` to all three describe blocks' `beforeEach` to clear module-level cache; `.animate-spin` → `.animate-pulse`; `getByRole("button", { name: /add recipe/i })` → `getAllByRole(...)[0]` (mobile+desktop); `expect.objectContaining` for parse-recipe body
+
+### Files changed
+- `tests/unit/components/recipes/GroceryExportMenu.test.tsx`
+- `tests/unit/components/recipes/GroceryListSection.test.tsx`
+- `tests/unit/components/recipes/RecipeHub.test.tsx`
+
+### Quality checks
+- Build: pass
+- Tests: pass (GroceryExportMenu: 5/5, GroceryListSection: 57/57, RecipeHub: 121/121)
+- Lint: N/A
+
+### Learnings for future iterations
+- Many UI components render duplicate buttons for mobile and desktop — always use `getAllBy*()[0]` when selecting them
+- `GroceryListSection.handleBulkAdd` passes `category` to `onAddGeneralItemDirect` — include in test expectations
+- Module-level cache in `pantry.ts` persists across describe blocks — add `invalidatePantryCache()` to every nested describe's `beforeEach`
 
 ---
 

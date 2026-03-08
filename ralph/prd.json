@@ -85,7 +85,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "GroceryExportMenu tests look for 'CSV' text that no longer exists in the component — read GroceryExportMenu.tsx to see current button labels and update tests. GroceryListSection tests may have drifted due to the Select dropdown added for mobile in the UX polish pass. RecipeHub tests fail on the new Add Recipe dialog tests — investigate specific failures by running the test file and reading error output. All three files are in src/components/recipes/."
     },
     {

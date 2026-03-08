@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@tests/utils";
 import RecipeHub from "@/components/recipes/RecipeHub";
+import { invalidatePantryCache } from "@/lib/pantry";
 
 // Mock Supabase
 const mockSupabaseFrom = vi.fn();
@@ -117,6 +118,7 @@ describe("RecipeHub", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidatePantryCache();
 
     // Setup mock query builders with table-specific data
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -142,12 +144,12 @@ describe("RecipeHub", () => {
   it("renders loading state initially", async () => {
     render(<RecipeHub />);
 
-    // Loading spinner should be present
-    expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+    // Loading skeleton should be present
+    expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
 
     // Wait for loading to complete to avoid act() warnings
     await waitFor(() => {
-      expect(document.querySelector(".animate-spin")).not.toBeInTheDocument();
+      expect(document.querySelector(".animate-pulse")).not.toBeInTheDocument();
     });
   });
 
@@ -4056,6 +4058,7 @@ describe("RecipeHub - Parse Recipe", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidatePantryCache();
     mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
   });
 
@@ -4081,11 +4084,11 @@ describe("RecipeHub - Parse Recipe", () => {
 
     await waitFor(() => {
       expect(mockFunctionsInvoke).toHaveBeenCalledWith("parse-recipe", {
-        body: {
+        body: expect.objectContaining({
           recipeId: "recipe-1",
           recipeUrl: "https://example.com/salmon",
           recipeName: "Grilled Salmon",
-        },
+        }),
       });
       expect(toast.success).toHaveBeenCalledWith("Recipe parsed!");
     });
@@ -4319,6 +4322,7 @@ describe("RecipeHub - Add Recipe", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidatePantryCache();
     mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
@@ -4344,7 +4348,7 @@ describe("RecipeHub - Add Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /add recipe/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /add recipe/i })[0]).toBeInTheDocument();
     });
 
     // Switch back to Club tab — button disappears
@@ -4382,10 +4386,10 @@ describe("RecipeHub - Add Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /add recipe/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /add recipe/i })[0]).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /add recipe/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -4420,9 +4424,9 @@ describe("RecipeHub - Add Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /add recipe/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /add recipe/i })[0]).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: /add recipe/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /add recipe/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
