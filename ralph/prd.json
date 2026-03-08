@@ -95,7 +95,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "SharedRecipePage is at src/pages/SharedRecipePage.tsx. It already fetches recipe data and renders RecipeIngredientList. Add a query for recipe_content (single recipe, not a hook — can use supabase.from('recipe_content').select('*').eq('recipe_id', recipeId).maybeSingle()). Render RecipeInstructions below RecipeIngredientList. The page is public (no auth required), and recipe_content has RLS allowing authenticated SELECT — verify this works for unauthenticated users or add a public policy if needed."
     },
     {

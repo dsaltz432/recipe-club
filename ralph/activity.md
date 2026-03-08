@@ -25,8 +25,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 5
-**Current Task:** US-006
+**Tasks Completed:** 6
+**Current Task:** US-007
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -57,6 +57,31 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:10] — US-006: Add instructions to SharedRecipePage
+
+### What was implemented
+- Added `recipeContent` state (`RecipeContent | null`) to `SharedRecipePage`
+- Added `useEffect` to fetch recipe_content via `supabase.from("recipe_content").select("*").eq("recipe_id", recipeId).maybeSingle()`
+- Maps snake_case DB columns to camelCase RecipeContent fields (including casting `status` to the union type)
+- Renders `RecipeInstructions` component below the Ingredients section only when `recipeContent` is non-null
+- Imported `RecipeContent` type and `RecipeInstructions` component
+- Public RLS policy for `recipe_content` already existed (migration `20260307000001_allow_public_recipe_ingredients.sql`)
+
+### Files changed
+- `src/pages/SharedRecipePage.tsx` (modified)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no existing tests for SharedRecipePage)
+- Lint: N/A
+
+### Learnings for future iterations
+- `RecipeContent` type has required `id` and `recipeId` fields — always include when constructing the object
+- `data.status` from Supabase comes back as `string`, must cast to the union type
+- Public anon RLS policy for recipe_content was already added in migration `20260307000001`
+
+---
 
 ## [2026-03-08 17:54] — US-005: Add inline instructions to RecipeCard and RecipeHub
 

@@ -17,8 +17,9 @@ import { ExternalLink, BookOpen, Loader2, ChefHat, CheckCircle2 } from "lucide-r
 import { toast } from "sonner";
 import { signInWithGoogle } from "@/lib/auth";
 import { isDevMode } from "@/lib/devMode";
-import type { GroceryCategory } from "@/types";
+import type { GroceryCategory, RecipeContent } from "@/types";
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
+import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
 import {
   getLightBackgroundColor,
   getBorderColor,
@@ -48,6 +49,7 @@ const SharedRecipePage = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [alreadyInCollection, setAlreadyInCollection] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [recipeContent, setRecipeContent] = useState<RecipeContent | null>(null);
 
   useEffect(() => {
     // Initial check
@@ -101,6 +103,31 @@ const SharedRecipePage = () => {
     };
 
     loadRecipe();
+  }, [recipeId]);
+
+  useEffect(() => {
+    if (!recipeId) return;
+    supabase
+      .from("recipe_content")
+      .select("*")
+      .eq("recipe_id", recipeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setRecipeContent({
+            id: data.id,
+            recipeId: data.recipe_id,
+            instructions: Array.isArray(data.instructions) ? (data.instructions as string[]) : undefined,
+            description: data.description || undefined,
+            servings: data.servings || undefined,
+            prepTime: data.prep_time || undefined,
+            cookTime: data.cook_time || undefined,
+            totalTime: data.total_time || undefined,
+            sourceTitle: data.source_title || undefined,
+            status: data.status as "pending" | "parsing" | "completed" | "failed",
+          });
+        }
+      });
   }, [recipeId]);
 
   useEffect(() => {
@@ -320,6 +347,26 @@ const SharedRecipePage = () => {
             </h2>
             <RecipeIngredientList recipeId={recipe.id} userId="" editable={false} />
           </div>
+
+          {/* Instructions section */}
+          {recipeContent && (
+            <div className="px-6 pb-6" style={{ backgroundColor: bgColor || "white" }}>
+              <h2
+                className="text-[11px] font-semibold uppercase tracking-widest mb-4"
+                style={{ color: themeColor }}
+              >
+                Instructions
+              </h2>
+              <RecipeInstructions
+                instructions={recipeContent.instructions}
+                servings={recipeContent.servings}
+                prepTime={recipeContent.prepTime}
+                cookTime={recipeContent.cookTime}
+                totalTime={recipeContent.totalTime}
+                description={recipeContent.description}
+              />
+            </div>
+          )}
         </div>
       </main>
 
