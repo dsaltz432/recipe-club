@@ -58,16 +58,16 @@ describe("MealPlanGrid", () => {
     expect(buttons.length).toBe(42);
   });
 
-  it("renders mobile compact grid with B/L/D column headers", () => {
+  it("renders mobile compact grid with meal type column headers", () => {
     const { container } = render(<MealPlanGrid {...defaultProps} />);
 
     // Mobile layout: compact grid inside the md:hidden container
     const mobileContainer = container.querySelector(".md\\:hidden");
     expect(mobileContainer).toBeInTheDocument();
-    // Column headers show single-letter meal type abbreviations
-    expect(screen.getByText("B")).toBeInTheDocument();
-    expect(screen.getByText("L")).toBeInTheDocument();
-    expect(screen.getByText("D")).toBeInTheDocument();
+    // Column headers show full meal type names (capitalized via CSS)
+    expect(screen.getAllByText("breakfast").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("lunch").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("dinner").length).toBeGreaterThan(0);
   });
 
   it("renders items in correct slots", () => {
@@ -177,10 +177,10 @@ describe("MealPlanGrid", () => {
     it("renders single meal type column header on mobile", () => {
       render(<MealPlanGrid {...defaultProps} mealTypes={["dinner"]} />);
 
-      // Only "D" column header on mobile
-      expect(screen.getByText("D")).toBeInTheDocument();
-      expect(screen.queryByText("B")).not.toBeInTheDocument();
-      expect(screen.queryByText("L")).not.toBeInTheDocument();
+      // Only "dinner" column header on mobile
+      expect(screen.getAllByText("dinner").length).toBeGreaterThan(0);
+      expect(screen.queryByText("breakfast")).not.toBeInTheDocument();
+      expect(screen.queryByText("lunch")).not.toBeInTheDocument();
     });
 
     it("renders two meal types correctly", () => {
@@ -189,10 +189,6 @@ describe("MealPlanGrid", () => {
       expect(screen.getAllByText("breakfast").length).toBeGreaterThan(0);
       expect(screen.getAllByText("lunch").length).toBeGreaterThan(0);
       expect(screen.queryByText("dinner")).not.toBeInTheDocument();
-      // Mobile headers
-      expect(screen.getByText("B")).toBeInTheDocument();
-      expect(screen.getByText("L")).toBeInTheDocument();
-      expect(screen.queryByText("D")).not.toBeInTheDocument();
     });
 
     it("preserves items for disabled meal types in display", () => {

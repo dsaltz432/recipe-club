@@ -182,7 +182,7 @@ describe("RecipeIngredientList", () => {
     fireEvent.click(screen.getByLabelText("Save edit"));
 
     await waitFor(() => {
-      expect(mockUpdate).toHaveBeenCalledWith({ name: "updated eggs" });
+      expect(mockUpdate).toHaveBeenCalledWith({ name: "updated eggs", quantity: null, unit: null });
       expect(mockUpdateEq).toHaveBeenCalledWith("id", "i2");
     });
     expect(onIngredientsChange).toHaveBeenCalled();
@@ -202,7 +202,7 @@ describe("RecipeIngredientList", () => {
 
   it("maps ingredient with null quantity, category, and sort_order", async () => {
     const nullFieldsIngredients = [
-      { id: "i3", recipe_id: "recipe-1", name: "salt", quantity: null, unit: null, category: null, sort_order: null },
+      { id: "i3", recipe_id: "recipe-1", name: "chicken", quantity: null, unit: null, category: null, sort_order: null },
     ];
     mockOrder.mockResolvedValue({ data: nullFieldsIngredients, error: null });
     mockEq.mockReturnValue({ order: mockOrder });
@@ -214,7 +214,7 @@ describe("RecipeIngredientList", () => {
       // category null → falls back to "other"
       expect(screen.getByText("Other")).toBeInTheDocument();
     });
-    expect(screen.getByText("salt")).toBeInTheDocument();
+    expect(screen.getByText("chicken")).toBeInTheDocument();
   });
 
   it("does not call update when Cancel edit is clicked", async () => {

@@ -145,7 +145,7 @@ describe("RecipeClubEvents", () => {
 
     render(<RecipeClubEvents {...defaultProps} />);
 
-    expect(screen.getByText((_, el) => el?.className?.includes("animate-spin") ?? false)).toBeInTheDocument();
+    expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   // ── Empty state ──
