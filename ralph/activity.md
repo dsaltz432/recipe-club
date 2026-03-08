@@ -36,8 +36,8 @@
 
 ## Current Status
 **Last Updated:** 2026-03-08
-**Tasks Completed:** 8
-**Current Task:** US-009
+**Tasks Completed:** 9
+**Current Task:** US-010
 
 ### useRecipeContent hook pattern
 - Hook accepts `string[]` of recipeIds, returns `{ contentMap: Map<string, RecipeContent>, loading, error }`
@@ -68,6 +68,32 @@
 ---
 
 ## Session Log
+
+## [2026-03-08 18:20] — US-009: Create cook_mode_timelines migration and types
+
+### What was implemented
+- Created `supabase/migrations/20260308000001_create_cook_mode_timelines.sql` with `cook_mode_timelines` table
+- Table columns: id (UUID PK), event_id (FK → scheduled_events ON DELETE CASCADE), recipe_ids_hash (TEXT), steps (JSONB), model (TEXT), created_at (TIMESTAMPTZ)
+- UNIQUE constraint on (event_id, recipe_ids_hash)
+- RLS enabled: authenticated users can SELECT, service_role can ALL
+- Added `CookModeStep` and `CookModeTimeline` types to `src/types/index.ts` after RecipeContent interface
+- Applied migration via `npx supabase db reset`
+
+### Files changed
+- `supabase/migrations/20260308000001_create_cook_mode_timelines.sql` (new)
+- `src/types/index.ts` (modified — added CookModeStep and CookModeTimeline interfaces)
+
+### Quality checks
+- Build: pass
+- Tests: N/A (no code logic changes)
+- Lint: N/A
+
+### Learnings for future iterations
+- `npx supabase db push` fails when remote migration history doesn't match local — use `npx supabase db reset` for local dev instead
+- CookModeStep: { recipeId, recipeName, instruction, timing?, category?: 'prep'|'active'|'passive'|'finish' }
+- CookModeTimeline: { id, eventId, recipeIdsHash, steps: CookModeStep[], model?, createdAt }
+
+---
 
 ## [2026-03-08 18:02] — US-008: Add Cook tab to RecipeDetailTabs
 

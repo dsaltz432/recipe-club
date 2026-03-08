@@ -145,7 +145,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Migration file: supabase/migrations/20260308000001_create_cook_mode_timelines.sql. Follow the pattern from 20260206000000_create_recipe_parsed_tables.sql for RLS policies. CookModeStep type: { recipeId: string, recipeName: string, instruction: string, timing?: string, category?: 'prep' | 'active' | 'passive' | 'finish' }. CookModeTimeline type: { id: string, eventId: string, recipeIdsHash: string, steps: CookModeStep[], model?: string, createdAt: string }. Add these types to src/types/index.ts after the RecipeContent interface. After creating the migration file, run: npx supabase db push (or npx supabase migration up) to apply it to the local DB — required before US-010 and US-011 can work."
     },
     {
