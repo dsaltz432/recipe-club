@@ -39,7 +39,6 @@ import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
   createInitialFormData,
   canSubmitRecipeForm,
-  buildIngredientPayload,
   type RecipeFormData,
 } from "./RecipeInputForm";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
@@ -137,26 +136,13 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       if (recipeError) throw recipeError;
       const recipeId = newRecipe.id;
 
-      if (addRecipeFormData.inputMode === "manual") {
-        // Row-by-row: insert ingredients directly, no parse needed
-        const payload = buildIngredientPayload(addRecipeFormData.ingredientRows).map((row) => ({
-          ...row,
-          recipe_id: recipeId,
-        }));
-        if (payload.length > 0) {
-          await supabase.from("recipe_ingredients").insert(payload);
-        }
-        toast.success("Recipe added!");
-        setShowAddRecipeDialog(false);
-        setAddRecipeFormData(createInitialFormData());
-        setIsLoading(true);
-        loadRecipes();
-      } else {
-        // URL or upload: close dialog and trigger ParseProgressDialog
-        setShowAddRecipeDialog(false);
-        setAddRecipeFormData(createInitialFormData());
-        startParse(recipeId, addRecipeFormData.name.trim(), { url: addRecipeFormData.url.trim() });
-      }
+      // All modes (URL, upload, manual paste) go through parse
+      const name = addRecipeFormData.name.trim();
+      const url = addRecipeFormData.url.trim();
+      const text = addRecipeFormData.inputMode === "manual" ? addRecipeFormData.pasteText : undefined;
+      setShowAddRecipeDialog(false);
+      setAddRecipeFormData(createInitialFormData());
+      startParse(recipeId, name, { url: url || undefined, text });
     } catch (error) {
       console.error("Error adding recipe:", error);
       toast.error("Failed to add recipe");
@@ -1133,6 +1119,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             <RecipeInputForm
               formData={addRecipeFormData}
               onFormDataChange={setAddRecipeFormData}
+              manualPasteOnly
               isUploading={isUploadingAddRecipeFile}
               onUploadingChange={setIsUploadingAddRecipeFile}
             />
@@ -1150,7 +1137,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             </Button>
             <Button
               onClick={handleAddPersonalRecipe}
-              disabled={!canSubmitRecipeForm(addRecipeFormData, isAddingRecipe) || isUploadingAddRecipeFile}
+              disabled={!canSubmitRecipeForm(addRecipeFormData, isAddingRecipe, true) || isUploadingAddRecipeFile}
               className="bg-purple hover:bg-purple-dark"
             >
               {isAddingRecipe ? (
