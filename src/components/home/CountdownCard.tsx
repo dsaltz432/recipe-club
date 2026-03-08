@@ -159,10 +159,10 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
   };
 
   const renderCountdown = () => (
-    <div className={`text-center p-3 sm:p-6 rounded-2xl ${isSoon ? 'bg-gradient-to-br from-orange/20 to-orange/5 border border-orange/20' : 'bg-gradient-to-br from-purple/20 to-purple/5 border border-purple/20'}`}>
+    <div className={`text-center p-3 sm:p-6 md:p-8 rounded-2xl ${isSoon ? 'bg-gradient-to-br from-orange/20 to-orange/5 border border-orange/20' : 'bg-gradient-to-br from-purple/20 to-purple/5 border border-purple/20'}`}>
       {isTimeUp ? (
         <div className="space-y-1 sm:space-y-2">
-          <div className="text-lg sm:text-2xl font-bold text-orange animate-pulse">
+          <div className="text-lg sm:text-2xl md:text-3xl font-bold text-orange animate-pulse">
             It's Time!
           </div>
           <button
@@ -174,43 +174,43 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
         </div>
       ) : (
         <>
-          <div className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground mb-1.5 sm:mb-2 font-semibold">
+          <div className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground mb-1.5 sm:mb-2 md:mb-4 font-semibold md:text-[11px]">
             {isToday ? "Starting in" : "Countdown"}
           </div>
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3">
             {countdown.days > 0 && (
-              <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+              <div className="text-center min-w-[44px] sm:min-w-[50px] md:min-w-[72px] bg-white/80 p-1.5 sm:p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm md:shadow-md">
+                <div className="text-lg sm:text-2xl md:text-4xl font-bold text-purple tabular-nums">
                   {countdown.days}
                 </div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground font-medium">
                   {countdown.days === 1 ? "day" : "days"}
                 </div>
               </div>
             )}
             {(countdown.days > 0 || countdown.hours > 0) && (
-              <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+              <div className="text-center min-w-[44px] sm:min-w-[50px] md:min-w-[72px] bg-white/80 p-1.5 sm:p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm md:shadow-md">
+                <div className="text-lg sm:text-2xl md:text-4xl font-bold text-purple tabular-nums">
                   {String(countdown.hours).padStart(2, "0")}
                 </div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground font-medium">
                   {countdown.hours === 1 ? "hr" : "hrs"}
                 </div>
               </div>
             )}
-            <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+            <div className="text-center min-w-[44px] sm:min-w-[50px] md:min-w-[72px] bg-white/80 p-1.5 sm:p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm md:shadow-md">
+              <div className="text-lg sm:text-2xl md:text-4xl font-bold text-purple tabular-nums">
                 {String(countdown.minutes).padStart(2, "0")}
               </div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+              <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground font-medium">
                 min
               </div>
             </div>
-            <div className="text-center min-w-[44px] sm:min-w-[50px] bg-white/80 p-1.5 sm:p-2 rounded-lg shadow-sm">
-              <div className="text-lg sm:text-2xl md:text-3xl font-bold text-purple tabular-nums">
+            <div className="text-center min-w-[44px] sm:min-w-[50px] md:min-w-[72px] bg-white/80 p-1.5 sm:p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm md:shadow-md">
+              <div className="text-lg sm:text-2xl md:text-4xl font-bold text-purple tabular-nums">
                 {String(countdown.seconds).padStart(2, "0")}
               </div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+              <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground font-medium">
                 sec
               </div>
             </div>
@@ -222,8 +222,8 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
   return (
     <>
-    <Card className="bg-gradient-to-br from-purple/15 via-white to-orange/15 border-2 border-purple/20 shadow-lg overflow-hidden">
-      <CardContent className="p-3 sm:p-6 md:p-8">
+    <Card className="bg-gradient-to-br from-purple/15 via-white to-orange/15 border-2 border-purple/20 shadow-lg md:shadow-2xl overflow-hidden">
+      <CardContent className="p-3 sm:p-6 md:p-10">
         {/* Mobile: compact stacked layout */}
         {/* Desktop: side-by-side with countdown on right */}
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
@@ -240,7 +240,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
 
             {/* Ingredient name + date/time pills side by side */}
             <div className="flex items-start justify-between gap-2 sm:block mb-1 sm:mb-0">
-              <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 sm:mb-1">
+              <h3 className="font-display text-xl sm:text-2xl md:text-5xl lg:text-6xl font-bold text-gray-900 sm:mb-1 md:mb-3 md:leading-tight">
                 {event.ingredientName || "Mystery Ingredient"}
               </h3>
               {/* Date/time pills - right-aligned on mobile, below name on desktop */}

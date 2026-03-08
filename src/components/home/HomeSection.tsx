@@ -49,11 +49,11 @@ const HomeSection = ({
   return (
     <div className="space-y-4">
       {/* Personalized Greeting */}
-      <div className="text-center">
-        <h2 className="font-display text-xl md:text-3xl font-bold text-gray-900">
+      <div className="text-center md:py-4">
+        <h2 className="font-display text-xl md:text-4xl lg:text-5xl font-bold text-gray-900 md:leading-tight">
           What's Cooking, {user?.name?.split(" ")[0] || "Chef"}?
         </h2>
-        <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">
+        <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm md:text-base md:mt-2">
           {activeEvent
             ? "You have an upcoming event!"
             : isAdmin
