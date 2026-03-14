@@ -1,0 +1,141 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@tests/utils";
+import CookModeSidebar from "@/components/cookmode/CookModeSidebar";
+import type { CookModeStep, RecipeIngredient } from "@/types";
+
+vi.mock("@/hooks/useRecipeTips", () => ({
+  useRecipeTips: () => ({
+    tips: [],
+    loading: false,
+    error: null,
+    fetchTips: vi.fn(),
+    addTip: vi.fn(),
+    deleteTip: vi.fn(),
+  }),
+}));
+
+const steps: CookModeStep[] = [
+  { recipeId: "r1", recipeName: "Pasta", instruction: "Boil water" },
+  { recipeId: "r1", recipeName: "Pasta", instruction: "Cook pasta" },
+  { recipeId: "r2", recipeName: "Salad", instruction: "Chop lettuce" },
+];
+
+const recipeColorMap = new Map([
+  ["r1", 0],
+  ["r2", 1],
+]);
+
+const recipeNames = new Map([
+  ["r1", "Pasta"],
+  ["r2", "Salad"],
+]);
+
+const ingredients: RecipeIngredient[] = [
+  { id: "ing-1", recipeId: "r1", name: "spaghetti", quantity: 200, unit: "g", category: "pantry" },
+  { id: "ing-2", recipeId: "r1", name: "eggs", quantity: 3, unit: undefined, category: "dairy" },
+];
+
+const ingredientsByRecipe = new Map([
+  ["r1", ingredients],
+  ["r2", []],
+]);
+
+const defaultProps = {
+  steps,
+  currentStep: 0,
+  onJumpToStep: vi.fn(),
+  ingredientsByRecipe,
+  recipeColorMap,
+  recipeNames,
+  primaryRecipeId: "r1",
+  userId: "user-1",
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe("CookModeSidebar", () => {
+  it("renders the Ingredients section heading", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    expect(screen.getByText("Ingredients")).toBeInTheDocument();
+  });
+
+  it("renders ingredient items", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    expect(screen.getByText(/spaghetti/)).toBeInTheDocument();
+    expect(screen.getByText(/eggs/)).toBeInTheDocument();
+  });
+
+  it("renders quantity and unit for ingredients", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    expect(screen.getByText(/200 g spaghetti/)).toBeInTheDocument();
+  });
+
+  it("renders the Steps section heading", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    expect(screen.getByText("Steps")).toBeInTheDocument();
+  });
+
+  it("renders all steps in the steps list", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    expect(screen.getByLabelText("Jump to step 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Jump to step 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Jump to step 3")).toBeInTheDocument();
+  });
+
+  it("marks the current step as active with aria-current", () => {
+    render(<CookModeSidebar {...defaultProps} currentStep={1} />);
+    const activeBtn = screen.getByLabelText("Jump to step 2");
+    expect(activeBtn).toHaveAttribute("aria-current", "step");
+  });
+
+  it("does not mark inactive steps with aria-current", () => {
+    render(<CookModeSidebar {...defaultProps} currentStep={0} />);
+    const inactiveBtn = screen.getByLabelText("Jump to step 2");
+    expect(inactiveBtn).not.toHaveAttribute("aria-current");
+  });
+
+  it("calls onJumpToStep with the correct index when a step is clicked", () => {
+    const onJumpToStep = vi.fn();
+    render(<CookModeSidebar {...defaultProps} onJumpToStep={onJumpToStep} />);
+    fireEvent.click(screen.getByLabelText("Jump to step 3"));
+    expect(onJumpToStep).toHaveBeenCalledWith(2);
+  });
+
+  it("renders the Tips section when primaryRecipeId is provided", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    expect(screen.getByText("Tips")).toBeInTheDocument();
+  });
+
+  it("collapses the tips section when the toggle button is clicked", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    // Tips content visible initially (no tips, shows "No tips yet.")
+    expect(screen.getByText("No tips yet.")).toBeInTheDocument();
+    // Click to collapse
+    fireEvent.click(screen.getByLabelText("Collapse tips"));
+    expect(screen.queryByText("No tips yet.")).not.toBeInTheDocument();
+  });
+
+  it("expands the tips section again after collapsing", () => {
+    render(<CookModeSidebar {...defaultProps} />);
+    fireEvent.click(screen.getByLabelText("Collapse tips"));
+    fireEvent.click(screen.getByLabelText("Expand tips"));
+    expect(screen.getByText("No tips yet.")).toBeInTheDocument();
+  });
+
+  it("does not render the Tips section when primaryRecipeId is not provided", () => {
+    render(<CookModeSidebar {...defaultProps} primaryRecipeId={undefined} />);
+    expect(screen.queryByText("Tips")).not.toBeInTheDocument();
+  });
+
+  it("shows no-ingredients message when ingredientsByRecipe is empty", () => {
+    render(
+      <CookModeSidebar
+        {...defaultProps}
+        ingredientsByRecipe={new Map([["r1", []]])}
+      />
+    );
+    expect(screen.getByText("No ingredients available.")).toBeInTheDocument();
+  });
+});

@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-const { mockMaybeSingle, mockEqHash, mockEqEvent, mockSelect, mockFrom, mockInvoke } =
+const { mockMaybeSingle, mockEqHash, mockEqEvent, mockSelect, mockIngredientsIn, mockFrom, mockInvoke } =
   vi.hoisted(() => {
     const mockMaybeSingle = vi.fn();
     const mockEqHash = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
     const mockEqEvent = vi.fn(() => ({ eq: mockEqHash }));
     const mockSelect = vi.fn(() => ({ eq: mockEqEvent }));
-    const mockFrom = vi.fn(() => ({ select: mockSelect }));
+    const mockIngredientsIn = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockFrom = vi.fn((tableName: string) => {
+      if (tableName === "recipe_ingredients") {
+        return { select: vi.fn(() => ({ in: mockIngredientsIn })) };
+      }
+      return { select: mockSelect };
+    });
     const mockInvoke = vi.fn();
-    return { mockMaybeSingle, mockEqHash, mockEqEvent, mockSelect, mockFrom, mockInvoke };
+    return { mockMaybeSingle, mockEqHash, mockEqEvent, mockSelect, mockIngredientsIn, mockFrom, mockInvoke };
   });
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -28,6 +34,7 @@ import { useCookMode } from "@/hooks/useCookMode";
 describe("useCookMode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIngredientsIn.mockResolvedValue({ data: [], error: null });
   });
 
   it("returns empty timeline, not loading, and no error initially", () => {
@@ -53,7 +60,8 @@ describe("useCookMode", () => {
       { recipeId: "r1", recipeName: "Pasta", instruction: "Cook pasta" },
     ]);
     expect(mockInvoke).not.toHaveBeenCalled();
-    expect(mockFrom).not.toHaveBeenCalled();
+    // mockFrom is called for recipe_ingredients fetch
+    expect(mockFrom).toHaveBeenCalledWith("recipe_ingredients");
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
   });
@@ -189,9 +197,29 @@ describe("useCookMode", () => {
       await result.current.generateTimeline();
     });
 
-    // No cache check since eventId is undefined
-    expect(mockFrom).not.toHaveBeenCalled();
+    // Cache check skipped since eventId is undefined, but recipe_ingredients is still fetched
+    expect(mockFrom).toHaveBeenCalledWith("recipe_ingredients");
+    expect(mockFrom).not.toHaveBeenCalledWith("cook_mode_timelines");
     expect(mockInvoke).toHaveBeenCalled();
     expect(result.current.timeline).toEqual(generatedSteps);
+  });
+
+  it("populates ingredientsByRecipe after generateTimeline", async () => {
+    const ingredientRow = {
+      id: "ing-1", recipe_id: "r1", name: "flour", quantity: 2, unit: "cup",
+      category: "pantry", raw_text: "2 cups flour", sort_order: 0, created_at: null,
+    };
+    mockIngredientsIn.mockResolvedValue({ data: [ingredientRow], error: null });
+
+    const recipe = { id: "r1", name: "Pasta", instructions: ["Boil water"] };
+    const { result } = renderHook(() => useCookMode({ recipes: [recipe] }));
+
+    await act(async () => {
+      await result.current.generateTimeline();
+    });
+
+    expect(result.current.ingredientsByRecipe.get("r1")).toEqual([
+      expect.objectContaining({ id: "ing-1", name: "flour", quantity: 2, unit: "cup" }),
+    ]);
   });
 });

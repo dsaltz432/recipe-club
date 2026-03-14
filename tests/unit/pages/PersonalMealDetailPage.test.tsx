@@ -291,6 +291,13 @@ const setupDefaultMocks = () => {
         }),
       };
     }
+    if (table === "recipe_content") {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      };
+    }
     return {};
   });
 };

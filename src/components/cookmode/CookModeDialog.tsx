@@ -1,28 +1,38 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ChefHat, X, ChevronLeft, ChevronRight, List, Layers } from "lucide-react";
-import type { CookModeStep as CookModeStepType } from "@/types";
+import { ChefHat, X, ChevronLeft, ChevronRight, CheckCircle2, ChevronUp, ChevronDown } from "lucide-react";
+import type { CookModeStep as CookModeStepType, RecipeIngredient } from "@/types";
 import CookModeStep from "./CookModeStep";
+import CookModeSidebar from "./CookModeSidebar";
+import CookModeComplete from "./CookModeComplete";
 import { getRecipeColor } from "@/lib/cookModeColors";
 
 interface CookModeDialogProps {
   open: boolean;
   onClose: () => void;
+  onRate?: () => void;
   steps: CookModeStepType[];
   recipeNames: Map<string, string>;
   loading?: boolean;
   error?: string;
+  ingredientsByRecipe?: Map<string, RecipeIngredient[]>;
+  userId?: string;
 }
 
 const CookModeDialog = ({
   open,
   onClose,
+  onRate,
   steps,
+  recipeNames,
   loading,
   error,
+  ingredientsByRecipe,
+  userId,
 }: CookModeDialogProps) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [viewMode, setViewMode] = useState<"step" | "list">("step");
+  const [completed, setCompleted] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // Build recipe-to-color-index map from step order
@@ -66,11 +76,12 @@ const CookModeDialog = ({
     };
   }, [open]);
 
-  // Reset step and view when dialog opens
+  // Reset step, completed, and mobile drawer state when dialog opens
   useEffect(() => {
     if (open) {
       setCurrentStep(0);
-      setViewMode("step");
+      setCompleted(false);
+      setMobileDrawerOpen(false);
     }
   }, [open]);
 
@@ -84,7 +95,6 @@ const CookModeDialog = ({
 
   const jumpToStep = useCallback((index: number) => {
     setCurrentStep(index);
-    setViewMode("step");
   }, []);
 
   const progress = steps.length > 0 ? ((currentStep + 1) / steps.length) * 100 : 0;
@@ -131,20 +141,6 @@ const CookModeDialog = ({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setViewMode((v) => (v === "step" ? "list" : "step"))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                aria-label={
-                  viewMode === "step" ? "Switch to list view" : "Switch to step view"
-                }
-              >
-                {viewMode === "step" ? (
-                  <List className="h-4 w-4" />
-                ) : (
-                  <Layers className="h-4 w-4" />
-                )}
-                {viewMode === "step" ? "List" : "Steps"}
-              </button>
-              <button
                 onClick={onClose}
                 className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 aria-label="Close cook mode"
@@ -154,61 +150,100 @@ const CookModeDialog = ({
             </div>
           </div>
 
-          {/* Main content area */}
-          <div className="flex-1 overflow-hidden relative">
-            {loading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <div className="h-12 w-12 rounded-full border-4 border-slate-700 border-t-purple-500 animate-spin" />
-                <p className="text-slate-400 text-sm">Generating cooking timeline...</p>
-              </div>
-            )}
+          {/* Main content area - split pane on desktop */}
+          {completed ? (
+            <div className="flex-1 overflow-hidden">
+              <CookModeComplete
+                recipeNames={recipeNames}
+                onRate={onRate}
+                onClose={onClose}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-hidden relative flex flex-row min-h-0">
+                {/* Left: Step content (full width on mobile, flex-1 on desktop) */}
+                <div className="flex-1 overflow-hidden relative flex flex-col">
+                  {loading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                      <div className="h-12 w-12 rounded-full border-4 border-slate-700 border-t-purple-500 animate-spin" />
+                      <p className="text-slate-400 text-sm">Generating cooking timeline...</p>
+                    </div>
+                  )}
 
-            {error && !loading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
+                  {error && !loading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  )}
 
-            {!loading && !error && steps.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-slate-500 text-sm">No steps available.</p>
-              </div>
-            )}
+                  {!loading && !error && steps.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <p className="text-slate-500 text-sm">No steps available.</p>
+                    </div>
+                  )}
 
-            {/* Step-by-step view */}
-            {!loading && !error && steps.length > 0 && viewMode === "step" && (
-              <div className="h-full flex flex-col px-4 py-6 sm:px-8">
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-xl">
-                    <CookModeStep step={currentStepData} color={currentColor} isActive />
-                  </div>
+                  {/* Step view */}
+                  {!loading && !error && steps.length > 0 && (
+                    <div className="h-full flex flex-col px-4 py-6 sm:px-8">
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full max-w-xl">
+                          <CookModeStep step={currentStepData} color={currentColor} isActive />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {/* List view */}
-            {!loading && !error && steps.length > 0 && viewMode === "list" && (
-              <div className="h-full overflow-y-auto px-4 py-4 sm:px-8 space-y-3">
-                {steps.map((step, index) => {
-                  const colorIndex = recipeColorMap.current.get(step.recipeId) ?? 0;
-                  const color = getRecipeColor(colorIndex);
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => jumpToStep(index)}
-                      className="w-full text-left"
-                      aria-label={`Go to step ${index + 1}`}
-                    >
-                      <CookModeStep step={step} color={color} isActive={index === currentStep} />
-                    </button>
-                  );
-                })}
+                {/* Right: Sidebar (desktop only) */}
+                {!loading && !error && steps.length > 0 && (
+                  <div className="hidden md:block w-80 flex-shrink-0">
+                    <CookModeSidebar
+                      steps={steps}
+                      currentStep={currentStep}
+                      onJumpToStep={jumpToStep}
+                      ingredientsByRecipe={ingredientsByRecipe ?? new Map()}
+                      recipeColorMap={recipeColorMap.current}
+                      recipeNames={recipeNames}
+                      primaryRecipeId={steps[0]?.recipeId}
+                      userId={userId}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Navigation buttons (step view only) */}
-          {!loading && !error && steps.length > 0 && viewMode === "step" && (
+              {/* Mobile: drawer toggle + content (hidden on desktop) */}
+              {!loading && !error && steps.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setMobileDrawerOpen((o) => !o)}
+                    aria-label={mobileDrawerOpen ? "Hide ingredients and steps" : "Show ingredients and steps"}
+                    className="md:hidden w-full flex items-center justify-center gap-2 py-3 bg-slate-800 border-t border-slate-700 text-slate-300 text-sm hover:bg-slate-700 transition-colors flex-shrink-0"
+                  >
+                    {mobileDrawerOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    Ingredients &amp; Steps
+                  </button>
+                  {mobileDrawerOpen && (
+                    <div className="md:hidden overflow-y-auto max-h-[60vh] border-t border-slate-700 flex-shrink-0">
+                      <CookModeSidebar
+                        steps={steps}
+                        currentStep={currentStep}
+                        onJumpToStep={(i) => { jumpToStep(i); setMobileDrawerOpen(false); }}
+                        ingredientsByRecipe={ingredientsByRecipe ?? new Map()}
+                        recipeColorMap={recipeColorMap.current}
+                        recipeNames={recipeNames}
+                        primaryRecipeId={steps[0]?.recipeId}
+                        userId={userId}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* Navigation buttons */}
+          {!loading && !error && steps.length > 0 && !completed && (
             <div className="flex-shrink-0 border-t border-slate-800 p-4 flex gap-3">
               <button
                 onClick={goToPrev}
@@ -219,15 +254,26 @@ const CookModeDialog = ({
                 <ChevronLeft className="h-5 w-5" />
                 Prev
               </button>
-              <button
-                onClick={goToNext}
-                disabled={currentStep === steps.length - 1}
-                className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-sm bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                aria-label="Next step"
-              >
-                Next
-                <ChevronRight className="h-5 w-5" />
-              </button>
+              {currentStep === steps.length - 1 ? (
+                <button
+                  onClick={() => setCompleted(true)}
+                  className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-sm bg-green-600 text-white hover:bg-green-500 transition-colors"
+                  aria-label="Finish cooking"
+                >
+                  Done!
+                  <CheckCircle2 className="h-5 w-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={goToNext}
+                  disabled={currentStep === steps.length - 1}
+                  className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-sm bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next step"
+                >
+                  Next
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
             </div>
           )}
         </DialogPrimitive.Content>

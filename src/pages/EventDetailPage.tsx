@@ -191,9 +191,10 @@ const EventDetailPage = () => {
   }, [event?.recipesWithNotes, recipeContentMap]);
 
   const [cookModeOpen, setCookModeOpen] = useState(false);
-  const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline } = useCookMode({
+  const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline, ingredientsByRecipe: cookModeIngredientsByRecipe } = useCookMode({
     eventId,
     recipes: cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    allRecipeIngredients: grocery.recipeIngredients,
   });
   const cookModeRecipeNames = useMemo(
     () => new Map(cookModeRecipes.map((r) => [r.id, r.name])),
@@ -1014,6 +1015,8 @@ const EventDetailPage = () => {
         recipeNames={cookModeRecipeNames}
         loading={cookModeLoading}
         error={cookModeError ?? undefined}
+        ingredientsByRecipe={cookModeIngredientsByRecipe}
+        userId={user?.id}
       />
 
       {/* Add Recipe Dialog */}

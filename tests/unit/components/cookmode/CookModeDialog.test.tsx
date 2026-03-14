@@ -3,6 +3,20 @@ import { render, screen, fireEvent } from "@tests/utils";
 import CookModeDialog from "@/components/cookmode/CookModeDialog";
 import type { CookModeStep } from "@/types";
 
+// Mock canvas-confetti (used by CookModeComplete which renders on completion)
+vi.mock("canvas-confetti", () => ({ default: vi.fn() }));
+
+vi.mock("@/hooks/useRecipeTips", () => ({
+  useRecipeTips: () => ({
+    tips: [],
+    loading: false,
+    error: null,
+    fetchTips: vi.fn(),
+    addTip: vi.fn(),
+    deleteTip: vi.fn(),
+  }),
+}));
+
 const mockSteps: CookModeStep[] = [
   {
     recipeId: "recipe-1",
@@ -58,7 +72,8 @@ beforeEach(() => {
 describe("CookModeDialog", () => {
   it("renders in step-by-step view by default showing first step", () => {
     render(<CookModeDialog {...defaultProps} />);
-    expect(screen.getByText("Boil a large pot of salted water.")).toBeInTheDocument();
+    // Step instruction appears in both main view and sidebar steps list
+    expect(screen.getAllByText("Boil a large pot of salted water.").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows progress indicator with step count", () => {
@@ -87,7 +102,8 @@ describe("CookModeDialog", () => {
   it("navigates to next step when Next is clicked", () => {
     render(<CookModeDialog {...defaultProps} />);
     fireEvent.click(screen.getByLabelText("Next step"));
-    expect(screen.getByText("Cook the pancetta until crispy.")).toBeInTheDocument();
+    // Instruction appears in both main view and sidebar
+    expect(screen.getAllByText("Cook the pancetta until crispy.").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("2 / 3")).toBeInTheDocument();
   });
 
@@ -97,7 +113,8 @@ describe("CookModeDialog", () => {
     fireEvent.click(screen.getByLabelText("Next step"));
     // Then go back
     fireEvent.click(screen.getByLabelText("Previous step"));
-    expect(screen.getByText("Boil a large pot of salted water.")).toBeInTheDocument();
+    // Instruction appears in both main view and sidebar
+    expect(screen.getAllByText("Boil a large pot of salted water.").length).toBeGreaterThanOrEqual(1);
   });
 
   it("disables Prev button on first step", () => {
@@ -105,34 +122,35 @@ describe("CookModeDialog", () => {
     expect(screen.getByLabelText("Previous step")).toBeDisabled();
   });
 
-  it("disables Next button on last step", () => {
+  it("shows Done! button on last step", () => {
     render(<CookModeDialog {...defaultProps} />);
     // Navigate to last step
     fireEvent.click(screen.getByLabelText("Next step"));
     fireEvent.click(screen.getByLabelText("Next step"));
-    expect(screen.getByLabelText("Next step")).toBeDisabled();
+    expect(screen.getByLabelText("Finish cooking")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Next step")).not.toBeInTheDocument();
   });
 
-  it("toggles to list view when List button is clicked", () => {
+  it("clicking Done! shows completion screen", () => {
     render(<CookModeDialog {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Switch to list view"));
-    // All steps should be visible in list view
-    expect(screen.getByText("Boil a large pot of salted water.")).toBeInTheDocument();
-    expect(screen.getByText("Cook the pancetta until crispy.")).toBeInTheDocument();
-    expect(screen.getByText("Chop the romaine lettuce.")).toBeInTheDocument();
+    // Navigate to last step
+    fireEvent.click(screen.getByLabelText("Next step"));
+    fireEvent.click(screen.getByLabelText("Next step"));
+    // Click Done!
+    fireEvent.click(screen.getByLabelText("Finish cooking"));
+    expect(screen.getByText("You did it!")).toBeInTheDocument();
+    // Navigation footer should be hidden
+    expect(screen.queryByLabelText("Finish cooking")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Previous step")).not.toBeInTheDocument();
   });
 
-  it("tapping a step in list view jumps to it in step-by-step view", () => {
+  it("jumping to a step via sidebar updates the current step display", () => {
     render(<CookModeDialog {...defaultProps} />);
-    // Switch to list view
-    fireEvent.click(screen.getByLabelText("Switch to list view"));
-    // Click on step 3
-    fireEvent.click(screen.getByLabelText("Go to step 3"));
-    // Should now be in step view showing step 3
-    expect(screen.getByText("Chop the romaine lettuce.")).toBeInTheDocument();
+    // Click on step 3 in the sidebar steps list
+    fireEvent.click(screen.getByLabelText("Jump to step 3"));
     expect(screen.getByText("3 / 3")).toBeInTheDocument();
-    // Nav buttons should be visible (step view mode)
-    expect(screen.getByLabelText("Next step")).toBeInTheDocument();
+    // Instruction appears in both main view and sidebar
+    expect(screen.getAllByText("Chop the romaine lettuce.").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows loading spinner when loading prop is true", () => {
@@ -158,13 +176,15 @@ describe("CookModeDialog", () => {
       { recipeId: "recipe-1", recipeName: "Pasta", instruction: "Add pasta" },
     ];
     render(<CookModeDialog {...defaultProps} steps={singleRecipeSteps} />);
-    expect(screen.getByText("Boil water")).toBeInTheDocument();
+    // Instruction appears in both main view and sidebar
+    expect(screen.getAllByText("Boil water").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
   });
 
   it("works for multi-recipe interleaved steps", () => {
     render(<CookModeDialog {...defaultProps} steps={multiRecipeSteps} />);
-    expect(screen.getByText("Step 1 pasta")).toBeInTheDocument();
+    // Instruction appears in both main view and sidebar
+    expect(screen.getAllByText("Step 1 pasta").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
   });
 
@@ -177,5 +197,35 @@ describe("CookModeDialog", () => {
     render(<CookModeDialog {...defaultProps} />);
     const labels = screen.getAllByText("Cook Mode");
     expect(labels.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders sidebar with ingredient panel on desktop", () => {
+    const ingredientsByRecipe = new Map([
+      ["r1", [{ id: "ing-1", recipeId: "r1", name: "flour", quantity: 2, unit: "cup", category: "pantry" as const }]],
+    ]);
+    render(
+      <CookModeDialog
+        open
+        onClose={() => {}}
+        steps={[{ recipeId: "r1", recipeName: "Pasta", instruction: "Boil water" }]}
+        recipeNames={new Map([["r1", "Pasta"]])}
+        ingredientsByRecipe={ingredientsByRecipe}
+      />
+    );
+    // The sidebar is hidden on mobile but in the DOM
+    expect(screen.getByText("Ingredients")).toBeInTheDocument();
+    expect(screen.getByText("2 cup flour")).toBeInTheDocument();
+  });
+
+  it("shows mobile drawer toggle button when steps are present", () => {
+    render(<CookModeDialog {...defaultProps} />);
+    expect(screen.getByLabelText("Show ingredients and steps")).toBeInTheDocument();
+  });
+
+  it("clicking mobile drawer toggle changes aria-label and shows sidebar content", () => {
+    render(<CookModeDialog {...defaultProps} />);
+    const toggle = screen.getByLabelText("Show ingredients and steps");
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText("Hide ingredients and steps")).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseInstructions } from "@/lib/recipeActions";
 import { toast } from "sonner";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import {
@@ -197,9 +198,7 @@ export function useGroceryList(
               prepTime: row.prep_time ?? undefined,
               cookTime: row.cook_time ?? undefined,
               totalTime: row.total_time ?? undefined,
-              instructions: Array.isArray(row.instructions)
-                ? (row.instructions as string[])
-                : undefined,
+              instructions: parseInstructions(row.instructions),
               sourceTitle: row.source_title ?? undefined,
               parsedAt: row.parsed_at ?? undefined,
               status: row.status as RecipeContent["status"],

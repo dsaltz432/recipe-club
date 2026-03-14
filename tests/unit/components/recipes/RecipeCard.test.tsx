@@ -18,6 +18,24 @@ vi.mock("@/components/recipes/RecipeIngredientList", () => ({
   ),
 }));
 
+// Mock RecipeTips — it uses useRecipeTips which hits Supabase
+vi.mock("@/components/recipes/RecipeTips", () => ({
+  default: ({ recipeId }: { recipeId: string }) => (
+    <div data-testid={`recipe-tips-${recipeId}`}>RecipeTips</div>
+  ),
+}));
+
+// Mock useRecipeTips (used transitively)
+vi.mock("@/hooks/useRecipeTips", () => ({
+  useRecipeTips: () => ({
+    tips: [],
+    loading: false,
+    fetchTips: vi.fn(),
+    addTip: vi.fn(),
+    deleteTip: vi.fn(),
+  }),
+}));
+
 // Mock sonner toast
 vi.mock("sonner", () => ({
   toast: {
@@ -1045,5 +1063,113 @@ describe("RecipeCard - Layout Structure", () => {
     expect(screen.getByText("0 notes")).toBeInTheDocument();
     // No expand button (no URL, no notes content)
     expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - Tips Section", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows Tips toggle button for all recipes", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.getByLabelText(/Expand tips for/)).toBeInTheDocument();
+  });
+
+  it("expands and shows RecipeTips when Tips toggle is clicked", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    fireEvent.click(screen.getByLabelText(/Expand tips for/));
+
+    expect(screen.getByTestId(`recipe-tips-${recipe.id}`)).toBeInTheDocument();
+  });
+
+  it("collapses RecipeTips when Tips toggle is clicked again", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    fireEvent.click(screen.getByLabelText(/Expand tips for/));
+    expect(screen.getByTestId(`recipe-tips-${recipe.id}`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/Collapse tips for/));
+    expect(screen.queryByTestId(`recipe-tips-${recipe.id}`)).not.toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - RecipeInstructions editable prop", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const recipeContent = {
+    recipeId: "recipe-1",
+    status: "completed" as const,
+    instructions: ["Preheat oven to 400F.", "Season the salmon."],
+    servings: undefined,
+    prepTime: undefined,
+    cookTime: undefined,
+    totalTime: undefined,
+    description: undefined,
+    ingredients: [],
+    parsedAt: undefined,
+  };
+
+  it("shows edit step buttons when userId matches recipe creator", () => {
+    const recipe = createMockRecipe({ createdBy: "user-123", id: "recipe-1" });
+
+    render(
+      <RecipeCard recipe={recipe} content={recipeContent} contentStatus="completed" userId="user-123" />
+    );
+
+    fireEvent.click(screen.getByLabelText(/Expand instructions for/));
+
+    expect(screen.getByLabelText("edit step 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("edit step 2")).toBeInTheDocument();
+  });
+
+  it("does not show edit step buttons when userId does not match recipe creator", () => {
+    const recipe = createMockRecipe({ createdBy: "user-123", id: "recipe-1" });
+
+    render(
+      <RecipeCard recipe={recipe} content={recipeContent} contentStatus="completed" userId="user-999" />
+    );
+
+    fireEvent.click(screen.getByLabelText(/Expand instructions for/));
+
+    expect(screen.queryByLabelText("edit step 1")).not.toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - CookModeDialog wiring", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("Start Cooking button is present when instructions exist", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const recipeContent = {
+      recipeId: "recipe-1",
+      status: "completed" as const,
+      instructions: ["Step 1"],
+      servings: undefined,
+      prepTime: undefined,
+      cookTime: undefined,
+      totalTime: undefined,
+      description: undefined,
+      ingredients: [],
+      parsedAt: undefined,
+    };
+
+    render(
+      <RecipeCard recipe={recipe} content={recipeContent} contentStatus="completed" userId="user-123" />
+    );
+
+    expect(screen.getByLabelText(/Start cooking/)).toBeInTheDocument();
   });
 });

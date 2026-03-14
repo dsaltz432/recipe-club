@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { parseInstructions } from "@/lib/recipeActions";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -117,7 +118,7 @@ const SharedRecipePage = () => {
           setRecipeContent({
             id: data.id,
             recipeId: data.recipe_id,
-            instructions: Array.isArray(data.instructions) ? (data.instructions as string[]) : undefined,
+            instructions: parseInstructions(data.instructions),
             description: data.description || undefined,
             servings: data.servings || undefined,
             prepTime: data.prep_time || undefined,

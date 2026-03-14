@@ -1,8 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@tests/utils";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@tests/utils";
 import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
 
+// Mock saveInstructionsEdit
+const mockSaveInstructionsEdit = vi.fn();
+vi.mock("@/lib/recipeActions", () => ({
+  saveInstructionsEdit: (...args: unknown[]) => mockSaveInstructionsEdit(...args),
+}));
+
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
+
 describe("RecipeInstructions", () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
   it("renders numbered steps from instructions array", () => {
     const instructions = ["Preheat oven to 350°F", "Mix ingredients", "Bake for 30 minutes"];
     render(<RecipeInstructions instructions={instructions} />);
@@ -72,5 +83,59 @@ describe("RecipeInstructions", () => {
     expect(screen.getByText("20 min")).toBeInTheDocument();
     expect(screen.queryByText("Prep:")).not.toBeInTheDocument();
     expect(screen.queryByText("Cook:")).not.toBeInTheDocument();
+  });
+
+  it("renders instructions in read-only mode", () => {
+    render(<RecipeInstructions instructions={["Boil water", "Cook pasta"]} />);
+    expect(screen.getByText("Boil water")).toBeInTheDocument();
+    expect(screen.getByText("Cook pasta")).toBeInTheDocument();
+  });
+
+  it("shows no pencil icons in non-editable mode", () => {
+    render(<RecipeInstructions instructions={["Boil water"]} />);
+    expect(screen.queryByRole("button", { name: /edit step/i })).not.toBeInTheDocument();
+  });
+
+  it("shows pencil icons in editable mode", () => {
+    render(<RecipeInstructions instructions={["Boil water"]} editable recipeId="r1" />);
+    expect(screen.getByRole("button", { name: /edit step 1/i })).toBeInTheDocument();
+  });
+
+  it("clicking pencil shows textarea with step text", () => {
+    render(<RecipeInstructions instructions={["Boil water"]} editable recipeId="r1" />);
+    fireEvent.click(screen.getByRole("button", { name: /edit step 1/i }));
+    const textarea = screen.getByRole("textbox");
+    expect(textarea).toHaveValue("Boil water");
+  });
+
+  it("saves edited step on check click", async () => {
+    mockSaveInstructionsEdit.mockResolvedValue({ success: true });
+    const onInstructionsChange = vi.fn();
+
+    render(
+      <RecipeInstructions
+        instructions={["Boil water"]}
+        editable
+        recipeId="r1"
+        onInstructionsChange={onInstructionsChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /edit step 1/i }));
+    const textarea = screen.getByRole("textbox");
+    fireEvent.change(textarea, { target: { value: "Boil salted water" } });
+    fireEvent.click(screen.getByRole("button", { name: /save step/i }));
+
+    await waitFor(() => {
+      expect(mockSaveInstructionsEdit).toHaveBeenCalledWith("r1", ["Boil salted water"]);
+      expect(onInstructionsChange).toHaveBeenCalledWith(["Boil salted water"]);
+    });
+  });
+
+  it("cancels edit on X click", () => {
+    render(<RecipeInstructions instructions={["Boil water"]} editable recipeId="r1" />);
+    fireEvent.click(screen.getByRole("button", { name: /edit step 1/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cancel edit/i }));
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 });

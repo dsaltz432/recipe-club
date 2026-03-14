@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { RecipeContent } from "@/types";
+import { parseInstructions } from "@/lib/recipeActions";
 
 export function useRecipeContent(recipeIds: string[]) {
   const [contentMap, setContentMap] = useState<Map<string, RecipeContent>>(new Map());
@@ -19,10 +20,21 @@ export function useRecipeContent(recipeIds: string[]) {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from("recipe_content")
-        .select("*")
-        .in("recipe_id", recipeIds);
+      let data, fetchError;
+      try {
+        const result = await supabase
+          .from("recipe_content")
+          .select("*")
+          .in("recipe_id", recipeIds);
+        data = result.data;
+        fetchError = result.error;
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Unknown error");
+          setLoading(false);
+        }
+        return;
+      }
 
       if (cancelled) return;
 
@@ -43,9 +55,7 @@ export function useRecipeContent(recipeIds: string[]) {
             prepTime: row.prep_time ?? undefined,
             cookTime: row.cook_time ?? undefined,
             totalTime: row.total_time ?? undefined,
-            instructions: Array.isArray(row.instructions)
-              ? (row.instructions as string[])
-              : undefined,
+            instructions: parseInstructions(row.instructions),
             sourceTitle: row.source_title ?? undefined,
             parsedAt: row.parsed_at ?? undefined,
             status: row.status as RecipeContent["status"],

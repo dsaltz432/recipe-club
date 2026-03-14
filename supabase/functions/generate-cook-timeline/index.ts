@@ -95,6 +95,21 @@ serve(async (req) => {
       throw new Error(`Failed to fetch recipe content: ${contentsError.message}`);
     }
 
+    const { data: recipeIngredients, error: ingredientsError } = await supabase
+      .from("recipe_ingredients")
+      .select("recipe_id, name, quantity, unit, raw_text")
+      .in("recipe_id", recipeIds);
+
+    if (ingredientsError) {
+      throw new Error(`Failed to fetch recipe ingredients: ${ingredientsError.message}`);
+    }
+
+    const ingredientsMap = new Map<string, Array<{ name: string; quantity: number | null; unit: string | null; raw_text: string | null }>>();
+    (recipeIngredients ?? []).forEach((ing: { recipe_id: string; name: string; quantity: number | null; unit: string | null; raw_text: string | null }) => {
+      if (!ingredientsMap.has(ing.recipe_id)) ingredientsMap.set(ing.recipe_id, []);
+      ingredientsMap.get(ing.recipe_id)!.push(ing);
+    });
+
     // Build a map of recipe info for the prompt
     const recipeMap = new Map((recipes ?? []).map((r: { id: string; name: string }) => [r.id, r.name]));
     const contentMap = new Map((contents ?? []).map((c: { recipe_id: string; instructions: unknown; prep_time: string | null; cook_time: string | null; total_time: string | null }) => [c.recipe_id, c]));
@@ -109,13 +124,16 @@ serve(async (req) => {
         content?.cook_time ? `Cook: ${content.cook_time}` : null,
         content?.total_time ? `Total: ${content.total_time}` : null,
       ].filter(Boolean).join(", ");
+      const ingredients = ingredientsMap.get(id) ?? [];
 
       return `Recipe: ${name} (ID: ${id})${times ? ` [${times}]` : ""}
+Ingredients:
+${ingredients.map(ing => ing.raw_text || `${ing.quantity ? ing.quantity + ' ' : ''}${ing.unit ? ing.unit + ' ' : ''}${ing.name}`).join('\n') || 'No ingredients listed'}
 Instructions:
 ${instructions.map((step: string, i: number) => `${i + 1}. ${step}`).join("\n") || "No instructions available"}`;
     }).join("\n\n---\n\n");
 
-    const systemPrompt = `You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish.
+    const systemPrompt = `You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish. Reference exact ingredient quantities inline in steps (e.g., 'Add 2 cups flour, 1 tsp salt').
 
 Return ONLY valid JSON array with no markdown formatting. Each element must have:
 {
