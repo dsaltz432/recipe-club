@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ADMIN_EMAILS = [
   "sarahgsaltz@gmail.com",
-  "dsaltz190@gmail.com",
+  "hannah.glickman@gmail.com",
+  // "dsaltz190@gmail.com",
 ];
 
 const TEST_MODE_EMAIL = "dsaltz190@gmail.com";
