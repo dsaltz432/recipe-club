@@ -276,7 +276,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
                 size="sm"
                 onClick={() => navigate(`/events/${event.id}`)}
               >
-                View Event Details
+                View Event Recipes
               </Button>
               {isAdmin && userId === event.createdBy && (
                 <div className="flex gap-2">

@@ -89,9 +89,9 @@ describe("CountdownCard", () => {
     expect(screen.getByText("Upcoming Event")).toBeInTheDocument();
   });
 
-  it("renders View Event Details button that navigates to event page", () => {
+  it("renders View Event Recipes button that navigates to event page", () => {
     render(<CountdownCard {...defaultProps} />);
-    const btn = screen.getByText("View Event Details");
+    const btn = screen.getByText("View Event Recipes");
     fireEvent.click(btn);
     expect(mockNavigate).toHaveBeenCalledWith("/events/event-1");
   });
