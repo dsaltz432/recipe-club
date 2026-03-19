@@ -63,6 +63,58 @@ function detectMediaType(url: string, contentType?: string | null): string {
   return "image/jpeg";
 }
 
+// Fetch recipe data from Spoonacular's extract API.
+// Returns formatted recipeText on success, null if the API key is missing or the call fails.
+async function trySpoonacular(recipeUrl: string, recipeName: string): Promise<string | null> {
+  const apiKey = Deno.env.get("SPOONACULAR_API_KEY");
+  if (!apiKey) {
+    console.log(`[parse-recipe] SPOONACULAR_API_KEY not set, skipping Spoonacular fallback`);
+    return null;
+  }
+  const spoonacularUrl = `https://api.spoonacular.com/recipes/extract?url=${encodeURIComponent(recipeUrl)}`;
+  console.log(`[parse-recipe] Trying Spoonacular extract for ${recipeUrl}`);
+  try {
+    const res = await fetch(spoonacularUrl, {
+      headers: { "x-api-key": apiKey, "Accept": "application/json" },
+    });
+    console.log(`[parse-recipe] Spoonacular response status: ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.log(`[parse-recipe] Spoonacular error body: ${body}`);
+      return null;
+    }
+    // deno-lint-ignore no-explicit-any
+    const data: any = await res.json();
+    if (data.id === -1) {
+      console.log(`[parse-recipe] Spoonacular could not extract recipe (id: -1) for ${recipeUrl}`);
+      return null;
+    }
+    let text = `STRUCTURED RECIPE DATA (from Spoonacular):\n`;
+    text += `Name: ${data.title ?? recipeName}\n`;
+    if (data.servings) text += `Servings: ${data.servings}\n`;
+    if (data.readyInMinutes) text += `Total time: ${data.readyInMinutes} minutes\n`;
+    if (data.extendedIngredients?.length) {
+      text += `\nIngredients:\n`;
+      for (const ing of data.extendedIngredients) {
+        text += `- ${ing.original}\n`;
+      }
+    }
+    if (data.analyzedInstructions?.length) {
+      text += `\nInstructions:\n`;
+      for (const section of data.analyzedInstructions) {
+        for (const step of section.steps ?? []) {
+          text += `- ${step.step}\n`;
+        }
+      }
+    }
+    console.log(`[parse-recipe] Spoonacular extraction successful for ${recipeUrl}`);
+    return text;
+  } catch (err) {
+    console.log(`[parse-recipe] Spoonacular fetch threw: ${err}`);
+    return null;
+  }
+}
+
 // Extract Schema.org/Recipe from JSON-LD script tags
 // deno-lint-ignore no-explicit-any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -265,7 +317,9 @@ serve(async (req) => {
       isImage = true;
     } else {
       // Fetch web page HTML
-      const response = await fetch(recipeUrl, {
+      const response = Deno.env.get("FORCE_403_FOR_TESTING") === "true"
+        ? new Response("Forbidden", { status: 403 })
+        : await fetch(recipeUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -283,28 +337,11 @@ serve(async (req) => {
       let html: string;
       if (!response.ok) {
         if (response.status === 403) {
-          // Site is blocking datacenter IPs — try Wayback Machine for a cached copy
-          console.log(`Direct fetch blocked (403) for ${recipeUrl}, trying Wayback Machine...`);
-          const availabilityRes = await fetch(
-            `https://archive.org/wayback/available?url=${encodeURIComponent(recipeUrl)}`
-          );
-          const availability = await availabilityRes.json();
-          const snapshot = availability?.archived_snapshots?.closest;
-          if (snapshot?.available && snapshot?.url) {
-            console.log(`Found Wayback Machine snapshot: ${snapshot.url}`);
-            const archiveRes = await fetch(snapshot.url, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-              },
-            });
-            if (!archiveRes.ok) {
-              throw new Error(`This website is blocking automated access. Try uploading a screenshot of the recipe instead.`);
-            }
-            html = await archiveRes.text();
-          } else {
-            throw new Error(`This website is blocking automated access. Try uploading a screenshot of the recipe instead.`);
-          }
+          // Site is blocking datacenter IPs — try Spoonacular as fallback
+          console.log(`[parse-recipe] Direct fetch blocked (403) for ${recipeUrl}, trying Spoonacular...`);
+          const spoonacularText = await trySpoonacular(recipeUrl, recipeName);
+          if (spoonacularText) { recipeText = spoonacularText; html = ""; }
+          else throw new Error(`This website is blocking automated access. Try uploading a screenshot of the recipe instead.`);
         } else {
           throw new Error(`Failed to fetch recipe page: ${response.status}`);
         }
@@ -314,40 +351,43 @@ serve(async (req) => {
 
       // Try to extract JSON-LD Recipe schema first — this is the most reliable
       // source since it's the structured data sites provide to Google/search engines
-      const jsonLdRecipe = extractJsonLdRecipe(html);
-      if (jsonLdRecipe) {
-        console.log(`Found JSON-LD Recipe data for ${recipeName}`);
-        recipeText = `STRUCTURED RECIPE DATA (from JSON-LD Schema.org/Recipe):\n`;
-        recipeText += `Name: ${jsonLdRecipe.name ?? recipeName}\n`;
-        if (jsonLdRecipe.recipeYield) recipeText += `Yield: ${jsonLdRecipe.recipeYield}\n`;
-        if (jsonLdRecipe.prepTime) recipeText += `Prep time: ${jsonLdRecipe.prepTime}\n`;
-        if (jsonLdRecipe.cookTime) recipeText += `Cook time: ${jsonLdRecipe.cookTime}\n`;
-        if (jsonLdRecipe.totalTime) recipeText += `Total time: ${jsonLdRecipe.totalTime}\n`;
-        if (jsonLdRecipe.description) recipeText += `Description: ${jsonLdRecipe.description}\n`;
-        recipeText += `\nIngredients:\n`;
-        for (const ing of jsonLdRecipe.recipeIngredient ?? []) {
-          recipeText += `- ${ing}\n`;
-        }
-        if (jsonLdRecipe.recipeInstructions) {
-          recipeText += `\nInstructions:\n`;
-          for (const step of jsonLdRecipe.recipeInstructions) {
-            if (typeof step === "string") {
-              recipeText += `- ${step}\n`;
-            } else if (step?.text) {
-              recipeText += `- ${step.text}\n`;
+      // (skipped entirely if recipeText was already set by the Spoonacular fallback)
+      if (!recipeText) {
+        const jsonLdRecipe = extractJsonLdRecipe(html);
+        if (jsonLdRecipe) {
+          console.log(`Found JSON-LD Recipe data for ${recipeName}`);
+          recipeText = `STRUCTURED RECIPE DATA (from JSON-LD Schema.org/Recipe):\n`;
+          recipeText += `Name: ${jsonLdRecipe.name ?? recipeName}\n`;
+          if (jsonLdRecipe.recipeYield) recipeText += `Yield: ${jsonLdRecipe.recipeYield}\n`;
+          if (jsonLdRecipe.prepTime) recipeText += `Prep time: ${jsonLdRecipe.prepTime}\n`;
+          if (jsonLdRecipe.cookTime) recipeText += `Cook time: ${jsonLdRecipe.cookTime}\n`;
+          if (jsonLdRecipe.totalTime) recipeText += `Total time: ${jsonLdRecipe.totalTime}\n`;
+          if (jsonLdRecipe.description) recipeText += `Description: ${jsonLdRecipe.description}\n`;
+          recipeText += `\nIngredients:\n`;
+          for (const ing of jsonLdRecipe.recipeIngredient ?? []) {
+            recipeText += `- ${ing}\n`;
+          }
+          if (jsonLdRecipe.recipeInstructions) {
+            recipeText += `\nInstructions:\n`;
+            for (const step of jsonLdRecipe.recipeInstructions) {
+              if (typeof step === "string") {
+                recipeText += `- ${step}\n`;
+              } else if (step?.text) {
+                recipeText += `- ${step.text}\n`;
+              }
             }
           }
+        } else {
+          // Fallback: strip HTML tags to get text content
+          console.log(`No JSON-LD found for ${recipeName}, falling back to text extraction`);
+          recipeText = html
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 15000);
         }
-      } else {
-        // Fallback: strip HTML tags to get text content
-        console.log(`No JSON-LD found for ${recipeName}, falling back to text extraction`);
-        recipeText = html
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 15000);
       }
     }
 

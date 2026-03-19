@@ -175,6 +175,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const {
     parseStatus,
     parseStep,
+    parseError,
     pendingParseName,
     startParse,
     handleRetry: handleParseRetry,
@@ -479,6 +480,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       <ParseProgressDialog
         parseStatus={parseStatus}
         parseStep={parseStep}
+        parseError={parseError}
         recipeName={pendingParseName}
         onDiscard={handleParseDiscard}
         onKeep={handleParseKeep}

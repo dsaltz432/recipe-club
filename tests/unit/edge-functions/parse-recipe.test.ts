@@ -836,12 +836,9 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("Failed to fetch recipe file");
   });
 
-  it("returns user-friendly message when web page fetch returns 403 and no Wayback snapshot exists", async () => {
+  it("returns user-friendly message when web page fetch returns 403 and Spoonacular has no key", async () => {
     globalThis.fetch = vi.fn()
-      .mockResolvedValueOnce(new Response("Forbidden", { status: 403 }))
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ archived_snapshots: {} }), { status: 200 }),
-      );
+      .mockResolvedValueOnce(new Response("Forbidden", { status: 403 }));
 
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
@@ -851,32 +848,21 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("blocking automated access");
   });
 
-  it("falls back to Wayback Machine when web page fetch returns 403", async () => {
-    const archiveHtml = `
-      <html><head>
-        <script type="application/ld+json">
-        {"@type":"Recipe","name":"Sesame Chicken","recipeIngredient":["2 lbs chicken"],"recipeInstructions":["Cook chicken"]}
-        </script>
-      </head><body></body></html>
-    `;
+  it("falls back to Spoonacular when web page fetch returns 403", async () => {
+    const spoonacularResponse = {
+      title: "Sesame Chicken",
+      servings: 4,
+      readyInMinutes: 30,
+      extendedIngredients: [{ original: "2 lbs chicken breast" }],
+      analyzedInstructions: [{ steps: [{ step: "Cook the chicken until done." }] }],
+    };
 
+    mockEnvGet.mockImplementation(
+      createMockEnvGet({ SPOONACULAR_API_KEY: "test-key" }).getMockImplementation()!,
+    );
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce(new Response("Forbidden", { status: 403 }))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            archived_snapshots: {
-              closest: {
-                available: true,
-                url: "https://web.archive.org/web/20250101000000/https://www.foodnetwork.com/recipes/test",
-                status: "200",
-              },
-            },
-          }),
-          { status: 200 },
-        ),
-      )
-      .mockResolvedValueOnce(new Response(archiveHtml, { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(spoonacularResponse), { status: 200 }))
       .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
 
     const req = createEdgeRequest(baseBody);

@@ -25,6 +25,7 @@ export function useRecipeParse({
 }: UseRecipeParseOptions = {}) {
   const [parseStatus, setParseStatus] = useState<ParseStatus>("idle");
   const [parseStep, setParseStep] = useState<ParseStep>("saving");
+  const [parseError, setParseError] = useState<string>("");
   const [pendingParseRecipeId, setPendingParseRecipeId] = useState<string | null>(null);
   const [pendingParseName, setPendingParseName] = useState<string>("");
   const [pendingParseUrl, setPendingParseUrl] = useState<string>("");
@@ -89,6 +90,7 @@ export function useRecipeParse({
         onSuccess?.();
       } catch (error) {
         console.error("Error parsing recipe:", error);
+        setParseError(error instanceof Error ? error.message : "Failed to parse recipe");
         setParseStatus("failed");
       }
     };
@@ -123,6 +125,7 @@ export function useRecipeParse({
   return {
     parseStatus,
     parseStep,
+    parseError,
     pendingParseName,
     startParse,
     handleRetry,

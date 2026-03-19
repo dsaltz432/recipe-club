@@ -154,6 +154,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const {
     parseStatus,
     parseStep,
+    parseError,
     pendingParseName,
     startParse,
     handleRetry: handleParseRetry,
@@ -1157,6 +1158,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       <ParseProgressDialog
         parseStatus={parseStatus}
         parseStep={parseStep}
+        parseError={parseError}
         recipeName={pendingParseName}
         onDiscard={handleParseDiscard}
         onKeep={handleParseKeep}

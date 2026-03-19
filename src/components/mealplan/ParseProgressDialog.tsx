@@ -12,6 +12,7 @@ interface ParseProgressDialogProps {
   parseStatus: "idle" | "parsing" | "failed";
   parseStep: "saving" | "parsing" | "loading" | "done";
   recipeName: string;
+  parseError?: string;
   onDiscard: () => void;
   onKeep: () => void;
   onRetry: () => void;
@@ -21,6 +22,7 @@ const ParseProgressDialog = ({
   parseStatus,
   parseStep,
   recipeName,
+  parseError,
   onDiscard,
   onKeep,
   onRetry,
@@ -39,7 +41,7 @@ const ParseProgressDialog = ({
           </DialogTitle>
           <DialogDescription>
             {parseStatus === "failed"
-              ? `Failed to parse ingredients for "${recipeName}".`
+              ? (parseError ?? `Failed to parse ingredients for "${recipeName}".`)
               : `Extracting ingredients from "${recipeName}"...`}
           </DialogDescription>
         </DialogHeader>
