@@ -412,17 +412,15 @@ const EventCard = ({ event, userId, isAdmin = false, onCancel, onEdit, isUpcomin
             </div>
             {isUpcoming && isAdmin && (
               <div className="flex gap-1 sm:gap-2 shrink-0 ml-auto sm:ml-0" onClick={(e) => e.stopPropagation()}>
-                {userId === event.createdBy && (
-                  <Button variant="outline" size="sm" onClick={handleEditClick} className="h-8 px-2 sm:px-3">
-                    <Pencil className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">Edit</span>
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={handleEditClick} className="h-8 px-2 sm:px-3">
+                  <Pencil className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 px-2 sm:px-3 bg-purple/5 hover:bg-purple/10">
                   <span className="hidden sm:inline">Complete</span>
                   <span className="sm:hidden">Done</span>
                 </Button>
-                {onCancel && userId === event.createdBy && (
+                {onCancel && (
                   <Button variant="outline" size="sm" onClick={handleCancelClick} className="h-8 px-2 text-muted-foreground hover:text-destructive hover:border-destructive/50">
                     <X className="h-3.5 w-3.5" />
                     Cancel
