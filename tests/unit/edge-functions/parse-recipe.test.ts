@@ -836,10 +836,12 @@ describe("parse-recipe edge function", () => {
     expect((data as { error: string }).error).toContain("Failed to fetch recipe file");
   });
 
-  it("returns user-friendly message when web page fetch returns 403", async () => {
-    globalThis.fetch = vi.fn().mockResolvedValueOnce(
-      new Response("Forbidden", { status: 403 }),
-    );
+  it("returns user-friendly message when web page fetch returns 403 and no Wayback snapshot exists", async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce(new Response("Forbidden", { status: 403 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ archived_snapshots: {} }), { status: 200 }),
+      );
 
     const req = createEdgeRequest(baseBody);
     const { data, status } = await parseResponse(await handler(req));
@@ -847,6 +849,41 @@ describe("parse-recipe edge function", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: false });
     expect((data as { error: string }).error).toContain("blocking automated access");
+  });
+
+  it("falls back to Wayback Machine when web page fetch returns 403", async () => {
+    const archiveHtml = `
+      <html><head>
+        <script type="application/ld+json">
+        {"@type":"Recipe","name":"Sesame Chicken","recipeIngredient":["2 lbs chicken"],"recipeInstructions":["Cook chicken"]}
+        </script>
+      </head><body></body></html>
+    `;
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce(new Response("Forbidden", { status: 403 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            archived_snapshots: {
+              closest: {
+                available: true,
+                url: "https://web.archive.org/web/20250101000000/https://www.foodnetwork.com/recipes/test",
+                status: "200",
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(archiveHtml, { status: 200 }))
+      .mockResolvedValueOnce(createAnthropicResponse(JSON.stringify(parsedRecipe)));
+
+    const req = createEdgeRequest(baseBody);
+    const { data, status } = await parseResponse(await handler(req));
+
+    expect(status).toBe(200);
+    expect(data).toMatchObject({ success: true });
   });
 
   it("returns error when web page fetch returns other non-ok status", async () => {

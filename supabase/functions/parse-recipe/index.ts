@@ -280,13 +280,37 @@ serve(async (req) => {
           "Cache-Control": "max-age=0",
         },
       });
+      let html: string;
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error(`This website is blocking automated access. Try uploading a screenshot of the recipe instead.`);
+          // Site is blocking datacenter IPs — try Wayback Machine for a cached copy
+          console.log(`Direct fetch blocked (403) for ${recipeUrl}, trying Wayback Machine...`);
+          const availabilityRes = await fetch(
+            `https://archive.org/wayback/available?url=${encodeURIComponent(recipeUrl)}`
+          );
+          const availability = await availabilityRes.json();
+          const snapshot = availability?.archived_snapshots?.closest;
+          if (snapshot?.available && snapshot?.url) {
+            console.log(`Found Wayback Machine snapshot: ${snapshot.url}`);
+            const archiveRes = await fetch(snapshot.url, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              },
+            });
+            if (!archiveRes.ok) {
+              throw new Error(`This website is blocking automated access. Try uploading a screenshot of the recipe instead.`);
+            }
+            html = await archiveRes.text();
+          } else {
+            throw new Error(`This website is blocking automated access. Try uploading a screenshot of the recipe instead.`);
+          }
+        } else {
+          throw new Error(`Failed to fetch recipe page: ${response.status}`);
         }
-        throw new Error(`Failed to fetch recipe page: ${response.status}`);
+      } else {
+        html = await response.text();
       }
-      const html = await response.text();
 
       // Try to extract JSON-LD Recipe schema first — this is the most reliable
       // source since it's the structured data sites provide to Google/search engines
