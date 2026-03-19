@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
+import { createCalendarEvent, deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
 import { format } from "date-fns";
 
 export type ActionResult = { success: true } | { success: false; error: string };
@@ -110,18 +110,34 @@ export async function updateEvent(eventId: string, date: Date, time: string): Pr
 
     if (updateError) throw updateError;
 
-    // Sync Google Calendar if linked
+    // Sync Google Calendar
     let calendarSyncFailed = false;
+    const ingredientName = eventData.ingredients?.name || "Unknown";
     if (eventData.calendar_event_id) {
       const calendarResult = await updateCalendarEvent({
         calendarEventId: eventData.calendar_event_id,
         date,
         time,
-        ingredientName: eventData.ingredients?.name || "Unknown",
+        ingredientName,
       });
 
       if (!calendarResult.success) {
         console.warn("Failed to update calendar event:", calendarResult.error);
+        calendarSyncFailed = true;
+      }
+    } else {
+      // No calendar event exists yet — create one now
+      const calendarResult = await createCalendarEvent({ date, time, ingredientName });
+      if (calendarResult.success && calendarResult.eventId) {
+        const { error: calendarIdError } = await supabase
+          .from("scheduled_events")
+          .update({ calendar_event_id: calendarResult.eventId })
+          .eq("id", eventId);
+        if (calendarIdError) {
+          console.warn("Failed to save calendar_event_id:", calendarIdError);
+        }
+      } else if (!calendarResult.success) {
+        console.warn("Failed to create calendar event:", calendarResult.error);
         calendarSyncFailed = true;
       }
     }
