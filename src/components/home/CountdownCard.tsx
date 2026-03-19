@@ -278,7 +278,7 @@ const CountdownCard = ({ event, userId, isAdmin = false, onEventUpdated, onEvent
               >
                 View Event Recipes
               </Button>
-              {isAdmin && userId === event.createdBy && (
+              {isAdmin && (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
