@@ -396,13 +396,13 @@ const SharedRecipePage = () => {
               >
                 Instructions
               </h2>
+              <div className="mb-4">
+                <RecipeTips recipeId={recipe.id} userId={currentUserId ?? undefined} />
+              </div>
               <RecipeInstructions
                 instructions={recipeContent.instructions}
                 description={recipeContent.description}
               />
-              <div className="mt-4">
-                <RecipeTips recipeId={recipe.id} userId={currentUserId ?? undefined} />
-              </div>
             </div>
           )}
         </div>

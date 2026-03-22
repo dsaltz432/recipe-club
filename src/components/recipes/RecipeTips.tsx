@@ -45,18 +45,21 @@ const RecipeTips = ({ recipeId, userId, darkMode = false }: RecipeTipsProps) => 
     }
   };
 
-  const containerCls = darkMode ? "text-white" : "";
   const labelCls = darkMode ? "text-slate-300" : "text-muted-foreground";
   const tipCls = darkMode
     ? "bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-slate-200"
     : "bg-amber-50 border border-amber-200 rounded-lg p-2 text-sm text-foreground";
 
+  // Hide entirely while loading, or when empty and the user can't add tips
+  if (loading) return null;
+  if (tips.length === 0 && !userId && !showInput) return null;
+
   return (
-    <div className={`space-y-2 ${containerCls}`}>
+    <div className={`space-y-2 ${darkMode ? "text-white" : ""}`}>
       <div className="flex items-center gap-1.5">
         <Lightbulb className={`h-3.5 w-3.5 ${darkMode ? "text-amber-400" : "text-amber-500"}`} />
         <span className={`text-xs font-medium ${labelCls}`}>Cooking Tips</span>
-        {userId && (
+        {userId && tips.length > 0 && (
           <button
             onClick={() => setShowInput(!showInput)}
             className={`ml-auto text-xs ${darkMode ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-foreground"} transition-colors`}
@@ -66,14 +69,6 @@ const RecipeTips = ({ recipeId, userId, darkMode = false }: RecipeTipsProps) => 
           </button>
         )}
       </div>
-
-      {loading && (
-        <p className={`text-xs ${labelCls}`}>Loading tips...</p>
-      )}
-
-      {!loading && tips.length === 0 && (
-        <p className={`text-xs ${labelCls}`}>No tips yet.</p>
-      )}
 
       {tips.length === 1 ? (
         <div className={`flex items-start gap-2 ${tipCls}`}>
@@ -88,7 +83,7 @@ const RecipeTips = ({ recipeId, userId, darkMode = false }: RecipeTipsProps) => 
             </button>
           )}
         </div>
-      ) : (
+      ) : tips.length > 1 ? (
         <ul className={`${tipCls} space-y-1.5`}>
           {tips.map((tip) => (
             <li key={tip.id} className="flex items-start gap-2">
@@ -106,6 +101,16 @@ const RecipeTips = ({ recipeId, userId, darkMode = false }: RecipeTipsProps) => 
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {/* Empty state: show inline prompt instead of blocking text */}
+      {tips.length === 0 && userId && !showInput && (
+        <button
+          onClick={() => setShowInput(true)}
+          className={`text-xs ${darkMode ? "text-slate-500 hover:text-slate-300" : "text-muted-foreground/60 hover:text-muted-foreground"} transition-colors`}
+        >
+          + Add the first tip
+        </button>
       )}
 
       {showInput && userId && (
