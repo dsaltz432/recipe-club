@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const TEST_MODE_EMAIL = "dsaltz190@gmail.com";
+const APP_BASE_URL = "https://therecipeclubhub.com";
 
 function isLocalMode(): boolean {
   if (Deno.env.get("LOCAL_MODE") === "true") return true;
@@ -22,6 +23,7 @@ interface NotifyRequest {
   eventDate?: string;
   excludeUserId?: string;
   recipeId?: string;
+  eventId?: string;
 }
 
 serve(async (req) => {
@@ -46,7 +48,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: NotifyRequest = await req.json();
-    const { type, recipeName, recipeUrl, ingredientName, eventDate, excludeUserId, recipeId } = body;
+    const { type, recipeName, recipeUrl, ingredientName, eventDate, excludeUserId, recipeId, eventId } = body;
 
     if (!recipeName) {
       throw new Error("recipeName is required");
@@ -92,6 +94,19 @@ serve(async (req) => {
         JSON.stringify({ success: true, message: "No other club members to notify" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Build email -> firstName map from auth users
+    const emailToFirstName = new Map<string, string>();
+    const { data: authData } = await supabase.auth.admin.listUsers();
+    if (authData?.users) {
+      for (const user of authData.users) {
+        if (user.email) {
+          const fullName: string = user.user_metadata?.full_name || user.user_metadata?.name || "";
+          const firstName = fullName.split(" ")[0].trim();
+          emailToFirstName.set(user.email, firstName);
+        }
+      }
     }
 
     // Fetch cook times from recipe_content if recipeId provided
@@ -151,10 +166,10 @@ serve(async (req) => {
       deleted: "Head to the event to see the latest lineup.",
     };
 
-    const bodyHtml = `
+    const buildBodyHtml = (firstName: string) => `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #9b87f5;">${headingMap[type]}</h1>
-        <p>Hey there!</p>
+        <p>Hey ${firstName}!</p>
         <p>${messageMap[type]}</p>
         <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
           <p style="margin: 0 0 8px 0;"><strong>${recipeName}</strong></p>
@@ -165,7 +180,7 @@ serve(async (req) => {
             ${cookTime ? `<span>🍳 <strong>Cook:</strong> ${cookTime}</span>` : ""}
             ${totalTime ? `<span>⏰ <strong>Total:</strong> ${totalTime}</span>` : ""}
           </div>` : ""}
-          ${recipeUrl ? `<a href="${recipeUrl}" style="color: #9b87f5;">View Recipe</a>` : ""}
+          ${eventId ? `<a href="${APP_BASE_URL}/events/${eventId}" style="color: #9b87f5;">View Recipe</a>` : recipeUrl ? `<a href="${recipeUrl}" style="color: #9b87f5;">View Recipe</a>` : ""}
         </div>
         <p>${ctaMap[type]}</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
@@ -178,6 +193,7 @@ serve(async (req) => {
 
     for (const email of recipientEmails) {
       try {
+        const firstName = emailToFirstName.get(email) || "there";
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -188,7 +204,7 @@ serve(async (req) => {
             from: "Recipe Club Hub <notifications@therecipeclubhub.com>",
             to: [email],
             subject,
-            html: bodyHtml,
+            html: buildBodyHtml(firstName),
           }),
         });
 

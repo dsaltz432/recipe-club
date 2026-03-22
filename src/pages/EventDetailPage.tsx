@@ -446,6 +446,7 @@ const EventDetailPage = () => {
           eventDate: event?.eventDate,
           excludeUserId: user?.id,
           recipeId: recipeIdVal,
+          eventId: event?.eventId,
         },
       });
 
