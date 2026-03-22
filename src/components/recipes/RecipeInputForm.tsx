@@ -20,6 +20,7 @@ export interface RecipeFormData {
   inputMode: InputMode;
   ingredientRows: IngredientRow[];
   pasteText: string;
+  instructionsText: string;
 }
 
 interface RecipeInputFormProps {
@@ -41,6 +42,7 @@ export function createInitialFormData(): RecipeFormData {
     inputMode: "url",
     ingredientRows: [createBlankRow()],
     pasteText: "",
+    instructionsText: "",
   };
 }
 
@@ -56,6 +58,14 @@ export function canSubmitRecipeForm(data: RecipeFormData, isSubmitting: boolean,
     }
   }
   return true;
+}
+
+export function buildManualParseText(data: RecipeFormData): string {
+  const parts = [data.pasteText.trim()];
+  if (data.instructionsText.trim()) {
+    parts.push(`Instructions:\n${data.instructionsText.trim()}`);
+  }
+  return parts.join("\n\n");
 }
 
 export function buildIngredientPayload(rows: IngredientRow[]) {
@@ -247,16 +257,28 @@ const RecipeInputForm = ({
 
       {/* Manual mode */}
       {formData.inputMode === "manual" && manualPasteOnly && (
-        <div className="space-y-1.5 sm:space-y-2">
-          <Label className="text-sm">Ingredients</Label>
-          <Textarea
-            value={formData.pasteText}
-            onChange={(e) => update({ pasteText: e.target.value })}
-            placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
-            className="min-h-[120px] text-sm"
-            aria-label="Ingredients text"
-          />
-        </div>
+        <>
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label className="text-sm">Ingredients</Label>
+            <Textarea
+              value={formData.pasteText}
+              onChange={(e) => update({ pasteText: e.target.value })}
+              placeholder="Add ingredients, e.g. 2 cups flour, 1 lb chicken, olive oil"
+              className="min-h-[120px] text-sm"
+              aria-label="Ingredients text"
+            />
+          </div>
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label className="text-sm">Instructions <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Textarea
+              value={formData.instructionsText}
+              onChange={(e) => update({ instructionsText: e.target.value })}
+              placeholder="Add steps, e.g. Mix flour and butter. Add milk and stir until smooth."
+              className="min-h-[120px] text-sm"
+              aria-label="Instructions text"
+            />
+          </div>
+        </>
       )}
       {formData.inputMode === "manual" && !manualPasteOnly && (
         <div className="space-y-1.5 sm:space-y-2">

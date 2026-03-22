@@ -59,7 +59,7 @@ import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
 import PantrySection from "@/components/pantry/PantrySection";
 import RecipeParseProgress from "@/components/recipes/RecipeParseProgress";
-import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
+import RecipeInputForm, { createInitialFormData, canSubmitRecipeForm, buildManualParseText, type RecipeFormData } from "@/components/recipes/RecipeInputForm";
 
 interface EventData {
   eventId: string;
@@ -497,7 +497,7 @@ const EventDetailPage = () => {
         // Manual mode: parse pasted text via unified parse-recipe (saves to DB automatically)
         setParseStep("parsing");
         const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-recipe", {
-          body: { recipeId: newRecipeId, recipeName: savedRecipeName, text: recipeFormData.pasteText, model: getCachedAiModel() },
+          body: { recipeId: newRecipeId, recipeName: savedRecipeName, text: buildManualParseText(recipeFormData), model: getCachedAiModel() },
         });
         if (parseError) throw parseError;
         if (!parseData?.success) throw new Error(parseData?.error ?? "Failed to parse ingredients");

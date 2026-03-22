@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import RecipeInputForm, {
   createInitialFormData,
   canSubmitRecipeForm,
+  buildManualParseText,
   type RecipeFormData,
 } from "@/components/recipes/RecipeInputForm";
 
@@ -111,7 +112,7 @@ const AddMealDialog = ({
 
   const handleCustomSubmit = async () => {
     if (formData.inputMode === "manual" && onAddManualMeal) {
-      onAddManualMeal(formData.name.trim(), formData.pasteText);
+      onAddManualMeal(formData.name.trim(), buildManualParseText(formData));
       handleClose();
     } else {
       // In url/upload mode, form validation ensures URL is always present

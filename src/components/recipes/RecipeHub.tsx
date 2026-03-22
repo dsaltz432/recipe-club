@@ -41,6 +41,7 @@ import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
   createInitialFormData,
   canSubmitRecipeForm,
+  buildManualParseText,
   type RecipeFormData,
 } from "./RecipeInputForm";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
@@ -153,7 +154,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       // All modes (URL, upload, manual paste) go through parse
       const name = addRecipeFormData.name.trim();
       const url = addRecipeFormData.url.trim();
-      const text = addRecipeFormData.inputMode === "manual" ? addRecipeFormData.pasteText : undefined;
+      const text = addRecipeFormData.inputMode === "manual" ? buildManualParseText(addRecipeFormData) : undefined;
       setShowAddRecipeDialog(false);
       setAddRecipeFormData(createInitialFormData());
       startParse(recipeId, name, { url: url || undefined, text });
