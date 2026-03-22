@@ -416,7 +416,7 @@ The JSON should have this structure:
   ]
 }
 
-For instructions: always base rewrites on the original author's steps — preserve their intended order, technique, and ingredient quantities. Improve clarity where needed (e.g., "Cook until done" → "Cook for 10–12 minutes until golden brown"), fix grammar, and standardize timing references with specific durations ("Cook for 10 minutes", not "Cook for awhile"). Make each step self-contained and actionable — include the ingredient, action, and expected result. Split compound steps into separate numbered steps when they involve distinct actions. Keep each step concise (1–3 sentences max). Use lowercase unit abbreviations in instructions: tbsp, tsp, oz, lb, cup (never "Tbsp", "Tsp", "Tablespoon", etc.).
+For instructions: always base rewrites on the original author's steps — preserve their intended order, technique, and ingredient quantities. Improve clarity where needed (e.g., "Cook until done" → "Cook for 10–12 minutes until golden brown"), fix grammar, and standardize timing references with specific durations ("Cook for 10 minutes", not "Cook for awhile"). Make each step self-contained and actionable — include the ingredient, action, and expected result. Split compound steps into separate numbered steps when they involve distinct actions. Keep each step concise (1–3 sentences max). Use lowercase unit abbreviations in instructions: tbsp, tsp, oz, lb, cup (never "Tbsp", "Tsp", "Tablespoon", etc.). Use common fractions in instruction text, not decimals: "½ tsp" not "0.5 tsp", "¼ cup" not "0.25 cup", "¾ lb" not "0.75 lb".
 
 Categories must be one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other.
 Category guidance:
