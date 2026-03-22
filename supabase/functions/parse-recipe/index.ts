@@ -398,8 +398,8 @@ serve(async (req) => {
 
 The JSON should have this structure:
 {
-  "description": "Brief recipe description or null",
-  "servings": "e.g. '4 servings' or null",
+  "description": "1–2 sentence description of the dish — what it is, key flavors, and why it's good. No filler phrases like 'This recipe is...' or 'A delicious...'. Write in plain, direct prose. null if no meaningful description can be inferred.",
+  "servings": "ALWAYS format as 'N servings' where N is a single number (e.g. '4 servings'). If a range is given (e.g. '4-6'), use the lower number. Never use 'serves N' or 'N-M servings'. null if truly unknown.",
   "prep_time": "e.g. '15 minutes' or null",
   "cook_time": "e.g. '45 minutes' or null",
   "total_time": "e.g. '1 hour' or null",
@@ -416,7 +416,7 @@ The JSON should have this structure:
   ]
 }
 
-For instructions: rewrite vague steps for clarity (e.g., "Cook until done" → "Cook for 10–12 minutes until golden brown"). Standardize timing references with specific durations ("Cook for 10 minutes", not "Cook for awhile"). Make each step self-contained and actionable — include the ingredient, action, and expected result. Split compound steps into separate numbered steps when they involve distinct actions.
+For instructions: always base rewrites on the original author's steps — preserve their intended order, technique, and ingredient quantities. Improve clarity where needed (e.g., "Cook until done" → "Cook for 10–12 minutes until golden brown"), fix grammar, and standardize timing references with specific durations ("Cook for 10 minutes", not "Cook for awhile"). Make each step self-contained and actionable — include the ingredient, action, and expected result. Split compound steps into separate numbered steps when they involve distinct actions. Keep each step concise (1–3 sentences max). Use lowercase unit abbreviations in instructions: tbsp, tsp, oz, lb, cup (never "Tbsp", "Tsp", "Tablespoon", etc.).
 
 Categories must be one of: produce, meat_seafood, dairy, pantry, spices, frozen, bakery, beverages, condiments, other.
 Category guidance:
@@ -473,7 +473,7 @@ For ingredient names:
       },
       body: JSON.stringify({
         model,
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: systemPrompt,
         messages: [
           {
