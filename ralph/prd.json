@@ -1,0 +1,291 @@
+{
+  "project": "Recipe Club Hub",
+  "branchName": "ralph/cook-mode",
+  "description": "Display recipe instructions in the UI, add multi-recipe side-by-side view, and build AI-powered Cook Mode that interleaves steps from multiple recipes into a unified cooking timeline. Includes prompt enhancement for cleaner instructions and a backfill script to re-parse existing recipes.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Enhance parse-recipe prompt for cleaner instructions",
+      "description": "As a user, I want recipe instructions to be clear and actionable so that I can follow them easily while cooking.",
+      "acceptanceCriteria": [
+        "System prompt in parse-recipe/index.ts includes guidance to rewrite unclear steps for clarity",
+        "System prompt instructs Claude to standardize timing references (e.g., 'Cook for 10 minutes' not 'Cook for awhile')",
+        "System prompt instructs Claude to make each step self-contained and actionable",
+        "Existing parse-recipe tests still pass: npm run test:run -- tests/unit/edge-functions/parse-recipe.test.ts",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "File: supabase/functions/parse-recipe/index.ts (system prompt is around lines 333-395). The current prompt already asks for instructions as string[], but says nothing about clarity or rewriting. Add 3-4 lines of guidance in the instructions section of the prompt. Do NOT change the JSON output schema — just add quality guidance. Keep the prompt concise."
+    },
+    {
+      "id": "US-002",
+      "title": "Create useRecipeContent hook",
+      "description": "As a developer, I want a reusable hook to fetch full recipe_content (including instructions) so all pages can share the same data-fetching logic.",
+      "acceptanceCriteria": [
+        "src/hooks/useRecipeContent.ts exists and exports a useRecipeContent hook",
+        "Hook accepts an array of recipe IDs and returns a Map<string, RecipeContent>",
+        "Hook fetches instructions, description, servings, prep_time, cook_time, total_time, status from recipe_content table",
+        "Hook handles loading and error states",
+        "Hook properly maps snake_case DB columns to camelCase RecipeContent type",
+        "Test file tests/unit/hooks/useRecipeContent.test.ts passes",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "RecipeContent type is already defined in src/types/index.ts (lines 90-104) with fields: instructions?: string[], description?, servings?, prepTime?, cookTime?, totalTime?, sourceTitle?, status. The hook should use supabase.from('recipe_content').select('*').in('recipe_id', recipeIds). Handle the JSONB instructions field — it may come back as a parsed array or need Array.isArray() checking (see pattern in src/hooks/useGroceryList.ts lines 189-210). Follow existing hook patterns like useRecipeParse.ts."
+    },
+    {
+      "id": "US-003",
+      "title": "Create RecipeInstructions component",
+      "description": "As a user, I want to see recipe instructions displayed as a numbered step list with metadata so I can follow along.",
+      "acceptanceCriteria": [
+        "src/components/cookmode/RecipeInstructions.tsx exists",
+        "Renders a numbered list of instruction steps from string[]",
+        "Shows metadata header with servings, prep time, cook time, total time when available",
+        "Shows 'No instructions available' message when instructions is null/empty",
+        "Component is responsive and looks polished on both mobile and desktop",
+        "Test file tests/unit/components/cookmode/RecipeInstructions.test.tsx passes",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Create src/components/cookmode/ directory. Use existing shadcn components (Card, CardContent). Follow the visual patterns from RecipeIngredientList (src/components/recipes/RecipeIngredientList.tsx) for consistency. Props should be: { instructions?: string[], servings?: string, prepTime?: string, cookTime?: string, totalTime?: string, description?: string }. Use lucide-react icons: Clock for times, Users for servings. IMPORTANT: Before writing this component, invoke the /frontend-design skill to get design guidance for a polished, mobile-first numbered step list with metadata header that fits the app's purple brand aesthetic."
+    },
+    {
+      "id": "US-004",
+      "title": "Add inline instructions to EventRecipesTab",
+      "description": "As a user viewing an event's recipes, I want to expand and see instructions for each recipe alongside the existing ingredients.",
+      "acceptanceCriteria": [
+        "EventRecipesTab accepts an optional recipeContentMap prop (Map<string, RecipeContent>)",
+        "Each recipe card shows an 'Instructions' expand/collapse toggle button next to the existing 'Ingredients' button",
+        "Expanding instructions renders RecipeInstructions component with data from the content map",
+        "EventDetailPage fetches recipe content via useRecipeContent and passes it to EventRecipesTab",
+        "PersonalMealDetailPage does the same",
+        "Existing EventRecipesTab tests still pass or are updated",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "EventRecipesTab is at src/components/events/EventRecipesTab.tsx. The existing 'Ingredients' toggle pattern (lines 88-100, 253-266) should be duplicated for instructions — add expandedInstructions state (Set<string>), a toggleInstructions function, and a new button. The button should use a ListOrdered or BookOpen icon from lucide-react. EventDetailPage.tsx and PersonalMealDetailPage.tsx both use EventRecipesTab — add useRecipeContent(recipeIds) call in both and pass the map down. Keep the content map prop optional so the component doesn't break without it."
+    },
+    {
+      "id": "US-005",
+      "title": "Add inline instructions to RecipeCard and RecipeHub",
+      "description": "As a user browsing My Recipes, I want to expand and see instructions for each recipe.",
+      "acceptanceCriteria": [
+        "RecipeHub fetches full recipe_content fields (not just id, recipe_id, status)",
+        "RecipeCard accepts optional RecipeContent and shows an Instructions expand/collapse toggle",
+        "Expanding renders RecipeInstructions component",
+        "Existing RecipeHub tests still pass or are updated",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "RecipeHub.tsx (src/components/recipes/RecipeHub.tsx) currently fetches recipe_content at line ~441 with select('id, recipe_id, status'). Change this to select('*') or explicitly include instructions, description, servings, prep_time, cook_time, total_time. Build a contentMap and pass per-recipe content to RecipeCard. RecipeCard.tsx (src/components/recipes/RecipeCard.tsx) already has an expandable ingredients section — add a similar toggle for instructions. Follow the same expand/collapse pattern."
+    },
+    {
+      "id": "US-006",
+      "title": "Add instructions to SharedRecipePage",
+      "description": "As a user viewing a shared recipe link, I want to see the recipe's instructions below the ingredients.",
+      "acceptanceCriteria": [
+        "SharedRecipePage fetches recipe_content for the shared recipe",
+        "Instructions are rendered using RecipeInstructions component below the ingredient list",
+        "Handles case where recipe has no parsed content gracefully",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "SharedRecipePage is at src/pages/SharedRecipePage.tsx. It already fetches recipe data and renders RecipeIngredientList. Add a query for recipe_content (single recipe, not a hook — can use supabase.from('recipe_content').select('*').eq('recipe_id', recipeId).maybeSingle()). Render RecipeInstructions below RecipeIngredientList. The page is public (no auth required), and recipe_content has RLS allowing authenticated SELECT — verify this works for unauthenticated users or add a public policy if needed."
+    },
+    {
+      "id": "US-007",
+      "title": "Create color utility and MultiRecipeView component",
+      "description": "As a user with multiple recipes in an event, I want to see all recipes' instructions side-by-side with color-coded headers.",
+      "acceptanceCriteria": [
+        "src/lib/cookModeColors.ts exists with a getRecipeColor(index) function returning bg/text/border colors",
+        "src/components/cookmode/MultiRecipeView.tsx exists",
+        "Desktop (md+): renders recipes in side-by-side CSS grid columns",
+        "Mobile: renders recipes in a tabbed view using shadcn Tabs",
+        "Each recipe panel uses RecipeInstructions and has a color-coded header",
+        "Test file tests/unit/components/cookmode/MultiRecipeView.test.tsx passes",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Color palette: use 6-8 distinct, accessible colors that work on white backgrounds (e.g., purple, blue, green, orange, pink, teal). getRecipeColor should return { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' } style objects using Tailwind classes. MultiRecipeView props: { recipes: Array<{ id: string, name: string, content: RecipeContent }> }. Use CSS grid with grid-cols-1 md:grid-cols-2 lg:grid-cols-3 for desktop responsive layout. On mobile (below md), use shadcn Tabs with one tab per recipe name. IMPORTANT: Before writing MultiRecipeView, invoke the /frontend-design skill to get design guidance for the color palette, color-coded headers, and responsive layout that fits the app's purple brand."
+    },
+    {
+      "id": "US-008",
+      "title": "Add Cook tab to RecipeDetailTabs",
+      "description": "As a user viewing an event with multiple recipes, I want a Cook tab that shows all recipes' instructions together.",
+      "acceptanceCriteria": [
+        "RecipeDetailTabs accepts an optional cookContent prop",
+        "When cookContent is provided, a 4th 'Cook' tab appears with ChefHat icon",
+        "Grid layout adjusts from 3 to 4 columns when Cook tab is present",
+        "EventDetailPage passes MultiRecipeView as cookContent when 2+ recipes have instructions",
+        "PersonalMealDetailPage does the same",
+        "Existing RecipeDetailTabs tests still pass or are updated",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "RecipeDetailTabs is at src/components/shared/RecipeDetailTabs.tsx (simple component, 42 lines). Add optional cookContent?: React.ReactNode prop. Conditionally render the 4th tab. Use dynamic grid: className={`grid w-full max-w-lg grid-cols-${cookContent ? '4' : '3'} ...`}. ChefHat icon is already imported in EventRecipesTab.tsx so it's available in lucide-react. Both EventDetailPage.tsx and PersonalMealDetailPage.tsx already use RecipeDetailTabs — wire up the cookContent prop using MultiRecipeView with the recipe content data from useRecipeContent."
+    },
+    {
+      "id": "US-009",
+      "title": "Create cook_mode_timelines migration and types",
+      "description": "As a developer, I want a database table to cache AI-generated interleaved cooking timelines so they don't need to be regenerated each time.",
+      "acceptanceCriteria": [
+        "Migration file creates cook_mode_timelines table with id, event_id, recipe_ids_hash, steps (JSONB), model, created_at",
+        "UNIQUE constraint on (event_id, recipe_ids_hash)",
+        "Foreign key on event_id references scheduled_events(id) ON DELETE CASCADE",
+        "RLS enabled: authenticated users can SELECT, service_role can ALL",
+        "CookModeTimeline and CookModeStep types added to src/types/index.ts",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Migration file: supabase/migrations/20260308000001_create_cook_mode_timelines.sql. Follow the pattern from 20260206000000_create_recipe_parsed_tables.sql for RLS policies. CookModeStep type: { recipeId: string, recipeName: string, instruction: string, timing?: string, category?: 'prep' | 'active' | 'passive' | 'finish' }. CookModeTimeline type: { id: string, eventId: string, recipeIdsHash: string, steps: CookModeStep[], model?: string, createdAt: string }. Add these types to src/types/index.ts after the RecipeContent interface. After creating the migration file, run: npx supabase db push (or npx supabase migration up) to apply it to the local DB — required before US-010 and US-011 can work."
+    },
+    {
+      "id": "US-010",
+      "title": "Create generate-cook-timeline edge function",
+      "description": "As a user, I want an AI-generated interleaved cooking timeline that optimizes parallel tasks across multiple recipes.",
+      "acceptanceCriteria": [
+        "supabase/functions/generate-cook-timeline/index.ts exists",
+        "Accepts { eventId, recipeIds, model? } as input",
+        "Checks cook_mode_timelines cache first (hash sorted recipe IDs), returns cached result if found",
+        "Fetches recipe_content (instructions, times) and recipe names for given IDs",
+        "Calls Anthropic API to generate interleaved timeline",
+        "Stores result in cook_mode_timelines table",
+        "Returns CookModeStep[] array",
+        "Handles errors gracefully (missing instructions, API failures)",
+        "CORS headers included",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Follow the patterns from parse-recipe/index.ts: CORS handling (lines 1-20), Supabase client creation with service role key, Anthropic API call with model selection. The AI prompt should say: 'You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish.' Hash recipe IDs with a simple approach: sort IDs, join with comma, use as the hash string (no need for SHA — UUIDs are already unique). Use the model parameter or default to claude-sonnet-4-6."
+    },
+    {
+      "id": "US-011",
+      "title": "Create useCookMode hook",
+      "description": "As a developer, I want a hook that manages Cook Mode state — generating timelines for multi-recipe events and using stored instructions for single recipes.",
+      "acceptanceCriteria": [
+        "src/hooks/useCookMode.ts exists",
+        "For single recipe: converts stored instructions to CookModeStep[] without calling edge function",
+        "For multiple recipes: calls generate-cook-timeline edge function",
+        "Checks DB cache before calling edge function",
+        "Exposes loading, error, and timeline states",
+        "Uses getCachedAiModel() for model preference",
+        "Test file tests/unit/hooks/useCookMode.test.ts passes",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "For single recipe, map instructions to CookModeStep[]: { recipeId, recipeName, instruction: step, category: undefined }. For multi-recipe: first check cook_mode_timelines table with the recipe IDs hash. If cache miss, call supabase.functions.invoke('generate-cook-timeline', { body: { eventId, recipeIds, model } }). getCachedAiModel is in src/lib/userPreferences.ts. Follow patterns from useRecipeParse.ts for edge function invocation."
+    },
+    {
+      "id": "US-012",
+      "title": "Create CookModeStep component",
+      "description": "As a user in Cook Mode, I want each step to clearly show which recipe it belongs to with visual cues.",
+      "acceptanceCriteria": [
+        "src/components/cookmode/CookModeStep.tsx exists",
+        "Shows recipe name badge with color from cookModeColors",
+        "Shows instruction text in large, readable font",
+        "Shows timing hint in smaller text when available",
+        "Shows category icon: prep=Scissors, active=Flame, passive=Timer, finish=CheckCircle",
+        "Test file tests/unit/components/cookmode/CookModeStep.test.tsx passes",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Props: { step: CookModeStep, color: { bg, text, border }, isActive?: boolean }. Use lucide-react icons: Scissors, Flame, Timer, CheckCircle2. Instruction text should be text-lg sm:text-xl for kitchen readability. The color prop comes from getRecipeColor (src/lib/cookModeColors.ts from US-007). Keep it simple — this component is rendered inside CookModeDialog."
+    },
+    {
+      "id": "US-013",
+      "title": "Create CookModeDialog full-screen cooking interface",
+      "description": "As a user, I want a full-screen cooking interface with step-by-step navigation, large text, and screen-awake support for hands-free kitchen use.",
+      "acceptanceCriteria": [
+        "src/components/cookmode/CookModeDialog.tsx exists",
+        "Opens as a full-screen dialog",
+        "Step-by-step view (default): shows one CookModeStep at a time with large prev/next buttons (48px+ touch targets)",
+        "Progress bar at top showing current step / total steps",
+        "List view (toggle): scrollable timeline with all steps, current step highlighted",
+        "Tapping a step in list view jumps to it in step-by-step view",
+        "Wake Lock API keeps screen on (graceful fallback if unsupported)",
+        "Works for both single-recipe (simple steps) and multi-recipe (interleaved timeline)",
+        "Close button clearly visible",
+        "Test file tests/unit/components/cookmode/CookModeDialog.test.tsx passes",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Use shadcn Dialog with custom full-screen styling (fixed inset-0, z-50). Props: { open: boolean, onClose: () => void, steps: CookModeStep[], recipeNames: Map<string, string>, loading?: boolean, error?: string }. State: currentStep (index), viewMode ('step' | 'list'). Navigation buttons should be at the bottom of the screen, full-width on mobile, with 48px+ touch targets. Wake Lock: try { await navigator.wakeLock.request('screen') } catch { /* graceful fallback */ } — request on open, release on close. Color-code steps using getRecipeColor with a recipe-to-index map. Show loading spinner while timeline generates. IMPORTANT: Before writing this component, invoke the /frontend-design skill — this is the most important UI in the feature. It needs to look exceptional on mobile (kitchen use with messy hands), support both step-by-step and list views, and feel like an intentional 'cooking mode' experience distinct from the rest of the app."
+    },
+    {
+      "id": "US-014",
+      "title": "Wire up Start Cooking button on event pages",
+      "description": "As a user on an event or meal page, I want a 'Start Cooking' button that launches Cook Mode.",
+      "acceptanceCriteria": [
+        "EventDetailPage shows 'Start Cooking' button when any recipe has parsed instructions",
+        "PersonalMealDetailPage shows 'Start Cooking' button when any recipe has parsed instructions",
+        "Button works for single recipe (shows step-by-step immediately)",
+        "Button works for multi-recipe (generates interleaved timeline, shows loading, then step-by-step)",
+        "CookModeDialog opens and functions correctly from both pages",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "Add the Start Cooking button in the event info card header area, near existing action buttons. Use ChefHat icon from lucide-react. Wire up useCookMode hook: on button click, set dialog open, trigger timeline generation if multi-recipe. For single recipe, pass instructions directly as steps (no edge function call). Both pages should use identical patterns — the hook and dialog are shared. Button should be prominent but not overwhelming — a secondary/outline variant with the ChefHat icon."
+    },
+    {
+      "id": "US-015",
+      "title": "Add Cook Mode entry point to RecipeCard",
+      "description": "As a user browsing My Recipes, I want to launch Cook Mode for a single recipe directly from the recipe card.",
+      "acceptanceCriteria": [
+        "RecipeCard shows a 'Cook' button when the recipe has parsed instructions (status = 'completed' and instructions non-empty)",
+        "Clicking 'Cook' opens CookModeDialog for that single recipe",
+        "CookModeDialog receives the recipe's instructions as CookModeStep[] (no edge function call for single recipe)",
+        "Button is not shown when recipe has no instructions",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "RecipeCard is at src/components/recipes/RecipeCard.tsx. It already receives content data (from US-005). Add a small 'Cook' button with ChefHat icon in the card action area, only visible when content?.instructions?.length > 0. On click, open CookModeDialog with steps mapped from the recipe's instructions (same single-recipe mapping from useCookMode: { recipeId, recipeName: recipe.name, instruction: step }). RecipeCard renders the dialog inline — no need to lift state to RecipeHub."
+    },
+    {
+      "id": "US-016",
+      "title": "Write tests for generate-cook-timeline edge function",
+      "description": "As a developer, I want the generate-cook-timeline edge function covered by tests so regressions are caught.",
+      "acceptanceCriteria": [
+        "tests/unit/edge-functions/generate-cook-timeline.test.ts exists",
+        "Tests cover: returns cached timeline when recipe_ids_hash matches, calls Anthropic API on cache miss, stores result in cook_mode_timelines, returns 400 when recipeIds is missing or empty, handles Anthropic API failure gracefully, returns CORS headers",
+        "npm run test:run -- tests/unit/edge-functions/generate-cook-timeline.test.ts passes",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": "Follow the pattern from tests/unit/edge-functions/parse-recipe.test.ts — it uses vi.stubGlobal('fetch', ...) to mock the Anthropic API and mocks @/integrations/supabase/client for DB calls. Mock the Supabase client to return empty data (cache miss) or existing data (cache hit). For the Anthropic mock, return a valid JSON response with a steps array. Test the cache-hit path separately to verify no Anthropic call is made. The edge function lives at supabase/functions/generate-cook-timeline/index.ts (created in US-010)."
+    },
+    {
+      "id": "US-017",
+      "title": "Create backfill re-parse script",
+      "description": "As a developer, I want a one-time script to re-parse all existing recipes with the improved prompt so existing data gets cleaner instructions and ingredients.",
+      "acceptanceCriteria": [
+        "scripts/backfill-reparse.ts exists",
+        "Queries all recipes with recipe_content.status = 'completed' that have a URL",
+        "Calls parse-recipe edge function for each recipe sequentially",
+        "Includes a small delay between calls to avoid rate limits",
+        "Logs progress (recipe name, success/failure) to console",
+        "Skips recipes without a URL (custom meals)",
+        "Can be re-run safely (idempotent)",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "This is a Node script run manually (not an edge function). Use the Supabase JS client with the service role key from env vars. Query: supabase.from('recipes').select('id, name, url, recipe_content!inner(status)').eq('recipe_content.status', 'completed').not('url', 'is', null). For each recipe, call supabase.functions.invoke('parse-recipe', { body: { recipeId: recipe.id, url: recipe.url, model: 'claude-sonnet-4-6' } }). Add a 2-second delay between calls. Log: 'Re-parsing [name]... OK/FAILED'. Handle errors per-recipe (don't stop on failure). Usage: npx tsx scripts/backfill-reparse.ts"
+    }
+  ]
+}

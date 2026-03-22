@@ -86,7 +86,7 @@ const UserManagement = ({ currentUserEmail, _testForceDeleteSelf, _testForceRole
           email: u.email,
           role: u.role as "admin" | "member" | "viewer",
           is_club_member: u.is_club_member,
-          created_at: u.created_at,
+          created_at: u.created_at ?? "",
         }))
       );
     } catch (error) {

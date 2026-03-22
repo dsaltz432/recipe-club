@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2 } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
-import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent } from "@/types";
+import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import { DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
+import { supabase } from "@/integrations/supabase/client";
 import RecipeIngredientList from "./RecipeIngredientList";
+import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
+import CookModeDialog from "@/components/cookmode/CookModeDialog";
+import RecipeTips from "@/components/recipes/RecipeTips";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -53,14 +57,48 @@ interface RecipeCardProps {
   ingredients?: RecipeIngredient[];
   pantryItems?: string[];
   contentStatus?: RecipeContent["status"];
+  content?: RecipeContent;
   onParseRecipe?: (recipeId: string) => void;
   userId?: string;
   onIngredientsChange?: () => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const [tipsExpanded, setTipsExpanded] = useState(false);
+  const [cookModeOpen, setCookModeOpen] = useState(false);
+  const [cookModeSteps, setCookModeSteps] = useState<CookModeStep[]>([]);
+  const [cookModeIngredients, setCookModeIngredients] = useState<RecipeIngredient[]>([]);
+
+  const fetchAndOpenCookMode = useCallback(async () => {
+    const steps: CookModeStep[] = (content!.instructions!).map((instruction) => ({
+      recipeId: recipe.id,
+      recipeName: recipe.name,
+      instruction,
+    }));
+    setCookModeSteps(steps);
+    setCookModeOpen(true);
+    const { data } = await supabase
+      .from("recipe_ingredients")
+      .select("*")
+      .eq("recipe_id", recipe.id);
+    if (data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCookModeIngredients(data.map((row: any) => ({
+        id: row.id,
+        recipeId: row.recipe_id,
+        name: row.name,
+        quantity: row.quantity ?? undefined,
+        unit: row.unit ?? undefined,
+        category: row.category,
+        rawText: row.raw_text ?? undefined,
+        sortOrder: row.sort_order ?? undefined,
+        createdAt: row.created_at,
+      })));
+    }
+  }, [content, recipe.id, recipe.name]);
 
   const allPantryItems = pantryItems && pantryItems.length > 0
     ? [...new Set([...DEFAULT_PANTRY_ITEMS, ...pantryItems])]
@@ -69,6 +107,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
     (ing) => !isPantryItem(ing.name, allPantryItems, ing.unit)
   );
   const hasIngredients = filteredIngredients && filteredIngredients.length > 0;
+  const hasInstructions = content?.instructions && content.instructions.length > 0;
   const hasDetails = recipe.notes.length > 0;
 
   // Get colors from ingredient
@@ -114,7 +153,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
               )}
             </div>
             {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onDelete || onEdit) && (
+            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions) && (
               <div className="flex items-center gap-0 -ml-1 mt-0.5">
                 {recipe.url && (
                   <a
@@ -170,6 +209,17 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                     onClick={() => onDelete(recipe.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {hasInstructions && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={`Start cooking ${recipe.name}`}
+                    onClick={fetchAndOpenCookMode}
+                  >
+                    <ChefHat className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>
@@ -313,6 +363,61 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
           </div>
         ) : null}
 
+        {/* Instructions Section */}
+        {hasInstructions && (
+          <div className="mb-2 sm:mb-3">
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+              aria-label={instructionsExpanded ? `Collapse instructions for ${recipe.name}` : `Expand instructions for ${recipe.name}`}
+            >
+              {instructionsExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              <ListOrdered className="h-3.5 w-3.5 ml-0.5" />
+              <span>Instructions</span>
+            </button>
+            {instructionsExpanded && (
+              <div className="mt-2">
+                <RecipeInstructions
+                  instructions={content!.instructions}
+                  servings={content!.servings}
+                  prepTime={content!.prepTime}
+                  cookTime={content!.cookTime}
+                  totalTime={content!.totalTime}
+                  description={content!.description}
+                  editable={recipe.createdBy === userId}
+                  recipeId={recipe.id}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tips Section */}
+        <div className="mb-2 sm:mb-3">
+          <button
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+            onClick={() => setTipsExpanded(!tipsExpanded)}
+            aria-label={tipsExpanded ? `Collapse tips for ${recipe.name}` : `Expand tips for ${recipe.name}`}
+          >
+            {tipsExpanded ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+            <Lightbulb className="h-3.5 w-3.5 ml-0.5" />
+            <span>Tips</span>
+          </button>
+          {tipsExpanded && (
+            <div className="mt-2">
+              <RecipeTips recipeId={recipe.id} userId={userId} />
+            </div>
+          )}
+        </div>
+
         {/* Expandable Details */}
         {hasDetails && (
           <>
@@ -385,6 +490,15 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
           </>
         )}
       </CardContent>
+
+      <CookModeDialog
+        open={cookModeOpen}
+        onClose={() => setCookModeOpen(false)}
+        steps={cookModeSteps}
+        recipeNames={new Map([[recipe.id, recipe.name]])}
+        ingredientsByRecipe={new Map([[recipe.id, cookModeIngredients]])}
+        userId={userId}
+      />
     </Card>
   );
 };

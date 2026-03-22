@@ -1,6 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCachedAiModel } from "@/lib/userPreferences";
 
+/**
+ * Parse instructions from a recipe_content DB row.
+ * Instructions may be stored as a JSONB array OR as a JSON-stringified string
+ * (legacy: parse-recipe used JSON.stringify before saving).
+ */
+export function parseInstructions(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) return value as string[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 export type SaveRecipeEditResult =
   | { success: true; urlChanged: boolean }
   | { success: false; error: string };
@@ -56,6 +74,33 @@ export async function saveRecipeEdit(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to update recipe",
+    };
+  }
+}
+
+export type SaveInstructionsResult =
+  | { success: true }
+  | { success: false; error: string };
+
+/**
+ * Save edited instructions to recipe_content.
+ */
+export async function saveInstructionsEdit(
+  recipeId: string,
+  instructions: string[]
+): Promise<SaveInstructionsResult> {
+  try {
+    const { error } = await supabase
+      .from("recipe_content")
+      .update({ instructions })
+      .eq("recipe_id", recipeId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving instructions:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to save instructions",
     };
   }
 }

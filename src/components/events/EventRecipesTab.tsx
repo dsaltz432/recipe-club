@@ -15,10 +15,13 @@ import {
   ChevronDown,
   ChevronUp,
   Share2,
+  ListOrdered,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary } from "@/types";
+import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary, RecipeContent } from "@/types";
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
+import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
+import RecipeTips from "@/components/recipes/RecipeTips";
 
 export interface EventRecipeWithRatings extends EventRecipeWithNotes {
   ratingSummary?: RecipeRatingsSummary;
@@ -63,6 +66,7 @@ interface EventRecipesTabProps {
   onIngredientsChange?: (recipeId: string) => void;
   cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string };
   pantryItems?: string[];
+  recipeContentMap?: Map<string, RecipeContent>;
 }
 
 const EventRecipesTab = ({
@@ -84,11 +88,25 @@ const EventRecipesTab = ({
   onIngredientsChange,
   cacheContext,
   pantryItems,
+  recipeContentMap,
 }: EventRecipesTabProps) => {
   const [expandedIngredients, setExpandedIngredients] = useState<Set<string>>(new Set());
+  const [expandedInstructions, setExpandedInstructions] = useState<Set<string>>(new Set());
 
   const toggleIngredients = (recipeId: string) => {
     setExpandedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(recipeId)) {
+        next.delete(recipeId);
+      } else {
+        next.add(recipeId);
+      }
+      return next;
+    });
+  };
+
+  const toggleInstructions = (recipeId: string) => {
+    setExpandedInstructions((prev) => {
       const next = new Set(prev);
       if (next.has(recipeId)) {
         next.delete(recipeId);
@@ -266,6 +284,16 @@ const EventRecipesTab = ({
                       </Button>
                       <Button
                         variant="ghost"
+                        size="sm"
+                        className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
+                        aria-label={`Toggle instructions for ${recipe.name}`}
+                        onClick={() => toggleInstructions(recipe.id)}
+                      >
+                        <ListOrdered className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <span className="hidden sm:inline text-xs">Instructions</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
                         size="icon"
                         className="h-7 w-7 sm:h-8 sm:w-8"
                         aria-label={`Copy share link for ${recipe.name}`}
@@ -312,6 +340,24 @@ const EventRecipesTab = ({
                         onIngredientsChange={() => onIngredientsChange?.(recipe.id)}
                         cacheContext={cacheContext}
                         pantryItems={pantryItems}
+                      />
+                    </>
+                  )}
+
+                  {/* Expandable Instructions Section */}
+                  {expandedInstructions.has(recipe.id) && (
+                    <>
+                      <Separator className="bg-purple/10" />
+                      <div className="px-1">
+                        <RecipeTips recipeId={recipe.id} userId={userId} />
+                      </div>
+                      <RecipeInstructions
+                        instructions={recipeContentMap?.get(recipe.id)?.instructions}
+                        servings={recipeContentMap?.get(recipe.id)?.servings}
+                        prepTime={recipeContentMap?.get(recipe.id)?.prepTime}
+                        cookTime={recipeContentMap?.get(recipe.id)?.cookTime}
+                        totalTime={recipeContentMap?.get(recipe.id)?.totalTime}
+                        description={recipeContentMap?.get(recipe.id)?.description}
                       />
                     </>
                   )}

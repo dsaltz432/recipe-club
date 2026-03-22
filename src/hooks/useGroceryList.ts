@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseInstructions } from "@/lib/recipeActions";
 import { toast } from "sonner";
 import { smartCombineIngredients } from "@/lib/groceryList";
 import {
@@ -81,6 +82,8 @@ export interface UseGroceryListReturn {
   refreshGroceries: () => void;
   invalidateCache: () => void;
   markIngredientChange: () => void;
+
+  contentMap: Map<string, RecipeContent>;
 }
 
 export function useGroceryList(
@@ -114,6 +117,7 @@ export function useGroceryList(
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [isAddingGeneral, setIsAddingGeneral] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [contentMap, setContentMap] = useState<Map<string, RecipeContent>>(new Map());
 
   // --- Refs ---
   const lastCombinedRecipeIds = useRef<string[]>([]);
@@ -181,7 +185,7 @@ export function useGroceryList(
             category: row.category as RecipeIngredient["category"],
             rawText: row.raw_text ?? undefined,
             sortOrder: row.sort_order ?? undefined,
-            createdAt: row.created_at,
+            createdAt: row.created_at ?? undefined,
           }));
           setRecipeIngredients(ingredients);
         }
@@ -197,17 +201,16 @@ export function useGroceryList(
               prepTime: row.prep_time ?? undefined,
               cookTime: row.cook_time ?? undefined,
               totalTime: row.total_time ?? undefined,
-              instructions: Array.isArray(row.instructions)
-                ? (row.instructions as string[])
-                : undefined,
+              instructions: parseInstructions(row.instructions),
               sourceTitle: row.source_title ?? undefined,
               parsedAt: row.parsed_at ?? undefined,
               status: row.status as RecipeContent["status"],
               errorMessage: row.error_message ?? undefined,
-              createdAt: row.created_at,
+              createdAt: row.created_at ?? undefined,
             };
           }
         }
+        setContentMap(new Map(Object.entries(contentMap)));
 
         let loadedRecipes: Recipe[] = [];
         if (recipesResult.data) {
@@ -669,7 +672,7 @@ export function useGroceryList(
           category: row.category as RecipeIngredient["category"],
           rawText: row.raw_text ?? undefined,
           sortOrder: row.sort_order ?? undefined,
-          createdAt: row.created_at,
+          createdAt: row.created_at ?? undefined,
         }));
         setRecipeIngredients((prev) => [...prev, ...newItems]);
 
@@ -874,5 +877,7 @@ export function useGroceryList(
     refreshGroceries,
     invalidateCache,
     markIngredientChange,
+
+    contentMap,
   };
 }

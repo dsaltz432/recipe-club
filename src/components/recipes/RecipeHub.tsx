@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { getCachedAiModel } from "@/lib/userPreferences";
+import { parseInstructions } from "@/lib/recipeActions";
+import { parseTimeToMinutes } from "@/lib/parseTime";
 import { useRecipeParse } from "@/hooks/useRecipeParse";
 import { Input } from "@/components/ui/input";
 import {
@@ -72,10 +74,21 @@ interface RecipeContentRow {
   id: string;
   recipe_id: string;
   status: string;
+  description?: string | null;
+  servings?: string | null;
+  prep_time?: string | null;
+  cook_time?: string | null;
+  total_time?: string | null;
+  instructions?: unknown;
+  source_title?: string | null;
+  parsed_at?: string | null;
+  error_message?: string | null;
+  created_at?: string | null;
 }
 
 type RecipeSubTab = "club" | "personal";
 type SortOption = "newest" | "alphabetical" | "highest_rated";
+type TimeFilter = "all" | "under15" | "under30" | "under60" | "over60";
 
 interface RecipeHubProps {
   userId?: string;
@@ -92,6 +105,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [isLoading, setIsLoading] = useState(true);
   const [subTab, setSubTab] = useState<RecipeSubTab>("club");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [clubCount, setClubCount] = useState<number | null>(null);
   const [personalCount, setPersonalCount] = useState<number | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<RecipeWithNotes | null>(null);
@@ -262,7 +276,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         userId: n.user_id,
         notes: n.notes || undefined,
         photos: n.photos || undefined,
-        createdAt: n.created_at,
+        createdAt: n.created_at ?? undefined,
         userName: n.profiles?.name || "Unknown",
         userAvatar: n.profiles?.avatar_url || undefined,
       });
@@ -286,7 +300,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         eventId: r.event_id || undefined,
         ingredientId: r.ingredient_id || undefined,
         createdBy: r.created_by || undefined,
-        createdAt: r.created_at,
+        createdAt: r.created_at ?? undefined,
         createdByName: creatorProfile?.name || undefined,
         createdByAvatar: creatorProfile?.avatar_url || undefined,
         notes,
@@ -342,7 +356,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         eventId: r.event_id || undefined,
         ingredientId: r.ingredient_id || undefined,
         createdBy: r.created_by || undefined,
-        createdAt: r.created_at,
+        createdAt: r.created_at ?? undefined,
         createdByName: creatorProfile?.name || undefined,
         createdByAvatar: creatorProfile?.avatar_url || undefined,
         notes: [],
@@ -372,7 +386,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             userId: n.user_id,
             notes: n.notes || undefined,
             photos: n.photos || undefined,
-            createdAt: n.created_at,
+            createdAt: n.created_at ?? undefined,
             userName: n.profiles?.name || "Unknown",
             userAvatar: n.profiles?.avatar_url || undefined,
           });
@@ -453,7 +467,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         .in("recipe_id", recipeIds),
       supabase
         .from("recipe_content")
-        .select("id, recipe_id, status")
+        .select("*")
         .in("recipe_id", recipeIds),
     ]);
 
@@ -488,6 +502,16 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
           id: row.id,
           recipeId: row.recipe_id,
           status: row.status as RecipeContent["status"],
+          description: row.description ?? undefined,
+          servings: row.servings ?? undefined,
+          prepTime: row.prep_time ?? undefined,
+          cookTime: row.cook_time ?? undefined,
+          totalTime: row.total_time ?? undefined,
+          instructions: parseInstructions(row.instructions),
+          sourceTitle: row.source_title ?? undefined,
+          parsedAt: row.parsed_at ?? undefined,
+          errorMessage: row.error_message ?? undefined,
+          createdAt: row.created_at ?? undefined,
         };
       });
     }
@@ -731,7 +755,19 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       ingredientFilter === "all" ||
       recipe.ingredientId === ingredientFilter;
 
-    return matchesSearch && matchesIngredient;
+    const matchesTime = (() => {
+      if (timeFilter === "all") return true;
+      const content = recipeContentMap[recipe.id];
+      const minutes = parseTimeToMinutes(content?.totalTime);
+      if (minutes === null) return true; // unparseable times pass through all filters
+      if (timeFilter === "under15") return minutes < 15;
+      if (timeFilter === "under30") return minutes < 30;
+      if (timeFilter === "under60") return minutes < 60;
+      if (timeFilter === "over60") return minutes >= 60;
+      return true;
+    })();
+
+    return matchesSearch && matchesIngredient && matchesTime;
   });
 
   // Sort filtered recipes
@@ -825,7 +861,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                {(sortOption !== "newest" || ingredientFilter !== "all") && (
+                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all") && (
                   <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-purple" />
                 )}
               </Button>
@@ -859,6 +895,18 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     </SelectContent>
                   </Select>
                 )}
+                <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Any Time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Time</SelectItem>
+                    <SelectItem value="under15">Under 15 min</SelectItem>
+                    <SelectItem value="under30">Under 30 min</SelectItem>
+                    <SelectItem value="under60">Under 1 hour</SelectItem>
+                    <SelectItem value="over60">Over 1 hour</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -888,6 +936,18 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 </SelectContent>
               </Select>
             )}
+            <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
+              <SelectTrigger className="hidden sm:flex w-44">
+                <SelectValue placeholder="Any Time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any Time</SelectItem>
+                <SelectItem value="under15">Under 15 min</SelectItem>
+                <SelectItem value="under30">Under 30 min</SelectItem>
+                <SelectItem value="under60">Under 1 hour</SelectItem>
+                <SelectItem value="over60">Over 1 hour</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {subTab === "personal" && userId && (
             <Button
@@ -906,7 +966,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchTerm || ingredientFilter !== "all"
+                {searchTerm || ingredientFilter !== "all" || timeFilter !== "all"
                   ? "No recipes found matching your search."
                   : subTab === "personal"
                   ? "No personal recipes yet. Click \"Add Recipe\" to get started."
@@ -927,6 +987,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 ingredients={recipeIngredientsMap[recipe.id]}
                 pantryItems={pantryItemNames}
                 contentStatus={recipeContentMap[recipe.id]?.status}
+                content={recipeContentMap[recipe.id]}
                 onParseRecipe={isAdmin ? handleParseRecipe : undefined}
                 userId={userId}
                 onIngredientsChange={() => handleIngredientsChange(recipe.id)}

@@ -21,6 +21,7 @@ interface NotifyRequest {
   ingredientName?: string;
   eventDate?: string;
   excludeUserId?: string;
+  recipeId?: string;
 }
 
 serve(async (req) => {
@@ -45,7 +46,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: NotifyRequest = await req.json();
-    const { type, recipeName, recipeUrl, ingredientName, eventDate, excludeUserId } = body;
+    const { type, recipeName, recipeUrl, ingredientName, eventDate, excludeUserId, recipeId } = body;
 
     if (!recipeName) {
       throw new Error("recipeName is required");
@@ -93,6 +94,27 @@ serve(async (req) => {
       );
     }
 
+    // Fetch cook times from recipe_content if recipeId provided
+    let prepTime: string | null = null;
+    let cookTime: string | null = null;
+    let totalTime: string | null = null;
+    let servings: string | null = null;
+
+    if (recipeId) {
+      const { data: contentData } = await supabase
+        .from("recipe_content")
+        .select("prep_time, cook_time, total_time, servings")
+        .eq("recipe_id", recipeId)
+        .maybeSingle();
+
+      if (contentData) {
+        prepTime = contentData.prep_time;
+        cookTime = contentData.cook_time;
+        totalTime = contentData.total_time;
+        servings = contentData.servings;
+      }
+    }
+
     // Format the event date if provided
     const formattedDate = eventDate
       ? new Date(eventDate).toLocaleDateString("en-US", {
@@ -136,6 +158,13 @@ serve(async (req) => {
         <p>${messageMap[type]}</p>
         <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
           <p style="margin: 0 0 8px 0;"><strong>${recipeName}</strong></p>
+          ${(servings || prepTime || cookTime || totalTime) ? `
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0; font-size: 13px; color: #555;">
+            ${servings ? `<span>👤 <strong>Servings:</strong> ${servings}</span>` : ""}
+            ${prepTime ? `<span>⏱ <strong>Prep:</strong> ${prepTime}</span>` : ""}
+            ${cookTime ? `<span>🍳 <strong>Cook:</strong> ${cookTime}</span>` : ""}
+            ${totalTime ? `<span>⏰ <strong>Total:</strong> ${totalTime}</span>` : ""}
+          </div>` : ""}
           ${recipeUrl ? `<a href="${recipeUrl}" style="color: #9b87f5;">View Recipe</a>` : ""}
         </div>
         <p>${ctaMap[type]}</p>

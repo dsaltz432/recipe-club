@@ -46,6 +46,8 @@ import AppHeader from "@/components/shared/AppHeader";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
+import CookModeDialog from "@/components/cookmode/CookModeDialog";
+import { useCookMode, type CookViewMode } from "@/hooks/useCookMode";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { saveRecipeEdit } from "@/lib/recipeActions";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
@@ -136,6 +138,48 @@ const PersonalMealDetailPage = () => {
     supportsGeneralItems: true,
   });
 
+  const recipeContentMap = grocery.contentMap;
+
+  const cookModeRecipes = useMemo(() => {
+    return (event?.recipesWithNotes ?? [])
+      .filter((r) => {
+        const content = recipeContentMap.get(r.recipe.id);
+        return content?.instructions && content.instructions.length > 0;
+      })
+      .map((r) => ({
+        id: r.recipe.id,
+        name: r.recipe.name,
+        content: recipeContentMap.get(r.recipe.id)!,
+      }));
+  }, [event?.recipesWithNotes, recipeContentMap]);
+
+  const [cookModeOpen, setCookModeOpen] = useState(false);
+  const cookModeRecipeList = useMemo(
+    () => cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    [cookModeRecipes]
+  );
+  const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline, ingredientsByRecipe: cookModeIngredientsByRecipe } = useCookMode({
+    eventId,
+    recipes: cookModeRecipeList,
+    allRecipeIngredients: grocery.recipeIngredients,
+  });
+  const cookModeRecipeNames = useMemo(
+    () => new Map(cookModeRecipes.map((r) => [r.id, r.name])),
+    [cookModeRecipes]
+  );
+
+  const [cookViewMode, setCookViewMode] = useState<CookViewMode>("interleaved");
+
+  const handleStartCooking = () => {
+    setCookModeOpen(true);
+    generateTimeline(cookViewMode);
+  };
+
+  const handleCookViewModeChange = (mode: CookViewMode) => {
+    setCookViewMode(mode);
+    generateTimeline(mode);
+  };
+
   const handlePantryChange = () => {
     grocery.refreshGroceries();
   };
@@ -216,7 +260,7 @@ const PersonalMealDetailPage = () => {
         user_id: string;
         notes: string | null;
         photos: string[] | null;
-        created_at: string;
+        created_at: string | null;
         profiles: { name: string | null; avatar_url: string | null } | null;
       }> = [];
 
@@ -291,7 +335,7 @@ const PersonalMealDetailPage = () => {
             userId: n.user_id,
             notes: n.notes || undefined,
             photos: n.photos || undefined,
-            createdAt: n.created_at,
+            createdAt: n.created_at ?? undefined,
             userName: n.profiles?.name || "Unknown",
             userAvatar: n.profiles?.avatar_url || undefined,
           }));
@@ -306,7 +350,7 @@ const PersonalMealDetailPage = () => {
             url: recipe.url || undefined,
             eventId: recipe.event_id || undefined,
             createdBy: recipe.created_by || undefined,
-            createdAt: recipe.created_at,
+            createdAt: recipe.created_at ?? undefined,
             createdByName: creatorProfile?.name || undefined,
             createdByAvatar: creatorProfile?.avatar_url || undefined,
           },
@@ -784,17 +828,19 @@ const PersonalMealDetailPage = () => {
                     <strong className="text-orange">{totalRecipes}</strong> recipe{totalRecipes !== 1 ? "s" : ""}
                   </span>
                 </div>
-                {mealItems.length > 0 && totalRecipes > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowRatingDialog(true)}
-                    className="text-xs border-purple/30 text-purple hover:bg-purple/5 px-2 sm:px-3"
-                  >
-                    <Star className="h-3.5 w-3.5 sm:mr-1.5" />
-                    <span className="hidden sm:inline">Rate Recipes</span>
-                  </Button>
-                )}
+                <div className="flex gap-1 sm:gap-2">
+                  {mealItems.length > 0 && totalRecipes > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowRatingDialog(true)}
+                      className="text-xs border-purple/30 text-purple hover:bg-purple/5 px-2 sm:px-3"
+                    >
+                      <Star className="h-3.5 w-3.5 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Rate Recipes</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -821,6 +867,7 @@ const PersonalMealDetailPage = () => {
               onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
               pantryItems={grocery.pantryItems}
+              recipeContentMap={recipeContentMap}
             />
           }
           groceryContent={
@@ -860,6 +907,8 @@ const PersonalMealDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
+          onCookClick={handleStartCooking}
+          showCookTab={cookModeRecipes.length > 0}
         />
       </main>
 
@@ -1034,6 +1083,20 @@ const PersonalMealDetailPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+
+      {/* Cook Mode Dialog */}
+      <CookModeDialog
+        open={cookModeOpen}
+        onClose={() => setCookModeOpen(false)}
+        steps={cookTimeline}
+        recipeNames={cookModeRecipeNames}
+        loading={cookModeLoading}
+        error={cookModeError ?? undefined}
+        ingredientsByRecipe={cookModeIngredientsByRecipe}
+        userId={user?.id}
+        viewMode={cookViewMode}
+        onViewModeChange={handleCookViewModeChange}
+      />
 
       {/* Rating Dialog */}
       {showRatingDialog && event && (

@@ -68,6 +68,21 @@ class IntersectionObserverMock {
 
 window.IntersectionObserver = IntersectionObserverMock as unknown as typeof IntersectionObserver;
 
+// Mock HTMLCanvasElement.getContext — jsdom returns null which causes canvas-confetti's
+// requestAnimationFrame loop to crash with "Cannot read properties of null (reading 'clearRect')".
+// A proxy that returns no-ops for all 2D context methods prevents this.
+HTMLCanvasElement.prototype.getContext = function () {
+  return new Proxy({} as CanvasRenderingContext2D, {
+    get(_target, prop) {
+      if (prop === "canvas") return this;
+      return vi.fn();
+    },
+    set() {
+      return true;
+    },
+  });
+} as typeof HTMLCanvasElement.prototype.getContext;
+
 // Clean up after each test
 afterEach(() => {
   vi.clearAllMocks();

@@ -52,6 +52,8 @@ import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
+import CookModeDialog from "@/components/cookmode/CookModeDialog";
+import { useCookMode, type CookViewMode } from "@/hooks/useCookMode";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
@@ -171,6 +173,47 @@ const EventDetailPage = () => {
     supportsGeneralItems: true,
   });
 
+  const recipeContentMap = grocery.contentMap;
+
+  const cookModeRecipes = useMemo(() => {
+    return (event?.recipesWithNotes ?? [])
+      .filter((r) => {
+        const content = recipeContentMap.get(r.recipe.id);
+        return content?.instructions && content.instructions.length > 0;
+      })
+      .map((r) => ({
+        id: r.recipe.id,
+        name: r.recipe.name,
+        content: recipeContentMap.get(r.recipe.id)!,
+      }));
+  }, [event?.recipesWithNotes, recipeContentMap]);
+
+  const [cookModeOpen, setCookModeOpen] = useState(false);
+  const [cookViewMode, setCookViewMode] = useState<CookViewMode>("interleaved");
+  const cookModeRecipeList = useMemo(
+    () => cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    [cookModeRecipes]
+  );
+  const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline, ingredientsByRecipe: cookModeIngredientsByRecipe } = useCookMode({
+    eventId,
+    recipes: cookModeRecipeList,
+    allRecipeIngredients: grocery.recipeIngredients,
+  });
+  const cookModeRecipeNames = useMemo(
+    () => new Map(cookModeRecipes.map((r) => [r.id, r.name])),
+    [cookModeRecipes]
+  );
+
+  const handleStartCooking = () => {
+    setCookModeOpen(true);
+    generateTimeline(cookViewMode);
+  };
+
+  const handleCookViewModeChange = (mode: CookViewMode) => {
+    setCookViewMode(mode);
+    generateTimeline(mode);
+  };
+
   const toggleRecipeNotes = (recipeId: string) => {
     setExpandedRecipeNotes(prev => {
       const newSet = new Set(prev);
@@ -224,7 +267,7 @@ const EventDetailPage = () => {
         user_id: string;
         notes: string | null;
         photos: string[] | null;
-        created_at: string;
+        created_at: string | null;
         profiles: { name: string | null; avatar_url: string | null } | null;
       }> = [];
 
@@ -303,7 +346,7 @@ const EventDetailPage = () => {
             userId: n.user_id,
             notes: n.notes || undefined,
             photos: n.photos || undefined,
-            createdAt: n.created_at,
+            createdAt: n.created_at ?? undefined,
             userName: n.profiles?.name || "Unknown",
             userAvatar: n.profiles?.avatar_url || undefined,
           }));
@@ -319,7 +362,7 @@ const EventDetailPage = () => {
             eventId: recipe.event_id || undefined,
             ingredientId: recipe.ingredient_id || undefined,
             createdBy: recipe.created_by || undefined,
-            createdAt: recipe.created_at,
+            createdAt: recipe.created_at ?? undefined,
             createdByName: creatorProfile?.name || undefined,
             createdByAvatar: creatorProfile?.avatar_url || undefined,
           },
@@ -386,7 +429,8 @@ const EventDetailPage = () => {
   const sendRecipeNotification = async (
     type: "added" | "updated" | "deleted",
     recipeNameVal: string,
-    recipeUrlVal?: string
+    recipeUrlVal?: string,
+    recipeIdVal?: string
   ) => {
     if (isDevMode()) {
       console.log("[DEV MODE] Skipping email notification");
@@ -401,6 +445,7 @@ const EventDetailPage = () => {
           ingredientName: event?.ingredientName,
           eventDate: event?.eventDate,
           excludeUserId: user?.id,
+          recipeId: recipeIdVal,
         },
       });
 
@@ -463,7 +508,7 @@ const EventDetailPage = () => {
         grocery.refreshGroceries();
 
         setParseStep("notifying");
-        await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
+        await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl, newRecipeId);
         await new Promise(resolve => setTimeout(resolve, 200));
 
         setParseStep("done");
@@ -494,7 +539,7 @@ const EventDetailPage = () => {
 
           // Notifying step: send email notification to club members
           setParseStep("notifying");
-          await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
+          await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl, newRecipeId);
           await new Promise(resolve => setTimeout(resolve, 200));
 
           // Show "done" state with all checkmarks for 1.5s before closing
@@ -605,7 +650,7 @@ const EventDetailPage = () => {
 
       // Send notification only if URL changed (caller responsibility)
       if (result.urlChanged) {
-        sendRecipeNotification("updated", editRecipeName.trim(), editRecipeUrl.trim());
+        sendRecipeNotification("updated", editRecipeName.trim(), editRecipeUrl.trim(), recipeToEdit!.id);
       }
 
       toast.success("Recipe updated!");
@@ -917,6 +962,7 @@ const EventDetailPage = () => {
               onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
               pantryItems={grocery.pantryItems}
+              recipeContentMap={recipeContentMap}
             />
           }
           groceryContent={
@@ -956,8 +1002,24 @@ const EventDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
+          onCookClick={handleStartCooking}
+          showCookTab={cookModeRecipes.length > 0}
         />
       </main>
+
+      {/* Cook Mode Dialog */}
+      <CookModeDialog
+        open={cookModeOpen}
+        onClose={() => setCookModeOpen(false)}
+        steps={cookTimeline}
+        recipeNames={cookModeRecipeNames}
+        loading={cookModeLoading}
+        error={cookModeError ?? undefined}
+        ingredientsByRecipe={cookModeIngredientsByRecipe}
+        userId={user?.id}
+        viewMode={cookViewMode}
+        onViewModeChange={handleCookViewModeChange}
+      />
 
       {/* Add Recipe Dialog */}
       <Dialog

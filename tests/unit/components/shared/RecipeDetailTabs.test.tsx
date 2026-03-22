@@ -81,4 +81,48 @@ describe("RecipeDetailTabs", () => {
 
     expect(screen.queryByText("Recipes content")).not.toBeInTheDocument();
   });
+
+  it("does not render Cook tab when cookContent is not provided", () => {
+    render(
+      <RecipeDetailTabs
+        recipesContent={<div>Recipes content</div>}
+        groceryContent={<div>Grocery content</div>}
+        pantryContent={<div>Pantry content</div>}
+      />
+    );
+
+    expect(screen.queryByRole("tab", { name: /Cook/ })).not.toBeInTheDocument();
+  });
+
+  it("renders Cook tab when cookContent is provided", () => {
+    render(
+      <RecipeDetailTabs
+        recipesContent={<div>Recipes content</div>}
+        groceryContent={<div>Grocery content</div>}
+        pantryContent={<div>Pantry content</div>}
+        cookContent={<div>Cook content</div>}
+      />
+    );
+
+    expect(screen.getByRole("tab", { name: /Cook/ })).toBeInTheDocument();
+  });
+
+  it("shows cookContent when Cook tab is clicked", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <RecipeDetailTabs
+        recipesContent={<div>Recipes content</div>}
+        groceryContent={<div>Grocery content</div>}
+        pantryContent={<div>Pantry content</div>}
+        cookContent={<div>Cook content</div>}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: /Cook/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cook content")).toBeInTheDocument();
+    });
+  });
 });

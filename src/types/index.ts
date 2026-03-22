@@ -103,6 +103,26 @@ export interface RecipeContent {
   createdAt?: string;
 }
 
+export interface CookModeStep {
+  recipeId: string;
+  recipeName: string;
+  /** Other recipes this step also applies to (combined/shared steps) */
+  sharedRecipeIds?: string[];
+  sharedRecipeNames?: string[];
+  instruction: string;
+  timing?: string;
+  category?: "prep" | "active" | "passive" | "finish";
+}
+
+export interface CookModeTimeline {
+  id: string;
+  eventId: string;
+  recipeIdsHash: string;
+  steps: CookModeStep[];
+  model?: string;
+  createdAt: string;
+}
+
 export interface RecipeIngredient {
   id: string;
   recipeId: string;
