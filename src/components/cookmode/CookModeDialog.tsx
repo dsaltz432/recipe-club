@@ -300,7 +300,7 @@ const CookModeDialog = ({
                                   >
                                     {index + 1}
                                   </span>
-                                  {recipeLabels.map((label, i) => {
+                                  {recipeCount > 1 && recipeLabels.map((label, i) => {
                                     const labelColor = getRecipeColor(label.colorIndex);
                                     return (
                                       <span
@@ -347,21 +347,23 @@ const CookModeDialog = ({
                                 {index + 1}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                                  {recipeLabels.map((label, i) => {
-                                    const labelColor = getRecipeColor(label.colorIndex);
-                                    return (
-                                      <span
-                                        key={i}
-                                        className="text-xs font-medium"
-                                        style={{ color: labelColor.accent }}
-                                      >
-                                        {label.name}
-                                        {i < recipeLabels.length - 1 && " ·"}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
+                                {recipeCount > 1 && (
+                                  <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                    {recipeLabels.map((label, i) => {
+                                      const labelColor = getRecipeColor(label.colorIndex);
+                                      return (
+                                        <span
+                                          key={i}
+                                          className="text-xs font-medium"
+                                          style={{ color: labelColor.accent }}
+                                        >
+                                          {label.name}
+                                          {i < recipeLabels.length - 1 && " ·"}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                                 <p className="text-sm text-slate-400 line-clamp-2 leading-snug">
                                   {step.instruction}
                                 </p>

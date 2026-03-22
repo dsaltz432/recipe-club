@@ -7,6 +7,7 @@ interface CookModeStepProps {
   step: CookModeStepType;
   color: RecipeColor;
   isActive?: boolean;
+  showRecipeName?: boolean;
 }
 
 const CATEGORY_ICONS = {
@@ -16,7 +17,7 @@ const CATEGORY_ICONS = {
   finish: CheckCircle2,
 } as const;
 
-const CookModeStep = ({ step, color, isActive = false }: CookModeStepProps) => {
+const CookModeStep = ({ step, color, isActive = false, showRecipeName = true }: CookModeStepProps) => {
   const CategoryIcon = step.category ? CATEGORY_ICONS[step.category] : null;
 
   return (
@@ -34,15 +35,17 @@ const CookModeStep = ({ step, color, isActive = false }: CookModeStepProps) => {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <span
-            className={cn(
-              "inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2",
-              color.bg,
-              color.text
-            )}
-          >
-            {step.recipeName}
-          </span>
+          {showRecipeName && (
+            <span
+              className={cn(
+                "inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2",
+                color.bg,
+                color.text
+              )}
+            >
+              {step.recipeName}
+            </span>
+          )}
           <p className="text-lg sm:text-xl leading-relaxed text-foreground">
             {step.instruction}
           </p>

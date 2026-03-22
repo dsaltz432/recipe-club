@@ -131,67 +131,71 @@ const RecipeInstructions = ({
         )}
 
         {hasInstructions ? (
-          <ol className="space-y-4">
+          <ol className="space-y-3">
             {displayInstructions!.map((step, index) => (
-              <li key={index} className="flex gap-3 items-start">
-                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-600 text-white text-sm font-semibold flex items-center justify-center mt-0.5">
+              <li key={index} className="flex gap-2 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-purple-600 text-white text-xs font-semibold flex items-center justify-center mt-0.5">
                   {index + 1}
                 </span>
                 {editable && editingIndex === index ? (
                   <div className="flex-1 flex flex-col gap-2">
                     <textarea
-                      className="w-full border rounded p-2 text-base leading-relaxed resize-none"
+                      className="w-full border rounded p-2 text-sm leading-relaxed resize-none"
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
                       rows={3}
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="h-6 w-6"
                         aria-label="save step"
                         onClick={handleSaveEdit}
                         disabled={isSaving}
                       >
                         {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Check className="h-4 w-4" />
+                          <Check className="h-3 w-3" />
                         )}
                       </Button>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="h-6 w-6"
                         aria-label="cancel edit"
                         onClick={handleCancelEdit}
                         disabled={isSaving}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex items-start justify-between gap-2">
-                    <p className="text-base leading-relaxed text-foreground pt-0.5">
+                  <div className="flex-1 flex items-start justify-between gap-1">
+                    <p className="text-sm leading-relaxed text-foreground">
                       {step}
                     </p>
                     {editable && (
-                      <div className="flex gap-1 flex-shrink-0">
+                      <div className="flex flex-shrink-0">
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
+                          className="h-6 w-6"
                           aria-label={`edit step ${index + 1}`}
                           onClick={() => handleEditClick(index)}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
+                          className="h-6 w-6"
                           aria-label={`delete step ${index + 1}`}
                           onClick={() => handleDeleteStep(index)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     )}
