@@ -46,9 +46,8 @@ import AppHeader from "@/components/shared/AppHeader";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
-import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
 import CookModeDialog from "@/components/cookmode/CookModeDialog";
-import { useCookMode } from "@/hooks/useCookMode";
+import { useCookMode, type CookViewMode } from "@/hooks/useCookMode";
 import AddMealDialog from "@/components/mealplan/AddMealDialog";
 import { saveRecipeEdit } from "@/lib/recipeActions";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
@@ -169,9 +168,16 @@ const PersonalMealDetailPage = () => {
     [cookModeRecipes]
   );
 
+  const [cookViewMode, setCookViewMode] = useState<CookViewMode>("interleaved");
+
   const handleStartCooking = () => {
     setCookModeOpen(true);
-    generateTimeline();
+    generateTimeline(cookViewMode);
+  };
+
+  const handleCookViewModeChange = (mode: CookViewMode) => {
+    setCookViewMode(mode);
+    generateTimeline(mode);
   };
 
   const handlePantryChange = () => {
@@ -823,17 +829,6 @@ const PersonalMealDetailPage = () => {
                   </span>
                 </div>
                 <div className="flex gap-1 sm:gap-2">
-                  {cookModeRecipes.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleStartCooking}
-                      className="text-xs border-purple/30 text-purple hover:bg-purple/5 px-2 sm:px-3 h-8 w-8 sm:w-auto p-0 sm:p-2"
-                    >
-                      <ChefHat className="h-3.5 w-3.5 sm:mr-1.5" />
-                      <span className="hidden sm:inline">Start Cooking</span>
-                    </Button>
-                  )}
                   {mealItems.length > 0 && totalRecipes > 0 && (
                     <Button
                       size="sm"
@@ -912,7 +907,8 @@ const PersonalMealDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
-          cookContent={cookModeRecipes.length >= 1 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
+          onCookClick={handleStartCooking}
+          showCookTab={cookModeRecipes.length > 0}
         />
       </main>
 
@@ -1098,6 +1094,8 @@ const PersonalMealDetailPage = () => {
         error={cookModeError ?? undefined}
         ingredientsByRecipe={cookModeIngredientsByRecipe}
         userId={user?.id}
+        viewMode={cookViewMode}
+        onViewModeChange={handleCookViewModeChange}
       />
 
       {/* Rating Dialog */}

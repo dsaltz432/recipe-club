@@ -348,6 +348,9 @@ const EventRecipesTab = ({
                   {expandedInstructions.has(recipe.id) && (
                     <>
                       <Separator className="bg-purple/10" />
+                      <div className="px-1">
+                        <RecipeTips recipeId={recipe.id} userId={userId} />
+                      </div>
                       <RecipeInstructions
                         instructions={recipeContentMap?.get(recipe.id)?.instructions}
                         servings={recipeContentMap?.get(recipe.id)?.servings}
@@ -356,9 +359,6 @@ const EventRecipesTab = ({
                         totalTime={recipeContentMap?.get(recipe.id)?.totalTime}
                         description={recipeContentMap?.get(recipe.id)?.description}
                       />
-                      <div className="mt-3 px-1">
-                        <RecipeTips recipeId={recipe.id} userId={userId} />
-                      </div>
                     </>
                   )}
 

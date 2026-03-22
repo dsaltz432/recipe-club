@@ -1,18 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, ChefHat, ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { BookOpen, ShoppingCart, UtensilsCrossed, ChefHat } from "lucide-react";
 
 interface RecipeDetailTabsProps {
   recipesContent: React.ReactNode;
   groceryContent: React.ReactNode;
   pantryContent: React.ReactNode;
-  cookContent?: React.ReactNode;
+  onCookClick?: () => void;
+  showCookTab?: boolean;
 }
 
-export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent, cookContent }: RecipeDetailTabsProps) {
+export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent, onCookClick, showCookTab }: RecipeDetailTabsProps) {
+  const [activeTab, setActiveTab] = useState("recipes");
+
+  const handleTabChange = (value: string) => {
+    if (value === "cook") {
+      onCookClick?.();
+      return;
+    }
+    setActiveTab(value);
+  };
+
   return (
-    <Tabs defaultValue="recipes" className="w-full">
-      <TabsList className={`grid w-full max-w-lg ${cookContent ? "grid-cols-4" : "grid-cols-3"} mb-4 h-auto rounded-lg`}>
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <TabsList className={`grid w-full max-w-lg mb-4 h-auto rounded-lg ${showCookTab ? "grid-cols-4" : "grid-cols-3"}`}>
         <TabsTrigger value="recipes" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
           <BookOpen className="h-3.5 w-3.5" />
           <span className="text-xs sm:text-sm">Recipes</span>
@@ -25,7 +36,7 @@ export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent
           <UtensilsCrossed className="h-3.5 w-3.5" />
           <span className="text-xs sm:text-sm">Pantry</span>
         </TabsTrigger>
-        {cookContent && (
+        {showCookTab && (
           <TabsTrigger value="cook" className="flex items-center gap-1.5 rounded-md py-2.5 sm:py-1.5">
             <ChefHat className="h-3.5 w-3.5" />
             <span className="text-xs sm:text-sm">Cook</span>
@@ -44,12 +55,6 @@ export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent
       <TabsContent value="pantry">
         {pantryContent}
       </TabsContent>
-
-      {cookContent && (
-        <TabsContent value="cook" className="w-screen relative left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-10">
-          {cookContent}
-        </TabsContent>
-      )}
     </Tabs>
   );
 }

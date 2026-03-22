@@ -24,7 +24,6 @@ const RecipeInstructions = ({
   prepTime,
   cookTime,
   totalTime,
-  description,
   editable,
   recipeId,
   onInstructionsChange,
@@ -98,12 +97,6 @@ const RecipeInstructions = ({
   return (
     <Card className="border-purple-100">
       <CardContent className="p-4 sm:p-6">
-        {description && (
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            {description}
-          </p>
-        )}
-
         {hasMetadata && (
           <div className="flex flex-wrap gap-3 mb-5 p-3 bg-purple-50 rounded-lg">
             {servings && (

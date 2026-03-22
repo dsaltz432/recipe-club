@@ -75,12 +75,12 @@ const RecipeTips = ({ recipeId, userId, darkMode = false }: RecipeTipsProps) => 
         <p className={`text-xs ${labelCls}`}>No tips yet.</p>
       )}
 
-      {tips.map((tip) => (
-        <div key={tip.id} className={`flex items-start gap-2 ${tipCls}`}>
-          <p className="flex-1 leading-snug">{tip.tipText}</p>
-          {userId === tip.userId && (
+      {tips.length === 1 ? (
+        <div className={`flex items-start gap-2 ${tipCls}`}>
+          <p className="flex-1 leading-snug">{tips[0].tipText}</p>
+          {userId === tips[0].userId && (
             <button
-              onClick={() => handleDelete(tip.id)}
+              onClick={() => handleDelete(tips[0].id)}
               aria-label="Delete tip"
               className={`flex-shrink-0 ${darkMode ? "text-slate-500 hover:text-red-400" : "text-muted-foreground hover:text-destructive"} transition-colors`}
             >
@@ -88,7 +88,25 @@ const RecipeTips = ({ recipeId, userId, darkMode = false }: RecipeTipsProps) => 
             </button>
           )}
         </div>
-      ))}
+      ) : (
+        <ul className={`${tipCls} space-y-1.5`}>
+          {tips.map((tip) => (
+            <li key={tip.id} className="flex items-start gap-2">
+              <span className={`mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 ${darkMode ? "bg-amber-400" : "bg-amber-500"}`} />
+              <p className="flex-1 leading-snug">{tip.tipText}</p>
+              {userId === tip.userId && (
+                <button
+                  onClick={() => handleDelete(tip.id)}
+                  aria-label="Delete tip"
+                  className={`flex-shrink-0 ${darkMode ? "text-slate-500 hover:text-red-400" : "text-muted-foreground hover:text-destructive"} transition-colors`}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {showInput && userId && (
         <div className="space-y-1.5">

@@ -52,9 +52,8 @@ import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
-import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
 import CookModeDialog from "@/components/cookmode/CookModeDialog";
-import { useCookMode } from "@/hooks/useCookMode";
+import { useCookMode, type CookViewMode } from "@/hooks/useCookMode";
 import { getIngredientColor, getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantryDialog from "@/components/pantry/PantryDialog";
@@ -190,6 +189,7 @@ const EventDetailPage = () => {
   }, [event?.recipesWithNotes, recipeContentMap]);
 
   const [cookModeOpen, setCookModeOpen] = useState(false);
+  const [cookViewMode, setCookViewMode] = useState<CookViewMode>("interleaved");
   const cookModeRecipeList = useMemo(
     () => cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
     [cookModeRecipes]
@@ -206,7 +206,12 @@ const EventDetailPage = () => {
 
   const handleStartCooking = () => {
     setCookModeOpen(true);
-    generateTimeline();
+    generateTimeline(cookViewMode);
+  };
+
+  const handleCookViewModeChange = (mode: CookViewMode) => {
+    setCookViewMode(mode);
+    generateTimeline(mode);
   };
 
   const toggleRecipeNotes = (recipeId: string) => {
@@ -902,17 +907,6 @@ const EventDetailPage = () => {
 
               {/* Event action buttons */}
               <div className="flex gap-1 sm:gap-2 shrink-0">
-                {cookModeRecipes.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleStartCooking}
-                    className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs border-purple/30 text-purple hover:bg-purple/5"
-                  >
-                    <ChefHat className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">Start Cooking</span>
-                  </Button>
-                )}
                 {isUpcoming && userIsMemberOrAdmin && user?.id === event?.createdBy && (
                   <>
                     <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs">
@@ -1008,7 +1002,8 @@ const EventDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
-          cookContent={cookModeRecipes.length >= 1 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
+          onCookClick={handleStartCooking}
+          showCookTab={cookModeRecipes.length > 0}
         />
       </main>
 
@@ -1022,6 +1017,8 @@ const EventDetailPage = () => {
         error={cookModeError ?? undefined}
         ingredientsByRecipe={cookModeIngredientsByRecipe}
         userId={user?.id}
+        viewMode={cookViewMode}
+        onViewModeChange={handleCookViewModeChange}
       />
 
       {/* Add Recipe Dialog */}

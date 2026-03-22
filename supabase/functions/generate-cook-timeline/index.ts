@@ -9,16 +9,51 @@ const corsHeaders = {
 interface CookTimelineRequest {
   eventId: string;
   recipeIds: string[];
+  mode?: "interleaved" | "side-by-side";
   model?: string;
 }
 
 interface CookModeStep {
   recipeId: string;
   recipeName: string;
+  sharedRecipeIds?: string[];
+  sharedRecipeNames?: string[];
   instruction: string;
   timing?: string;
   category?: "prep" | "active" | "passive" | "finish";
 }
+
+const AMOUNTS_RULE = `MANDATORY RULE — QUANTITIES ON FIRST MENTION: The first time an ingredient appears, include its exact quantity and unit inline. Subsequent mentions do not need the amount. Examples: "brown 1 lb ground beef", "add 1/2 onion", "mince 3 cloves garlic", "add 2 cups flour and 1/2 tsp salt". Later steps can say "stir the beef" without repeating the amount. Use the exact quantities from the ingredient list. Always use human-readable fractional notation — never decimals: write "1/2 tsp" not "0.5 tsp", "1/4 cup" not "0.25 cup", "3/4 cup" not "0.75 cup".`;
+
+const INTERLEAVED_SYSTEM_PROMPT = `You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish.
+
+${AMOUNTS_RULE}
+
+When two recipes share an identical or combinable task (e.g. both need diced onions, both need salted boiling water), merge them into a single step and populate sharedRecipeIds and sharedRecipeNames with the other recipes involved. The primary recipeId/recipeName should be the recipe that benefits most or is listed first.
+
+Return ONLY valid JSON array with no markdown formatting. Each element must have:
+{
+  "recipeId": "the primary recipe UUID",
+  "recipeName": "the primary recipe name",
+  "sharedRecipeIds": ["optional array of other recipe UUIDs this step also applies to"],
+  "sharedRecipeNames": ["optional array of other recipe names matching sharedRecipeIds"],
+  "instruction": "the step text",
+  "timing": "optional timing hint like '10 minutes' or 'while pasta boils'",
+  "category": "prep" | "active" | "passive" | "finish"
+}`;
+
+const SIDE_BY_SIDE_SYSTEM_PROMPT = `You are a recipe editor. Given one or more recipes, rewrite each recipe's instructions to include ingredient amounts on first mention. Do not interleave or combine steps across recipes — keep each recipe's steps in their original order, grouped by recipe.
+
+${AMOUNTS_RULE}
+
+Return ONLY valid JSON array with no markdown formatting. Each element must have:
+{
+  "recipeId": "the recipe UUID",
+  "recipeName": "the recipe name",
+  "instruction": "the rewritten step text with amounts on first mention",
+  "timing": "optional timing hint like '10 minutes'",
+  "category": "prep" | "active" | "passive" | "finish"
+}`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -49,7 +84,7 @@ serve(async (req) => {
       );
     }
 
-    const { eventId, recipeIds, model = "claude-sonnet-4-6" } = body;
+    const { eventId, recipeIds, mode = "interleaved", model = "claude-sonnet-4-6" } = body;
 
     if (!recipeIds || recipeIds.length === 0) {
       return new Response(
@@ -58,8 +93,8 @@ serve(async (req) => {
       );
     }
 
-    // Hash: sort IDs and join with comma
-    const recipeIdsHash = [...recipeIds].sort().join(",");
+    // Cache key includes mode so both views cache independently
+    const recipeIdsHash = [...recipeIds].sort().join(",") + `:v1:${mode}`;
 
     // Check cache first
     const { data: cached } = await supabase
@@ -76,7 +111,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch recipe names and content for the given IDs
+    // Fetch recipe names, content, and ingredients
     const { data: recipes, error: recipesError } = await supabase
       .from("recipes")
       .select("id, name")
@@ -110,15 +145,19 @@ serve(async (req) => {
       ingredientsMap.get(ing.recipe_id)!.push(ing);
     });
 
-    // Build a map of recipe info for the prompt
     const recipeMap = new Map((recipes ?? []).map((r: { id: string; name: string }) => [r.id, r.name]));
     const contentMap = new Map((contents ?? []).map((c: { recipe_id: string; instructions: unknown; prep_time: string | null; cook_time: string | null; total_time: string | null }) => [c.recipe_id, c]));
 
-    // Build recipe summaries for the AI prompt
     const recipeSummaries = recipeIds.map((id) => {
       const name = recipeMap.get(id) ?? "Unknown Recipe";
       const content = contentMap.get(id);
-      const instructions = Array.isArray(content?.instructions) ? content.instructions as string[] : [];
+      const instructionsRaw = content?.instructions;
+      let instructions: string[] = [];
+      if (Array.isArray(instructionsRaw)) {
+        instructions = instructionsRaw as string[];
+      } else if (typeof instructionsRaw === "string" && instructionsRaw.trim()) {
+        try { instructions = JSON.parse(instructionsRaw); } catch { /* ignore */ }
+      }
       const times = [
         content?.prep_time ? `Prep: ${content.prep_time}` : null,
         content?.cook_time ? `Cook: ${content.cook_time}` : null,
@@ -133,22 +172,10 @@ Instructions:
 ${instructions.map((step: string, i: number) => `${i + 1}. ${step}`).join("\n") || "No instructions available"}`;
     }).join("\n\n---\n\n");
 
-    const systemPrompt = `You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish. Reference exact ingredient quantities inline in steps (e.g., 'Add 2 cups flour, 1 tsp salt').
-
-When two recipes share an identical or combinable task (e.g. both need diced onions, both need salted boiling water), merge them into a single step and populate sharedRecipeIds and sharedRecipeNames with the other recipes involved. The primary recipeId/recipeName should be the recipe that benefits most or is listed first.
-
-Return ONLY valid JSON array with no markdown formatting. Each element must have:
-{
-  "recipeId": "the primary recipe UUID",
-  "recipeName": "the primary recipe name",
-  "sharedRecipeIds": ["optional array of other recipe UUIDs this step also applies to"],
-  "sharedRecipeNames": ["optional array of other recipe names matching sharedRecipeIds"],
-  "instruction": "the step text",
-  "timing": "optional timing hint like '10 minutes' or 'while pasta boils'",
-  "category": "prep" | "active" | "passive" | "finish"
-}`;
-
-    const userMessage = `Create an interleaved cooking timeline for these recipes being prepared simultaneously:\n\n${recipeSummaries}\n\nInterleave the steps optimally so a cook can prepare all recipes at once. Start with anything that needs the longest time (preheating oven, boiling water). Group prep tasks during passive cooking time.`;
+    const systemPrompt = mode === "side-by-side" ? SIDE_BY_SIDE_SYSTEM_PROMPT : INTERLEAVED_SYSTEM_PROMPT;
+    const userMessage = mode === "side-by-side"
+      ? `Rewrite the instructions for each recipe below to include ingredient amounts on first mention. Keep each recipe's steps in order — do not interleave.\n\n${recipeSummaries}`
+      : `Create an interleaved cooking timeline for these recipes being prepared simultaneously:\n\n${recipeSummaries}\n\nInterleave the steps optimally so a cook can prepare all recipes at once. Start with anything that needs the longest time (preheating oven, boiling water). Group prep tasks during passive cooking time.`;
 
     const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
