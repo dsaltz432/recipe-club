@@ -11,6 +11,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Settings from "./pages/Settings";
 import ContactUs from "./pages/ContactUs";
 import SharedRecipePage from "./pages/SharedRecipePage";
+import JoelPartyMode from "./pages/JoelPartyMode";
 import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient({
@@ -76,6 +77,7 @@ function App() {
               </AuthGuard>
             }
           />
+          <Route path="/joel" element={<JoelPartyMode />} />
           <Route path="/recipes/:recipeId" element={<SharedRecipePage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
