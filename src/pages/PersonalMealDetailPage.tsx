@@ -45,7 +45,6 @@ import PhotoUpload from "@/components/recipes/PhotoUpload";
 import AppHeader from "@/components/shared/AppHeader";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
-import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
 import CookModeDialog from "@/components/cookmode/CookModeDialog";
@@ -140,7 +139,7 @@ const PersonalMealDetailPage = () => {
     supportsGeneralItems: true,
   });
 
-  const { contentMap: recipeContentMap } = useRecipeContent(groceryRecipeIds);
+  const recipeContentMap = grocery.contentMap;
 
   const cookModeRecipes = useMemo(() => {
     return (event?.recipesWithNotes ?? [])
@@ -156,9 +155,13 @@ const PersonalMealDetailPage = () => {
   }, [event?.recipesWithNotes, recipeContentMap]);
 
   const [cookModeOpen, setCookModeOpen] = useState(false);
+  const cookModeRecipeList = useMemo(
+    () => cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    [cookModeRecipes]
+  );
   const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline, ingredientsByRecipe: cookModeIngredientsByRecipe } = useCookMode({
     eventId,
-    recipes: cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    recipes: cookModeRecipeList,
     allRecipeIngredients: grocery.recipeIngredients,
   });
   const cookModeRecipeNames = useMemo(
@@ -251,7 +254,7 @@ const PersonalMealDetailPage = () => {
         user_id: string;
         notes: string | null;
         photos: string[] | null;
-        created_at: string;
+        created_at: string | null;
         profiles: { name: string | null; avatar_url: string | null } | null;
       }> = [];
 
@@ -326,7 +329,7 @@ const PersonalMealDetailPage = () => {
             userId: n.user_id,
             notes: n.notes || undefined,
             photos: n.photos || undefined,
-            createdAt: n.created_at,
+            createdAt: n.created_at ?? undefined,
             userName: n.profiles?.name || "Unknown",
             userAvatar: n.profiles?.avatar_url || undefined,
           }));
@@ -341,7 +344,7 @@ const PersonalMealDetailPage = () => {
             url: recipe.url || undefined,
             eventId: recipe.event_id || undefined,
             createdBy: recipe.created_by || undefined,
-            createdAt: recipe.created_at,
+            createdAt: recipe.created_at ?? undefined,
             createdByName: creatorProfile?.name || undefined,
             createdByAvatar: creatorProfile?.avatar_url || undefined,
           },
@@ -909,7 +912,7 @@ const PersonalMealDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
-          cookContent={cookModeRecipes.length >= 2 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
+          cookContent={cookModeRecipes.length >= 1 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
         />
       </main>
 

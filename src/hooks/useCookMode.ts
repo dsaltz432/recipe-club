@@ -3,9 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CookModeStep, RecipeIngredient } from "@/types";
 import { getCachedAiModel } from "@/lib/userPreferences";
 
-// cook_mode_timelines not yet in generated Supabase types — bypass with cast
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
 
 interface CookModeRecipe {
   id: string;
@@ -40,15 +37,14 @@ export function useCookMode({ eventId, recipes, allRecipeIngredients }: UseCookM
         .in("recipe_id", recipes.map(r => r.id));
 
       const newIngredientsByRecipe = new Map<string, RecipeIngredient[]>();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (ingredientsData ?? []).forEach((row: any) => {
+      (ingredientsData ?? []).forEach((row) => {
         const ing: RecipeIngredient = {
           id: row.id,
           recipeId: row.recipe_id,
           name: row.name,
           quantity: row.quantity ?? undefined,
           unit: row.unit ?? undefined,
-          category: row.category,
+          category: row.category as RecipeIngredient["category"],
           rawText: row.raw_text ?? undefined,
           sortOrder: row.sort_order ?? undefined,
           createdAt: row.created_at ?? undefined,
@@ -82,7 +78,7 @@ export function useCookMode({ eventId, recipes, allRecipeIngredients }: UseCookM
         const hash = [...recipeIds].sort().join(",");
 
         if (eventId) {
-          const { data: cached } = await db
+          const { data: cached } = await supabase
             .from("cook_mode_timelines")
             .select("steps")
             .eq("event_id", eventId)
@@ -90,7 +86,7 @@ export function useCookMode({ eventId, recipes, allRecipeIngredients }: UseCookM
             .maybeSingle();
 
           if (cached?.steps) {
-            setTimeline(cached.steps as CookModeStep[]);
+            setTimeline(cached.steps as unknown as CookModeStep[]);
             setLoading(false);
             return;
           }
@@ -115,7 +111,7 @@ export function useCookMode({ eventId, recipes, allRecipeIngredients }: UseCookM
     } finally {
       setLoading(false);
     }
-  }, [eventId, recipes]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [eventId, recipes, allRecipeIngredients]);
 
   return { timeline, loading, error, generateTimeline, ingredientsByRecipe };
 }

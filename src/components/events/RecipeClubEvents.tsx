@@ -78,7 +78,7 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
       const eventIds = eventsData?.map(e => e.id) || [];
 
       // Fetch recipes for these events (skip if no events to avoid empty .in())
-      let recipesData: Array<{ id: string; name: string; url: string | null; event_id: string | null; ingredient_id: string | null; created_by: string | null; created_at: string }> = [];
+      let recipesData: Array<{ id: string; name: string; url: string | null; event_id: string | null; ingredient_id: string | null; created_by: string | null; created_at: string | null }> = [];
       if (eventIds.length > 0) {
         const { data, error: recipesError } = await supabase
           .from("recipes")
@@ -91,7 +91,7 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
 
       // Fetch notes for these recipes (skip if no recipes to avoid empty .in())
       const recipeIds = recipesData.map(r => r.id);
-      let notesData: Array<{ recipe_id: string; id: string; user_id: string; notes: string | null; photos: string[] | null; created_at: string; profiles: { name: string; avatar_url: string | null } | null }> = [];
+      let notesData: Array<{ recipe_id: string; id: string; user_id: string; notes: string | null; photos: string[] | null; created_at: string | null; profiles: { name: string; avatar_url: string | null } | null }> = [];
       if (recipeIds.length > 0) {
         const { data, error: notesError } = await supabase
           .from("recipe_notes")
@@ -149,7 +149,7 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
             eventId,
             ingredientId: recipe.ingredient_id || undefined,
             createdBy: recipe.created_by || undefined,
-            createdAt: recipe.created_at,
+            createdAt: recipe.created_at ?? undefined,
           },
           notes: recipeNotes.map((note) => ({
             id: note.id,
@@ -157,7 +157,7 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
             userId: note.user_id,
             notes: note.notes || undefined,
             photos: note.photos || undefined,
-            createdAt: note.created_at,
+            createdAt: note.created_at ?? undefined,
             userName: note.profiles?.name || "Unknown",
             userAvatar: note.profiles?.avatar_url || undefined,
           })),

@@ -135,10 +135,14 @@ ${instructions.map((step: string, i: number) => `${i + 1}. ${step}`).join("\n") 
 
     const systemPrompt = `You are a cooking coordinator. Given multiple recipes prepared simultaneously, create an interleaved cooking timeline optimizing parallel tasks. Start with longest tasks (preheating, boiling). Group prep during passive cooking. Tag each step with recipeId and recipeName. Add timing hints. Categorize: prep/active/passive/finish. Reference exact ingredient quantities inline in steps (e.g., 'Add 2 cups flour, 1 tsp salt').
 
+When two recipes share an identical or combinable task (e.g. both need diced onions, both need salted boiling water), merge them into a single step and populate sharedRecipeIds and sharedRecipeNames with the other recipes involved. The primary recipeId/recipeName should be the recipe that benefits most or is listed first.
+
 Return ONLY valid JSON array with no markdown formatting. Each element must have:
 {
-  "recipeId": "the recipe UUID",
-  "recipeName": "the recipe name",
+  "recipeId": "the primary recipe UUID",
+  "recipeName": "the primary recipe name",
+  "sharedRecipeIds": ["optional array of other recipe UUIDs this step also applies to"],
+  "sharedRecipeNames": ["optional array of other recipe names matching sharedRecipeIds"],
   "instruction": "the step text",
   "timing": "optional timing hint like '10 minutes' or 'while pasta boils'",
   "category": "prep" | "active" | "passive" | "finish"
@@ -181,8 +185,8 @@ Return ONLY valid JSON array with no markdown formatting. Each element must have
       throw new Error(`Failed to parse AI response as JSON array: ${aiText.slice(0, 200)}`);
     }
 
-    // Store in cache
-    await supabase
+    // Store in cache (non-fatal if it fails — caller still gets the steps)
+    const { error: cacheError } = await supabase
       .from("cook_mode_timelines")
       .insert({
         event_id: eventId,
@@ -190,6 +194,9 @@ Return ONLY valid JSON array with no markdown formatting. Each element must have
         steps,
         model,
       });
+    if (cacheError) {
+      console.error("Failed to cache cook timeline:", cacheError.message);
+    }
 
     return new Response(
       JSON.stringify({ success: true, steps }),

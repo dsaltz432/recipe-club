@@ -51,7 +51,6 @@ import { saveRecipeEdit } from "@/lib/recipeActions";
 import { isDevMode } from "@/lib/devMode";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
-import { useRecipeContent } from "@/hooks/useRecipeContent";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
 import MultiRecipeView from "@/components/cookmode/MultiRecipeView";
 import CookModeDialog from "@/components/cookmode/CookModeDialog";
@@ -175,7 +174,7 @@ const EventDetailPage = () => {
     supportsGeneralItems: true,
   });
 
-  const { contentMap: recipeContentMap } = useRecipeContent(groceryRecipeIds);
+  const recipeContentMap = grocery.contentMap;
 
   const cookModeRecipes = useMemo(() => {
     return (event?.recipesWithNotes ?? [])
@@ -191,9 +190,13 @@ const EventDetailPage = () => {
   }, [event?.recipesWithNotes, recipeContentMap]);
 
   const [cookModeOpen, setCookModeOpen] = useState(false);
+  const cookModeRecipeList = useMemo(
+    () => cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    [cookModeRecipes]
+  );
   const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline, ingredientsByRecipe: cookModeIngredientsByRecipe } = useCookMode({
     eventId,
-    recipes: cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
+    recipes: cookModeRecipeList,
     allRecipeIngredients: grocery.recipeIngredients,
   });
   const cookModeRecipeNames = useMemo(
@@ -259,7 +262,7 @@ const EventDetailPage = () => {
         user_id: string;
         notes: string | null;
         photos: string[] | null;
-        created_at: string;
+        created_at: string | null;
         profiles: { name: string | null; avatar_url: string | null } | null;
       }> = [];
 
@@ -338,7 +341,7 @@ const EventDetailPage = () => {
             userId: n.user_id,
             notes: n.notes || undefined,
             photos: n.photos || undefined,
-            createdAt: n.created_at,
+            createdAt: n.created_at ?? undefined,
             userName: n.profiles?.name || "Unknown",
             userAvatar: n.profiles?.avatar_url || undefined,
           }));
@@ -354,7 +357,7 @@ const EventDetailPage = () => {
             eventId: recipe.event_id || undefined,
             ingredientId: recipe.ingredient_id || undefined,
             createdBy: recipe.created_by || undefined,
-            createdAt: recipe.created_at,
+            createdAt: recipe.created_at ?? undefined,
             createdByName: creatorProfile?.name || undefined,
             createdByAvatar: creatorProfile?.avatar_url || undefined,
           },
@@ -421,7 +424,8 @@ const EventDetailPage = () => {
   const sendRecipeNotification = async (
     type: "added" | "updated" | "deleted",
     recipeNameVal: string,
-    recipeUrlVal?: string
+    recipeUrlVal?: string,
+    recipeIdVal?: string
   ) => {
     if (isDevMode()) {
       console.log("[DEV MODE] Skipping email notification");
@@ -436,6 +440,7 @@ const EventDetailPage = () => {
           ingredientName: event?.ingredientName,
           eventDate: event?.eventDate,
           excludeUserId: user?.id,
+          recipeId: recipeIdVal,
         },
       });
 
@@ -498,7 +503,7 @@ const EventDetailPage = () => {
         grocery.refreshGroceries();
 
         setParseStep("notifying");
-        await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
+        await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl, newRecipeId);
         await new Promise(resolve => setTimeout(resolve, 200));
 
         setParseStep("done");
@@ -529,7 +534,7 @@ const EventDetailPage = () => {
 
           // Notifying step: send email notification to club members
           setParseStep("notifying");
-          await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl);
+          await sendRecipeNotification("added", savedRecipeName, savedRecipeUrl, newRecipeId);
           await new Promise(resolve => setTimeout(resolve, 200));
 
           // Show "done" state with all checkmarks for 1.5s before closing
@@ -640,7 +645,7 @@ const EventDetailPage = () => {
 
       // Send notification only if URL changed (caller responsibility)
       if (result.urlChanged) {
-        sendRecipeNotification("updated", editRecipeName.trim(), editRecipeUrl.trim());
+        sendRecipeNotification("updated", editRecipeName.trim(), editRecipeUrl.trim(), recipeToEdit!.id);
       }
 
       toast.success("Recipe updated!");
@@ -1003,7 +1008,7 @@ const EventDetailPage = () => {
             )
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
-          cookContent={cookModeRecipes.length >= 2 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
+          cookContent={cookModeRecipes.length >= 1 ? <MultiRecipeView recipes={cookModeRecipes} /> : undefined}
         />
       </main>
 

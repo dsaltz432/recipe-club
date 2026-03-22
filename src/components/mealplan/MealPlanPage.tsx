@@ -101,7 +101,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             mealType: item.meal_type as MealPlanItem["mealType"],
             customName: item.custom_name || undefined,
             customUrl: item.custom_url || undefined,
-            sortOrder: item.sort_order,
+            sortOrder: item.sort_order ?? 0,
             recipeName: recipe?.name,
             recipeUrl: recipe?.url || undefined,
             eventId: (item as Record<string, unknown>).event_id as string | undefined,
@@ -282,7 +282,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         mealType: data.meal_type as MealPlanItem["mealType"],
         customName: data.custom_name || undefined,
         customUrl: data.custom_url || undefined,
-        sortOrder: data.sort_order,
+        sortOrder: data.sort_order ?? 0,
         recipeName: recipe?.name,
         recipeUrl: recipe?.url || undefined,
       };

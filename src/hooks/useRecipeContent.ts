@@ -60,7 +60,7 @@ export function useRecipeContent(recipeIds: string[]) {
             parsedAt: row.parsed_at ?? undefined,
             status: row.status as RecipeContent["status"],
             errorMessage: row.error_message ?? undefined,
-            createdAt: row.created_at,
+            createdAt: row.created_at ?? undefined,
           });
         }
       }

@@ -106,6 +106,9 @@ export interface RecipeContent {
 export interface CookModeStep {
   recipeId: string;
   recipeName: string;
+  /** Other recipes this step also applies to (combined/shared steps) */
+  sharedRecipeIds?: string[];
+  sharedRecipeNames?: string[];
   instruction: string;
   timing?: string;
   category?: "prep" | "active" | "passive" | "finish";

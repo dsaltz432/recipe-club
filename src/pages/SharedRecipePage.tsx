@@ -14,13 +14,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ExternalLink, BookOpen, Loader2, ChefHat, CheckCircle2 } from "lucide-react";
+import { ExternalLink, BookOpen, Loader2, ChefHat, CheckCircle2, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 import { signInWithGoogle } from "@/lib/auth";
 import { isDevMode } from "@/lib/devMode";
 import type { GroceryCategory, RecipeContent } from "@/types";
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
 import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
+import RecipeTips from "@/components/recipes/RecipeTips";
 import {
   getLightBackgroundColor,
   getBorderColor,
@@ -338,6 +339,43 @@ const SharedRecipePage = () => {
             )}
           </div>
 
+          {/* Cook times */}
+          {recipeContent && (recipeContent.servings || recipeContent.prepTime || recipeContent.cookTime || recipeContent.totalTime) && (
+            <div
+              className="px-6 py-3 flex flex-wrap gap-4 border-b"
+              style={{ backgroundColor: bgColor || "white", borderColor: borderColor || "rgba(155,135,245,0.15)" }}
+            >
+              {recipeContent.servings && (
+                <div className="flex items-center gap-1.5 text-sm" style={{ color: themeColor }}>
+                  <Users className="h-4 w-4 opacity-70" />
+                  <span className="font-medium">Servings:</span>
+                  <span className="text-foreground">{recipeContent.servings}</span>
+                </div>
+              )}
+              {recipeContent.prepTime && (
+                <div className="flex items-center gap-1.5 text-sm" style={{ color: themeColor }}>
+                  <Clock className="h-4 w-4 opacity-70" />
+                  <span className="font-medium">Prep:</span>
+                  <span className="text-foreground">{recipeContent.prepTime}</span>
+                </div>
+              )}
+              {recipeContent.cookTime && (
+                <div className="flex items-center gap-1.5 text-sm" style={{ color: themeColor }}>
+                  <Clock className="h-4 w-4 opacity-70" />
+                  <span className="font-medium">Cook:</span>
+                  <span className="text-foreground">{recipeContent.cookTime}</span>
+                </div>
+              )}
+              {recipeContent.totalTime && (
+                <div className="flex items-center gap-1.5 text-sm" style={{ color: themeColor }}>
+                  <Clock className="h-4 w-4 opacity-70" />
+                  <span className="font-medium">Total:</span>
+                  <span className="text-foreground">{recipeContent.totalTime}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Ingredients section */}
           <div className="px-6 py-5" style={{ backgroundColor: bgColor || "white" }}>
             <h2
@@ -350,7 +388,7 @@ const SharedRecipePage = () => {
           </div>
 
           {/* Instructions section */}
-          {recipeContent && (
+          {recipeContent?.instructions && recipeContent.instructions.length > 0 && (
             <div className="px-6 pb-6" style={{ backgroundColor: bgColor || "white" }}>
               <h2
                 className="text-[11px] font-semibold uppercase tracking-widest mb-4"
@@ -360,12 +398,11 @@ const SharedRecipePage = () => {
               </h2>
               <RecipeInstructions
                 instructions={recipeContent.instructions}
-                servings={recipeContent.servings}
-                prepTime={recipeContent.prepTime}
-                cookTime={recipeContent.cookTime}
-                totalTime={recipeContent.totalTime}
                 description={recipeContent.description}
               />
+              <div className="mt-4">
+                <RecipeTips recipeId={recipe.id} userId={currentUserId ?? undefined} />
+              </div>
             </div>
           )}
         </div>

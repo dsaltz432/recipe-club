@@ -46,7 +46,7 @@ export function RecipeDetailTabs({ recipesContent, groceryContent, pantryContent
       </TabsContent>
 
       {cookContent && (
-        <TabsContent value="cook">
+        <TabsContent value="cook" className="w-screen relative left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-10">
           {cookContent}
         </TabsContent>
       )}

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary, RecipeContent } from "@/types";
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
 import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
+import RecipeTips from "@/components/recipes/RecipeTips";
 
 export interface EventRecipeWithRatings extends EventRecipeWithNotes {
   ratingSummary?: RecipeRatingsSummary;
@@ -355,6 +356,9 @@ const EventRecipesTab = ({
                         totalTime={recipeContentMap?.get(recipe.id)?.totalTime}
                         description={recipeContentMap?.get(recipe.id)?.description}
                       />
+                      <div className="mt-3 px-1">
+                        <RecipeTips recipeId={recipe.id} userId={userId} />
+                      </div>
                     </>
                   )}
 
