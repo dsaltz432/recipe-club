@@ -1,9 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChefHatCursor } from "@/components/joel/ChefHatCursor";
 import { ConfettiRain } from "@/components/joel/ConfettiRain";
 import { IngredientClicker } from "@/components/joel/IngredientClicker";
 import { RecipeRoulette } from "@/components/joel/RecipeRoulette";
 import { FoodCrossword } from "@/components/joel/FoodCrossword";
+import { MeatballShellGame } from "@/components/joel/MeatballShellGame";
+
+const SONGS = [
+  "/songs/Abballati.mp3",
+  "/songs/Louis Prima - Che La Luna (Official Lyric Video).mp3",
+  "/songs/Patrizio Buanne - That's Amore.mp3",
+  "/songs/La Casa De Papel - Bella Ciao [Lyrics] (Money Heist).mp3",
+];
 
 const COLOR_THEMES = [
   { bg: "#FF6B6B", text: "#1a1a2e", card: "rgba(255,255,255,0.22)" },
@@ -65,6 +73,9 @@ export default function JoelPartyMode() {
   const [chefHat, setChefHat] = useState(true);
   const [colorCycle, setColorCycle] = useState(true);
   const [themeIndex, setThemeIndex] = useState(0);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [songIndex, setSongIndex] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const theme = COLOR_THEMES[themeIndex];
 
@@ -75,6 +86,42 @@ export default function JoelPartyMode() {
     }, 3000);
     return () => clearInterval(interval);
   }, [colorCycle]);
+
+  // Auto-start on first user interaction (browsers block autoplay before that)
+  useEffect(() => {
+    const startOnFirstInteraction = () => {
+      if (!audioRef.current) return;
+      audioRef.current.play().catch(() => {});
+      setMusicPlaying(true);
+      window.removeEventListener("click", startOnFirstInteraction);
+      window.removeEventListener("keydown", startOnFirstInteraction);
+      window.removeEventListener("touchstart", startOnFirstInteraction);
+    };
+    window.addEventListener("click", startOnFirstInteraction);
+    window.addEventListener("keydown", startOnFirstInteraction);
+    window.addEventListener("touchstart", startOnFirstInteraction);
+    return () => {
+      window.removeEventListener("click", startOnFirstInteraction);
+      window.removeEventListener("keydown", startOnFirstInteraction);
+      window.removeEventListener("touchstart", startOnFirstInteraction);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+    audioRef.current.src = SONGS[songIndex];
+    if (musicPlaying) {
+      audioRef.current.play().catch(() => {});
+    }
+  }, [songIndex]);
+
+  const changeMusic = () => {
+    setSongIndex((i) => (i + 1) % SONGS.length);
+    if (!musicPlaying) {
+      setMusicPlaying(true);
+      audioRef.current?.play().catch(() => {});
+    }
+  };
 
   return (
     <div
@@ -88,6 +135,7 @@ export default function JoelPartyMode() {
     >
       {confetti && <ConfettiRain />}
       {chefHat && <ChefHatCursor />}
+      <audio ref={audioRef} src={SONGS[0]} loop />
 
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "2rem 1.25rem 4rem" }}>
         {/* Header */}
@@ -151,6 +199,14 @@ export default function JoelPartyMode() {
             >
               {colorCycle ? "🌈 Colors ON" : "🌈 Colors OFF"}
             </ToggleButton>
+            <ToggleButton
+              active={true}
+              onClick={changeMusic}
+              cardBg={theme.card}
+              textColor={theme.text}
+            >
+              🎵 Music OFF
+            </ToggleButton>
           </div>
         </div>
 
@@ -178,6 +234,15 @@ export default function JoelPartyMode() {
           >
             <div className="font-black text-base mb-3">🎲 Recipe Roulette</div>
             <RecipeRoulette />
+          </div>
+
+          {/* Meatball Shell Game */}
+          <div
+            className="rounded-2xl p-4 sm:col-span-2"
+            style={{ background: theme.card }}
+          >
+            <div className="font-black text-base mb-3">🍝 Find the Meatball</div>
+            <MeatballShellGame />
           </div>
         </div>
 
