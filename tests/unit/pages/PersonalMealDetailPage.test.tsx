@@ -52,9 +52,8 @@ vi.mock("@/lib/recipeActions", () => ({
 const mockRefreshGroceries = vi.fn();
 vi.mock("@/hooks/useGroceryList", () => ({
   useGroceryList: () => ({
-    recipeIngredients: {},
-    recipeContentMap: {},
-    handleParseRecipe: vi.fn(),
+    recipeIngredients: [],
+    contentMap: new Map(),
     isLoading: false,
     pantryItems: [],
     smartGroceryItems: [],
@@ -62,11 +61,22 @@ vi.mock("@/hooks/useGroceryList", () => ({
     combineError: null,
     perRecipeItems: {},
     checkedItems: new Set(),
+    generalItems: [],
+    hasPendingChanges: false,
+    isAddingGeneral: false,
+    setIsAddingGeneral: vi.fn(),
     handleToggleChecked: vi.fn(),
     handleEditItemText: vi.fn(),
     handleRemoveItem: vi.fn(),
     handleAddItemsToRecipe: vi.fn(),
+    handleAddGeneralItemDirect: vi.fn(),
+    handleRemoveGeneralItem: vi.fn(),
+    handleUpdateGeneralItem: vi.fn(),
+    handleBulkParseGroceryText: vi.fn(),
+    triggerRecombine: vi.fn(),
+    markIngredientChange: vi.fn(),
     refreshGroceries: mockRefreshGroceries,
+    invalidateCache: vi.fn(),
   }),
 }));
 
