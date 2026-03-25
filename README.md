@@ -140,3 +140,4 @@ npm run test            # Run in watch mode
 ```
 
 All files in `src/components/events/`, `src/components/ingredients/`, `src/components/recipes/`, and `src/lib/` must have **100% test coverage**. The only exception is `src/components/wheel/IngredientWheel.tsx` (~55% is acceptable).
+
