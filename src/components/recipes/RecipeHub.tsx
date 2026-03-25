@@ -90,6 +90,7 @@ interface RecipeContentRow {
 type RecipeSubTab = "club" | "personal";
 type SortOption = "newest" | "alphabetical" | "highest_rated";
 type TimeFilter = "all" | "under15" | "under30" | "under60" | "over60";
+type RatingFilter = "all" | "3plus" | "4plus" | "5only";
 
 interface RecipeHubProps {
   userId?: string;
@@ -107,6 +108,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [subTab, setSubTab] = useState<RecipeSubTab>("club");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [clubCount, setClubCount] = useState<number | null>(null);
   const [personalCount, setPersonalCount] = useState<number | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<RecipeWithNotes | null>(null);
@@ -768,7 +770,16 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       return true;
     })();
 
-    return matchesSearch && matchesIngredient && matchesTime;
+    const matchesRating = (() => {
+      if (ratingFilter === "all") return true;
+      const avg = recipe.ratingSummary?.averageRating ?? 0;
+      if (ratingFilter === "3plus") return avg >= 3;
+      if (ratingFilter === "4plus") return avg >= 4;
+      if (ratingFilter === "5only") return avg >= 5;
+      return true;
+    })();
+
+    return matchesSearch && matchesIngredient && matchesTime && matchesRating;
   });
 
   // Sort filtered recipes
@@ -862,7 +873,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all") && (
+                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all") && (
                   <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-purple" />
                 )}
               </Button>
@@ -908,6 +919,17 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     <SelectItem value="over60">Over 1 hour</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v as RatingFilter)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Any Rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Rating</SelectItem>
+                    <SelectItem value="3plus">3+ Stars</SelectItem>
+                    <SelectItem value="4plus">4+ Stars</SelectItem>
+                    <SelectItem value="5only">5 Stars Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -949,6 +971,17 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 <SelectItem value="over60">Over 1 hour</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v as RatingFilter)}>
+              <SelectTrigger className="hidden sm:flex w-40">
+                <SelectValue placeholder="Any Rating" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any Rating</SelectItem>
+                <SelectItem value="3plus">3+ Stars</SelectItem>
+                <SelectItem value="4plus">4+ Stars</SelectItem>
+                <SelectItem value="5only">5 Stars Only</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {subTab === "personal" && userId && (
             <Button
@@ -967,8 +1000,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchTerm || ingredientFilter !== "all" || timeFilter !== "all"
-                  ? "No recipes found matching your search."
+                {searchTerm || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
+                  ? "No recipes found matching your filters."
                   : subTab === "personal"
                   ? "No personal recipes yet. Click \"Add Recipe\" to get started."
                   : "No recipes yet. Recipes are added through events."}

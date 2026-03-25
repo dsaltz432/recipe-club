@@ -4458,3 +4458,197 @@ describe("RecipeHub - Add Recipe", () => {
     }, { timeout: 5000 });
   });
 });
+
+describe("RecipeHub - Rating Filter", () => {
+  const baseRecipe = {
+    url: null,
+    event_id: "event-1",
+    ingredient_id: "ing-1",
+    created_by: "user-123",
+    created_at: "2025-01-15T10:00:00Z",
+    ingredients: { name: "Salmon" },
+    scheduled_events: { type: "club" },
+  };
+
+  const mockRecipesData = [
+    { ...baseRecipe, id: "recipe-1", name: "Five Star Dish" },
+    { ...baseRecipe, id: "recipe-2", name: "Four Star Dish" },
+    { ...baseRecipe, id: "recipe-3", name: "Low Rated Dish" },
+    { ...baseRecipe, id: "recipe-4", name: "Unrated Dish" },
+  ];
+
+  // recipe-1 avg=5, recipe-2 avg=4, recipe-3 avg=2, recipe-4 unrated
+  const mockRatingsData = [
+    { recipe_id: "recipe-1", overall_rating: 5, would_cook_again: true, profiles: { name: "Alice" } },
+    { recipe_id: "recipe-2", overall_rating: 4, would_cook_again: true, profiles: { name: "Bob" } },
+    { recipe_id: "recipe-3", overall_rating: 2, would_cook_again: false, profiles: { name: "Carol" } },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    invalidatePantryCache();
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder(mockRatingsData);
+      if (table === "ingredients") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows all recipes when rating filter is 'Any Rating'", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+      expect(screen.getByText("Four Star Dish")).toBeInTheDocument();
+      expect(screen.getByText("Low Rated Dish")).toBeInTheDocument();
+      expect(screen.getByText("Unrated Dish")).toBeInTheDocument();
+    });
+  });
+
+  it("renders the rating filter dropdown on desktop", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      // The desktop rating filter trigger shows "Any Rating"
+      const triggers = screen.getAllByText(/Any Rating/i);
+      expect(triggers.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("filters to only 4+ star recipes", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+    });
+
+    // Open the desktop rating filter - find the select trigger for rating
+    const triggers = screen.getAllByText(/Any Rating/i);
+    // Use the first (desktop) trigger
+    fireEvent.click(triggers[0]);
+
+    // Select "4+ Stars"
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "4+ Stars" });
+      expect(option).toBeInTheDocument();
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+      expect(screen.getByText("Four Star Dish")).toBeInTheDocument();
+      expect(screen.queryByText("Low Rated Dish")).not.toBeInTheDocument();
+      // Unrated dish avg is 0, does not meet 4+
+      expect(screen.queryByText("Unrated Dish")).not.toBeInTheDocument();
+    });
+  });
+
+  it("filters to only 3+ star recipes", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+    });
+
+    const triggers = screen.getAllByText(/Any Rating/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "3+ Stars" });
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+      expect(screen.getByText("Four Star Dish")).toBeInTheDocument();
+      // avg 2 — excluded
+      expect(screen.queryByText("Low Rated Dish")).not.toBeInTheDocument();
+      // avg 0 (unrated) — excluded
+      expect(screen.queryByText("Unrated Dish")).not.toBeInTheDocument();
+    });
+  });
+
+  it("filters to only 5-star recipes", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+    });
+
+    const triggers = screen.getAllByText(/Any Rating/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "5 Stars Only" });
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+      expect(screen.queryByText("Four Star Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Low Rated Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Unrated Dish")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows 'No recipes found matching your filters' when rating filter excludes all recipes", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+    });
+
+    // Filter to 5+ stars only, then search for something that won't match
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Five Star Dish" } });
+
+    const triggers = screen.getAllByText(/Any Rating/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "4+ Stars" });
+      fireEvent.click(option);
+    });
+
+    // Now change search to something that no 4+ star recipe matches
+    fireEvent.change(searchInput, { target: { value: "zzz-nonexistent" } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/no recipes found matching your filters/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows the active filter indicator dot when rating filter is active", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+    });
+
+    // The indicator dot should not be visible initially
+    const searchInput = screen.getByPlaceholderText("Search recipes...");
+    const flexContainer = searchInput.parentElement?.parentElement;
+    const mobileFilterBtn = flexContainer?.querySelector("button");
+    expect(mobileFilterBtn).toBeTruthy();
+
+    // No active filter dot initially
+    expect(mobileFilterBtn?.querySelector(".bg-purple.rounded-full")).toBeFalsy();
+
+    // Apply rating filter
+    const triggers = screen.getAllByText(/Any Rating/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "4+ Stars" });
+      fireEvent.click(option);
+    });
+
+    // Now the dot should appear on the mobile filter button
+    await waitFor(() => {
+      expect(mobileFilterBtn?.querySelector(".bg-purple")).toBeTruthy();
+    });
+  });
+});
