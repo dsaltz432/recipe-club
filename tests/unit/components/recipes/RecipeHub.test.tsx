@@ -4497,7 +4497,7 @@ describe("RecipeHub - Rating Filter", () => {
     });
   });
 
-  it("shows all recipes when rating filter is 'Any Rating'", async () => {
+  it("shows all recipes (including unrated) by default", async () => {
     render(<RecipeHub />);
 
     await waitFor(() => {
@@ -4508,12 +4508,38 @@ describe("RecipeHub - Rating Filter", () => {
     });
   });
 
+  it("excludes unrated recipes when 'Any Rating' filter is selected", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+    });
+
+    // Open the desktop rating filter and select "Any Rating"
+    const triggers = screen.getAllByText(/All Recipes/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "Any Rating" });
+      expect(option).toBeInTheDocument();
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
+      expect(screen.getByText("Four Star Dish")).toBeInTheDocument();
+      expect(screen.getByText("Low Rated Dish")).toBeInTheDocument();
+      // Unrated recipes must be excluded when "Any Rating" is selected
+      expect(screen.queryByText("Unrated Dish")).not.toBeInTheDocument();
+    });
+  });
+
   it("renders the rating filter dropdown on desktop", async () => {
     render(<RecipeHub />);
 
     await waitFor(() => {
-      // The desktop rating filter trigger shows "Any Rating"
-      const triggers = screen.getAllByText(/Any Rating/i);
+      // The desktop rating filter trigger shows "All Recipes" by default
+      const triggers = screen.getAllByText(/All Recipes/i);
       expect(triggers.length).toBeGreaterThan(0);
     });
   });
@@ -4526,7 +4552,7 @@ describe("RecipeHub - Rating Filter", () => {
     });
 
     // Open the desktop rating filter - find the select trigger for rating
-    const triggers = screen.getAllByText(/Any Rating/i);
+    const triggers = screen.getAllByText(/All Recipes/i);
     // Use the first (desktop) trigger
     fireEvent.click(triggers[0]);
 
@@ -4541,7 +4567,7 @@ describe("RecipeHub - Rating Filter", () => {
       expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
       expect(screen.getByText("Four Star Dish")).toBeInTheDocument();
       expect(screen.queryByText("Low Rated Dish")).not.toBeInTheDocument();
-      // Unrated dish avg is 0, does not meet 4+
+      // Unrated dish is excluded by the rating filter (no ratings at all)
       expect(screen.queryByText("Unrated Dish")).not.toBeInTheDocument();
     });
   });
@@ -4553,7 +4579,7 @@ describe("RecipeHub - Rating Filter", () => {
       expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
     });
 
-    const triggers = screen.getAllByText(/Any Rating/i);
+    const triggers = screen.getAllByText(/All Recipes/i);
     fireEvent.click(triggers[0]);
 
     await waitFor(() => {
@@ -4578,7 +4604,7 @@ describe("RecipeHub - Rating Filter", () => {
       expect(screen.getByText("Five Star Dish")).toBeInTheDocument();
     });
 
-    const triggers = screen.getAllByText(/Any Rating/i);
+    const triggers = screen.getAllByText(/All Recipes/i);
     fireEvent.click(triggers[0]);
 
     await waitFor(() => {
@@ -4605,7 +4631,7 @@ describe("RecipeHub - Rating Filter", () => {
     const searchInput = screen.getByPlaceholderText(/search recipes/i);
     fireEvent.change(searchInput, { target: { value: "Five Star Dish" } });
 
-    const triggers = screen.getAllByText(/Any Rating/i);
+    const triggers = screen.getAllByText(/All Recipes/i);
     fireEvent.click(triggers[0]);
 
     await waitFor(() => {
@@ -4638,7 +4664,7 @@ describe("RecipeHub - Rating Filter", () => {
     expect(mobileFilterBtn?.querySelector(".bg-purple.rounded-full")).toBeFalsy();
 
     // Apply rating filter
-    const triggers = screen.getAllByText(/Any Rating/i);
+    const triggers = screen.getAllByText(/All Recipes/i);
     fireEvent.click(triggers[0]);
 
     await waitFor(() => {

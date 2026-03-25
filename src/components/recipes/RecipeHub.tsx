@@ -90,7 +90,7 @@ interface RecipeContentRow {
 type RecipeSubTab = "club" | "personal";
 type SortOption = "newest" | "alphabetical" | "highest_rated";
 type TimeFilter = "all" | "under15" | "under30" | "under60" | "over60";
-type RatingFilter = "all" | "3plus" | "4plus" | "5only";
+type RatingFilter = "all" | "rated" | "3plus" | "4plus" | "5only";
 
 interface RecipeHubProps {
   userId?: string;
@@ -772,7 +772,10 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
     const matchesRating = (() => {
       if (ratingFilter === "all") return true;
-      const avg = recipe.ratingSummary?.averageRating ?? 0;
+      const hasRatings = (recipe.ratingSummary?.totalRatings ?? 0) > 0;
+      if (!hasRatings) return false;
+      if (ratingFilter === "rated") return true;
+      const avg = recipe.ratingSummary!.averageRating;
       if (ratingFilter === "3plus") return avg >= 3;
       if (ratingFilter === "4plus") return avg >= 4;
       if (ratingFilter === "5only") return avg >= 5;
@@ -921,10 +924,11 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 </Select>
                 <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v as RatingFilter)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Any Rating" />
+                    <SelectValue placeholder="All Recipes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Any Rating</SelectItem>
+                    <SelectItem value="all">All Recipes</SelectItem>
+                    <SelectItem value="rated">Any Rating</SelectItem>
                     <SelectItem value="3plus">3+ Stars</SelectItem>
                     <SelectItem value="4plus">4+ Stars</SelectItem>
                     <SelectItem value="5only">5 Stars Only</SelectItem>
@@ -973,10 +977,11 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             </Select>
             <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v as RatingFilter)}>
               <SelectTrigger className="hidden sm:flex w-40">
-                <SelectValue placeholder="Any Rating" />
+                <SelectValue placeholder="All Recipes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Any Rating</SelectItem>
+                <SelectItem value="all">All Recipes</SelectItem>
+                <SelectItem value="rated">Any Rating</SelectItem>
                 <SelectItem value="3plus">3+ Stars</SelectItem>
                 <SelectItem value="4plus">4+ Stars</SelectItem>
                 <SelectItem value="5only">5 Stars Only</SelectItem>
