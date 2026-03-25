@@ -1,0 +1,13 @@
+#!/bin/bash
+# Prevent accidental direct pushes to main/master.
+# Override with: ALLOW_PUSH_MAIN=1 git push
+
+while read local_ref local_sha remote_ref remote_sha; do
+  if echo "$remote_ref" | grep -qE "refs/heads/(main|master)$"; then
+    if [ "$ALLOW_PUSH_MAIN" != "1" ]; then
+      echo "Blocked: direct push to main/master."
+      echo "Use ALLOW_PUSH_MAIN=1 git push to override."
+      exit 1
+    fi
+  fi
+done
