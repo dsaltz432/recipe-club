@@ -110,13 +110,7 @@ This runs TypeScript compilation and Vite's production build. Output goes to `di
 
 ## Database Migrations
 
-Migrations live in `supabase/migrations/` and are applied in timestamp order:
-
-| File | Description |
-|------|-------------|
-| `20260117000000_baseline_schema.sql` | Full baseline schema (tables, functions, RLS policies, triggers, storage) |
-| `20260118073400_recipe_event_link.sql` | Links recipes directly to events, renames contributions to notes |
-| `20260118194700_ingredient_colors.sql` | Adds color column to ingredients |
+Migrations live in `supabase/migrations/` and are applied in timestamp order
 
 ### Adding a new migration
 
