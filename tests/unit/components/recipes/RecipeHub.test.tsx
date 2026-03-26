@@ -4681,6 +4681,144 @@ describe("RecipeHub - Rating Filter", () => {
   });
 });
 
+describe("RecipeHub - Time Filter", () => {
+  const baseRecipe = {
+    url: null,
+    event_id: "event-1",
+    ingredient_id: "ing-1",
+    created_by: "user-123",
+    created_at: "2025-01-15T10:00:00Z",
+    ingredients: { name: "Salmon" },
+    scheduled_events: { type: "club" },
+  };
+
+  const mockRecipesData = [
+    { ...baseRecipe, id: "recipe-1", name: "Quick Dish" },      // 10 min
+    { ...baseRecipe, id: "recipe-2", name: "Medium Dish" },     // 45 min
+    { ...baseRecipe, id: "recipe-3", name: "Long Dish" },       // 90 min
+    { ...baseRecipe, id: "recipe-4", name: "No Timing Dish" },  // no content
+    { ...baseRecipe, id: "recipe-5", name: "Parse Failed Dish" }, // parse failed, no totalTime
+  ];
+
+  const mockContentData = [
+    { id: "rc-1", recipe_id: "recipe-1", status: "completed", total_time: "10 minutes" },
+    { id: "rc-2", recipe_id: "recipe-2", status: "completed", total_time: "45 minutes" },
+    { id: "rc-3", recipe_id: "recipe-3", status: "completed", total_time: "1 hour 30 minutes" },
+    // recipe-4 has no content row at all
+    { id: "rc-5", recipe_id: "recipe-5", status: "failed", total_time: null }, // failed parse
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    invalidatePantryCache();
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "recipe_ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_content") return createMockQueryBuilder(mockContentData);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows all recipes by default including those with no timing data", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Quick Dish")).toBeInTheDocument();
+      expect(screen.getByText("Medium Dish")).toBeInTheDocument();
+      expect(screen.getByText("Long Dish")).toBeInTheDocument();
+      expect(screen.getByText("No Timing Dish")).toBeInTheDocument();
+      expect(screen.getByText("Parse Failed Dish")).toBeInTheDocument();
+    });
+  });
+
+  it("excludes recipes with no timing data when 'Under 15 min' filter is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => expect(screen.getByText("Quick Dish")).toBeInTheDocument());
+
+    const triggers = screen.getAllByText(/Any Time/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option", { name: "Under 15 min" }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Quick Dish")).toBeInTheDocument();
+      expect(screen.queryByText("Medium Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Long Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("No Timing Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Parse Failed Dish")).not.toBeInTheDocument();
+    });
+  });
+
+  it("excludes recipes with no timing data when 'Under 30 min' filter is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => expect(screen.getByText("Quick Dish")).toBeInTheDocument());
+
+    const triggers = screen.getAllByText(/Any Time/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option", { name: "Under 30 min" }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Quick Dish")).toBeInTheDocument();
+      expect(screen.queryByText("Medium Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Long Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("No Timing Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Parse Failed Dish")).not.toBeInTheDocument();
+    });
+  });
+
+  it("excludes recipes with no timing data when 'Over 1 hour' filter is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => expect(screen.getByText("Long Dish")).toBeInTheDocument());
+
+    const triggers = screen.getAllByText(/Any Time/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option", { name: "Over 1 hour" }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Long Dish")).toBeInTheDocument();
+      expect(screen.queryByText("Quick Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Medium Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("No Timing Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Parse Failed Dish")).not.toBeInTheDocument();
+    });
+  });
+
+  it("excludes recipes with no timing data when 'Under 1 hour' filter is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => expect(screen.getByText("Quick Dish")).toBeInTheDocument());
+
+    const triggers = screen.getAllByText(/Any Time/i);
+    fireEvent.click(triggers[0]);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option", { name: "Under 1 hour" }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Quick Dish")).toBeInTheDocument();
+      expect(screen.getByText("Medium Dish")).toBeInTheDocument();
+      expect(screen.queryByText("Long Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("No Timing Dish")).not.toBeInTheDocument();
+      expect(screen.queryByText("Parse Failed Dish")).not.toBeInTheDocument();
+    });
+  });
+});
+
 describe("RecipeHub - Name Search Feature", () => {
   const mockRecipesData = [
     {
