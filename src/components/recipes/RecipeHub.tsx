@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
@@ -1008,6 +1008,107 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             </Button>
           )}
         </div>
+
+        {/* Active filter chips */}
+        {(() => {
+          const activeFilters: { key: string; label: string; onRemove: () => void }[] = [];
+
+          if (searchQuery.trim()) {
+            activeFilters.push({
+              key: "search",
+              label: `"${searchQuery.trim()}"`,
+              onRemove: () => setSearchQuery(""),
+            });
+          }
+          if (ingredientFilter !== "all") {
+            const name = usedIngredients.find((i) => i.id === ingredientFilter)?.name ?? ingredientFilter;
+            activeFilters.push({
+              key: "ingredient",
+              label: name,
+              onRemove: () => setIngredientFilter("all"),
+            });
+          }
+          if (timeFilter !== "all") {
+            const labels: Record<TimeFilter, string> = {
+              all: "",
+              under15: "Under 15 min",
+              under30: "Under 30 min",
+              under60: "Under 1 hour",
+              over60: "Over 1 hour",
+            };
+            activeFilters.push({
+              key: "time",
+              label: labels[timeFilter],
+              onRemove: () => setTimeFilter("all"),
+            });
+          }
+          if (ratingFilter !== "all") {
+            const labels: Record<RatingFilter, string> = {
+              all: "",
+              rated: "Any Rating",
+              "3plus": "3+ Stars",
+              "4plus": "4+ Stars",
+              "5only": "5 Stars Only",
+            };
+            activeFilters.push({
+              key: "rating",
+              label: labels[ratingFilter],
+              onRemove: () => setRatingFilter("all"),
+            });
+          }
+          if (sortOption !== "newest") {
+            const labels: Record<SortOption, string> = {
+              newest: "",
+              alphabetical: "A–Z",
+              highest_rated: "Highest Rated",
+            };
+            activeFilters.push({
+              key: "sort",
+              label: `Sort: ${labels[sortOption]}`,
+              onRemove: () => setSortOption("newest"),
+            });
+          }
+
+          if (activeFilters.length === 0) return null;
+
+          return (
+            <div
+              className="flex flex-wrap items-center gap-2"
+              data-testid="active-filter-chips"
+              aria-label="Active filters"
+            >
+              {activeFilters.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={filter.onRemove}
+                  aria-label={`Remove filter: ${filter.label}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-purple/10 text-purple px-3 py-1 text-sm font-medium hover:bg-purple/20 transition-colors"
+                >
+                  {filter.label}
+                  <X className="h-3 w-3 shrink-0" />
+                </button>
+              ))}
+              {activeFilters.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setIngredientFilter("all");
+                    setTimeFilter("all");
+                    setRatingFilter("all");
+                    setSortOption("newest");
+                  }}
+                  aria-label="Clear all filters"
+                  className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/30 text-muted-foreground px-3 py-1 text-sm hover:border-muted-foreground/60 hover:text-foreground transition-colors"
+                >
+                  <FilterX className="h-3 w-3" />
+                  Clear all
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Result count when searching */}
         {isSearchActive && !isLoading && (

@@ -4845,3 +4845,196 @@ describe("RecipeHub - Name Search Feature", () => {
     expect(screen.queryByText(/of \d+ recipes/i)).not.toBeInTheDocument();
   });
 });
+
+describe("RecipeHub - Active Filter Chips", () => {
+  const mockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: null,
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon", color: null },
+      scheduled_events: { type: "club" },
+    },
+    {
+      id: "recipe-2",
+      name: "Chicken Stir Fry",
+      url: null,
+      event_id: "event-2",
+      ingredient_id: "ing-2",
+      created_by: "user-456",
+      created_at: "2025-01-14T10:00:00Z",
+      ingredients: { name: "Chicken", color: null },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  const mockNotesData: unknown[] = [];
+  const mockIngredientsData = [
+    { id: "ing-1", name: "Salmon", used_count: 2, in_bank: true },
+    { id: "ing-2", name: "Chicken", used_count: 1, in_bank: true },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    invalidatePantryCache();
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "ingredients") return createMockQueryBuilder(mockIngredientsData);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("shows no filter chips when no filters are active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("active-filter-chips")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /clear all filters/i })).not.toBeInTheDocument();
+  });
+
+  it("shows a chip when search query is typed", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("active-filter-chips")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /remove filter.*Salmon/i })).toBeInTheDocument();
+    });
+  });
+
+  it("removes search filter when its chip is clicked", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
+    });
+
+    const chip = screen.getByRole("button", { name: /remove filter.*Salmon/i });
+    fireEvent.click(chip);
+
+    await waitFor(() => {
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      expect(screen.queryByTestId("active-filter-chips")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows chip for sort when non-default sort is selected", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Open the desktop sort dropdown (first Newest First trigger visible on sm+)
+    const sortTriggers = screen.getAllByText(/newest first/i);
+    fireEvent.click(sortTriggers[0]);
+
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: /alphabetical/i });
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("active-filter-chips")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /remove filter.*a.z/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'Clear all' button when two or more filters are active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Activate search
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    // Activate sort
+    const sortTriggers = screen.getAllByText(/newest first/i);
+    fireEvent.click(sortTriggers[0]);
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: /alphabetical/i });
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /clear all filters/i })).toBeInTheDocument();
+    });
+  });
+
+  it("does not show 'Clear all' button when only one filter is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Activate only search
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("active-filter-chips")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("button", { name: /clear all filters/i })).not.toBeInTheDocument();
+  });
+
+  it("clears all filters when 'Clear all' is clicked", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Activate search
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    // Activate sort
+    const sortTriggers = screen.getAllByText(/newest first/i);
+    fireEvent.click(sortTriggers[0]);
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: /alphabetical/i });
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /clear all filters/i })).toBeInTheDocument();
+    });
+
+    const clearAllBtn = screen.getByRole("button", { name: /clear all filters/i });
+    fireEvent.click(clearAllBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("active-filter-chips")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /clear all filters/i })).not.toBeInTheDocument();
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+    });
+  });
+});
