@@ -759,7 +759,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       if (timeFilter === "all") return true;
       const content = recipeContentMap[recipe.id];
       const minutes = parseTimeToMinutes(content?.totalTime);
-      if (minutes === null) return true; // unparseable times pass through all filters
+      if (minutes === null) return false; // no timing data — exclude from time-based filters
       if (timeFilter === "under15") return minutes < 15;
       if (timeFilter === "under30") return minutes < 30;
       if (timeFilter === "under60") return minutes < 60;
