@@ -401,7 +401,7 @@ describe("RecipeHub - Ingredient Filtering", () => {
     });
   });
 
-  it("searches in recipe notes", async () => {
+  it("search only matches recipe names (not notes content)", async () => {
     render(<RecipeHub />);
 
     await waitFor(() => {
@@ -409,12 +409,14 @@ describe("RecipeHub - Ingredient Filtering", () => {
     });
 
     const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    // "lemon" appears in notes for Grilled Salmon but not in any recipe name
     fireEvent.change(searchInput, { target: { value: "lemon" } });
 
     await waitFor(() => {
-      // Should find the Salmon recipe because its notes contain "lemon"
-      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      // Name-only search: "lemon" is not in any recipe name, so no results
+      expect(screen.queryByText("Grilled Salmon")).not.toBeInTheDocument();
       expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
+      expect(screen.getByText(/no recipes found/i)).toBeInTheDocument();
     });
   });
 
@@ -4676,5 +4678,170 @@ describe("RecipeHub - Rating Filter", () => {
     await waitFor(() => {
       expect(mobileFilterBtn?.querySelector(".bg-purple")).toBeTruthy();
     });
+  });
+});
+
+describe("RecipeHub - Name Search Feature", () => {
+  const mockRecipesData = [
+    {
+      id: "recipe-1",
+      name: "Grilled Salmon",
+      url: "https://example.com/salmon",
+      event_id: "event-1",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-15T10:00:00Z",
+      ingredients: { name: "Salmon", color: null },
+      scheduled_events: { type: "club" },
+    },
+    {
+      id: "recipe-2",
+      name: "Chicken Stir Fry",
+      url: null,
+      event_id: "event-2",
+      ingredient_id: "ing-2",
+      created_by: "user-456",
+      created_at: "2025-01-14T10:00:00Z",
+      ingredients: { name: "Chicken", color: null },
+      scheduled_events: { type: "club" },
+    },
+    {
+      id: "recipe-3",
+      name: "Salmon Pasta",
+      url: null,
+      event_id: "event-3",
+      ingredient_id: "ing-1",
+      created_by: "user-123",
+      created_at: "2025-01-13T10:00:00Z",
+      ingredients: { name: "Salmon", color: null },
+      scheduled_events: { type: "club" },
+    },
+  ];
+
+  const mockNotesData: unknown[] = [];
+  const mockIngredientsData = [
+    { id: "ing-1", name: "Salmon", used_count: 2, in_bank: true },
+    { id: "ing-2", name: "Chicken", used_count: 1, in_bank: true },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "ingredients") return createMockQueryBuilder(mockIngredientsData);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("filters recipes by name (case-insensitive)", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      expect(screen.getByText("Salmon Pasta")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "SALMON" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Salmon Pasta")).toBeInTheDocument();
+      expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows empty state when no recipe names match search", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "zzz-no-match-xyz" } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/no recipes found/i)).toBeInTheDocument();
+      expect(screen.queryByText("Grilled Salmon")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows clear button when search query is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // No clear button initially
+    expect(screen.queryByRole("button", { name: /clear search/i })).not.toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /clear search/i })).toBeInTheDocument();
+    });
+  });
+
+  it("clears search and restores all recipes when clear button is clicked", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Chicken" } });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Grilled Salmon")).not.toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+    });
+
+    const clearButton = screen.getByRole("button", { name: /clear search/i });
+    fireEvent.click(clearButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      expect(screen.getByText("Salmon Pasta")).toBeInTheDocument();
+    });
+
+    // Clear button should be gone after clearing
+    expect(screen.queryByRole("button", { name: /clear search/i })).not.toBeInTheDocument();
+  });
+
+  it("shows result count when search is active", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search recipes/i);
+    fireEvent.change(searchInput, { target: { value: "Salmon" } });
+
+    await waitFor(() => {
+      // Should show "2 of 3 recipes" (Grilled Salmon + Salmon Pasta match)
+      expect(screen.getByText(/2 of 3 recipes/i)).toBeInTheDocument();
+    });
+  });
+
+  it("does not show result count when search is empty", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // No result count when no search is active
+    expect(screen.queryByText(/of \d+ recipes/i)).not.toBeInTheDocument();
   });
 });

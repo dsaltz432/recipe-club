@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
 import CookModeSidebar from "@/components/cookmode/CookModeSidebar";
-import type { CookModeStep, RecipeIngredient } from "@/types";
+import type { RecipeIngredient } from "@/types";
 
 vi.mock("@/hooks/useRecipeTips", () => ({
   useRecipeTips: () => ({
@@ -13,12 +13,6 @@ vi.mock("@/hooks/useRecipeTips", () => ({
     deleteTip: vi.fn(),
   }),
 }));
-
-const steps: CookModeStep[] = [
-  { recipeId: "r1", recipeName: "Pasta", instruction: "Boil water" },
-  { recipeId: "r1", recipeName: "Pasta", instruction: "Cook pasta" },
-  { recipeId: "r2", recipeName: "Salad", instruction: "Chop lettuce" },
-];
 
 const recipeColorMap = new Map([
   ["r1", 0],
@@ -41,9 +35,6 @@ const ingredientsByRecipe = new Map([
 ]);
 
 const defaultProps = {
-  steps,
-  currentStep: 0,
-  onJumpToStep: vi.fn(),
   ingredientsByRecipe,
   recipeColorMap,
   recipeNames,
@@ -72,37 +63,6 @@ describe("CookModeSidebar", () => {
     expect(screen.getByText(/200 g spaghetti/)).toBeInTheDocument();
   });
 
-  it("renders the Steps section heading", () => {
-    render(<CookModeSidebar {...defaultProps} />);
-    expect(screen.getByText("Steps")).toBeInTheDocument();
-  });
-
-  it("renders all steps in the steps list", () => {
-    render(<CookModeSidebar {...defaultProps} />);
-    expect(screen.getByLabelText("Jump to step 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Jump to step 2")).toBeInTheDocument();
-    expect(screen.getByLabelText("Jump to step 3")).toBeInTheDocument();
-  });
-
-  it("marks the current step as active with aria-current", () => {
-    render(<CookModeSidebar {...defaultProps} currentStep={1} />);
-    const activeBtn = screen.getByLabelText("Jump to step 2");
-    expect(activeBtn).toHaveAttribute("aria-current", "step");
-  });
-
-  it("does not mark inactive steps with aria-current", () => {
-    render(<CookModeSidebar {...defaultProps} currentStep={0} />);
-    const inactiveBtn = screen.getByLabelText("Jump to step 2");
-    expect(inactiveBtn).not.toHaveAttribute("aria-current");
-  });
-
-  it("calls onJumpToStep with the correct index when a step is clicked", () => {
-    const onJumpToStep = vi.fn();
-    render(<CookModeSidebar {...defaultProps} onJumpToStep={onJumpToStep} />);
-    fireEvent.click(screen.getByLabelText("Jump to step 3"));
-    expect(onJumpToStep).toHaveBeenCalledWith(2);
-  });
-
   it("renders the Tips section when primaryRecipeId is provided", () => {
     render(<CookModeSidebar {...defaultProps} />);
     expect(screen.getByText("Tips")).toBeInTheDocument();
@@ -110,18 +70,18 @@ describe("CookModeSidebar", () => {
 
   it("collapses the tips section when the toggle button is clicked", () => {
     render(<CookModeSidebar {...defaultProps} />);
-    // Tips content visible initially (no tips, shows "No tips yet.")
-    expect(screen.getByText("No tips yet.")).toBeInTheDocument();
+    // Tips content visible initially (empty state shows "Add the first tip")
+    expect(screen.getByText("+ Add the first tip")).toBeInTheDocument();
     // Click to collapse
     fireEvent.click(screen.getByLabelText("Collapse tips"));
-    expect(screen.queryByText("No tips yet.")).not.toBeInTheDocument();
+    expect(screen.queryByText("+ Add the first tip")).not.toBeInTheDocument();
   });
 
   it("expands the tips section again after collapsing", () => {
     render(<CookModeSidebar {...defaultProps} />);
     fireEvent.click(screen.getByLabelText("Collapse tips"));
     fireEvent.click(screen.getByLabelText("Expand tips"));
-    expect(screen.getByText("No tips yet.")).toBeInTheDocument();
+    expect(screen.getByText("+ Add the first tip")).toBeInTheDocument();
   });
 
   it("does not render the Tips section when primaryRecipeId is not provided", () => {

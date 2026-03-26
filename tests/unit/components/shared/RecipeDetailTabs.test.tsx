@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@tests/utils";
 import userEvent from "@testing-library/user-event";
 import { RecipeDetailTabs } from "@/components/shared/RecipeDetailTabs";
@@ -94,35 +94,35 @@ describe("RecipeDetailTabs", () => {
     expect(screen.queryByRole("tab", { name: /Cook/ })).not.toBeInTheDocument();
   });
 
-  it("renders Cook tab when cookContent is provided", () => {
+  it("renders Cook tab when showCookTab is true", () => {
     render(
       <RecipeDetailTabs
         recipesContent={<div>Recipes content</div>}
         groceryContent={<div>Grocery content</div>}
         pantryContent={<div>Pantry content</div>}
-        cookContent={<div>Cook content</div>}
+        showCookTab={true}
       />
     );
 
     expect(screen.getByRole("tab", { name: /Cook/ })).toBeInTheDocument();
   });
 
-  it("shows cookContent when Cook tab is clicked", async () => {
+  it("calls onCookClick when Cook tab is clicked", async () => {
     const user = userEvent.setup();
+    const onCookClick = vi.fn();
 
     render(
       <RecipeDetailTabs
         recipesContent={<div>Recipes content</div>}
         groceryContent={<div>Grocery content</div>}
         pantryContent={<div>Pantry content</div>}
-        cookContent={<div>Cook content</div>}
+        showCookTab={true}
+        onCookClick={onCookClick}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: /Cook/ }));
 
-    await waitFor(() => {
-      expect(screen.getByText("Cook content")).toBeInTheDocument();
-    });
+    expect(onCookClick).toHaveBeenCalled();
   });
 });

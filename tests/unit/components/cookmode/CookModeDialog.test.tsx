@@ -147,7 +147,7 @@ describe("CookModeDialog", () => {
   it("jumping to a step via sidebar updates the current step display", () => {
     render(<CookModeDialog {...defaultProps} />);
     // Click on step 3 in the sidebar steps list
-    fireEvent.click(screen.getByLabelText("Jump to step 3"));
+    fireEvent.click(screen.getByLabelText("Go to step 3"));
     expect(screen.getByText("3 / 3")).toBeInTheDocument();
     // Instruction appears in both main view and sidebar
     expect(screen.getAllByText("Chop the romaine lettuce.").length).toBeGreaterThanOrEqual(1);
@@ -219,13 +219,13 @@ describe("CookModeDialog", () => {
 
   it("shows mobile drawer toggle button when steps are present", () => {
     render(<CookModeDialog {...defaultProps} />);
-    expect(screen.getByLabelText("Show ingredients and steps")).toBeInTheDocument();
+    expect(screen.getByLabelText("Show ingredients")).toBeInTheDocument();
   });
 
   it("clicking mobile drawer toggle changes aria-label and shows sidebar content", () => {
     render(<CookModeDialog {...defaultProps} />);
-    const toggle = screen.getByLabelText("Show ingredients and steps");
+    const toggle = screen.getByLabelText("Show ingredients");
     fireEvent.click(toggle);
-    expect(screen.getByLabelText("Hide ingredients and steps")).toBeInTheDocument();
+    expect(screen.getByLabelText("Hide ingredients")).toBeInTheDocument();
   });
 });

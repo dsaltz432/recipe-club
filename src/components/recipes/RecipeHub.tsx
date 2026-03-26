@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, SlidersHorizontal, Plus } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
@@ -102,7 +102,7 @@ interface RecipeHubProps {
 const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeHubProps) => {
   const [recipes, setRecipes] = useState<RecipeWithNotes[]>([]);
   const [usedIngredients, setUsedIngredients] = useState<Ingredient[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [ingredientFilter, setIngredientFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [subTab, setSubTab] = useState<RecipeSubTab>("club");
@@ -740,6 +740,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
   useEffect(() => {
     setIsLoading(true);
+    setSearchQuery("");
     loadRecipes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subTab]);
@@ -747,12 +748,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   // Filter recipes based on search and ingredient
   const filteredRecipes = recipes.filter((recipe) => {
     const matchesSearch =
-      searchTerm === "" ||
-      recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.ingredientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.notes.some(
-        (n) => n.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      searchQuery === "" ||
+      recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesIngredient =
       ingredientFilter === "all" ||
@@ -784,6 +781,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
     return matchesSearch && matchesIngredient && matchesTime && matchesRating;
   });
+
+  const totalRecipes = recipes.length;
+  const isSearchActive = searchQuery.trim() !== "";
 
   // Sort filtered recipes
   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
@@ -854,10 +854,20 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 <Input
                   name="recipe-search"
                   placeholder="Search recipes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-8"
                 />
+                {isSearchActive && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               {subTab === "personal" && userId && (
                 <Button
@@ -999,13 +1009,20 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
           )}
         </div>
 
+        {/* Result count when searching */}
+        {isSearchActive && !isLoading && (
+          <p className="text-sm text-muted-foreground">
+            {sortedRecipes.length} of {totalRecipes} recipes
+          </p>
+        )}
+
         {/* Recipe Grid */}
         {sortedRecipes.length === 0 ? (
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchTerm || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
+                {searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
                   ? "No recipes found matching your filters."
                   : subTab === "personal"
                   ? "No personal recipes yet. Click \"Add Recipe\" to get started."

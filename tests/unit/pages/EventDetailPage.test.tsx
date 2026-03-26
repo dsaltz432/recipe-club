@@ -60,6 +60,7 @@ import { toast } from "sonner";
 
 // Calendar mock
 vi.mock("@/lib/googleCalendar", () => ({
+  createCalendarEvent: vi.fn().mockResolvedValue({ success: true, eventId: "new-cal-id" }),
   updateCalendarEvent: vi.fn().mockResolvedValue({ success: true }),
   deleteCalendarEvent: vi.fn().mockResolvedValue({ success: true }),
 }));

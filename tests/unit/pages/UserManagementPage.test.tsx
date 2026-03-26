@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@tests/utils";
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: vi.fn(),
+    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
+  },
+}));
+
 import UserManagementPage from "@/pages/UserManagementPage";
 
 const mockNavigate = vi.fn();
