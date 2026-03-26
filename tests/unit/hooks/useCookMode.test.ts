@@ -44,7 +44,17 @@ describe("useCookMode", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("single recipe: maps instructions to CookModeStep[] without calling edge function", async () => {
+  it("single recipe: calls edge function and returns generated timeline", async () => {
+    const generatedSteps = [
+      { recipeId: "r1", recipeName: "Pasta", instruction: "Boil water" },
+      { recipeId: "r1", recipeName: "Pasta", instruction: "Cook pasta" },
+    ];
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockInvoke.mockResolvedValue({
+      data: { success: true, steps: generatedSteps },
+      error: null,
+    });
+
     const recipe = { id: "r1", name: "Pasta", instructions: ["Boil water", "Cook pasta"] };
 
     const { result } = renderHook(() =>
@@ -55,28 +65,39 @@ describe("useCookMode", () => {
       await result.current.generateTimeline();
     });
 
-    expect(result.current.timeline).toEqual([
-      { recipeId: "r1", recipeName: "Pasta", instruction: "Boil water" },
-      { recipeId: "r1", recipeName: "Pasta", instruction: "Cook pasta" },
-    ]);
-    expect(mockInvoke).not.toHaveBeenCalled();
+    expect(result.current.timeline).toEqual(generatedSteps);
+    expect(mockInvoke).toHaveBeenCalledWith(
+      "generate-cook-timeline",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          eventId: "event-1",
+          recipeIds: ["r1"],
+        }),
+      })
+    );
     // mockFrom is called for recipe_ingredients fetch
     expect(mockFrom).toHaveBeenCalledWith("recipe_ingredients");
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
   });
 
-  it("single recipe with no instructions: produces empty timeline", async () => {
+  it("single recipe with no instructions: still calls edge function", async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockInvoke.mockResolvedValue({
+      data: { success: true, steps: [] },
+      error: null,
+    });
+
     const recipe = { id: "r1", name: "Pasta" };
 
-    const { result } = renderHook(() => useCookMode({ recipes: [recipe] }));
+    const { result } = renderHook(() => useCookMode({ eventId: "event-1", recipes: [recipe] }));
 
     await act(async () => {
       await result.current.generateTimeline();
     });
 
     expect(result.current.timeline).toEqual([]);
-    expect(mockInvoke).not.toHaveBeenCalled();
+    expect(mockInvoke).toHaveBeenCalled();
   });
 
   it("multi-recipe: returns cached timeline on cache hit without calling edge function", async () => {

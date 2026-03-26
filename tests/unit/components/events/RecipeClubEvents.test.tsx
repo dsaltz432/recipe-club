@@ -21,6 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 vi.mock("@/lib/googleCalendar", () => ({
+  createCalendarEvent: vi.fn().mockResolvedValue({ success: true, eventId: "new-cal-id" }),
   updateCalendarEvent: vi.fn().mockResolvedValue({ success: true }),
   deleteCalendarEvent: vi.fn().mockResolvedValue({ success: true }),
 }));
@@ -358,7 +359,7 @@ describe("RecipeClubEvents", () => {
     expect(screen.getByText("Cancel")).toBeInTheDocument();
   });
 
-  it("hides Edit and Cancel for admin who did not create the event", async () => {
+  it("shows Edit, Cancel, and Complete for admin who did not create the event", async () => {
     setupLoadMocks([makeEventRow({ created_by: "other-user" })]);
 
     render(<RecipeClubEvents {...defaultProps} isAdmin={true} />);
@@ -366,8 +367,8 @@ describe("RecipeClubEvents", () => {
     await waitFor(() => {
       expect(screen.getByText("Tomato")).toBeInTheDocument();
     });
-    expect(screen.queryByText("Edit")).not.toBeInTheDocument();
-    expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(screen.getByText("Cancel")).toBeInTheDocument();
     expect(screen.getByText("Complete")).toBeInTheDocument();
   });
 
@@ -915,9 +916,10 @@ describe("RecipeClubEvents", () => {
     });
   });
 
-  it("saves edited event without calendar event", async () => {
-    const { updateCalendarEvent } = await import("@/lib/googleCalendar");
+  it("saves edited event without calendar event (creates new one)", async () => {
+    const { updateCalendarEvent, createCalendarEvent } = await import("@/lib/googleCalendar");
     (updateCalendarEvent as ReturnType<typeof vi.fn>).mockClear();
+    (createCalendarEvent as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true, eventId: "new-cal-id" });
 
     let fromCallIdx = 0;
     mockSupabaseFrom.mockImplementation((table: string) => {
@@ -936,13 +938,9 @@ describe("RecipeClubEvents", () => {
           });
           return b;
         }
-        if (fromCallIdx === 3) {
-          const b = createMockQueryBuilder();
-          b.eq = vi.fn().mockResolvedValue({ data: null, error: null });
-          return b;
-        }
+        // fromCallIdx 3 = update event date/time, 4 = save calendar_event_id
         const b = createMockQueryBuilder();
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        b.eq = vi.fn().mockResolvedValue({ data: null, error: null });
         return b;
       }
       return createMockQueryBuilder();
@@ -962,6 +960,7 @@ describe("RecipeClubEvents", () => {
     });
 
     expect(updateCalendarEvent).not.toHaveBeenCalled();
+    expect(createCalendarEvent).toHaveBeenCalled();
   });
 
   it("handles edit save error (fetch event fails)", async () => {

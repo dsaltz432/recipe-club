@@ -12,10 +12,12 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 // --- Google Calendar mock ---
+const mockCreateCalendarEvent = vi.fn();
 const mockDeleteCalendarEvent = vi.fn();
 const mockUpdateCalendarEvent = vi.fn();
 
 vi.mock("@/lib/googleCalendar", () => ({
+  createCalendarEvent: (...args: unknown[]) => mockCreateCalendarEvent(...args),
   deleteCalendarEvent: (...args: unknown[]) => mockDeleteCalendarEvent(...args),
   updateCalendarEvent: (...args: unknown[]) => mockUpdateCalendarEvent(...args),
 }));
@@ -329,7 +331,8 @@ describe("eventActions", () => {
       });
     });
 
-    it("skips calendar sync when no calendar_event_id", async () => {
+    it("creates calendar event when no calendar_event_id", async () => {
+      mockCreateCalendarEvent.mockResolvedValue({ success: true, eventId: "new-cal-id" });
       setupUpdateMocks({
         fetchData: { ...eventData, calendar_event_id: null },
       });
@@ -338,6 +341,7 @@ describe("eventActions", () => {
 
       expect(result).toEqual({ success: true, calendarSyncFailed: false });
       expect(mockUpdateCalendarEvent).not.toHaveBeenCalled();
+      expect(mockCreateCalendarEvent).toHaveBeenCalled();
     });
 
     it("returns calendarSyncFailed when calendar update fails", async () => {

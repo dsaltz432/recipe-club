@@ -22,10 +22,12 @@ vi.mock("sonner", () => ({
 import { toast } from "sonner";
 
 // Mock Google Calendar
+const mockCreateCalendarEvent = vi.fn();
 const mockUpdateCalendarEvent = vi.fn();
 const mockDeleteCalendarEvent = vi.fn();
 
 vi.mock("@/lib/googleCalendar", () => ({
+  createCalendarEvent: (...args: unknown[]) => mockCreateCalendarEvent(...args),
   updateCalendarEvent: (...args: unknown[]) => mockUpdateCalendarEvent(...args),
   deleteCalendarEvent: (...args: unknown[]) => mockDeleteCalendarEvent(...args),
 }));
@@ -183,11 +185,11 @@ describe("CountdownCard", () => {
     expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
   });
 
-  it("hides Edit, Complete, and Cancel buttons for admin who did not create the event", () => {
+  it("shows Edit, Complete, and Cancel buttons for admin who did not create the event", () => {
     render(<CountdownCard {...defaultProps} isAdmin={true} userId="other-user" />);
-    expect(screen.queryByText("Edit")).not.toBeInTheDocument();
-    expect(screen.queryByText("Complete")).not.toBeInTheDocument();
-    expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(screen.getByText("Complete")).toBeInTheDocument();
+    expect(screen.getByText("Cancel")).toBeInTheDocument();
   });
 
   it("shows Edit, Complete, and Cancel buttons for admin event creator", () => {
@@ -328,6 +330,7 @@ describe("CountdownCard", () => {
   });
 
   it("handles event without calendar_event_id during edit", async () => {
+    mockCreateCalendarEvent.mockResolvedValue({ success: true, eventId: "new-cal-id" });
     const selectChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
