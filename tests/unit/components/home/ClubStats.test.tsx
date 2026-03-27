@@ -163,8 +163,8 @@ describe("ClubStats", () => {
     });
     expect(screen.getByText("Mushroom Soup")).toBeInTheDocument();
     expect(screen.getByText("Top-Rated Recipes")).toBeInTheDocument();
-    // Garlic Pasta avg = (5+4)/2 = 4.5
-    expect(screen.getByText("4.5 (2)")).toBeInTheDocument();
+    // Garlic Pasta avg = (5+4)/2 = 4.5 — compact mobile rating
+    expect(screen.getByText("4.5 ★")).toBeInTheDocument();
   });
 
   it("excludes recipes with fewer than 2 ratings from top-rated list", async () => {

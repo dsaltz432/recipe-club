@@ -258,9 +258,13 @@ const ClubStats = () => {
                     {recipe.recipeName}
                   </span>
                   <div className="flex flex-col items-end gap-0.5 shrink-0">
-                    {renderStars(recipe.averageRating)}
+                    <span className="sm:hidden text-xs font-semibold text-yellow-500">
+                      {recipe.averageRating.toFixed(1)} ★
+                    </span>
+                    <div className="hidden sm:flex">{renderStars(recipe.averageRating)}</div>
                     <span className="text-xs text-gray-500">
-                      {recipe.averageRating.toFixed(1)} ({recipe.totalRatings})
+                      <span className="hidden sm:inline">{recipe.averageRating.toFixed(1)} </span>
+                      ({recipe.totalRatings})
                     </span>
                   </div>
                 </div>
