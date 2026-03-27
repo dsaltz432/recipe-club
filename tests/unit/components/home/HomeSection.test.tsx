@@ -53,6 +53,11 @@ vi.mock("@/components/ingredients/IngredientBank", () => ({
   default: () => <div data-testid="ingredient-bank">Bank</div>,
 }));
 
+// Mock ClubStats to avoid unrelated Supabase calls
+vi.mock("@/components/home/ClubStats", () => ({
+  default: () => <div data-testid="club-stats">ClubStats</div>,
+}));
+
 describe("HomeSection", () => {
   const user = createMockUser({ name: "Alice Smith" });
   const ingredients: Ingredient[] = [createMockIngredient()];
@@ -154,6 +159,18 @@ describe("HomeSection", () => {
       render(<HomeSection {...defaultProps} isAdmin={false} />);
       fireEvent.click(screen.getByText("Browse Recipes"));
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard/recipes");
+    });
+  });
+
+  describe("ClubStats integration", () => {
+    it("renders ClubStats when event is not loading", () => {
+      render(<HomeSection {...defaultProps} isEventLoading={false} />);
+      expect(screen.getByTestId("club-stats")).toBeInTheDocument();
+    });
+
+    it("does not render ClubStats while event is loading", () => {
+      render(<HomeSection {...defaultProps} isEventLoading={true} />);
+      expect(screen.queryByTestId("club-stats")).not.toBeInTheDocument();
     });
   });
 });
