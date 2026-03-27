@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, BookOpen } from "lucide-react";
 import CountdownCard from "./CountdownCard";
+import ClubStats from "./ClubStats";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
@@ -114,6 +115,9 @@ const HomeSection = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Club history — always visible once event loading is done */}
+      {!isEventLoading && <ClubStats />}
     </div>
   );
 };
