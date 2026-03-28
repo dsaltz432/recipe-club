@@ -43,14 +43,6 @@ const mockRecipesChain = (recipes: unknown[]) => {
   return chain;
 };
 
-const mockMealPlanChain = (linkedItems: unknown[]) => {
-  const chain: Record<string, unknown> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.in = vi.fn().mockReturnValue(chain);
-  chain.not = vi.fn().mockResolvedValue({ data: linkedItems, error: null });
-  return chain;
-};
-
 const mockDeleteChain = (result: { error: null | object } = { error: null }) => {
   const chain: Record<string, unknown> = {};
   chain.delete = vi.fn().mockReturnValue(chain);
@@ -58,10 +50,9 @@ const mockDeleteChain = (result: { error: null | object } = { error: null }) => 
   return chain;
 };
 
-const defaultFromMock = (events: unknown[], mealPlanItems: unknown[] = [], recipes: unknown[] = []) =>
+const defaultFromMock = (events: unknown[], recipes: unknown[] = []) =>
   (table: string) => {
     if (table === "scheduled_events") return mockEventsChain(events);
-    if (table === "meal_plan_items") return mockMealPlanChain(mealPlanItems);
     if (table === "recipes") return mockRecipesChain(recipes);
     return mockEventsChain([]);
   };
@@ -116,17 +107,17 @@ describe("PersonalEventsList", () => {
     });
   });
 
-  it("excludes events auto-created by the meal planner", async () => {
-    const events = [
+  it("only shows events with is_meal_plan_event=false (filtered server-side)", async () => {
+    // The DB query includes .eq("is_meal_plan_event", false) so only standalone
+    // events are returned. The mock just returns whatever we pass in.
+    const standaloneEvents = [
       { id: "e1", title: "My Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
-      { id: "e2", title: null, event_date: "2026-04-08", event_time: null, status: "scheduled" },
     ];
-    const mealPlanItems = [{ event_id: "e2" }];
-    mockSupabase.from.mockImplementation(defaultFromMock(events, mealPlanItems));
+    mockSupabase.from.mockImplementation(defaultFromMock(standaloneEvents));
 
     render(<PersonalEventsList userId="user-1" />);
     await waitFor(() => screen.getByText(/April 1, 2026/));
-    expect(screen.queryByText(/April 8, 2026/)).not.toBeInTheDocument();
+    expect(screen.getByText(/April 1, 2026/)).toBeInTheDocument();
   });
 
   it("opens the create dialog when New Event is clicked", async () => {
@@ -221,7 +212,6 @@ describe("PersonalEventsList", () => {
           delete: deleteChain.delete,
         };
       }
-      if (table === "meal_plan_items") return mockMealPlanChain([]);
       return mockRecipesChain([]);
     });
 

@@ -31,34 +31,16 @@ const NonMemberHome = ({ userId }: NonMemberHomeProps) => {
         .select("id, title, event_date, event_time")
         .eq("type", "personal")
         .eq("created_by", userId)
+        .eq("is_meal_plan_event", false)
         .eq("status", "scheduled")
         .order("event_date", { ascending: true });
 
-      const eventIds = (eventsData ?? []).map((e) => e.id);
-      if (eventIds.length === 0) {
+      if (!eventsData || eventsData.length === 0) {
         setNextEvent(null);
         return;
       }
 
-      // Filter out meal-plan-created events
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: mealPlanLinked } = await (supabase as any)
-        .from("meal_plan_items")
-        .select("event_id")
-        .in("event_id", eventIds)
-        .not("event_id", "is", null);
-
-      const mealPlanIds = new Set(
-        (mealPlanLinked ?? []).map((m: { event_id: string }) => m.event_id)
-      );
-      const standalone = (eventsData ?? []).filter((e) => !mealPlanIds.has(e.id));
-
-      if (standalone.length === 0) {
-        setNextEvent(null);
-        return;
-      }
-
-      const first = standalone[0];
+      const first = eventsData[0];
 
       // Get recipe count for that event
       const { count } = await supabase

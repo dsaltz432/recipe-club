@@ -62,46 +62,30 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
         .select("id, title, event_date, event_time, status")
         .eq("type", "personal")
         .eq("created_by", userId)
+        .eq("is_meal_plan_event", false)
         .neq("status", "canceled")
         .order("event_date", { ascending: false });
 
       if (error) throw error;
 
-      const allEventIds: string[] = (eventsData ?? []).map((e: { id: string }) => e.id);
+      const eventIds: string[] = (eventsData ?? []).map((e) => e.id);
 
-      // Filter out events auto-created by meal planner (they have meal_plan_items rows)
-      let standaloneEventIds = allEventIds;
-      if (allEventIds.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: mealPlanLinked } = await (supabase as any)
-          .from("meal_plan_items")
-          .select("event_id")
-          .in("event_id", allEventIds)
-          .not("event_id", "is", null);
-        const mealPlanEventIds = new Set(
-          (mealPlanLinked ?? []).map((m: { event_id: string }) => m.event_id)
-        );
-        standaloneEventIds = allEventIds.filter((id) => !mealPlanEventIds.has(id));
-      }
-
-      // Load recipe counts per standalone event
+      // Load recipe counts per event
       const countMap: Record<string, number> = {};
-      if (standaloneEventIds.length > 0) {
+      if (eventIds.length > 0) {
         const { data: recipesData } = await supabase
           .from("recipes")
           .select("event_id")
-          .in("event_id", standaloneEventIds);
+          .in("event_id", eventIds);
 
         for (const r of recipesData ?? []) {
           if (r.event_id) countMap[r.event_id] = (countMap[r.event_id] ?? 0) + 1;
         }
       }
 
-      const standaloneSet = new Set(standaloneEventIds);
       setEvents(
         (eventsData ?? [])
-          .filter((e: { id: string }) => standaloneSet.has(e.id))
-          .map((e: { id: string; title: string | null; event_date: string; event_time: string | null; status: string | null }) => ({
+          .map((e) => ({
             id: e.id,
             title: e.title ?? "",
             eventDate: e.event_date,
