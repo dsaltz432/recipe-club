@@ -9,7 +9,6 @@ import ClubStats from "./ClubStats";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
-import PersonalEventsList from "@/components/events/PersonalEventsList";
 
 interface HomeSectionProps {
   user: User | null;
@@ -124,8 +123,6 @@ const HomeSection = ({
       {/* Club history — visible to club members once event loading is done */}
       {!isEventLoading && isClubMember && <ClubStats />}
 
-      {/* Personal events — visible to all logged-in users */}
-      {!isEventLoading && user && <PersonalEventsList userId={user.id} />}
     </div>
   );
 };

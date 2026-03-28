@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LogOut, Home, Calendar, BookOpen, ShieldX, CalendarDays, DollarSign } from "lucide-react";
-import RecipeClubEvents from "@/components/events/RecipeClubEvents";
+import EventsSection from "@/components/events/EventsSection";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
@@ -310,9 +310,10 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="events">
-            <RecipeClubEvents
+            <EventsSection
               userId={user?.id || ""}
               isAdmin={userIsMemberOrAdmin}
+              isClubMember={userIsMemberOrAdmin}
               onEventChange={loadActiveEvent}
             />
           </TabsContent>
