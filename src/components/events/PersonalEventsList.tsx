@@ -5,7 +5,6 @@ import { Plus, ChefHat, CalendarDays, CheckCircle2, Clock, BookOpen, Pencil, X, 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +47,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
   const [events, setEvents] = useState<PersonalEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState("19:00");
   const [eventTitle, setEventTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -105,7 +104,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
 
   const handleOpenCreate = () => {
     setEventTitle("");
-    setSelectedDate(new Date());
+    setSelectedDate(format(new Date(), "yyyy-MM-dd"));
     setSelectedTime("19:00");
     setShowCreateDialog(true);
   };
@@ -114,7 +113,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
     if (!selectedDate || !eventTitle.trim()) return;
     setIsCreating(true);
     try {
-      const eventDate = format(selectedDate, "yyyy-MM-dd");
+      const eventDate = selectedDate;
       const { data, error } = await supabase
         .from("scheduled_events")
         .insert({
@@ -222,14 +221,14 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="sm:max-w-md flex flex-col max-h-[90dvh]">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>New Cooking Event</DialogTitle>
             <DialogDescription>
               Give your event a name, pick a date, and optionally a time.
             </DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 space-y-4 py-1 pr-1">
+          <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="event-title">
                 Title <span className="text-red-500">*</span>
@@ -243,13 +242,15 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
                 autoFocus
               />
             </div>
-            <div className="flex justify-center overflow-x-auto">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={{ before: startOfToday() }}
-                className="rounded-md border"
+            <div className="space-y-1">
+              <Label htmlFor="event-date">Date</Label>
+              <Input
+                id="event-date"
+                type="date"
+                value={selectedDate}
+                min={format(startOfToday(), "yyyy-MM-dd")}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full"
               />
             </div>
             <div className="space-y-1">
@@ -290,7 +291,7 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
   // Edit dialog state
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editTitle, setEditTitle] = useState("");
-  const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("19:00");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -301,7 +302,7 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditTitle(event.title);
-    setEditDate(parseISO(event.eventDate));
+    setEditDate(event.eventDate);
     setEditTime(event.eventTime || "19:00");
     setShowEditDialog(true);
   };
@@ -314,7 +315,7 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
         .from("scheduled_events")
         .update({
           title: editTitle.trim() || null,
-          event_date: format(editDate, "yyyy-MM-dd"),
+          event_date: editDate,
           event_time: editTime || null,
         })
         .eq("id", event.id);
@@ -429,13 +430,13 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-md flex flex-col max-h-[90dvh]">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Edit Event</DialogTitle>
             <DialogDescription>Change the title, date, and time for this event.</DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 space-y-4 py-2 pr-1">
-            <div className="space-y-2">
+          <div className="space-y-4">
+            <div className="space-y-1">
               <Label htmlFor={`edit-title-${event.id}`}>Event Title</Label>
               <Input
                 id={`edit-title-${event.id}`}
@@ -444,27 +445,29 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
                 placeholder="Event title"
               />
             </div>
-            <div className="flex justify-center overflow-x-auto">
-              <Calendar
-                mode="single"
-                selected={editDate}
-                onSelect={setEditDate}
-                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
-                initialFocus
+            <div className="space-y-1">
+              <Label htmlFor={`edit-date-${event.id}`}>Date</Label>
+              <Input
+                id={`edit-date-${event.id}`}
+                type="date"
+                value={editDate}
+                min={format(startOfToday(), "yyyy-MM-dd")}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="w-full"
               />
             </div>
-            <div className="flex items-center gap-4">
-              <Label htmlFor={`edit-time-${event.id}`} className="whitespace-nowrap">Event Time</Label>
+            <div className="space-y-1">
+              <Label htmlFor={`edit-time-${event.id}`}>Event Time</Label>
               <Input
                 id={`edit-time-${event.id}`}
                 type="time"
                 value={editTime}
                 onChange={(e) => setEditTime(e.target.value)}
-                className="w-32"
+                className="w-full"
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t">
+          <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>
               Cancel
             </Button>
