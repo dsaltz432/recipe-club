@@ -1,5 +1,14 @@
--- Use a dedicated type value for meal-plan-created events instead of a boolean flag.
--- Backfill existing events that have meal_plan_items rows.
+-- Expand the type check constraint to allow 'meal_plan' events,
+-- then backfill existing meal-plan-created events.
+
+ALTER TABLE scheduled_events
+  DROP CONSTRAINT IF EXISTS scheduled_events_type_check;
+
+ALTER TABLE scheduled_events
+  ADD CONSTRAINT scheduled_events_type_check
+  CHECK (type IN ('club', 'personal', 'meal_plan'));
+
+-- Backfill: mark events already linked via meal_plan_items
 UPDATE scheduled_events
 SET type = 'meal_plan'
 WHERE type = 'personal'
