@@ -313,7 +313,7 @@ const Dashboard = () => {
             <EventsSection
               userId={user?.id || ""}
               isAdmin={userIsMemberOrAdmin}
-              isClubMember={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
               onEventChange={loadActiveEvent}
             />
           </TabsContent>
@@ -323,7 +323,7 @@ const Dashboard = () => {
               userId={user?.id}
               isAdmin={userIsAdmin}
               canEdit={userIsMemberOrAdmin}
-              isClubMember={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
             />
           </TabsContent>
 

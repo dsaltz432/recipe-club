@@ -40,9 +40,14 @@ import {
   BookOpen,
   Star,
   ShoppingCart,
+  Pencil,
+  X,
+  CheckCircle,
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
 import AppHeader from "@/components/shared/AppHeader";
+import { cancelEvent } from "@/lib/eventActions";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import EventRecipesTab from "@/components/events/EventRecipesTab";
 import type { EventRecipeWithRatings } from "@/components/events/EventRecipesTab";
@@ -56,6 +61,8 @@ import PantrySection from "@/components/pantry/PantrySection";
 interface PersonalEventData {
   eventId: string;
   eventDate: string;
+  title?: string;
+  type?: "personal" | "meal_plan";
   ingredientName?: string;
   status: "scheduled" | "completed";
   createdBy?: string;
@@ -117,6 +124,17 @@ const PersonalMealDetailPage = () => {
   // Rating dialog state
   const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [ratingRecipes, setRatingRecipes] = useState<EventRecipeWithRatings[] | null>(null);
+
+  // Edit event state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  const [editTime, setEditTime] = useState("19:00");
+  const [editTitle, setEditTitle] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Cancel event state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
   // Cooked state
   const [mealItems, setMealItems] = useState<Array<{ id: string; recipe_id: string; cooked_at: string | null; day_of_week: number; meal_type: string; plan_id: string }>>([]);
@@ -366,6 +384,8 @@ const PersonalMealDetailPage = () => {
       setEvent({
         eventId: eventData.id,
         eventDate: eventData.event_date,
+        title: eventData.title || undefined,
+        type: eventData.type as "personal" | "meal_plan",
         ingredientName: mealName,
         status: eventData.status as "scheduled" | "completed",
         createdBy: eventData.created_by || undefined,
@@ -730,6 +750,73 @@ const PersonalMealDetailPage = () => {
   };
 
   const totalRecipes = event?.recipesWithNotes.length || 0;
+  const isPersonalEvent = event?.type === "personal";
+  const isUpcoming = event?.status === "scheduled";
+
+  const handleEditEventClick = () => {
+    setEditDate(parseISO(event!.eventDate));
+    setEditTime("19:00");
+    setEditTitle(event!.title || "");
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEventEdit = async () => {
+    if (!editDate || !event) return;
+    setIsUpdating(true);
+    try {
+      const newDate = format(editDate, "yyyy-MM-dd");
+      const { error } = await supabase
+        .from("scheduled_events")
+        .update({
+          event_date: newDate,
+          event_time: editTime || null,
+          title: editTitle.trim() || null,
+        })
+        .eq("id", event.eventId);
+      if (error) throw error;
+      toast.success("Event updated!");
+      setShowEditDialog(false);
+      loadEventData();
+    } catch (error) {
+      console.error("Error updating event:", error);
+      toast.error("Failed to update event");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCompleteEvent = async () => {
+    if (!event) return;
+    try {
+      const { error } = await supabase
+        .from("scheduled_events")
+        .update({ status: "completed" })
+        .eq("id", event.eventId);
+      if (error) throw error;
+      toast.success("Event completed!");
+      loadEventData();
+    } catch (error) {
+      console.error("Error completing event:", error);
+      toast.error("Failed to complete event");
+    }
+  };
+
+  const handleCancelEvent = async () => {
+    if (!event) return;
+    setIsCanceling(true);
+    try {
+      const result = await cancelEvent(event.eventId);
+      if (result.success) {
+        toast.success("Event deleted");
+        setShowCancelConfirm(false);
+        navigate("/dashboard/events");
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setIsCanceling(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -798,7 +885,7 @@ const PersonalMealDetailPage = () => {
           <div className="flex items-center gap-2 min-w-0">
             <ChefHat className="h-5 w-5 shrink-0 text-purple" />
             <h1 className="font-display text-base sm:text-xl md:text-2xl font-bold truncate text-purple">
-              Meal Details
+              {event?.title || event?.ingredientName || "Meal Details"}
             </h1>
           </div>
         }
@@ -829,6 +916,22 @@ const PersonalMealDetailPage = () => {
                   </span>
                 </div>
                 <div className="flex gap-1 sm:gap-2">
+                  {isPersonalEvent && isUpcoming && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleEditEventClick} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs">
+                        <Pencil className="h-3.5 w-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline">Edit</span>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleCompleteEvent} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs bg-purple/5 hover:bg-purple/10">
+                        <CheckCircle className="h-3.5 w-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline">Complete</span>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowCancelConfirm(true)} className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50">
+                        <X className="h-3.5 w-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline">Cancel</span>
+                      </Button>
+                    </>
+                  )}
                   {mealItems.length > 0 && totalRecipes > 0 && (
                     <Button
                       size="sm"
@@ -1083,6 +1186,82 @@ const PersonalMealDetailPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+
+      {/* Edit Event Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit Event</DialogTitle>
+            <DialogDescription>Change the title, date, and time for this event.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-event-title">Event Title</Label>
+              <Input
+                id="edit-event-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Event title"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={editDate}
+                onSelect={setEditDate}
+                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
+                initialFocus
+              />
+            </div>
+            <div className="flex items-center gap-4 px-4">
+              <Label htmlFor="edit-event-time" className="whitespace-nowrap">Event Time</Label>
+              <Input
+                id="edit-event-time"
+                type="time"
+                value={editTime}
+                onChange={(e) => setEditTime(e.target.value)}
+                className="w-32"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEventEdit}
+              disabled={!editDate || isUpdating}
+              className="bg-purple hover:bg-purple-dark"
+            >
+              {isUpdating ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Event Confirmation */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this event and all associated recipes and notes. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCanceling}>Keep Event</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelEvent}
+              disabled={isCanceling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isCanceling ? "Deleting..." : "Delete Event"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Cook Mode Dialog */}
       <CookModeDialog
