@@ -68,9 +68,9 @@ const HomeSection = ({
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple" />
         </div>
-      ) : !isClubMember && !isAdmin ? (
+      ) : !isClubMember ? (
         <NonMemberHome userId={user?.id || ""} />
-      ) : isClubMember && activeEvent ? (
+      ) : activeEvent ? (
         <CountdownCard
           event={activeEvent}
           userId={user?.id || ""}
