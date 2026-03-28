@@ -99,8 +99,6 @@ const HomeSection = ({
             isAdmin={isAdmin}
           />
         </div>
-      ) : !isClubMember && user ? (
-        <PersonalEventsList userId={user.id} />
       ) : (
         <Card className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm">
           <CardContent className="pt-8 pb-8 text-center space-y-4">
@@ -125,6 +123,9 @@ const HomeSection = ({
 
       {/* Club history — visible to club members once event loading is done */}
       {!isEventLoading && isClubMember && <ClubStats />}
+
+      {/* Personal events — visible to all logged-in users */}
+      {!isEventLoading && user && <PersonalEventsList userId={user.id} />}
     </div>
   );
 };
