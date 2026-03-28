@@ -27,6 +27,10 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("@/lib/eventActions", () => ({
+  cancelEvent: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 const mockEventsChain = (events: unknown[]) => {
   const chain: Record<string, unknown> = {};
   chain.select = vi.fn().mockReturnValue(chain);
@@ -151,9 +155,9 @@ describe("PersonalEventsList", () => {
     await waitFor(() => screen.getByRole("button", { name: /new event/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /new event/i }));
-    await waitFor(() => screen.getByPlaceholderText(/sunday dinner/i));
+    await waitFor(() => screen.getByPlaceholderText(/dumplingfest/i));
 
-    fireEvent.change(screen.getByPlaceholderText(/sunday dinner/i), { target: { value: "Taco Night" } });
+    fireEvent.change(screen.getByPlaceholderText(/dumplingfest/i), { target: { value: "Taco Night" } });
     expect(screen.getByRole("button", { name: /create event/i })).not.toBeDisabled();
   });
 
@@ -189,9 +193,9 @@ describe("PersonalEventsList", () => {
     mockSupabase.from.mockImplementation(defaultFromMock(events));
 
     render(<PersonalEventsList userId="user-1" />);
-    await waitFor(() => screen.getByLabelText("Delete event"));
+    await waitFor(() => screen.getByRole("button", { name: /cancel/i }));
 
-    fireEvent.click(screen.getByLabelText("Delete event"));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     await waitFor(() => {
       expect(screen.getByText("Delete Event?")).toBeInTheDocument();
     });
@@ -201,27 +205,22 @@ describe("PersonalEventsList", () => {
     const events = [
       { id: "e1", title: "My Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
     ];
+    let fetchCount = 0;
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        // Support both the initial list load and the delete call
-        const loadChain = mockEventsChain(events);
-        const deleteChain = mockDeleteChain();
-        // Return the right chain based on what method is called first
-        return {
-          ...loadChain,
-          delete: deleteChain.delete,
-        };
+        fetchCount++;
+        return mockEventsChain(fetchCount === 1 ? events : []);
       }
       return mockRecipesChain([]);
     });
 
     render(<PersonalEventsList userId="user-1" />);
-    await waitFor(() => screen.getByLabelText("Delete event"));
+    await waitFor(() => screen.getByRole("button", { name: /cancel/i }));
 
-    fireEvent.click(screen.getByLabelText("Delete event"));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     await waitFor(() => screen.getByText("Delete Event?"));
 
-    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /delete event/i }));
     await waitFor(() => {
       expect(screen.queryByText("My Dinner")).not.toBeInTheDocument();
     });

@@ -222,14 +222,14 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md flex flex-col max-h-[90dvh]">
           <DialogHeader>
             <DialogTitle>New Cooking Event</DialogTitle>
             <DialogDescription>
               Give your event a name, pick a date, and optionally a time.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="overflow-y-auto flex-1 space-y-4 py-1 pr-1">
             <div className="space-y-1">
               <Label htmlFor="event-title">
                 Title <span className="text-red-500">*</span>
@@ -243,7 +243,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
                 autoFocus
               />
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center overflow-x-auto">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -429,12 +429,12 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md flex flex-col max-h-[90dvh]">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Edit Event</DialogTitle>
             <DialogDescription>Change the title, date, and time for this event.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="overflow-y-auto flex-1 space-y-4 py-2 pr-1">
             <div className="space-y-2">
               <Label htmlFor={`edit-title-${event.id}`}>Event Title</Label>
               <Input
@@ -444,7 +444,7 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
                 placeholder="Event title"
               />
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center overflow-x-auto">
               <Calendar
                 mode="single"
                 selected={editDate}
@@ -453,7 +453,7 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
                 initialFocus
               />
             </div>
-            <div className="flex items-center gap-4 px-4">
+            <div className="flex items-center gap-4">
               <Label htmlFor={`edit-time-${event.id}`} className="whitespace-nowrap">Event Time</Label>
               <Input
                 id={`edit-time-${event.id}`}
@@ -464,7 +464,7 @@ const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2 border-t">
             <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>
               Cancel
             </Button>
