@@ -621,6 +621,7 @@ export type Database = {
           id: string
           ingredient_id: string | null
           status: string | null
+          title: string | null
           type: string | null
         }
         Insert: {
@@ -632,6 +633,7 @@ export type Database = {
           id?: string
           ingredient_id?: string | null
           status?: string | null
+          title?: string | null
           type?: string | null
         }
         Update: {
@@ -643,6 +645,7 @@ export type Database = {
           id?: string
           ingredient_id?: string | null
           status?: string | null
+          title?: string | null
           type?: string | null
         }
         Relationships: [

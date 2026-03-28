@@ -57,8 +57,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: eventsData, error } = await (supabase as any)
+      const { data: eventsData, error } = await supabase
         .from("scheduled_events")
         .select("id, title, event_date, event_time, status")
         .eq("type", "personal")
@@ -102,7 +101,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
       setEvents(
         (eventsData ?? [])
           .filter((e: { id: string }) => standaloneSet.has(e.id))
-          .map((e: { id: string; title: string | null; event_date: string; event_time: string | null; status: string }) => ({
+          .map((e: { id: string; title: string | null; event_date: string; event_time: string | null; status: string | null }) => ({
             id: e.id,
             title: e.title ?? "",
             eventDate: e.event_date,
@@ -134,8 +133,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
     setIsCreating(true);
     try {
       const eventDate = format(selectedDate, "yyyy-MM-dd");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("scheduled_events")
         .insert({
           type: "personal",
