@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, startOfToday } from "date-fns";
-import { Plus, ChefHat, CalendarDays, CheckCircle2, Clock, BookOpen, Trash2 } from "lucide-react";
+import { Plus, ChefHat, CalendarDays, CheckCircle2, Clock, BookOpen, Pencil, X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cancelEvent } from "@/lib/eventActions";
 
 interface PersonalEvent {
   id: string;
@@ -51,8 +52,6 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
   const [selectedTime, setSelectedTime] = useState("19:00");
   const [eventTitle, setEventTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -140,27 +139,6 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deletingEventId) return;
-    setIsDeleting(true);
-    try {
-      const { error } = await supabase
-        .from("scheduled_events")
-        .delete()
-        .eq("id", deletingEventId);
-
-      if (error) throw error;
-      setEvents((prev) => prev.filter((e) => e.id !== deletingEventId));
-      toast.success("Event deleted");
-    } catch (err) {
-      console.error("Error deleting event:", err);
-      toast.error("Failed to delete event");
-    } finally {
-      setIsDeleting(false);
-      setDeletingEventId(null);
-    }
-  };
-
   const upcoming = events.filter((e) => e.status === "scheduled");
   const past = events.filter((e) => e.status === "completed");
 
@@ -219,7 +197,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
                   key={event.id}
                   event={event}
                   onClick={() => navigate(`/meals/${event.id}`)}
-                  onDelete={() => setDeletingEventId(event.id)}
+                  onRefresh={loadEvents}
                 />
               ))}
             </div>
@@ -234,7 +212,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
                   key={event.id}
                   event={event}
                   onClick={() => navigate(`/meals/${event.id}`)}
-                  onDelete={() => setDeletingEventId(event.id)}
+                  onRefresh={loadEvents}
                 />
               ))}
             </div>
@@ -295,27 +273,6 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deletingEventId} onOpenChange={(open) => !open && setDeletingEventId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the event and all its recipes. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
@@ -323,69 +280,223 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
 interface EventCardProps {
   event: PersonalEvent;
   onClick: () => void;
-  onDelete: () => void;
+  onRefresh: () => void;
 }
 
-const EventCard = ({ event, onClick, onDelete }: EventCardProps) => {
+const EventCard = ({ event, onClick, onRefresh }: EventCardProps) => {
   const isCompleted = event.status === "completed";
+  const isUpcoming = event.status === "scheduled";
+
+  // Edit dialog state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  const [editTime, setEditTime] = useState("19:00");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Cancel confirmation state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditTitle(event.title);
+    setEditDate(parseISO(event.eventDate));
+    setEditTime(event.eventTime || "19:00");
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editDate) return;
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("scheduled_events")
+        .update({
+          title: editTitle.trim() || null,
+          event_date: format(editDate, "yyyy-MM-dd"),
+          event_time: editTime || null,
+        })
+        .eq("id", event.id);
+      if (error) throw error;
+      toast.success("Event updated!");
+      setShowEditDialog(false);
+      onRefresh();
+    } catch (err) {
+      console.error("Error updating event:", err);
+      toast.error("Failed to update event");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCompleteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from("scheduled_events")
+        .update({ status: "completed" })
+        .eq("id", event.id);
+      if (error) throw error;
+      toast.success("Event completed!");
+      onRefresh();
+    } catch (err) {
+      console.error("Error completing event:", err);
+      toast.error("Failed to complete event");
+    }
+  };
+
+  const handleCancelConfirm = async () => {
+    setIsCanceling(true);
+    try {
+      const result = await cancelEvent(event.id);
+      if (result.success) {
+        toast.success("Event deleted");
+        onRefresh();
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setIsCanceling(false);
+      setShowCancelConfirm(false);
+    }
+  };
+
   return (
-    <Card
-      className="bg-white/80 border-purple/10 hover:border-purple/30 hover:shadow-md transition-all cursor-pointer"
-      onClick={onClick}
-    >
-      <CardContent className="px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center shrink-0">
-          {isCompleted ? (
-            <CheckCircle2 className="h-5 w-5 text-purple-600" />
-          ) : (
-            <CalendarDays className="h-5 w-5 text-purple-600" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          {event.title && (
-            <p className="font-semibold text-sm text-gray-900 truncate">{event.title}</p>
-          )}
-          <p className={`text-sm truncate ${event.title ? "text-muted-foreground" : "font-medium text-gray-900"}`}>
-            {format(parseISO(event.eventDate), "EEEE, MMMM d, yyyy")}
-          </p>
-          <div className="flex items-center gap-2 mt-0.5">
-            {event.eventTime && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {event.eventTime}
-              </span>
+    <>
+      <Card
+        className="bg-white/80 border-purple/10 hover:border-purple/30 hover:shadow-md transition-all cursor-pointer"
+        onClick={onClick}
+      >
+        <CardContent className="px-4 py-3 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center shrink-0">
+            {isCompleted ? (
+              <CheckCircle2 className="h-5 w-5 text-purple-600" />
+            ) : (
+              <CalendarDays className="h-5 w-5 text-purple-600" />
             )}
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <BookOpen className="h-3 w-3" />
-              {event.recipeCount} {event.recipeCount === 1 ? "recipe" : "recipes"}
-            </span>
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge
-            variant="outline"
-            className={isCompleted
-              ? "border-green-200 text-green-700 bg-green-50 text-xs"
-              : "border-purple/20 text-purple-700 bg-purple/5 text-xs"
-            }
-          >
-            {isCompleted ? "Completed" : "Upcoming"}
-          </Badge>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:bg-red-50"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            aria-label="Delete event"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="flex-1 min-w-0">
+            {event.title && (
+              <p className="font-semibold text-sm text-gray-900 truncate">{event.title}</p>
+            )}
+            <p className={`text-sm truncate ${event.title ? "text-muted-foreground" : "font-medium text-gray-900"}`}>
+              {format(parseISO(event.eventDate), "EEEE, MMMM d, yyyy")}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              {event.eventTime && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {event.eventTime}
+                </span>
+              )}
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <BookOpen className="h-3 w-3" />
+                {event.recipeCount} {event.recipeCount === 1 ? "recipe" : "recipes"}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+            {isUpcoming && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleEditClick} className="h-8 px-2 sm:px-3">
+                  <Pencil className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCompleteClick} className="h-8 px-2 sm:px-3 bg-purple/5 hover:bg-purple/10">
+                  <CheckCircle className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Complete</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); setShowCancelConfirm(true); }}
+                  className="h-8 px-2 text-muted-foreground hover:text-destructive hover:border-destructive/50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline ml-1">Cancel</span>
+                </Button>
+              </>
+            )}
+            {isCompleted && (
+              <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 text-xs">
+                Completed
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit Event</DialogTitle>
+            <DialogDescription>Change the title, date, and time for this event.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor={`edit-title-${event.id}`}>Event Title</Label>
+              <Input
+                id={`edit-title-${event.id}`}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Event title"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={editDate}
+                onSelect={setEditDate}
+                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
+                initialFocus
+              />
+            </div>
+            <div className="flex items-center gap-4 px-4">
+              <Label htmlFor={`edit-time-${event.id}`} className="whitespace-nowrap">Event Time</Label>
+              <Input
+                id={`edit-time-${event.id}`}
+                type="time"
+                value={editTime}
+                onChange={(e) => setEditTime(e.target.value)}
+                className="w-32"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={!editDate || isUpdating} className="bg-purple hover:bg-purple-dark">
+              {isUpdating ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the event and all its recipes. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCanceling}>Keep Event</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelConfirm}
+              disabled={isCanceling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isCanceling ? "Deleting..." : "Delete Event"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
