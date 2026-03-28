@@ -46,6 +46,7 @@ import RecipeInputForm, {
 } from "./RecipeInputForm";
 import type { Recipe, Ingredient, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, GroceryCategory } from "@/types";
 import RecipeCard from "./RecipeCard";
+import IngredientCombobox from "./IngredientCombobox";
 import EventRatingDialog from "@/components/events/EventRatingDialog";
 import { getIngredientColor } from "@/lib/ingredientColors";
 import { getPantryItems, DEFAULT_PANTRY_ITEMS } from "@/lib/pantry";
@@ -906,19 +907,12 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                   </SelectContent>
                 </Select>
                 {subTab === "club" && (
-                  <Select value={ingredientFilter} onValueChange={setIngredientFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Ingredients" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Ingredients</SelectItem>
-                      {usedIngredients.map((ingredient) => (
-                        <SelectItem key={ingredient.id} value={ingredient.id}>
-                          {ingredient.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <IngredientCombobox
+                    ingredients={usedIngredients}
+                    value={ingredientFilter}
+                    onChange={setIngredientFilter}
+                    className="w-full"
+                  />
                 )}
                 <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
                   <SelectTrigger className="w-full">
@@ -959,19 +953,12 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
               </SelectContent>
             </Select>
             {subTab === "club" && (
-              <Select value={ingredientFilter} onValueChange={setIngredientFilter}>
-                <SelectTrigger className="hidden sm:flex w-48">
-                  <SelectValue placeholder="All Ingredients" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Ingredients</SelectItem>
-                  {usedIngredients.map((ingredient) => (
-                    <SelectItem key={ingredient.id} value={ingredient.id}>
-                      {ingredient.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <IngredientCombobox
+                ingredients={usedIngredients}
+                value={ingredientFilter}
+                onChange={setIngredientFilter}
+                className="hidden sm:flex w-48"
+              />
             )}
             <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
               <SelectTrigger className="hidden sm:flex w-44">
