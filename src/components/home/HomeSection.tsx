@@ -48,7 +48,7 @@ const HomeSection = ({
   return (
     <div className="space-y-4">
       {/* Personalized Greeting */}
-      <div className="text-center md:py-4">
+      <div className="text-center md:py-2">
         <h2 className="font-display text-xl md:text-4xl lg:text-5xl font-bold text-gray-900 md:leading-tight">
           What's Cooking, {user?.name?.split(" ")[0] || "Chef"}?
         </h2>

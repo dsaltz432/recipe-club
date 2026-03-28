@@ -105,21 +105,23 @@ const NonMemberHome = ({ userId }: NonMemberHomeProps) => {
         </Card>
       ) : (
         <Card className="bg-white/80 border-purple/10">
-          <CardContent className="py-8 text-center space-y-3">
-            <div className="w-14 h-14 mx-auto rounded-full bg-purple/10 flex items-center justify-center">
-              <CalendarDays className="h-7 w-7 text-purple" />
+          <CardContent className="px-5 py-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-purple/10 flex items-center justify-center shrink-0">
+                <CalendarDays className="h-4.5 w-4.5 text-purple" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm text-gray-800">No upcoming events</p>
+                <p className="text-xs text-muted-foreground">Plan recipes and build a grocery list</p>
+              </div>
             </div>
-            <p className="font-semibold text-gray-800">No upcoming cooking events</p>
-            <p className="text-sm text-muted-foreground">
-              Create an event to plan your recipes and build a grocery list.
-            </p>
             <Button
               size="sm"
-              className="bg-purple hover:bg-purple-dark text-white"
+              className="bg-purple hover:bg-purple-dark text-white shrink-0"
               onClick={() => navigate("/dashboard/events")}
             >
               <Plus className="h-4 w-4 mr-1" />
-              Create an Event
+              Create
             </Button>
           </CardContent>
         </Card>
