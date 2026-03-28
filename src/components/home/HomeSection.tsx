@@ -68,6 +68,8 @@ const HomeSection = ({
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple" />
         </div>
+      ) : !isAdmin && !isClubMember ? (
+        <NonMemberHome userId={user?.id || ""} />
       ) : activeEvent ? (
         <CountdownCard
           event={activeEvent}
@@ -94,9 +96,7 @@ const HomeSection = ({
             isAdmin={isAdmin}
           />
         </div>
-      ) : (
-        <NonMemberHome userId={user?.id || ""} />
-      )}
+      ) : null}
 
       {/* Club history — visible to club members once event loading is done */}
       {!isEventLoading && isClubMember && <ClubStats />}
