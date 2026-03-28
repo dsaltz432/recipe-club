@@ -23,6 +23,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   ),
 }));
 
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 const mockEventsChain = (events: unknown[]) => {
   const chain: Record<string, unknown> = {};
   chain.select = vi.fn().mockReturnValue(chain);
@@ -44,6 +48,13 @@ const mockMealPlanChain = (linkedItems: unknown[]) => {
   chain.select = vi.fn().mockReturnValue(chain);
   chain.in = vi.fn().mockReturnValue(chain);
   chain.not = vi.fn().mockResolvedValue({ data: linkedItems, error: null });
+  return chain;
+};
+
+const mockDeleteChain = (result: { error: null | object } = { error: null }) => {
+  const chain: Record<string, unknown> = {};
+  chain.delete = vi.fn().mockReturnValue(chain);
+  chain.eq = vi.fn().mockResolvedValue(result);
   return chain;
 };
 
@@ -81,8 +92,8 @@ describe("PersonalEventsList", () => {
 
   it("renders upcoming and past events in separate sections", async () => {
     const events = [
-      { id: "e1", event_date: "2026-04-01", event_time: null, status: "scheduled" },
-      { id: "e2", event_date: "2026-03-01", event_time: null, status: "completed" },
+      { id: "e1", title: "Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+      { id: "e2", title: "Lunch", event_date: "2026-03-01", event_time: null, status: "completed" },
     ];
     mockSupabase.from.mockImplementation(defaultFromMock(events));
 
@@ -93,12 +104,23 @@ describe("PersonalEventsList", () => {
     });
   });
 
+  it("shows event title on the card", async () => {
+    const events = [
+      { id: "e1", title: "Sunday Feast", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+    ];
+    mockSupabase.from.mockImplementation(defaultFromMock(events));
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Sunday Feast")).toBeInTheDocument();
+    });
+  });
+
   it("excludes events auto-created by the meal planner", async () => {
     const events = [
-      { id: "e1", event_date: "2026-04-01", event_time: null, status: "scheduled" },
-      { id: "e2", event_date: "2026-04-08", event_time: null, status: "scheduled" },
+      { id: "e1", title: "My Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+      { id: "e2", title: null, event_date: "2026-04-08", event_time: null, status: "scheduled" },
     ];
-    // e2 was created by meal planner
     const mealPlanItems = [{ event_id: "e2" }];
     mockSupabase.from.mockImplementation(defaultFromMock(events, mealPlanItems));
 
@@ -119,9 +141,46 @@ describe("PersonalEventsList", () => {
     });
   });
 
+  it("disables Create button when title is empty", async () => {
+    mockSupabase.from.mockImplementation(defaultFromMock([]));
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => screen.getByRole("button", { name: /new event/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }));
+    await waitFor(() => screen.getByText("New Cooking Event"));
+
+    expect(screen.getByRole("button", { name: /create event/i })).toBeDisabled();
+  });
+
+  it("enables Create button when title is entered", async () => {
+    mockSupabase.from.mockImplementation(defaultFromMock([]));
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => screen.getByRole("button", { name: /new event/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }));
+    await waitFor(() => screen.getByPlaceholderText(/sunday dinner/i));
+
+    fireEvent.change(screen.getByPlaceholderText(/sunday dinner/i), { target: { value: "Taco Night" } });
+    expect(screen.getByRole("button", { name: /create event/i })).not.toBeDisabled();
+  });
+
+  it("defaults time to 19:00 when dialog opens", async () => {
+    mockSupabase.from.mockImplementation(defaultFromMock([]));
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => screen.getByRole("button", { name: /new event/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }));
+    await waitFor(() => screen.getByLabelText(/time/i));
+
+    expect((screen.getByLabelText(/time/i) as HTMLInputElement).value).toBe("19:00");
+  });
+
   it("navigates to event detail when an event card is clicked", async () => {
     const events = [
-      { id: "e1", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+      { id: "e1", title: "My Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
     ];
     mockSupabase.from.mockImplementation(defaultFromMock(events));
 
@@ -130,5 +189,51 @@ describe("PersonalEventsList", () => {
 
     fireEvent.click(screen.getByText(/April 1, 2026/).closest("[class*=cursor-pointer]")!);
     expect(mockNavigate).toHaveBeenCalledWith("/meals/e1");
+  });
+
+  it("opens delete confirmation when trash icon is clicked", async () => {
+    const events = [
+      { id: "e1", title: "My Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+    ];
+    mockSupabase.from.mockImplementation(defaultFromMock(events));
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => screen.getByLabelText("Delete event"));
+
+    fireEvent.click(screen.getByLabelText("Delete event"));
+    await waitFor(() => {
+      expect(screen.getByText("Delete Event?")).toBeInTheDocument();
+    });
+  });
+
+  it("removes event from list after confirming delete", async () => {
+    const events = [
+      { id: "e1", title: "My Dinner", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+    ];
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === "scheduled_events") {
+        // Support both the initial list load and the delete call
+        const loadChain = mockEventsChain(events);
+        const deleteChain = mockDeleteChain();
+        // Return the right chain based on what method is called first
+        return {
+          ...loadChain,
+          delete: deleteChain.delete,
+        };
+      }
+      if (table === "meal_plan_items") return mockMealPlanChain([]);
+      return mockRecipesChain([]);
+    });
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => screen.getByLabelText("Delete event"));
+
+    fireEvent.click(screen.getByLabelText("Delete event"));
+    await waitFor(() => screen.getByText("Delete Event?"));
+
+    fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+    await waitFor(() => {
+      expect(screen.queryByText("My Dinner")).not.toBeInTheDocument();
+    });
   });
 });

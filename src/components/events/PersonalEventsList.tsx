@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO } from "date-fns";
-import { Plus, ChefHat, CalendarDays, CheckCircle2, Clock, BookOpen } from "lucide-react";
+import { format, parseISO, startOfToday } from "date-fns";
+import { Plus, ChefHat, CalendarDays, CheckCircle2, Clock, BookOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +31,7 @@ import { toast } from "sonner";
 
 interface PersonalEvent {
   id: string;
+  title: string;
   eventDate: string;
   eventTime?: string;
   status: "scheduled" | "completed" | "canceled";
@@ -37,8 +48,11 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedTime, setSelectedTime] = useState("");
+  const [selectedTime, setSelectedTime] = useState("19:00");
+  const [eventTitle, setEventTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -46,7 +60,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: eventsData, error } = await (supabase as any)
         .from("scheduled_events")
-        .select("id, event_date, event_time, status")
+        .select("id, title, event_date, event_time, status")
         .eq("type", "personal")
         .eq("created_by", userId)
         .neq("status", "canceled")
@@ -88,15 +102,15 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
       setEvents(
         (eventsData ?? [])
           .filter((e: { id: string }) => standaloneSet.has(e.id))
-          .map((e: { id: string; event_date: string; event_time: string | null; status: string }) => ({
-          id: e.id,
-          eventDate: e.event_date,
-          eventTime: e.event_time ?? undefined,
-          status: e.status as PersonalEvent["status"],
-          recipeCount: countMap[e.id] ?? 0,
-        }))
+          .map((e: { id: string; title: string | null; event_date: string; event_time: string | null; status: string }) => ({
+            id: e.id,
+            title: e.title ?? "",
+            eventDate: e.event_date,
+            eventTime: e.event_time ?? undefined,
+            status: e.status as PersonalEvent["status"],
+            recipeCount: countMap[e.id] ?? 0,
+          }))
       );
-
     } catch (err) {
       console.error("Error loading personal events:", err);
     } finally {
@@ -108,8 +122,15 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
     loadEvents();
   }, [loadEvents]);
 
+  const handleOpenCreate = () => {
+    setEventTitle("");
+    setSelectedDate(new Date());
+    setSelectedTime("19:00");
+    setShowCreateDialog(true);
+  };
+
   const handleCreate = async () => {
-    if (!selectedDate) return;
+    if (!selectedDate || !eventTitle.trim()) return;
     setIsCreating(true);
     try {
       const eventDate = format(selectedDate, "yyyy-MM-dd");
@@ -119,6 +140,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
         .insert({
           type: "personal",
           status: "scheduled",
+          title: eventTitle.trim(),
           event_date: eventDate,
           event_time: selectedTime || null,
           created_by: userId,
@@ -137,6 +159,27 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deletingEventId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("scheduled_events")
+        .delete()
+        .eq("id", deletingEventId);
+
+      if (error) throw error;
+      setEvents((prev) => prev.filter((e) => e.id !== deletingEventId));
+      toast.success("Event deleted");
+    } catch (err) {
+      console.error("Error deleting event:", err);
+      toast.error("Failed to delete event");
+    } finally {
+      setIsDeleting(false);
+      setDeletingEventId(null);
+    }
+  };
+
   const upcoming = events.filter((e) => e.status === "scheduled");
   const past = events.filter((e) => e.status === "completed");
 
@@ -151,7 +194,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
         <Button
           size="sm"
           className="bg-purple hover:bg-purple-dark text-white"
-          onClick={() => setShowCreateDialog(true)}
+          onClick={handleOpenCreate}
         >
           <Plus className="h-4 w-4 mr-1" />
           New Event
@@ -177,7 +220,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
             <Button
               size="sm"
               className="bg-purple hover:bg-purple-dark text-white"
-              onClick={() => setShowCreateDialog(true)}
+              onClick={handleOpenCreate}
             >
               <Plus className="h-4 w-4 mr-1" />
               Create Your First Event
@@ -191,7 +234,12 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Upcoming</p>
               {upcoming.map((event) => (
-                <EventCard key={event.id} event={event} onClick={() => navigate(`/meals/${event.id}`)} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onClick={() => navigate(`/meals/${event.id}`)}
+                  onDelete={() => setDeletingEventId(event.id)}
+                />
               ))}
             </div>
           )}
@@ -201,7 +249,12 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Past</p>
               {past.map((event) => (
-                <EventCard key={event.id} event={event} onClick={() => navigate(`/meals/${event.id}`)} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onClick={() => navigate(`/meals/${event.id}`)}
+                  onDelete={() => setDeletingEventId(event.id)}
+                />
               ))}
             </div>
           )}
@@ -214,20 +267,34 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
           <DialogHeader>
             <DialogTitle>New Cooking Event</DialogTitle>
             <DialogDescription>
-              Pick a date and optionally a time. You'll add recipes and build a grocery list after creating the event.
+              Give your event a name, pick a date, and optionally a time.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="event-title">
+                Title <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="event-title"
+                placeholder="e.g. Sunday Dinner, Birthday Feast"
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
+                className="w-full"
+                autoFocus
+              />
+            </div>
             <div className="flex justify-center">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
+                disabled={{ before: startOfToday() }}
                 className="rounded-md border"
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="event-time">Time (optional)</Label>
+              <Label htmlFor="event-time">Time</Label>
               <Input
                 id="event-time"
                 type="time"
@@ -238,7 +305,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
             </div>
             <Button
               className="w-full bg-purple hover:bg-purple-dark text-white"
-              disabled={!selectedDate || isCreating}
+              disabled={!selectedDate || !eventTitle.trim() || isCreating}
               onClick={handleCreate}
             >
               {isCreating ? "Creating..." : "Create Event"}
@@ -246,6 +313,28 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingEventId} onOpenChange={(open) => !open && setDeletingEventId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the event and all its recipes. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -253,9 +342,10 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
 interface EventCardProps {
   event: PersonalEvent;
   onClick: () => void;
+  onDelete: () => void;
 }
 
-const EventCard = ({ event, onClick }: EventCardProps) => {
+const EventCard = ({ event, onClick, onDelete }: EventCardProps) => {
   const isCompleted = event.status === "completed";
   return (
     <Card
@@ -271,7 +361,10 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-gray-900">
+          {event.title && (
+            <p className="font-semibold text-sm text-gray-900 truncate">{event.title}</p>
+          )}
+          <p className={`text-sm truncate ${event.title ? "text-muted-foreground" : "font-medium text-gray-900"}`}>
             {format(parseISO(event.eventDate), "EEEE, MMMM d, yyyy")}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
@@ -287,15 +380,29 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             </span>
           </div>
         </div>
-        <Badge
-          variant="outline"
-          className={isCompleted
-            ? "border-green-200 text-green-700 bg-green-50 text-xs"
-            : "border-purple/20 text-purple-700 bg-purple/5 text-xs"
-          }
-        >
-          {isCompleted ? "Completed" : "Upcoming"}
-        </Badge>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge
+            variant="outline"
+            className={isCompleted
+              ? "border-green-200 text-green-700 bg-green-50 text-xs"
+              : "border-purple/20 text-purple-700 bg-purple/5 text-xs"
+            }
+          >
+            {isCompleted ? "Completed" : "Upcoming"}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:bg-red-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            aria-label="Delete event"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
