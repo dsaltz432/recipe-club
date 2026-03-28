@@ -57,7 +57,7 @@ The seed data (`supabase/seed.sql`) creates these entries in the `allowed_users`
 | `member@example.com` | viewer | yes |
 | `viewer@example.com` | viewer | no |
 
-Use any of these emails with **any password** (e.g. `password`). The first login auto-creates the auth account.
+In dev mode, the login form only asks for an email — the password (`test123`) is auto-filled. `member@example.com` and `viewer@example.com` are pre-seeded with auth accounts. Any other `allowed_users` email will auto-create an account on first sign-in.
 
 ### What dev mode disables
 
@@ -133,6 +133,8 @@ Migrations live in `supabase/migrations/` and are applied in timestamp order
 
 ## Testing
 
+### Unit tests
+
 ```bash
 npm run test:run        # Run all tests once
 npm run test:coverage   # Run with coverage report
@@ -140,3 +142,15 @@ npm run test            # Run in watch mode
 ```
 
 All files in `src/components/events/`, `src/components/ingredients/`, `src/components/recipes/`, and `src/lib/` must have **100% test coverage**. The only exception is `src/components/wheel/IngredientWheel.tsx` (~55% is acceptable).
+
+### End-to-end tests
+
+E2E tests use Playwright with headless Chromium against the local dev server.
+
+```bash
+npx playwright test              # Run all e2e tests
+npx playwright test --headed     # Run with visible browser
+npx playwright test --ui         # Interactive UI mode
+```
+
+Tests live in `tests/e2e/`. The Playwright config auto-starts the Vite dev server. Make sure local Supabase is running first (`supabase start`).
