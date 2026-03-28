@@ -9,6 +9,7 @@ import ClubStats from "./ClubStats";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
+import PersonalEventsList from "@/components/events/PersonalEventsList";
 
 interface HomeSectionProps {
   user: User | null;
@@ -16,6 +17,7 @@ interface HomeSectionProps {
   ingredients: Ingredient[];
   setIngredients: React.Dispatch<React.SetStateAction<Ingredient[]>>;
   isAdmin: boolean;
+  isClubMember?: boolean;
   onEventCreated: () => void;
   onRecipeAdded?: () => void;
   onEventUpdated?: () => void;
@@ -28,6 +30,7 @@ const HomeSection = ({
   ingredients,
   setIngredients,
   isAdmin,
+  isClubMember = false,
   onEventCreated,
   onRecipeAdded,
   onEventUpdated,
@@ -59,7 +62,9 @@ const HomeSection = ({
             ? "You have an upcoming event!"
             : isAdmin
               ? "Ready to start a new culinary adventure?"
-              : "Welcome back to Recipe Club!"}
+              : isClubMember
+                ? "Welcome back to Recipe Club!"
+                : "Plan meals, collect recipes, and build grocery lists."}
         </p>
       </div>
 
@@ -94,6 +99,8 @@ const HomeSection = ({
             isAdmin={isAdmin}
           />
         </div>
+      ) : !isClubMember && user ? (
+        <PersonalEventsList userId={user.id} />
       ) : (
         <Card className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm">
           <CardContent className="pt-8 pb-8 text-center space-y-4">
@@ -116,8 +123,8 @@ const HomeSection = ({
         </Card>
       )}
 
-      {/* Club history — always visible once event loading is done */}
-      {!isEventLoading && <ClubStats />}
+      {/* Club history — visible to club members once event loading is done */}
+      {!isEventLoading && isClubMember && <ClubStats />}
     </div>
   );
 };

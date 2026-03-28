@@ -68,6 +68,7 @@ describe("HomeSection", () => {
     ingredients,
     setIngredients: vi.fn(),
     isAdmin: false,
+    isClubMember: true,
     onEventCreated: vi.fn(),
     onRecipeAdded: vi.fn(),
     onEventUpdated: vi.fn(),
