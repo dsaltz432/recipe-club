@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS recipe_tags (
   recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   tag TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (recipe_id, user_id, tag)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Enable RLS
