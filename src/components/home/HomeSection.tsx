@@ -1,11 +1,8 @@
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CalendarClock, BookOpen } from "lucide-react";
 import CountdownCard from "./CountdownCard";
 import ClubStats from "./ClubStats";
+import NonMemberHome from "./NonMemberHome";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
@@ -16,6 +13,7 @@ interface HomeSectionProps {
   ingredients: Ingredient[];
   setIngredients: React.Dispatch<React.SetStateAction<Ingredient[]>>;
   isAdmin: boolean;
+  isClubMember?: boolean;
   onEventCreated: () => void;
   onRecipeAdded?: () => void;
   onEventUpdated?: () => void;
@@ -28,12 +26,12 @@ const HomeSection = ({
   ingredients,
   setIngredients,
   isAdmin,
+  isClubMember = false,
   onEventCreated,
   onRecipeAdded,
   onEventUpdated,
   isEventLoading = false,
 }: HomeSectionProps) => {
-  const navigate = useNavigate();
   const [clubMemberNames, setClubMemberNames] = useState<string[]>([]);
 
   useEffect(() => {
@@ -50,16 +48,16 @@ const HomeSection = ({
   return (
     <div className="space-y-4">
       {/* Personalized Greeting */}
-      <div className="text-center md:py-4">
+      <div className="text-center md:py-2">
         <h2 className="font-display text-xl md:text-4xl lg:text-5xl font-bold text-gray-900 md:leading-tight">
           What's Cooking, {user?.name?.split(" ")[0] || "Chef"}?
         </h2>
         <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm md:text-base md:mt-2">
-          {activeEvent
+          {isClubMember && activeEvent
             ? "You have an upcoming event!"
-            : isAdmin
+            : isClubMember
               ? "Ready to start a new culinary adventure?"
-              : "Welcome back to Recipe Club!"}
+              : "Your personal kitchen hub."}
         </p>
       </div>
 
@@ -68,6 +66,8 @@ const HomeSection = ({
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple" />
         </div>
+      ) : !isClubMember ? (
+        <NonMemberHome userId={user?.id || ""} />
       ) : activeEvent ? (
         <CountdownCard
           event={activeEvent}
@@ -94,30 +94,11 @@ const HomeSection = ({
             isAdmin={isAdmin}
           />
         </div>
-      ) : (
-        <Card className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm">
-          <CardContent className="pt-8 pb-8 text-center space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-full bg-purple/10 flex items-center justify-center">
-              <CalendarClock className="h-8 w-8 text-purple" />
-            </div>
-            <h3 className="font-display text-xl font-semibold">No Event Scheduled</h3>
-            <p className="text-muted-foreground">
-              There's no upcoming Recipe Club event at the moment.
-              Check back soon or browse past recipes!
-            </p>
-            <Button
-              onClick={() => navigate("/dashboard/recipes")}
-              className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Browse Recipes
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      ) : null}
 
-      {/* Club history — always visible once event loading is done */}
-      {!isEventLoading && <ClubStats />}
+      {/* Club history — visible to club members once event loading is done */}
+      {!isEventLoading && isClubMember && <ClubStats />}
+
     </div>
   );
 };

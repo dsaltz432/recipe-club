@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LogOut, Home, Calendar, BookOpen, ShieldX, CalendarDays, DollarSign } from "lucide-react";
-import RecipeClubEvents from "@/components/events/RecipeClubEvents";
+import EventsSection from "@/components/events/EventsSection";
 import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
@@ -149,11 +149,11 @@ const Dashboard = () => {
         setCompletedEventsCount(eventsResult.count || 0);
 
         const clubCount = (clubRecipesResult.data || []).filter(
-          (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
+          (r) => (r.scheduled_events as { type: string } | null)?.type === "club"
         ).length;
 
         const personalCount = (personalRecipesResult.data || []).filter(
-          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type !== "club"
         ).length;
 
         setUserRecipesCount(clubCount + personalCount);
@@ -164,7 +164,7 @@ const Dashboard = () => {
           .eq("created_by", userId);
 
         const personalCount = (personalRecipesResult.data || []).filter(
-          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type !== "club"
         ).length;
 
         setUserRecipesCount(personalCount);
@@ -301,6 +301,7 @@ const Dashboard = () => {
               ingredients={ingredients}
               setIngredients={setIngredients}
               isAdmin={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
               onEventCreated={handleEventCreated}
               onRecipeAdded={handleRecipeAdded}
               onEventUpdated={loadActiveEvent}
@@ -309,9 +310,10 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="events">
-            <RecipeClubEvents
+            <EventsSection
               userId={user?.id || ""}
               isAdmin={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
               onEventChange={loadActiveEvent}
             />
           </TabsContent>
@@ -321,7 +323,7 @@ const Dashboard = () => {
               userId={user?.id}
               isAdmin={userIsAdmin}
               canEdit={userIsMemberOrAdmin}
-              isClubMember={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
             />
           </TabsContent>
 

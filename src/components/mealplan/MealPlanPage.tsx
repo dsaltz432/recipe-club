@@ -317,16 +317,14 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       slotDate.setDate(slotDate.getDate() + dayOffset);
       const dateStr = slotDate.toISOString().split("T")[0];
 
-      const insertPayload = {
-        event_date: dateStr,
-        status: "scheduled",
-        type: "personal",
-        created_by: userId,
-      };
       const { data: newEvent, error } = await supabase
         .from("scheduled_events")
-        // type column added by migration; cast to satisfy generated types
-        .insert(insertPayload as typeof insertPayload & { event_date: string })
+        .insert({
+          event_date: dateStr,
+          status: "scheduled",
+          type: "meal_plan",
+          created_by: userId,
+        })
         .select("id")
         .single();
 

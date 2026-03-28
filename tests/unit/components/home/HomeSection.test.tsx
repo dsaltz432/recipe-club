@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@tests/utils";
+import { render, screen } from "@tests/utils";
 import HomeSection from "@/components/home/HomeSection";
 import { createMockUser, createMockEvent, createMockIngredient } from "@tests/utils";
 import type { Ingredient } from "@/types";
@@ -58,6 +58,11 @@ vi.mock("@/components/home/ClubStats", () => ({
   default: () => <div data-testid="club-stats">ClubStats</div>,
 }));
 
+// Mock NonMemberHome to avoid Supabase calls
+vi.mock("@/components/home/NonMemberHome", () => ({
+  default: () => <div data-testid="non-member-home">NonMemberHome</div>,
+}));
+
 describe("HomeSection", () => {
   const user = createMockUser({ name: "Alice Smith" });
   const ingredients: Ingredient[] = [createMockIngredient()];
@@ -68,6 +73,7 @@ describe("HomeSection", () => {
     ingredients,
     setIngredients: vi.fn(),
     isAdmin: false,
+    isClubMember: true,
     onEventCreated: vi.fn(),
     onRecipeAdded: vi.fn(),
     onEventUpdated: vi.fn(),
@@ -137,28 +143,21 @@ describe("HomeSection", () => {
     });
   });
 
-  describe("without active event, non-admin", () => {
-    it("shows welcome message for non-admin", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} />);
-      expect(screen.getByText("Welcome back to Recipe Club!")).toBeInTheDocument();
+  describe("without active event, non-member", () => {
+    it("shows personal kitchen hub subtitle", () => {
+      render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={false} />);
+      expect(screen.getByText("Your personal kitchen hub.")).toBeInTheDocument();
     });
 
-    it("renders no event scheduled card", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} />);
-      expect(screen.getByText("No Event Scheduled")).toBeInTheDocument();
-      expect(screen.getByText(/There's no upcoming Recipe Club event/)).toBeInTheDocument();
+    it("renders NonMemberHome", () => {
+      render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={false} />);
+      expect(screen.getByTestId("non-member-home")).toBeInTheDocument();
     });
 
     it("does not show wheel or bank", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} />);
+      render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={false} />);
       expect(screen.queryByTestId("ingredient-wheel")).not.toBeInTheDocument();
       expect(screen.queryByTestId("ingredient-bank")).not.toBeInTheDocument();
-    });
-
-    it("navigates to /dashboard/recipes when Browse Recipes is clicked", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} />);
-      fireEvent.click(screen.getByText("Browse Recipes"));
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard/recipes");
     });
   });
 
