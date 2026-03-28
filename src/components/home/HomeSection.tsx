@@ -53,13 +53,11 @@ const HomeSection = ({
           What's Cooking, {user?.name?.split(" ")[0] || "Chef"}?
         </h2>
         <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm md:text-base md:mt-2">
-          {activeEvent
+          {isClubMember && activeEvent
             ? "You have an upcoming event!"
-            : isAdmin
+            : isClubMember
               ? "Ready to start a new culinary adventure?"
-              : isClubMember
-                ? "Welcome back to Recipe Club!"
-                : "Your personal kitchen hub."}
+              : "Your personal kitchen hub."}
         </p>
       </div>
 
