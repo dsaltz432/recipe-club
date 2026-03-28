@@ -1146,6 +1146,51 @@ describe("RecipeCard - RecipeInstructions editable prop", () => {
   });
 });
 
+describe("RecipeCard - favorites", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders heart button when onToggleFavorite is provided", () => {
+    const recipe = createMockRecipe();
+    const onToggleFavorite = vi.fn();
+
+    render(<RecipeCard recipe={recipe} onToggleFavorite={onToggleFavorite} />);
+
+    expect(screen.getByLabelText(/Add .* to favorites/)).toBeInTheDocument();
+  });
+
+  it("does not render heart button when onToggleFavorite is not provided", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByLabelText(/favorites/i)).not.toBeInTheDocument();
+  });
+
+  it("shows filled heart (Remove label) when recipe is favorited", () => {
+    const recipe = createMockRecipe({ name: "Lasagna" });
+    const onToggleFavorite = vi.fn();
+
+    render(
+      <RecipeCard recipe={recipe} onToggleFavorite={onToggleFavorite} isFavorited={true} />
+    );
+
+    expect(screen.getByLabelText("Remove Lasagna from favorites")).toBeInTheDocument();
+  });
+
+  it("calls onToggleFavorite with recipe id when clicked", () => {
+    const recipe = createMockRecipe({ id: "recipe-abc" });
+    const onToggleFavorite = vi.fn();
+
+    render(<RecipeCard recipe={recipe} onToggleFavorite={onToggleFavorite} isFavorited={false} />);
+
+    fireEvent.click(screen.getByLabelText(/Add .* to favorites/));
+
+    expect(onToggleFavorite).toHaveBeenCalledWith("recipe-abc");
+  });
+});
+
 describe("RecipeCard - CookModeDialog wiring", () => {
   beforeEach(() => {
     vi.clearAllMocks();

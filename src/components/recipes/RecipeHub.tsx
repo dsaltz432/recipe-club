@@ -3,6 +3,7 @@ import { getCachedAiModel } from "@/lib/userPreferences";
 import { parseInstructions } from "@/lib/recipeActions";
 import { parseTimeToMinutes } from "@/lib/parseTime";
 import { useRecipeParse } from "@/hooks/useRecipeParse";
+import { useRecipeFavorites } from "@/hooks/useRecipeFavorites";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,7 +36,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX, Heart } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
@@ -127,6 +128,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+
+  const { favoriteIds, toggleFavorite } = useRecipeFavorites(userId);
 
   // Add Recipe dialog state
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
@@ -779,7 +783,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       return true;
     })();
 
-    return matchesSearch && matchesIngredient && matchesTime && matchesRating;
+    const matchesFavorites = !favoritesOnly || favoriteIds.has(recipe.id);
+
+    return matchesSearch && matchesIngredient && matchesTime && matchesRating && matchesFavorites;
   });
 
   const totalRecipes = recipes.length;
@@ -869,6 +875,22 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                   </button>
                 )}
               </div>
+              {userId && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => setFavoritesOnly(!favoritesOnly)}
+                  aria-label={favoritesOnly ? "Show all recipes" : "Show favorites only"}
+                  aria-pressed={favoritesOnly}
+                >
+                  <Heart
+                    className={`h-4 w-4 transition-colors ${
+                      favoritesOnly ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                    }`}
+                  />
+                </Button>
+              )}
               {subTab === "personal" && userId && (
                 <Button
                   size="icon"
@@ -883,10 +905,11 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 variant="outline"
                 size="icon"
                 className="sm:hidden relative shrink-0"
+                aria-label="Toggle filters"
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all") && (
+                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all" || favoritesOnly) && (
                   <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-purple" />
                 )}
               </Button>
@@ -1056,6 +1079,13 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
               onRemove: () => setRatingFilter("all"),
             });
           }
+          if (favoritesOnly) {
+            activeFilters.push({
+              key: "favorites",
+              label: "♥ Favorites",
+              onRemove: () => setFavoritesOnly(false),
+            });
+          }
           if (sortOption !== "newest") {
             const labels: Record<SortOption, string> = {
               newest: "",
@@ -1098,6 +1128,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     setTimeFilter("all");
                     setRatingFilter("all");
                     setSortOption("newest");
+                    setFavoritesOnly(false);
                   }}
                   aria-label="Clear all filters"
                   className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/30 text-muted-foreground px-3 py-1 text-sm hover:border-muted-foreground/60 hover:text-foreground transition-colors"
@@ -1123,7 +1154,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
+                {favoritesOnly && favoriteIds.size === 0
+                  ? "No favorites yet. Tap the heart icon on any recipe to save it here."
+                  : searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all" || favoritesOnly
                   ? "No recipes found matching your filters."
                   : subTab === "personal"
                   ? "No personal recipes yet. Click \"Add Recipe\" to get started."
@@ -1148,6 +1181,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onParseRecipe={isAdmin ? handleParseRecipe : undefined}
                 userId={userId}
                 onIngredientsChange={() => handleIngredientsChange(recipe.id)}
+                isFavorited={favoriteIds.has(recipe.id)}
+                onToggleFavorite={userId ? toggleFavorite : undefined}
               />
             ))}
           </div>

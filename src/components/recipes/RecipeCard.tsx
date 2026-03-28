@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Heart } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
@@ -61,9 +61,11 @@ interface RecipeCardProps {
   onParseRecipe?: (recipeId: string) => void;
   userId?: string;
   onIngredientsChange?: () => void;
+  isFavorited?: boolean;
+  onToggleFavorite?: (recipeId: string) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange, isFavorited, onToggleFavorite }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
@@ -153,7 +155,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
               )}
             </div>
             {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions) && (
+            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions || onToggleFavorite) && (
               <div className="flex items-center gap-0 -ml-1 mt-0.5">
                 {recipe.url && (
                   <a
@@ -178,6 +180,23 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                 >
                   <Share2 className="h-3.5 w-3.5" />
                 </Button>
+                {onToggleFavorite && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={isFavorited ? `Remove ${recipe.name} from favorites` : `Add ${recipe.name} to favorites`}
+                    onClick={() => onToggleFavorite(recipe.id)}
+                  >
+                    <Heart
+                      className={`h-3.5 w-3.5 transition-colors ${
+                        isFavorited
+                          ? "fill-red-500 text-red-500"
+                          : "text-muted-foreground hover:text-red-400"
+                      }`}
+                    />
+                  </Button>
+                )}
                 {onAddNote && (
                   <Button
                     variant="ghost"

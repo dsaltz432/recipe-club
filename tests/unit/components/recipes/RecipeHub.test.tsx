@@ -4293,12 +4293,10 @@ describe("RecipeHub - Mobile Filter Panel", () => {
     // Mobile filter panel div does not exist before clicking
     expect(container.querySelector('[class*="flex-col"][class*="gap-3"]')).toBeNull();
 
-    // The mobile filter button is a sibling of the search input inside a shared flex container
-    const searchInput = screen.getByPlaceholderText("Search recipes...");
-    const flexContainer = searchInput.parentElement?.parentElement;
-    const mobileFilterBtn = flexContainer?.querySelector("button");
+    // The mobile filter button has aria-label="Toggle filters"
+    const mobileFilterBtn = screen.getByLabelText("Toggle filters");
     expect(mobileFilterBtn).toBeTruthy();
-    fireEvent.click(mobileFilterBtn!);
+    fireEvent.click(mobileFilterBtn);
 
     // Mobile filter panel div now renders (only present when mobileFiltersOpen is true)
     await waitFor(() => {
@@ -4657,9 +4655,7 @@ describe("RecipeHub - Rating Filter", () => {
     });
 
     // The indicator dot should not be visible initially
-    const searchInput = screen.getByPlaceholderText("Search recipes...");
-    const flexContainer = searchInput.parentElement?.parentElement;
-    const mobileFilterBtn = flexContainer?.querySelector("button");
+    const mobileFilterBtn = screen.getByLabelText("Toggle filters");
     expect(mobileFilterBtn).toBeTruthy();
 
     // No active filter dot initially
