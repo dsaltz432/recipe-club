@@ -236,7 +236,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
               </Label>
               <Input
                 id="event-title"
-                placeholder="e.g. Sunday Dinner, Birthday Feast"
+                placeholder="e.g. Dumplingfest, Shabbat Brunch"
                 value={eventTitle}
                 onChange={(e) => setEventTitle(e.target.value)}
                 className="w-full"
