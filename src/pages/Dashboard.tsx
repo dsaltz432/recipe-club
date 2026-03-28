@@ -301,7 +301,7 @@ const Dashboard = () => {
               ingredients={ingredients}
               setIngredients={setIngredients}
               isAdmin={userIsMemberOrAdmin}
-              isClubMember={userIsMemberOrAdmin}
+              isClubMember={userIsClubMember}
               onEventCreated={handleEventCreated}
               onRecipeAdded={handleRecipeAdded}
               onEventUpdated={loadActiveEvent}
