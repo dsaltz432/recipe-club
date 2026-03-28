@@ -54,23 +54,41 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
 
       if (error) throw error;
 
-      const eventIds: string[] = (eventsData ?? []).map((e: { id: string }) => e.id);
+      const allEventIds: string[] = (eventsData ?? []).map((e: { id: string }) => e.id);
 
-      // Load recipe counts per event
+      // Filter out events auto-created by meal planner (they have meal_plan_items rows)
+      let standaloneEventIds = allEventIds;
+      if (allEventIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: mealPlanLinked } = await (supabase as any)
+          .from("meal_plan_items")
+          .select("event_id")
+          .in("event_id", allEventIds)
+          .not("event_id", "is", null);
+        const mealPlanEventIds = new Set(
+          (mealPlanLinked ?? []).map((m: { event_id: string }) => m.event_id)
+        );
+        standaloneEventIds = allEventIds.filter((id) => !mealPlanEventIds.has(id));
+      }
+
+      // Load recipe counts per standalone event
       const countMap: Record<string, number> = {};
-      if (eventIds.length > 0) {
+      if (standaloneEventIds.length > 0) {
         const { data: recipesData } = await supabase
           .from("recipes")
           .select("event_id")
-          .in("event_id", eventIds);
+          .in("event_id", standaloneEventIds);
 
         for (const r of recipesData ?? []) {
           if (r.event_id) countMap[r.event_id] = (countMap[r.event_id] ?? 0) + 1;
         }
       }
 
+      const standaloneSet = new Set(standaloneEventIds);
       setEvents(
-        (eventsData ?? []).map((e: { id: string; event_date: string; event_time: string | null; status: string }) => ({
+        (eventsData ?? [])
+          .filter((e: { id: string }) => standaloneSet.has(e.id))
+          .map((e: { id: string; event_date: string; event_time: string | null; status: string }) => ({
           id: e.id,
           eventDate: e.event_date,
           eventTime: e.event_time ?? undefined,
@@ -78,6 +96,7 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
           recipeCount: countMap[e.id] ?? 0,
         }))
       );
+
     } catch (err) {
       console.error("Error loading personal events:", err);
     } finally {

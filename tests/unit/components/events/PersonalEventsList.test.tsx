@@ -39,6 +39,22 @@ const mockRecipesChain = (recipes: unknown[]) => {
   return chain;
 };
 
+const mockMealPlanChain = (linkedItems: unknown[]) => {
+  const chain: Record<string, unknown> = {};
+  chain.select = vi.fn().mockReturnValue(chain);
+  chain.in = vi.fn().mockReturnValue(chain);
+  chain.not = vi.fn().mockResolvedValue({ data: linkedItems, error: null });
+  return chain;
+};
+
+const defaultFromMock = (events: unknown[], mealPlanItems: unknown[] = [], recipes: unknown[] = []) =>
+  (table: string) => {
+    if (table === "scheduled_events") return mockEventsChain(events);
+    if (table === "meal_plan_items") return mockMealPlanChain(mealPlanItems);
+    if (table === "recipes") return mockRecipesChain(recipes);
+    return mockEventsChain([]);
+  };
+
 describe("PersonalEventsList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -46,11 +62,7 @@ describe("PersonalEventsList", () => {
   });
 
   it("shows empty state when there are no events", async () => {
-    mockSupabase.from.mockImplementation((table: string) => {
-      if (table === "scheduled_events") return mockEventsChain([]);
-      if (table === "recipes") return mockRecipesChain([]);
-      return mockEventsChain([]);
-    });
+    mockSupabase.from.mockImplementation(defaultFromMock([]));
 
     render(<PersonalEventsList userId="user-1" />);
     await waitFor(() => {
@@ -59,10 +71,7 @@ describe("PersonalEventsList", () => {
   });
 
   it("shows create button", async () => {
-    mockSupabase.from.mockImplementation((table: string) => {
-      if (table === "scheduled_events") return mockEventsChain([]);
-      return mockRecipesChain([]);
-    });
+    mockSupabase.from.mockImplementation(defaultFromMock([]));
 
     render(<PersonalEventsList userId="user-1" />);
     await waitFor(() => {
@@ -75,10 +84,7 @@ describe("PersonalEventsList", () => {
       { id: "e1", event_date: "2026-04-01", event_time: null, status: "scheduled" },
       { id: "e2", event_date: "2026-03-01", event_time: null, status: "completed" },
     ];
-    mockSupabase.from.mockImplementation((table: string) => {
-      if (table === "scheduled_events") return mockEventsChain(events);
-      return mockRecipesChain([]);
-    });
+    mockSupabase.from.mockImplementation(defaultFromMock(events));
 
     render(<PersonalEventsList userId="user-1" />);
     await waitFor(() => {
@@ -87,11 +93,22 @@ describe("PersonalEventsList", () => {
     });
   });
 
+  it("excludes events auto-created by the meal planner", async () => {
+    const events = [
+      { id: "e1", event_date: "2026-04-01", event_time: null, status: "scheduled" },
+      { id: "e2", event_date: "2026-04-08", event_time: null, status: "scheduled" },
+    ];
+    // e2 was created by meal planner
+    const mealPlanItems = [{ event_id: "e2" }];
+    mockSupabase.from.mockImplementation(defaultFromMock(events, mealPlanItems));
+
+    render(<PersonalEventsList userId="user-1" />);
+    await waitFor(() => screen.getByText(/April 1, 2026/));
+    expect(screen.queryByText(/April 8, 2026/)).not.toBeInTheDocument();
+  });
+
   it("opens the create dialog when New Event is clicked", async () => {
-    mockSupabase.from.mockImplementation((table: string) => {
-      if (table === "scheduled_events") return mockEventsChain([]);
-      return mockRecipesChain([]);
-    });
+    mockSupabase.from.mockImplementation(defaultFromMock([]));
 
     render(<PersonalEventsList userId="user-1" />);
     await waitFor(() => screen.getByRole("button", { name: /new event/i }));
@@ -106,10 +123,7 @@ describe("PersonalEventsList", () => {
     const events = [
       { id: "e1", event_date: "2026-04-01", event_time: null, status: "scheduled" },
     ];
-    mockSupabase.from.mockImplementation((table: string) => {
-      if (table === "scheduled_events") return mockEventsChain(events);
-      return mockRecipesChain([]);
-    });
+    mockSupabase.from.mockImplementation(defaultFromMock(events));
 
     render(<PersonalEventsList userId="user-1" />);
     await waitFor(() => screen.getByText(/April 1, 2026/));
