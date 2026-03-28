@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
-import { CalendarClock } from "lucide-react";
 import CountdownCard from "./CountdownCard";
 import ClubStats from "./ClubStats";
 import NonMemberHome from "./NonMemberHome";
@@ -94,13 +93,6 @@ const HomeSection = ({
             userId={user?.id || ""}
             isAdmin={isAdmin}
           />
-        </div>
-      ) : isClubMember ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center space-y-2">
-            <CalendarClock className="h-10 w-10 text-purple/40 mx-auto" />
-            <p className="text-muted-foreground text-sm">No club event scheduled — check back soon!</p>
-          </div>
         </div>
       ) : (
         <NonMemberHome userId={user?.id || ""} />

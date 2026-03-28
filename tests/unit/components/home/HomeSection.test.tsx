@@ -143,24 +143,6 @@ describe("HomeSection", () => {
     });
   });
 
-  describe("without active event, club member non-admin", () => {
-    it("shows welcome message", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={true} />);
-      expect(screen.getByText("Welcome back to Recipe Club!")).toBeInTheDocument();
-    });
-
-    it("shows no-club-event placeholder", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={true} />);
-      expect(screen.getByText(/No club event scheduled/)).toBeInTheDocument();
-    });
-
-    it("does not show wheel or bank", () => {
-      render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={true} />);
-      expect(screen.queryByTestId("ingredient-wheel")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("ingredient-bank")).not.toBeInTheDocument();
-    });
-  });
-
   describe("without active event, non-member", () => {
     it("shows personal kitchen hub subtitle", () => {
       render(<HomeSection {...defaultProps} isAdmin={false} isClubMember={false} />);
