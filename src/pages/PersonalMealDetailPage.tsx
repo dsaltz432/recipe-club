@@ -206,7 +206,7 @@ const PersonalMealDetailPage = () => {
         .from("scheduled_events")
         .select("*")
         .eq("id", eventId)
-        .eq("type", "personal")
+        .in("type", ["personal", "meal_plan"])
         .single();
 
       if (eventError || !eventData) {

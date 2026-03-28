@@ -62,7 +62,6 @@ const PersonalEventsList = ({ userId }: PersonalEventsListProps) => {
         .select("id, title, event_date, event_time, status")
         .eq("type", "personal")
         .eq("created_by", userId)
-        .eq("is_meal_plan_event", false)
         .neq("status", "canceled")
         .order("event_date", { ascending: false });
 

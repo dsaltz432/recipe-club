@@ -322,9 +322,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         .insert({
           event_date: dateStr,
           status: "scheduled",
-          type: "personal",
+          type: "meal_plan",
           created_by: userId,
-          is_meal_plan_event: true,
         })
         .select("id")
         .single();

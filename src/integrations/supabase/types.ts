@@ -620,7 +620,6 @@ export type Database = {
           event_time: string | null
           id: string
           ingredient_id: string | null
-          is_meal_plan_event: boolean
           status: string | null
           title: string | null
           type: string | null
@@ -633,7 +632,6 @@ export type Database = {
           event_time?: string | null
           id?: string
           ingredient_id?: string | null
-          is_meal_plan_event?: boolean
           status?: string | null
           title?: string | null
           type?: string | null
@@ -646,7 +644,6 @@ export type Database = {
           event_time?: string | null
           id?: string
           ingredient_id?: string | null
-          is_meal_plan_event?: boolean
           status?: string | null
           title?: string | null
           type?: string | null

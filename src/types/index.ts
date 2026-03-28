@@ -201,7 +201,7 @@ export interface ScheduledEvent {
   eventTime?: string;
   createdBy: string;
   status: "scheduled" | "completed" | "canceled";
-  type?: "club" | "personal";
+  type?: "club" | "personal" | "meal_plan";
   ingredientName?: string;
   ingredientColor?: string;
 }

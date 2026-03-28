@@ -237,9 +237,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
     if (recipesError) throw recipesError;
 
-    // Filter out personal meal recipes (those linked to personal events)
+    // Only include recipes linked to club events
     const clubRecipesData = (recipesData || []).filter(
-      (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
+      (r) => (r.scheduled_events as { type: string } | null)?.type === "club"
     );
 
     // Load notes and ratings in parallel (both depend on recipe IDs)
@@ -343,9 +343,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
     if (personalError) throw personalError;
 
-    // Filter to include only recipes with no event_id OR recipes linked to personal events
+    // Filter to include only recipes with no event_id OR recipes linked to non-club events
     const filteredPersonalData = (personalData || []).filter(
-      (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+      (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type !== "club"
     );
 
     const personalRecipes: RecipeWithNotes[] = filteredPersonalData.map((r) => {
@@ -366,7 +366,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         notes: [],
         ingredientName,
         ingredientColor,
-        isPersonal: !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal",
+        isPersonal: !r.event_id || (r.scheduled_events as { type: string } | null)?.type !== "club",
       };
     });
 
@@ -730,7 +730,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         const filtered = (data || []).filter(
           (r) =>
             !r.event_id ||
-            (r.scheduled_events as { type: string } | null)?.type === "personal"
+            (r.scheduled_events as { type: string } | null)?.type !== "club"
         );
         setPersonalCount(filtered.length);
       } catch {

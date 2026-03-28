@@ -149,11 +149,11 @@ const Dashboard = () => {
         setCompletedEventsCount(eventsResult.count || 0);
 
         const clubCount = (clubRecipesResult.data || []).filter(
-          (r) => (r.scheduled_events as { type: string } | null)?.type !== "personal"
+          (r) => (r.scheduled_events as { type: string } | null)?.type === "club"
         ).length;
 
         const personalCount = (personalRecipesResult.data || []).filter(
-          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type !== "club"
         ).length;
 
         setUserRecipesCount(clubCount + personalCount);
@@ -164,7 +164,7 @@ const Dashboard = () => {
           .eq("created_by", userId);
 
         const personalCount = (personalRecipesResult.data || []).filter(
-          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type === "personal"
+          (r) => !r.event_id || (r.scheduled_events as { type: string } | null)?.type !== "club"
         ).length;
 
         setUserRecipesCount(personalCount);

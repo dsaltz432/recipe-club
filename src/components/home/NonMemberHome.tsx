@@ -31,7 +31,6 @@ const NonMemberHome = ({ userId }: NonMemberHomeProps) => {
         .select("id, title, event_date, event_time")
         .eq("type", "personal")
         .eq("created_by", userId)
-        .eq("is_meal_plan_event", false)
         .eq("status", "scheduled")
         .order("event_date", { ascending: true });
 
