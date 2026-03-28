@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import type { User, Ingredient, ScheduledEvent } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CalendarClock, BookOpen } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import CountdownCard from "./CountdownCard";
 import ClubStats from "./ClubStats";
+import NonMemberHome from "./NonMemberHome";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
@@ -35,7 +33,6 @@ const HomeSection = ({
   onEventUpdated,
   isEventLoading = false,
 }: HomeSectionProps) => {
-  const navigate = useNavigate();
   const [clubMemberNames, setClubMemberNames] = useState<string[]>([]);
 
   useEffect(() => {
@@ -63,7 +60,7 @@ const HomeSection = ({
               ? "Ready to start a new culinary adventure?"
               : isClubMember
                 ? "Welcome back to Recipe Club!"
-                : "Plan meals, collect recipes, and build grocery lists."}
+                : "Your personal kitchen hub."}
         </p>
       </div>
 
@@ -98,26 +95,15 @@ const HomeSection = ({
             isAdmin={isAdmin}
           />
         </div>
+      ) : isClubMember ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center space-y-2">
+            <CalendarClock className="h-10 w-10 text-purple/40 mx-auto" />
+            <p className="text-muted-foreground text-sm">No club event scheduled — check back soon!</p>
+          </div>
+        </div>
       ) : (
-        <Card className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm">
-          <CardContent className="pt-8 pb-8 text-center space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-full bg-purple/10 flex items-center justify-center">
-              <CalendarClock className="h-8 w-8 text-purple" />
-            </div>
-            <h3 className="font-display text-xl font-semibold">No Event Scheduled</h3>
-            <p className="text-muted-foreground">
-              There's no upcoming Recipe Club event at the moment.
-              Check back soon or browse past recipes!
-            </p>
-            <Button
-              onClick={() => navigate("/dashboard/recipes")}
-              className="bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Browse Recipes
-            </Button>
-          </CardContent>
-        </Card>
+        <NonMemberHome userId={user?.id || ""} />
       )}
 
       {/* Club history — visible to club members once event loading is done */}
