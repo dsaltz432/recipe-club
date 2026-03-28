@@ -128,6 +128,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [recipeContentMap, setRecipeContentMap] = useState<Record<string, RecipeContent>>({});
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [recipeTagsMap, setRecipeTagsMap] = useState<Record<string, string[]>>({});
 
   // Add Recipe dialog state
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
@@ -704,6 +705,39 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       });
   };
 
+  const handleTagsChange = async (recipeId: string, newTags: string[]) => {
+    if (!userId) return;
+    const prevTags = recipeTagsMap[recipeId] ?? [];
+
+    // Optimistic update
+    setRecipeTagsMap((prev) => ({ ...prev, [recipeId]: newTags }));
+
+    const added = newTags.filter((t) => !prevTags.includes(t));
+    const removed = prevTags.filter((t) => !newTags.includes(t));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    try {
+      if (added.length > 0) {
+        await db.from("recipe_tags").insert(
+          added.map((tag: string) => ({ recipe_id: recipeId, user_id: userId, tag }))
+        );
+      }
+      if (removed.length > 0) {
+        await db
+          .from("recipe_tags")
+          .delete()
+          .eq("recipe_id", recipeId)
+          .eq("user_id", userId)
+          .in("tag", removed);
+      }
+    } catch {
+      // Revert on error
+      setRecipeTagsMap((prev) => ({ ...prev, [recipeId]: prevTags }));
+      toast.error("Failed to save tag");
+    }
+  };
+
   useEffect(() => {
     loadUsedIngredients();
 
@@ -713,6 +747,21 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         const names = items.map((i) => i.name);
         if (names.length > 0) setPantryItemNames(names);
       }).catch(() => { /* fallback to defaults */ });
+
+      // Load user's recipe tags (cast to any — recipe_tags is a new table not yet in generated types)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("recipe_tags")
+        .select("recipe_id, tag")
+        .eq("user_id", userId)
+        .then(({ data }: { data: { recipe_id: string; tag: string }[] | null }) => {
+          const map: Record<string, string[]> = {};
+          for (const row of data ?? []) {
+            if (!map[row.recipe_id]) map[row.recipe_id] = [];
+            map[row.recipe_id].push(row.tag);
+          }
+          setRecipeTagsMap(map);
+        });
     }
 
     // Eagerly load personal count so the tab button shows it on mount
@@ -1135,6 +1184,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onParseRecipe={isAdmin ? handleParseRecipe : undefined}
                 userId={userId}
                 onIngredientsChange={() => handleIngredientsChange(recipe.id)}
+                tags={recipeTagsMap[recipe.id] ?? []}
+                onTagsChange={userId ? handleTagsChange : undefined}
               />
             ))}
           </div>
