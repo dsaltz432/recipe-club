@@ -106,7 +106,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [searchQuery, setSearchQuery] = useState("");
   const [ingredientFilter, setIngredientFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [subTab, setSubTab] = useState<RecipeSubTab>("club");
+  const [subTab, setSubTab] = useState<RecipeSubTab>(isClubMember ? "club" : "personal");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
