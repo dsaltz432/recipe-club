@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
@@ -14,6 +14,8 @@ import RecipeIngredientList from "./RecipeIngredientList";
 import RecipeInstructions from "@/components/cookmode/RecipeInstructions";
 import CookModeDialog from "@/components/cookmode/CookModeDialog";
 import RecipeTips from "@/components/recipes/RecipeTips";
+import RecipeTagPills from "./RecipeTagPills";
+import RecipeTagEditor from "./RecipeTagEditor";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -61,10 +63,13 @@ interface RecipeCardProps {
   onParseRecipe?: (recipeId: string) => void;
   userId?: string;
   onIngredientsChange?: () => void;
+  tags?: string[];
+  onTagsChange?: (recipeId: string, tags: string[]) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange, tags = [], onTagsChange }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
   const [tipsExpanded, setTipsExpanded] = useState(false);
@@ -303,6 +308,39 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             </span>
           )}
         </div>
+
+        {/* Tags Section */}
+        {onTagsChange && (
+          <div className="mb-2 sm:mb-3">
+            {tags.length > 0 && !tagsExpanded && (
+              <div
+                className="flex items-center gap-1.5 cursor-pointer group"
+                onClick={() => setTagsExpanded(true)}
+                aria-label="Edit recipe tags"
+              >
+                <RecipeTagPills tags={tags} />
+                <Tag className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </div>
+            )}
+            {(tagsExpanded || tags.length === 0) && (
+              <div className="flex items-start gap-2">
+                <Tag className="h-3.5 w-3.5 text-muted-foreground mt-1 shrink-0" />
+                <RecipeTagEditor
+                  tags={tags}
+                  onChange={(newTags) => {
+                    onTagsChange(recipe.id, newTags);
+                    if (newTags.length === 0) setTagsExpanded(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+        {!onTagsChange && tags.length > 0 && (
+          <div className="mb-2 sm:mb-3">
+            <RecipeTagPills tags={tags} />
+          </div>
+        )}
 
         {/* Ingredients Section */}
         {contentStatus === "parsing" ? (
