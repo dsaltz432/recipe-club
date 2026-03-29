@@ -63,6 +63,11 @@ vi.mock("@/components/home/NonMemberHome", () => ({
   default: () => <div data-testid="non-member-home">NonMemberHome</div>,
 }));
 
+// Mock WeeklyMealPreview to avoid unrelated Supabase calls
+vi.mock("@/components/home/WeeklyMealPreview", () => ({
+  default: () => <div data-testid="weekly-meal-preview">WeeklyMealPreview</div>,
+}));
+
 describe("HomeSection", () => {
   const user = createMockUser({ name: "Alice Smith" });
   const ingredients: Ingredient[] = [createMockIngredient()];
@@ -170,6 +175,23 @@ describe("HomeSection", () => {
     it("does not render ClubStats while event is loading", () => {
       render(<HomeSection {...defaultProps} isEventLoading={true} />);
       expect(screen.queryByTestId("club-stats")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("WeeklyMealPreview integration", () => {
+    it("renders WeeklyMealPreview when event is not loading and user has an id", () => {
+      render(<HomeSection {...defaultProps} isEventLoading={false} />);
+      expect(screen.getByTestId("weekly-meal-preview")).toBeInTheDocument();
+    });
+
+    it("does not render WeeklyMealPreview while event is loading", () => {
+      render(<HomeSection {...defaultProps} isEventLoading={true} />);
+      expect(screen.queryByTestId("weekly-meal-preview")).not.toBeInTheDocument();
+    });
+
+    it("does not render WeeklyMealPreview when user is null", () => {
+      render(<HomeSection {...defaultProps} user={null} isEventLoading={false} />);
+      expect(screen.queryByTestId("weekly-meal-preview")).not.toBeInTheDocument();
     });
   });
 });
