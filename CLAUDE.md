@@ -48,8 +48,8 @@ Requires Docker Desktop running. Local Supabase provides a full Postgres + Auth 
 
 Use Playwright headless Chromium to verify UI changes against the local dev server. Run `npx playwright test` or use `npx playwright test --headed` to watch the browser.
 
-- **Local Mac:** Base URL is `http://localhost:5173`
-- **NanoClaw container:** Base URL is `http://host.docker.internal:5173` (and `http://host.docker.internal:54321` for Supabase)
+- **Local Mac:** `npx playwright test`
+- **NanoClaw container:** `BASE_URL=http://host.docker.internal:5173 npx playwright test`
 
 **Local test users** (seeded by `npm run dev:reset`):
 
