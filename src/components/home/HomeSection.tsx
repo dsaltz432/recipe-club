@@ -3,6 +3,7 @@ import type { User, Ingredient, ScheduledEvent } from "@/types";
 import CountdownCard from "./CountdownCard";
 import ClubStats from "./ClubStats";
 import NonMemberHome from "./NonMemberHome";
+import WeeklyMealPreview from "./WeeklyMealPreview";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientWheel from "@/components/wheel/IngredientWheel";
 import IngredientBank from "@/components/ingredients/IngredientBank";
@@ -98,6 +99,9 @@ const HomeSection = ({
 
       {/* Club history — visible to club members once event loading is done */}
       {!isEventLoading && isClubMember && <ClubStats />}
+
+      {/* Weekly meal plan preview — visible to all users once loading is done */}
+      {!isEventLoading && user?.id && <WeeklyMealPreview userId={user.id} />}
 
     </div>
   );
