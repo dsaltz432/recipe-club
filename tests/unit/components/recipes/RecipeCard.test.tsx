@@ -1173,3 +1173,82 @@ describe("RecipeCard - CookModeDialog wiring", () => {
     expect(screen.getByLabelText(/Start cooking/)).toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - timing and servings quick stats", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const baseContent = {
+    recipeId: "recipe-1",
+    status: "completed" as const,
+    instructions: [],
+    description: undefined,
+    ingredients: [],
+    parsedAt: undefined,
+  };
+
+  it("shows totalTime when content has totalTime", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const content = { ...baseContent, totalTime: "45 min", prepTime: undefined, cookTime: undefined, servings: undefined };
+
+    render(<RecipeCard recipe={recipe} content={content} contentStatus="completed" />);
+
+    expect(screen.getByText("45 min")).toBeInTheDocument();
+  });
+
+  it("shows servings when content has servings", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const content = { ...baseContent, totalTime: undefined, prepTime: undefined, cookTime: undefined, servings: "4 servings" };
+
+    render(<RecipeCard recipe={recipe} content={content} contentStatus="completed" />);
+
+    expect(screen.getByText("4 servings")).toBeInTheDocument();
+  });
+
+  it("shows prepTime + cookTime when totalTime is absent", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const content = { ...baseContent, totalTime: undefined, prepTime: "10 min", cookTime: "20 min", servings: undefined };
+
+    render(<RecipeCard recipe={recipe} content={content} contentStatus="completed" />);
+
+    expect(screen.getByText("10 min + 20 min")).toBeInTheDocument();
+  });
+
+  it("shows only prepTime when only prepTime is present", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const content = { ...baseContent, totalTime: undefined, prepTime: "15 min", cookTime: undefined, servings: undefined };
+
+    render(<RecipeCard recipe={recipe} content={content} contentStatus="completed" />);
+
+    expect(screen.getByText("15 min")).toBeInTheDocument();
+  });
+
+  it("does not show timing when content has no timing fields", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const content = { ...baseContent, totalTime: undefined, prepTime: undefined, cookTime: undefined, servings: undefined };
+
+    render(<RecipeCard recipe={recipe} content={content} contentStatus="completed" />);
+
+    // Should not render the Clock icon span — verify timing text absent
+    expect(screen.queryByText(/min/)).not.toBeInTheDocument();
+  });
+
+  it("does not show timing when no content is provided", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByText(/min/)).not.toBeInTheDocument();
+  });
+
+  it("shows both timing and servings together", () => {
+    const recipe = createMockRecipe({ id: "recipe-1" });
+    const content = { ...baseContent, totalTime: "30 min", prepTime: undefined, cookTime: undefined, servings: "6" };
+
+    render(<RecipeCard recipe={recipe} content={content} contentStatus="completed" />);
+
+    expect(screen.getByText("30 min")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
+  });
+});

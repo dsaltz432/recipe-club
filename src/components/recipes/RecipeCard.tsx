@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
@@ -305,6 +305,18 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             <span className="flex items-center gap-1">
               <Camera className="h-3 w-3" />
               {(() => { const count = recipe.notes.reduce((sum, n) => sum + (n.photos?.length || 0), 0); return `${count} ${count !== 1 ? "photos" : "photo"}`; })()}
+            </span>
+          )}
+          {content && (content.totalTime || content.prepTime || content.cookTime) && (
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3 text-purple-500" />
+              <span>{content.totalTime ?? [content.prepTime, content.cookTime].filter(Boolean).join(" + ")}</span>
+            </span>
+          )}
+          {content?.servings && (
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3 text-purple-500" />
+              <span>{content.servings}</span>
             </span>
           )}
         </div>
