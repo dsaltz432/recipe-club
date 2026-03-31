@@ -365,11 +365,10 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    // The drop zone is a <label> wrapping a file input — clicking it natively opens the picker
-    const dropZoneText = screen.getByText(/click to upload photos or pdfs/i);
-    const dropZoneLabel = dropZoneText.closest("label");
-    expect(dropZoneLabel).toBeInTheDocument();
-    expect(dropZoneLabel?.querySelector('input[type="file"]')).toBeInTheDocument();
+    // The drop zone has onPointerDown to trigger the hidden file input
+    const dropZone = screen.getByText(/click to upload photos or pdfs/i).closest("div");
+    expect(dropZone).toBeInTheDocument();
+    expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
   });
 
   it("handles successful PDF upload", async () => {
@@ -492,11 +491,9 @@ describe("PhotoUpload - Error Handling", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    // The upload button is a <label> wrapping a file input — clicking it natively opens the picker
-    const uploadText = screen.getByText("Upload Files");
-    const uploadLabel = uploadText.closest("label");
-    expect(uploadLabel).toBeInTheDocument();
-    expect(uploadLabel?.querySelector('input[type="file"]')).toBeInTheDocument();
+    // The upload button uses onPointerDown to trigger the hidden file input
+    expect(screen.getByRole("button", { name: /upload files/i })).toBeInTheDocument();
+    expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
   });
 
   it("handles unmount during upload gracefully (null ref)", async () => {

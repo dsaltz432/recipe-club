@@ -410,9 +410,8 @@ describe("RecipeInputForm - File Upload", () => {
       />
     );
 
-    const uploadButton = screen.getByLabelText("Upload photo or PDF");
-    // Label elements can't be "disabled" — check visual disabled state via class
-    expect(uploadButton).toHaveClass("pointer-events-none", "opacity-50");
+    const uploadButton = screen.getByRole("button", { name: /upload photo or pdf/i });
+    expect(uploadButton).toBeDisabled();
   });
 });
 

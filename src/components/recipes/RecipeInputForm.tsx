@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useRef } from "react";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -224,13 +224,17 @@ const RecipeInputForm = ({
               readOnly
               className="flex-1"
             />
-            <label
+            <Button
+              type="button"
+              variant="outline"
               aria-label="Upload photo or PDF"
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "shrink-0 cursor-pointer",
-                isUploadingFile && "pointer-events-none opacity-50"
-              )}
+              className="shrink-0"
+              disabled={isUploadingFile}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
             >
               {isUploadingFile ? (
                 <>
@@ -243,15 +247,14 @@ const RecipeInputForm = ({
                   Upload
                 </>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.pdf,application/pdf"
-                onChange={handleFileUpload}
-                disabled={isUploadingFile}
-                className="sr-only"
-              />
-            </label>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,application/pdf"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
           </div>
         </div>
       )}
