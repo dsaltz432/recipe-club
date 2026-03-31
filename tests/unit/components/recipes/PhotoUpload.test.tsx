@@ -72,7 +72,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.getByText("Upload Files")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /upload files/i })).toBeInTheDocument();
   });
 
   it("hides upload button when max photos reached", () => {
@@ -88,7 +88,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.queryByText("Upload Files")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /upload files/i })).not.toBeInTheDocument();
   });
 
   it("renders photo grid when photos exist", () => {
@@ -365,10 +365,16 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    // The drop zone has onPointerDown to trigger the hidden file input
-    const dropZone = screen.getByText(/click to upload photos or pdfs/i).closest("div");
-    expect(dropZone).toBeInTheDocument();
-    expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
+    const emptyState = screen.getByText(/click to upload photos or pdfs/i).closest("div");
+    expect(emptyState).toBeInTheDocument();
+
+    // Check that clicking the area would trigger file input
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(input, "click");
+
+    fireEvent.click(emptyState!);
+
+    expect(clickSpy).toHaveBeenCalled();
   });
 
   it("handles successful PDF upload", async () => {
@@ -491,9 +497,13 @@ describe("PhotoUpload - Error Handling", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    // The upload button uses onPointerDown to trigger the hidden file input
-    expect(screen.getByRole("button", { name: /upload files/i })).toBeInTheDocument();
-    expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
+    const uploadButton = screen.getByRole("button", { name: /upload files/i });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(input, "click");
+
+    fireEvent.click(uploadButton);
+
+    expect(clickSpy).toHaveBeenCalled();
   });
 
   it("handles unmount during upload gracefully (null ref)", async () => {

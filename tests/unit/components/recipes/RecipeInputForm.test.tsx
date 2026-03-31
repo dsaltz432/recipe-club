@@ -410,7 +410,7 @@ describe("RecipeInputForm - File Upload", () => {
       />
     );
 
-    const uploadButton = screen.getByRole("button", { name: /upload photo or pdf/i });
+    const uploadButton = screen.getByLabelText("Upload photo or PDF");
     expect(uploadButton).toBeDisabled();
   });
 });

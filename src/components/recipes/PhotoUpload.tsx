@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X, Image as ImageIcon, Loader2, FileText } from "lucide-react";
@@ -19,12 +18,6 @@ const PhotoUpload = ({
 }: PhotoUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const openFilePicker = (e: React.MouseEvent | React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    fileInputRef.current?.click();
-  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -78,7 +71,9 @@ const PhotoUpload = ({
       );
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -116,7 +111,7 @@ const PhotoUpload = ({
             type="button"
             variant="outline"
             size="sm"
-            onPointerDown={openFilePicker}
+            onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >
             {isUploading ? (
@@ -132,15 +127,20 @@ const PhotoUpload = ({
             )}
           </Button>
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf,application/pdf"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
       </div>
 
       {photos.length === 0 ? (
         <div
-          className={cn(
-            "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-purple/50 transition-colors",
-            isUploading && "pointer-events-none opacity-50"
-          )}
-          onPointerDown={openFilePicker}
+          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-purple/50 transition-colors"
+          onClick={() => fileInputRef.current?.click()}
         >
           <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -186,14 +186,6 @@ const PhotoUpload = ({
           })}
         </div>
       )}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,.pdf,application/pdf"
-        multiple
-        onChange={handleFileSelect}
-        className="hidden"
-      />
     </div>
   );
 };
