@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import CookModeDialog from "@/components/cookmode/CookModeDialog";
 import RecipeTips from "@/components/recipes/RecipeTips";
 import RecipeTagPills from "./RecipeTagPills";
 import RecipeTagEditor from "./RecipeTagEditor";
+import PhotoLightbox from "@/components/shared/PhotoLightbox";
+import type { LightboxPhoto } from "@/components/shared/PhotoLightbox";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -76,6 +78,27 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
   const [cookModeOpen, setCookModeOpen] = useState(false);
   const [cookModeSteps, setCookModeSteps] = useState<CookModeStep[]>([]);
   const [cookModeIngredients, setCookModeIngredients] = useState<RecipeIngredient[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Flatten all photos from all notes into a single gallery for the lightbox
+  const lightboxPhotos = useMemo<LightboxPhoto[]>(() =>
+    recipe.notes.flatMap((note) =>
+      (note.photos ?? []).map((src) => ({
+        src,
+        alt: `${recipe.name} photo by ${note.userName ?? "contributor"}`,
+        caption: note.userName ? `${note.userName}'s photo` : undefined,
+      }))
+    ),
+    [recipe.notes, recipe.name]
+  );
+
+  // Build a lookup: photo src → index in lightboxPhotos
+  const photoIndexMap = useMemo<Map<string, number>>(() => {
+    const map = new Map<string, number>();
+    lightboxPhotos.forEach((p, i) => map.set(p.src, i));
+    return map;
+  }, [lightboxPhotos]);
 
   const fetchAndOpenCookMode = useCallback(async () => {
     const steps: CookModeStep[] = (content!.instructions!).map((instruction) => ({
@@ -503,12 +526,22 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                           {note.photos && note.photos.length > 0 && (
                             <div className="flex gap-2 overflow-x-auto pb-2">
                               {note.photos.map((photo, idx) => (
-                                <img
+                                <button
                                   key={idx}
-                                  src={photo}
-                                  alt={`${recipe.name} photo ${idx + 1}`}
-                                  className="h-24 w-24 sm:h-20 sm:w-20 object-cover rounded-md flex-shrink-0"
-                                />
+                                  className="flex-shrink-0 rounded-md overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+                                  onClick={() => {
+                                    const globalIdx = photoIndexMap.get(photo) ?? 0;
+                                    setLightboxIndex(globalIdx);
+                                    setLightboxOpen(true);
+                                  }}
+                                  aria-label={`View photo ${idx + 1} by ${note.userName ?? "contributor"}`}
+                                >
+                                  <img
+                                    src={photo}
+                                    alt={`${recipe.name} photo ${idx + 1}`}
+                                    className="h-24 w-24 sm:h-20 sm:w-20 object-cover rounded-md hover:opacity-90 transition-opacity"
+                                  />
+                                </button>
                               ))}
                             </div>
                           )}
@@ -548,6 +581,13 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
         recipeNames={new Map([[recipe.id, recipe.name]])}
         ingredientsByRecipe={new Map([[recipe.id, cookModeIngredients]])}
         userId={userId}
+      />
+
+      <PhotoLightbox
+        photos={lightboxPhotos}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
       />
     </Card>
   );

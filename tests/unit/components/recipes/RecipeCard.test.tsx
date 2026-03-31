@@ -1252,3 +1252,54 @@ describe("RecipeCard - timing and servings quick stats", () => {
     expect(screen.getByText("6")).toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - photo lightbox", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders photo thumbnails as buttons when notes have photos", () => {
+    const note = createMockNote({ photos: ["https://example.com/img1.jpg", "https://example.com/img2.jpg"], userName: "Alice" });
+    const recipe = createMockRecipe({ notes: [note] });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Expand the notes section
+    fireEvent.click(screen.getByText("Show More"));
+
+    const photoButtons = screen.getAllByLabelText(/View photo \d+ by Alice/);
+    expect(photoButtons).toHaveLength(2);
+  });
+
+  it("opens lightbox at correct index when a photo is clicked", () => {
+    const note = createMockNote({ photos: ["https://example.com/img1.jpg", "https://example.com/img2.jpg"], userName: "Alice" });
+    const recipe = createMockRecipe({ notes: [note] });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    fireEvent.click(screen.getByText("Show More"));
+
+    // Click second photo — lightbox should open and show "2 / 2" counter
+    fireEvent.click(screen.getByLabelText("View photo 2 by Alice"));
+    // Counter "2 / 2" confirms lightbox opened at index 1 (second photo)
+    expect(screen.getByText("2 / 2")).toBeInTheDocument();
+    // The lightbox image src should be img2
+    const lightboxImg = document.querySelector('img[src*="img2.jpg"]') as HTMLImageElement | null;
+    expect(lightboxImg).not.toBeNull();
+  });
+
+  it("builds a combined gallery across multiple notes", () => {
+    const note1 = createMockNote({ id: "n1", photos: ["https://example.com/a.jpg"], userName: "Alice" });
+    const note2 = createMockNote({ id: "n2", photos: ["https://example.com/b.jpg", "https://example.com/c.jpg"], userName: "Bob" });
+    const recipe = createMockRecipe({ notes: [note1, note2] });
+
+    render(<RecipeCard recipe={recipe} />);
+    fireEvent.click(screen.getByText("Show More"));
+
+    // Three photo buttons in total
+    const aliceBtn = screen.getByLabelText("View photo 1 by Alice");
+    const bobBtns = screen.getAllByLabelText(/View photo \d+ by Bob/);
+    expect(aliceBtn).toBeInTheDocument();
+    expect(bobBtns).toHaveLength(2);
+  });
+});
