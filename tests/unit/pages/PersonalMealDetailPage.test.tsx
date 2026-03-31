@@ -112,6 +112,20 @@ vi.mock("@/hooks/useRecipeNotes", () => ({
 }));
 
 // Heavy child component mocks
+vi.mock("@/components/cookmode/CookModeDialog", () => ({
+  default: () => <div data-testid="cook-mode-dialog">CookModeDialog</div>,
+}));
+
+vi.mock("@/hooks/useCookMode", () => ({
+  useCookMode: () => ({
+    timeline: null,
+    loading: false,
+    error: null,
+    generateTimeline: vi.fn(),
+    ingredientsByRecipe: {},
+  }),
+}));
+
 vi.mock("@/components/recipes/PhotoUpload", () => ({
   default: () => <div data-testid="photo-upload">PhotoUpload</div>,
 }));
@@ -234,10 +248,10 @@ const recipeRow = {
 // Builder helpers
 const makeOr = (resolved: unknown) => ({ order: vi.fn().mockResolvedValue(resolved) });
 const makeSingle = (resolved: unknown) => ({ single: vi.fn().mockResolvedValue(resolved) });
-const makeSelectEqEqSingle = (resolved: unknown) => ({
+const makeSelectEqInSingle = (resolved: unknown) => ({
   select: vi.fn().mockReturnValue({
     eq: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue(makeSingle(resolved)),
+      in: vi.fn().mockReturnValue(makeSingle(resolved)),
     }),
   }),
 });
@@ -251,7 +265,7 @@ const setupDefaultMocks = () => {
 
   mockSupabaseFrom.mockImplementation((table: string) => {
     if (table === "scheduled_events") {
-      return makeSelectEqEqSingle({ data: eventRow, error: null });
+      return makeSelectEqInSingle({ data: eventRow, error: null });
     }
     if (table === "meal_plan_items") {
       return {
@@ -315,7 +329,8 @@ const setupDefaultMocks = () => {
 const renderAndWait = async () => {
   const result = render(<PersonalMealDetailPage />);
   await waitFor(() => {
-    expect(screen.getByText("Pasta Primavera")).toBeInTheDocument();
+    // "Pasta Primavera" appears in both the header and the recipes tab
+    expect(screen.getAllByText("Pasta Primavera").length).toBeGreaterThan(0);
   });
   return result;
 };
@@ -336,7 +351,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows not found state when event fetch errors", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: null, error: { message: "Not found" } });
+        return makeSelectEqInSingle({ data: null, error: { message: "Not found" } });
       }
       return {};
     });
@@ -350,7 +365,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows not found state when event data is null", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: null, error: null });
+        return makeSelectEqInSingle({ data: null, error: null });
       }
       return {};
     });
@@ -363,8 +378,9 @@ describe("PersonalMealDetailPage", () => {
 
   it("renders meal details page after successful load", async () => {
     await renderAndWait();
-    expect(screen.getByText("Meal Details")).toBeInTheDocument();
-    expect(screen.getByText("Pasta Primavera")).toBeInTheDocument();
+    // Title shows recipe names (or event title if set); recipe tab shows recipes
+    expect(screen.getAllByText("Pasta Primavera")[0]).toBeInTheDocument();
+    expect(screen.getByTestId("recipes-tab")).toBeInTheDocument();
   });
 
   it("renders RecipeDetailTabs with all three tab panels", async () => {
@@ -377,7 +393,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows 'Back to Meals' button on not found page", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: null, error: { message: "oops" } });
+        return makeSelectEqInSingle({ data: null, error: { message: "oops" } });
       }
       return {};
     });
@@ -394,7 +410,7 @@ describe("PersonalMealDetailPage", () => {
   it("navigates to meals when 'Go to Meals' button is clicked on not found page", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: null, error: { message: "oops" } });
+        return makeSelectEqInSingle({ data: null, error: { message: "oops" } });
       }
       return {};
     });
@@ -448,7 +464,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows toast error when add custom meal fails", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -486,7 +502,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows toast error when add existing recipe fails", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -622,7 +638,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows error toast when delete recipe fails", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -655,7 +671,7 @@ describe("PersonalMealDetailPage", () => {
     // meal_plan_items returns items with recipe_id
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -693,7 +709,7 @@ describe("PersonalMealDetailPage", () => {
   it("opens rating dialog when Rate Recipes button is clicked", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: { ...eventRow, status: "completed" }, error: null });
+        return makeSelectEqInSingle({ data: { ...eventRow, status: "completed" }, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -737,7 +753,7 @@ describe("PersonalMealDetailPage", () => {
   it("handles ratings submitted and shows success toast", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -771,7 +787,7 @@ describe("PersonalMealDetailPage", () => {
   it("cancels rating dialog", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -803,7 +819,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows empty grocery placeholder when no recipes", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return { select: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
@@ -841,7 +857,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows error when recipes load fails", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return { select: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
@@ -865,7 +881,7 @@ describe("PersonalMealDetailPage", () => {
   it("shows error when recipe notes load fails", async () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return { select: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
@@ -985,7 +1001,7 @@ describe("PersonalMealDetailPage", () => {
     // Set up with all items cooked
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === "scheduled_events") {
-        return makeSelectEqEqSingle({ data: eventRow, error: null });
+        return makeSelectEqInSingle({ data: eventRow, error: null });
       }
       if (table === "meal_plan_items") {
         return {
@@ -1005,7 +1021,7 @@ describe("PersonalMealDetailPage", () => {
     });
 
     render(<PersonalMealDetailPage />);
-    await waitFor(() => screen.getByText("Pasta Primavera"));
+    await waitFor(() => screen.getAllByText("Pasta Primavera")[0]);
 
     // Open rating dialog via capturedRecipesTabProps callback
     await waitFor(() => capturedRecipesTabProps.onRateRecipe !== undefined);

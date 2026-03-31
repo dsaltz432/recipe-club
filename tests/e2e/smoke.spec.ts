@@ -48,3 +48,44 @@ test('new event dialog fits on mobile screen without scrolling', async ({ browse
 
   await context.close();
 });
+
+test('photo lightbox opens and closes when clicking a recipe photo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Email').fill('member@example.com');
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await page.waitForURL('**/dashboard');
+
+  // Navigate to Recipes tab
+  await page.getByRole('tab', { name: /recipes/i }).click();
+
+  // Wait for recipes to load (any content)
+  await page.waitForTimeout(2000);
+
+  // Check if the seeded recipe is present (requires npm run dev:reset)
+  const recipeCard = page.locator('text=Lemon Herb Salmon').first();
+  const hasRecipe = (await recipeCard.count()) > 0;
+
+  if (!hasRecipe) {
+    await expect(page.getByRole('tab', { name: /recipes/i })).toBeVisible();
+    console.log('Skipping lightbox click test: seeded recipe not found. Run npm run dev:reset to seed photo data.');
+    return;
+  }
+
+  // Expand the recipe card to reveal notes/photos
+  await page.getByRole('button', { name: /show more/i }).first().click();
+
+  // Click the photo thumbnail to open the lightbox
+  const photoButton = page.getByRole('button', { name: /view photo 1/i }).first();
+  await photoButton.waitFor({ timeout: 3000 });
+  await photoButton.click();
+
+  // Lightbox should be visible with a close button
+  await expect(page.getByRole('button', { name: /close photo viewer/i })).toBeVisible({ timeout: 5000 });
+
+  // Take a screenshot of the lightbox
+  await page.screenshot({ path: 'test-results/photo-lightbox-open.png' });
+
+  // Close the lightbox
+  await page.getByRole('button', { name: /close photo viewer/i }).click();
+  await expect(page.getByRole('button', { name: /close photo viewer/i })).not.toBeVisible();
+});
