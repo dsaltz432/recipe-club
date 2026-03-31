@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useRef, useId } from "react";
+import { useRef } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,7 +95,6 @@ const RecipeInputForm = ({
   manualPasteOnly = false,
 }: RecipeInputFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fileInputId = useId();
   const isUploadingFile = externalUploading ?? false;
   const uploadingFileNameRef = useRef("");
 
@@ -226,7 +225,6 @@ const RecipeInputForm = ({
               className="flex-1"
             />
             <label
-              htmlFor={isUploadingFile ? undefined : fileInputId}
               aria-label="Upload photo or PDF"
               className={cn(
                 buttonVariants({ variant: "outline" }),
@@ -245,15 +243,15 @@ const RecipeInputForm = ({
                   Upload
                 </>
               )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf,application/pdf"
+                onChange={handleFileUpload}
+                disabled={isUploadingFile}
+                className="sr-only"
+              />
             </label>
-            <input
-              id={fileInputId}
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf,application/pdf"
-              onChange={handleFileUpload}
-              className="sr-only"
-            />
           </div>
         </div>
       )}
