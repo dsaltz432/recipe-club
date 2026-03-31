@@ -3958,9 +3958,9 @@ describe("EventDetailPage", () => {
     // Switch to Upload File mode to reveal the upload button
     fireEvent.click(screen.getByText("Upload"));
 
-    // Find the upload button (has Upload icon)
-    const uploadBtn = screen.getByRole("button", { name: /upload photo or pdf/i });
-    fireEvent.click(uploadBtn);
+    // Find the upload label (uses label+input pattern, not a button)
+    const uploadLabel = screen.getByLabelText(/upload photo or pdf/i);
+    expect(uploadLabel).toBeInTheDocument();
   });
 
   // ---- PANTRY CHANGE HANDLER ----
