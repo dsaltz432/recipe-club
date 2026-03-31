@@ -61,18 +61,22 @@ test('photo lightbox opens and closes when clicking a recipe photo', async ({ pa
   // Wait for recipes to load (any content)
   await page.waitForTimeout(2000);
 
-  // Check if the seeded recipe with a photo is present (requires npm run dev:reset)
-  const photoButton = page.getByRole('button', { name: /view photo 1/i }).first();
-  const hasPhotoButton = (await photoButton.count()) > 0;
+  // Check if the seeded recipe is present (requires npm run dev:reset)
+  const recipeCard = page.locator('text=Lemon Herb Salmon').first();
+  const hasRecipe = (await recipeCard.count()) > 0;
 
-  if (!hasPhotoButton) {
-    // Seed data not applied — skip lightbox interaction but verify page loaded
+  if (!hasRecipe) {
     await expect(page.getByRole('tab', { name: /recipes/i })).toBeVisible();
-    console.log('Skipping lightbox click test: no recipe photos found. Run npm run dev:reset to seed photo data.');
+    console.log('Skipping lightbox click test: seeded recipe not found. Run npm run dev:reset to seed photo data.');
     return;
   }
 
+  // Expand the recipe card to reveal notes/photos
+  await page.getByRole('button', { name: /show more/i }).first().click();
+
   // Click the photo thumbnail to open the lightbox
+  const photoButton = page.getByRole('button', { name: /view photo 1/i }).first();
+  await photoButton.waitFor({ timeout: 3000 });
   await photoButton.click();
 
   // Lightbox should be visible with a close button
