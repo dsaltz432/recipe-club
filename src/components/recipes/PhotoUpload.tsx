@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X, Image as ImageIcon, Loader2, FileText } from "lucide-react";
@@ -17,7 +18,6 @@ const PhotoUpload = ({
   maxPhotos = 5,
 }: PhotoUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -71,9 +71,7 @@ const PhotoUpload = ({
       );
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      e.target.value = "";
     }
   };
 
@@ -107,12 +105,13 @@ const PhotoUpload = ({
           Files ({photos.length}/{maxPhotos})
         </span>
         {photos.length < maxPhotos && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+          <label
+            aria-label="Upload files"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "cursor-pointer",
+              isUploading && "pointer-events-none opacity-50"
+            )}
           >
             {isUploading ? (
               <>
@@ -125,22 +124,22 @@ const PhotoUpload = ({
                 Upload Files
               </>
             )}
-          </Button>
+            <input
+              type="file"
+              accept="image/*,.pdf,application/pdf"
+              multiple
+              onChange={handleFileSelect}
+              disabled={isUploading}
+              className="sr-only"
+            />
+          </label>
         )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.pdf,application/pdf"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-        />
       </div>
 
       {photos.length === 0 ? (
-        <div
-          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-purple/50 transition-colors"
-          onClick={() => fileInputRef.current?.click()}
+        <label
+          aria-label="Click to upload photos or PDFs"
+          className="block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-purple/50 transition-colors"
         >
           <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -149,7 +148,15 @@ const PhotoUpload = ({
           <p className="text-xs text-muted-foreground mt-1">
             Max {maxPhotos} files, 5MB each
           </p>
-        </div>
+          <input
+            type="file"
+            accept="image/*,.pdf,application/pdf"
+            multiple
+            onChange={handleFileSelect}
+            disabled={isUploading}
+            className="sr-only"
+          />
+        </label>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {photos.map((photo, index) => {

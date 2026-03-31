@@ -72,7 +72,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.getByRole("button", { name: /upload files/i })).toBeInTheDocument();
+    expect(screen.getByText("Upload Files")).toBeInTheDocument();
   });
 
   it("hides upload button when max photos reached", () => {
@@ -88,7 +88,7 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
     );
 
-    expect(screen.queryByRole("button", { name: /upload files/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Upload Files")).not.toBeInTheDocument();
   });
 
   it("renders photo grid when photos exist", () => {
@@ -365,16 +365,11 @@ describe("PhotoUpload", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    const emptyState = screen.getByText(/click to upload photos or pdfs/i).closest("div");
-    expect(emptyState).toBeInTheDocument();
-
-    // Check that clicking the area would trigger file input
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const clickSpy = vi.spyOn(input, "click");
-
-    fireEvent.click(emptyState!);
-
-    expect(clickSpy).toHaveBeenCalled();
+    // The drop zone is a <label> wrapping a file input — clicking it natively opens the picker
+    const dropZoneText = screen.getByText(/click to upload photos or pdfs/i);
+    const dropZoneLabel = dropZoneText.closest("label");
+    expect(dropZoneLabel).toBeInTheDocument();
+    expect(dropZoneLabel?.querySelector('input[type="file"]')).toBeInTheDocument();
   });
 
   it("handles successful PDF upload", async () => {
@@ -497,13 +492,11 @@ describe("PhotoUpload - Error Handling", () => {
       <PhotoUpload photos={[]} onPhotosChange={mockOnPhotosChange} />
     );
 
-    const uploadButton = screen.getByRole("button", { name: /upload files/i });
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const clickSpy = vi.spyOn(input, "click");
-
-    fireEvent.click(uploadButton);
-
-    expect(clickSpy).toHaveBeenCalled();
+    // The upload button is a <label> wrapping a file input — clicking it natively opens the picker
+    const uploadText = screen.getByText("Upload Files");
+    const uploadLabel = uploadText.closest("label");
+    expect(uploadLabel).toBeInTheDocument();
+    expect(uploadLabel?.querySelector('input[type="file"]')).toBeInTheDocument();
   });
 
   it("handles unmount during upload gracefully (null ref)", async () => {
