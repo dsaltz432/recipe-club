@@ -62,3 +62,19 @@ INSERT INTO ingredients (name, in_bank, used_count, color) VALUES
   ('Avocado', true, 0, '#568203'),
   ('Cauliflower', true, 0, '#FFFDD0'),
   ('Black Beans', false, 1, '#3D0C02');
+
+-- Seed a club event with a recipe and a photo note for e2e photo lightbox testing
+INSERT INTO scheduled_events (id, type, status, title, event_date, created_by) VALUES
+  ('00000000-0000-0000-0000-000000000010', 'club', 'completed', 'Spring Feast', '2026-01-15', '00000000-0000-0000-0000-000000000002')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO recipes (id, name, url, event_id, created_by) VALUES
+  ('00000000-0000-0000-0000-000000000020', 'Lemon Herb Salmon', 'https://example.com/salmon', '00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000002')
+ON CONFLICT (id) DO NOTHING;
+
+-- Recipe note with a photo — used to test the photo lightbox in e2e tests
+INSERT INTO recipe_notes (id, recipe_id, user_id, notes, photos) VALUES
+  ('00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000002',
+   'Turned out great!',
+   ARRAY['https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400'])
+ON CONFLICT (id) DO NOTHING;
