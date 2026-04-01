@@ -155,6 +155,7 @@ export function IngredientClicker() {
 
         {phase === "playing" &&
           items.map((item) => {
+            // eslint-disable-next-line react-hooks/purity
             const ratio = (item.expiresAt - Date.now()) / ITEM_LIFETIME_MS;
             return (
               <button

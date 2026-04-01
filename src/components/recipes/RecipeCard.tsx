@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users, CalendarCheck } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
@@ -340,6 +340,12 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3 text-purple-500" />
               <span>{content.servings}</span>
+            </span>
+          )}
+          {recipe.eventDate && !recipe.isPersonal && (
+            <span className="flex items-center gap-1 text-purple-600">
+              <CalendarCheck className="h-3 w-3" />
+              <span>Cooked {new Date(recipe.eventDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
             </span>
           )}
         </div>

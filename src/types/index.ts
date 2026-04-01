@@ -27,6 +27,7 @@ export interface Recipe {
   // Joined data
   createdByName?: string;
   createdByAvatar?: string;
+  eventDate?: string;
   // Aggregated data (populated by joins)
   notesCount?: number;
   contributors?: string[];

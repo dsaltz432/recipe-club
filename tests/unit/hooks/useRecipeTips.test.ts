@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 const mockDelete = vi.fn();
-const mockEqDelete = vi.fn(() => ({ eq: mockDelete }));
+
 const mockInsert = vi.fn();
 const mockOrderAsc = vi.fn();
 const mockEqSelect = vi.fn(() => ({ order: mockOrderAsc }));

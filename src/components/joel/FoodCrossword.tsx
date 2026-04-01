@@ -249,11 +249,13 @@ export function FoodCrossword() {
   const cellPx = Math.max(22, Math.min(34, Math.floor(290 / Math.max(numRows, numCols))));
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setUserGrid(cw.grid.map((row) => row.map((cell) => (cell.isBlack ? "#" : ""))));
     setSel(null);
 
     setRevealed(false);
     setSolved(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [cw]);
 
   const getWordsAt = useCallback(

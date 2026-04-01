@@ -2345,6 +2345,125 @@ describe("RecipeHub - Sort Options", () => {
       expect(screen.getByText("Recipe B")).toBeInTheDocument();
     });
   });
+
+  it("sorts by recently cooked when selected", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") {
+        return createMockQueryBuilder([
+          {
+            id: "recipe-1",
+            name: "Old Dish",
+            url: null,
+            event_id: "event-1",
+            ingredient_id: null,
+            created_by: null,
+            created_at: "2025-03-01T00:00:00Z",
+            ingredients: null,
+            profiles: null,
+            scheduled_events: { type: "club", event_date: "2025-01-10" },
+          },
+          {
+            id: "recipe-2",
+            name: "Fresh Dish",
+            url: null,
+            event_id: "event-2",
+            ingredient_id: null,
+            created_by: null,
+            created_at: "2025-01-01T00:00:00Z",
+            ingredients: null,
+            profiles: null,
+            scheduled_events: { type: "club", event_date: "2025-06-15" },
+          },
+          {
+            id: "recipe-3",
+            name: "No Date Dish",
+            url: null,
+            event_id: "event-3",
+            ingredient_id: null,
+            created_by: null,
+            created_at: "2025-02-01T00:00:00Z",
+            ingredients: null,
+            profiles: null,
+            scheduled_events: { type: "club", event_date: null },
+          },
+        ]);
+      }
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Fresh Dish")).toBeInTheDocument();
+    });
+
+    // Open sort dropdown and select Recently Cooked
+    fireEvent.click(screen.getByText("Newest First"));
+    await waitFor(() => {
+      const option = screen.getByRole("option", { name: "Recently Cooked" });
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => {
+      const cards = screen.getAllByRole("heading", { level: 3 });
+      expect(cards[0].textContent).toBe("Fresh Dish");   // event_date: 2025-06-15
+      expect(cards[1].textContent).toBe("Old Dish");     // event_date: 2025-01-10
+      expect(cards[2].textContent).toBe("No Date Dish"); // no event_date → 0
+    });
+  });
+
+  it("shows 'Recently Cooked' option only for club sub-tab", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Newest First")).toBeInTheDocument();
+    });
+
+    // On club tab: Recently Cooked should be present in dropdown
+    fireEvent.click(screen.getByText("Newest First"));
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Recently Cooked" })).toBeInTheDocument();
+    });
+    // Close dropdown
+    fireEvent.keyDown(document, { key: "Escape" });
+  });
+
+  it("resets recently_cooked sort when switching to personal tab", async () => {
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData.map((r) => ({ ...r, scheduled_events: { type: "club", event_date: "2025-06-01" } })));
+      if (table === "recipe_notes") return createMockQueryBuilder(mockNotesData);
+      if (table === "recipe_ratings") return createMockQueryBuilder(mockRatingsData);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Zesty Salmon")).toBeInTheDocument();
+    });
+
+    // Select Recently Cooked sort from the desktop dropdown trigger
+    const sortTriggers = screen.getAllByText("Newest First");
+    fireEvent.click(sortTriggers[0]);
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("option", { name: "Recently Cooked" }));
+    });
+
+    // After selecting, the dropdown closes; verify sort changed by finding "Recently Cooked"
+    // text in the select trigger (it updates to reflect the active sort)
+    await waitFor(() => {
+      expect(screen.getAllByText("Recently Cooked")[0]).toBeInTheDocument();
+    });
+
+    // Switch to personal tab — sort should reset to Newest First
+    fireEvent.click(screen.getByText(/My Recipes/));
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Newest First")[0]).toBeInTheDocument();
+    });
+  });
 });
 
 describe("RecipeHub - Edit Personal Recipe", () => {
