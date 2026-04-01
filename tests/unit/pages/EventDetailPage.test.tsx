@@ -203,12 +203,8 @@ vi.mock("@/components/events/EventRecipesTab", () => ({
   },
 }));
 
-let capturedGroceryProps: { onParseRecipe?: (recipeId: string) => void } = {};
 vi.mock("@/components/recipes/GroceryListSection", () => ({
-  default: (props: Record<string, unknown>) => {
-    capturedGroceryProps = props as { onParseRecipe?: (recipeId: string) => void };
-    return <div data-testid="grocery-section">GroceryListSection</div>;
-  },
+  default: () => <div data-testid="grocery-section">GroceryListSection</div>,
 }));
 
 vi.mock("@/components/pantry/PantryDialog", () => ({
@@ -370,7 +366,6 @@ describe("EventDetailPage", () => {
     vi.clearAllMocks();
     mockParams = { eventId: "event-1" };
     capturedPantryProps = {};
-    capturedGroceryProps = {};
     capturedPhotoUploadProps = {};
     capturedRecipesTabProps = {};
     setupDefaultMocks();

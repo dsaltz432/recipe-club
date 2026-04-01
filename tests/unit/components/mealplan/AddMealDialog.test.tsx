@@ -682,29 +682,33 @@ describe("AddMealDialog", () => {
         expect(screen.getByText("my-recipe-photo.jpg")).toBeInTheDocument();
       });
 
-      // Upload button should be disabled and show filename instead of "Upload" text
+      // The upload label uses pointer-events-none / opacity-50 to visually disable
+      // it (a <label> element cannot have the HTML disabled attribute).
       const uploadBtn = screen.getByLabelText("Upload photo or PDF");
-      expect(uploadBtn).toBeDisabled();
+      expect(uploadBtn).toHaveClass("pointer-events-none");
+      expect(uploadBtn).toHaveClass("opacity-50");
 
       // Resolve the upload
       resolveUpload("https://storage.example.com/test.jpg");
 
-      // After upload completes, button re-enables
+      // After upload completes, the disabled classes are removed
       await waitFor(() => {
-        expect(screen.getByLabelText("Upload photo or PDF")).not.toBeDisabled();
+        const btn = screen.getByLabelText("Upload photo or PDF");
+        expect(btn).not.toHaveClass("pointer-events-none");
       });
     });
 
-    it("triggers file input when upload button is clicked", () => {
+    it("upload label is connected to the file input via htmlFor", () => {
+      // Clicking the label triggers the file input in real browsers via the
+      // htmlFor / id connection. JSDOM does not simulate this behaviour, so we
+      // verify the connection directly instead.
       render(<AddMealDialog {...defaultProps} />);
       switchToUploadMode();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      const clickSpy = vi.spyOn(fileInput, "click");
+      const label = screen.getByLabelText("Upload photo or PDF");
 
-      fireEvent.click(screen.getByLabelText("Upload photo or PDF"));
-
-      expect(clickSpy).toHaveBeenCalled();
+      expect(label).toHaveAttribute("for", fileInput.id);
     });
 
     it("uploads a file and sets URL", async () => {

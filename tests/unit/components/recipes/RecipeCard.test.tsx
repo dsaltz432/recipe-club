@@ -1303,3 +1303,33 @@ describe("RecipeCard - photo lightbox", () => {
     expect(bobBtns).toHaveLength(2);
   });
 });
+
+describe("RecipeCard - Last Cooked chip", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows 'Cooked [month year]' chip when recipe has eventDate and is not personal", () => {
+    const recipe = createMockRecipe({ eventDate: "2025-06-15", isPersonal: false });
+    render(<RecipeCard recipe={recipe} />);
+    expect(screen.getByText(/Cooked Jun 2025/)).toBeInTheDocument();
+  });
+
+  it("does not show chip when recipe has no eventDate", () => {
+    const recipe = createMockRecipe({ eventDate: undefined, isPersonal: false });
+    render(<RecipeCard recipe={recipe} />);
+    expect(screen.queryByText(/Cooked/)).not.toBeInTheDocument();
+  });
+
+  it("does not show chip when recipe is personal (isPersonal: true)", () => {
+    const recipe = createMockRecipe({ eventDate: "2025-06-15", isPersonal: true });
+    render(<RecipeCard recipe={recipe} />);
+    expect(screen.queryByText(/Cooked/)).not.toBeInTheDocument();
+  });
+
+  it("formats eventDate correctly for different months", () => {
+    const recipe = createMockRecipe({ eventDate: "2025-12-01", isPersonal: false });
+    render(<RecipeCard recipe={recipe} />);
+    expect(screen.getByText(/Cooked Dec 2025/)).toBeInTheDocument();
+  });
+});

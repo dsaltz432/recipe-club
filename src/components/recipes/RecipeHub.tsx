@@ -89,7 +89,7 @@ interface RecipeContentRow {
 }
 
 type RecipeSubTab = "club" | "personal";
-type SortOption = "newest" | "alphabetical" | "highest_rated";
+type SortOption = "newest" | "alphabetical" | "highest_rated" | "recently_cooked";
 type TimeFilter = "all" | "under15" | "under30" | "under60" | "over60";
 type RatingFilter = "all" | "rated" | "3plus" | "4plus" | "5only";
 
@@ -106,7 +106,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [searchQuery, setSearchQuery] = useState("");
   const [ingredientFilter, setIngredientFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [subTab, setSubTab] = useState<RecipeSubTab>(isClubMember ? "club" : "personal");
+  const [subTab, setSubTab] = useState<RecipeSubTab>(isClubMember === false ? "personal" : "club");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
@@ -231,16 +231,17 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         *,
         ingredients (name, color),
         profiles:created_by (name, avatar_url),
-        scheduled_events!event_id (type)
+        scheduled_events!event_id (type, event_date)
       `)
       .not("event_id", "is", null)
       .order("created_at", { ascending: false });
 
     if (recipesError) throw recipesError;
 
-    // Only include recipes linked to club events
+    // Only include recipes NOT linked to personal events (null scheduled_events means the
+    // event was deleted — keep those in the club tab rather than hiding them)
     const clubRecipesData = (recipesData || []).filter(
-      (r) => (r.scheduled_events as { type: string } | null)?.type === "club"
+      (r) => (r.scheduled_events as { type: string; event_date?: string } | null)?.type !== "personal"
     );
 
     // Load notes and ratings in parallel (both depend on recipe IDs)
@@ -296,6 +297,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       const ingredientName = r.ingredients?.name;
       const ingredientColor = r.ingredients?.color || (ingredientName ? getIngredientColor(ingredientName) : undefined);
       const creatorProfile = r.profiles as { name: string | null; avatar_url: string | null } | null;
+      const eventInfo = r.scheduled_events as { type: string; event_date?: string } | null;
       const ratingSummary = ratingsByRecipe.get(r.id);
 
       return {
@@ -308,6 +310,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         createdAt: r.created_at ?? undefined,
         createdByName: creatorProfile?.name || undefined,
         createdByAvatar: creatorProfile?.avatar_url || undefined,
+        eventDate: eventInfo?.event_date ?? undefined,
         notes,
         ingredientName,
         ingredientColor,
@@ -845,6 +848,12 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       const ratingB = b.ratingSummary?.averageRating ?? 0;
       return ratingB - ratingA;
     }
+    if (sortOption === "recently_cooked") {
+      // Sort by event date descending; recipes without a date fall to the bottom
+      const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
+      const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+      return dateB - dateA;
+    }
     // "newest" — by created_at descending (already default from DB, but sort explicitly)
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
@@ -885,7 +894,10 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         <Button
           variant={subTab === "personal" ? "default" : "outline"}
           size="sm"
-          onClick={() => setSubTab("personal")}
+          onClick={() => {
+            setSubTab("personal");
+            if (sortOption === "recently_cooked") setSortOption("newest");
+          }}
           className={subTab === "personal" ? "bg-purple hover:bg-purple-dark" : ""}
         >
           My Recipes{personalCount !== null ? ` (${personalCount})` : ""}
@@ -953,6 +965,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     <SelectItem value="newest">Newest First</SelectItem>
                     <SelectItem value="alphabetical">Alphabetical (A-Z)</SelectItem>
                     <SelectItem value="highest_rated">Highest Rated</SelectItem>
+                    {subTab === "club" && (
+                      <SelectItem value="recently_cooked">Recently Cooked</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 {subTab === "club" && (
@@ -999,6 +1014,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 <SelectItem value="newest">Newest First</SelectItem>
                 <SelectItem value="alphabetical">Alphabetical (A-Z)</SelectItem>
                 <SelectItem value="highest_rated">Highest Rated</SelectItem>
+                {subTab === "club" && (
+                  <SelectItem value="recently_cooked">Recently Cooked</SelectItem>
+                )}
               </SelectContent>
             </Select>
             {subTab === "club" && (
@@ -1097,6 +1115,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
               newest: "",
               alphabetical: "A–Z",
               highest_rated: "Highest Rated",
+              recently_cooked: "Recently Cooked",
             };
             activeFilters.push({
               key: "sort",

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-const { mockMaybeSingle, mockEqHash, mockEqEvent, mockSelect, mockIngredientsIn, mockFrom, mockInvoke } =
+const { mockMaybeSingle, mockIngredientsIn, mockFrom, mockInvoke } =
   vi.hoisted(() => {
     const mockMaybeSingle = vi.fn();
     const mockEqHash = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));

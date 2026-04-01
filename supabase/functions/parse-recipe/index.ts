@@ -84,6 +84,7 @@ async function trySpoonacular(recipeUrl: string, recipeName: string): Promise<st
       return null;
     }
     // deno-lint-ignore no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await res.json();
     if (data.id === -1) {
       console.log(`[parse-recipe] Spoonacular could not extract recipe (id: -1) for ${recipeUrl}`);

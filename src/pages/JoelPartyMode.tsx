@@ -113,7 +113,7 @@ export default function JoelPartyMode() {
     if (musicPlaying) {
       audioRef.current.play().catch(() => {});
     }
-  }, [songIndex]);
+  }, [songIndex, musicPlaying]);
 
   const changeMusic = () => {
     setSongIndex((i) => (i + 1) % SONGS.length);

@@ -47,13 +47,6 @@ const mockRecipesChain = (recipes: unknown[]) => {
   return chain;
 };
 
-const mockDeleteChain = (result: { error: null | object } = { error: null }) => {
-  const chain: Record<string, unknown> = {};
-  chain.delete = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockResolvedValue(result);
-  return chain;
-};
-
 const defaultFromMock = (events: unknown[], recipes: unknown[] = []) =>
   (table: string) => {
     if (table === "scheduled_events") return mockEventsChain(events);
