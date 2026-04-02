@@ -956,8 +956,14 @@ describe("MealPlanPage", () => {
       expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
     });
 
-    // Click the card (whole card is clickable)
+    // Click the slot card to open the actions dialog
     fireEvent.click(screen.getAllByText("Pancakes")[0]);
+
+    // Click "View Details" in the actions dialog
+    await waitFor(() => {
+      expect(screen.getByText("View Details")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("View Details"));
 
     expect(mockNavigate).toHaveBeenCalledWith("/meals/event-existing-123");
   });
@@ -1005,8 +1011,13 @@ describe("MealPlanPage", () => {
       expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
     });
 
-    // Click the card (whole card is clickable)
+    // Click the slot card to open the actions dialog, then click "View Details"
     fireEvent.click(screen.getAllByText("Pancakes")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("View Details")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("View Details"));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-456");
@@ -1070,8 +1081,13 @@ describe("MealPlanPage", () => {
       expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
     });
 
-    // Click the card on the breakfast slot (day 0) — whole card is clickable
+    // Click the slot card to open the actions dialog, then click "View Details"
     fireEvent.click(screen.getAllByText("Pancakes")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("View Details")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("View Details"));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/meals/event-new-789");
@@ -1123,8 +1139,13 @@ describe("MealPlanPage", () => {
       expect(screen.getAllByText("Pancakes")[0]).toBeInTheDocument();
     });
 
-    // Click the card (whole card is clickable)
+    // Click the slot card to open the actions dialog, then click "View Details"
     fireEvent.click(screen.getAllByText("Pancakes")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("View Details")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("View Details"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to open meal details");

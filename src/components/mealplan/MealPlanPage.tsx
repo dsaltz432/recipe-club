@@ -7,6 +7,7 @@ import ParseProgressDialog from "./ParseProgressDialog";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
 import AddMealDialog from "./AddMealDialog";
+import MealSlotActionsDialog from "./MealSlotActionsDialog";
 import GroceryListSection from "@/components/recipes/GroceryListSection";
 import PantrySection from "@/components/pantry/PantrySection";
 import { loadUserPreferences } from "@/lib/userPreferences";
@@ -44,6 +45,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pendingSlot, setPendingSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
+  const [slotActionsSlot, setSlotActionsSlot] = useState<{ dayOfWeek: number; mealType: string } | null>(null);
   const [viewTab, setViewTab] = useState<"plan" | "groceries" | "pantry">("plan");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 
@@ -297,7 +299,13 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   };
 
-  const handleViewMealEvent = async (dayOfWeek: number, mealType: string) => {
+  // Open the slot actions dialog when clicking a filled slot
+  const handleOpenSlotActions = (dayOfWeek: number, mealType: string) => {
+    setSlotActionsSlot({ dayOfWeek, mealType });
+  };
+
+  // Navigate to the event detail page, creating one if needed
+  const handleNavigateToEvent = async (dayOfWeek: number, mealType: string) => {
     const slotItems = items.filter(
       (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
     );
@@ -351,6 +359,83 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
       console.error("Error creating meal event:", error);
       toast.error("Failed to open meal details");
     }
+  };
+
+  const handleRemoveMealItem = async (itemId: string) => {
+    const { error } = await supabase
+      .from("meal_plan_items")
+      .delete()
+      .eq("id", itemId);
+
+    if (error) {
+      toast.error("Failed to remove meal");
+      return;
+    }
+
+    setItems((prev) => {
+      const updated = prev.filter((item) => item.id !== itemId);
+      // Close the actions dialog if the slot is now empty
+      if (slotActionsSlot) {
+        const remaining = updated.filter(
+          (item) =>
+            item.dayOfWeek === slotActionsSlot.dayOfWeek &&
+            item.mealType === slotActionsSlot.mealType
+        );
+        if (remaining.length === 0) {
+          setSlotActionsSlot(null);
+        }
+      }
+      return updated;
+    });
+    refreshGroceries();
+  };
+
+  const handleMarkCookedSlot = async (dayOfWeek: number, mealType: string) => {
+    const slotItems = items.filter(
+      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
+    );
+    const itemIds = slotItems.map((i) => i.id);
+    const cookedAt = new Date().toISOString();
+
+    const { error } = await supabase
+      .from("meal_plan_items")
+      .update({ cooked_at: cookedAt } as Record<string, unknown>)
+      .in("id", itemIds);
+
+    if (error) {
+      toast.error("Failed to mark meals as cooked");
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        itemIds.includes(item.id) ? { ...item, cookedAt } : item
+      )
+    );
+    toast.success("Marked as cooked");
+  };
+
+  const handleUndoCookedSlot = async (dayOfWeek: number, mealType: string) => {
+    const slotItems = items.filter(
+      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
+    );
+    const itemIds = slotItems.map((i) => i.id);
+
+    const { error } = await supabase
+      .from("meal_plan_items")
+      .update({ cooked_at: null } as Record<string, unknown>)
+      .in("id", itemIds);
+
+    if (error) {
+      toast.error("Failed to undo cooked status");
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        itemIds.includes(item.id) ? { ...item, cookedAt: undefined } : item
+      )
+    );
   };
 
   if (isLoading) {
@@ -423,7 +508,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             items={items}
             weekStart={weekStart}
             onAddMeal={handleAddMeal}
-            onViewMealEvent={handleViewMealEvent}
+            onViewMealEvent={handleOpenSlotActions}
             mealTypes={userPreferences?.mealTypes}
             weekStartDay={userPreferences?.weekStartDay}
           />
@@ -437,6 +522,34 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               onAddCustomMeal={handleAddCustomMeal}
               onAddRecipeMeal={handleAddRecipeMeal}
               onAddManualMeal={handleAddManualMeal}
+            />
+          )}
+
+          {slotActionsSlot && (
+            <MealSlotActionsDialog
+              open={!!slotActionsSlot}
+              onOpenChange={(open) => { if (!open) setSlotActionsSlot(null); }}
+              items={items.filter(
+                (i) =>
+                  i.dayOfWeek === slotActionsSlot.dayOfWeek &&
+                  i.mealType === slotActionsSlot.mealType
+              )}
+              dayOfWeek={slotActionsSlot.dayOfWeek}
+              mealType={slotActionsSlot.mealType}
+              onRemoveItem={handleRemoveMealItem}
+              onMarkCooked={() =>
+                handleMarkCookedSlot(slotActionsSlot.dayOfWeek, slotActionsSlot.mealType)
+              }
+              onUndoCooked={() =>
+                handleUndoCookedSlot(slotActionsSlot.dayOfWeek, slotActionsSlot.mealType)
+              }
+              onViewDetails={() => {
+                setSlotActionsSlot(null);
+                handleNavigateToEvent(slotActionsSlot.dayOfWeek, slotActionsSlot.mealType);
+              }}
+              onAddMeal={() =>
+                handleAddMeal(slotActionsSlot.dayOfWeek, slotActionsSlot.mealType)
+              }
             />
           )}
         </>
