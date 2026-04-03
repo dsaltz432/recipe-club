@@ -37,8 +37,8 @@
 - `cn()` utility concatenates conditional color classes from `getRecipeColor`
 
 ## Current Status
-**Last Updated:** 2026-04-02
-**Tasks Completed:** 19
+**Last Updated:** 2026-04-03
+**Tasks Completed:** 20
 **Current Task:** Complete
 
 ### generate-cook-timeline edge function pattern
@@ -80,6 +80,35 @@
 ---
 
 ## Session Log
+
+## [2026-04-03] — Recently Cooked history widget on Home tab
+
+### What was implemented
+- Created `src/components/home/RecentlyCookedCard.tsx` — card showing last 5 meals with `cooked_at IS NOT NULL` from `meal_plan_items`, with relative date labels (Today/Yesterday/N days ago/date), meal-type color badges, loading skeleton, and empty state
+- Updated `src/components/home/HomeSection.tsx` — imported and rendered `RecentlyCookedCard` below `WeeklyMealPreview` for all logged-in users
+- Created `tests/unit/components/home/RecentlyCookedCard.test.tsx` with 20 tests
+
+### Files changed
+- `src/components/home/RecentlyCookedCard.tsx` (new)
+- `src/components/home/HomeSection.tsx` (import + render)
+- `tests/unit/components/home/RecentlyCookedCard.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: 2055/2055 pass (e2e smoke.spec.ts excluded — pre-existing Playwright/Vitest conflict)
+- Lint: 0 errors
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/25
+
+### Learnings for future iterations
+- Supabase join filter `.eq("meal_plans.user_id", userId)` on a `!inner` join requires `supabase as any` cast since the generated types don't know about cross-table eq filtering
+- Query chain for this pattern: `from → select("..., meal_plans!inner(user_id)") → eq("meal_plans.user_id", ...) → not("cooked_at", "is", null) → order → limit`
+- In tests, a single `makeQueryChain` helper that chains all methods on itself (each method returns `chain`) is cleaner than nesting separate builder mocks
+- `isToday` / `isYesterday` from date-fns work correctly with `parseISO` — always parse ISO strings before passing to these helpers
+- Loading skeleton test: check for presence of any skeleton element rather than counting exact skeletons (avoids fragility if count changes)
+
+---
 
 ## [2026-04-02] — Meal Slot Actions Dialog
 
