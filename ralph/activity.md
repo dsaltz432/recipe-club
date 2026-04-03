@@ -37,8 +37,8 @@
 - `cn()` utility concatenates conditional color classes from `getRecipeColor`
 
 ## Current Status
-**Last Updated:** 2026-03-08
-**Tasks Completed:** 17
+**Last Updated:** 2026-04-02
+**Tasks Completed:** 19
 **Current Task:** Complete
 
 ### generate-cook-timeline edge function pattern
@@ -80,6 +80,36 @@
 ---
 
 ## Session Log
+
+## [2026-04-02] — Meal Slot Actions Dialog
+
+### What was implemented
+- Created `src/components/mealplan/MealSlotActionsDialog.tsx` — dialog shown when tapping a filled meal slot
+- Four actions: Remove individual meal (auto-closes on empty slot), Mark as Cooked / Undo Cooked (sets cooked_at), Add Another Meal, View Details (navigate)
+- Modified `MealPlanPage.tsx`: added `slotActionsSlot` state, `handleOpenSlotActions` (opens dialog on slot click), `handleNavigateToEvent` (extracted from old handleViewMealEvent), `handleRemoveMealItem`, `handleMarkCookedSlot`, `handleUndoCookedSlot`
+- Updated 4 existing `MealPlanPage.test.tsx` tests to use two-step flow (click slot → View Details)
+- Created `tests/unit/components/mealplan/MealSlotActionsDialog.test.tsx` with 19 tests
+
+### Files changed
+- `src/components/mealplan/MealSlotActionsDialog.tsx` (new)
+- `src/components/mealplan/MealPlanPage.tsx` (modified)
+- `tests/unit/components/mealplan/MealSlotActionsDialog.test.tsx` (new)
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` (4 tests updated)
+
+### Quality checks
+- Build: pass
+- Tests: 2054/2054 pass (e2e smoke.spec.ts excluded — pre-existing Playwright/Vitest conflict)
+- Lint: 0 errors
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/24
+
+### Learnings for future iterations
+- When a slot click previously navigated directly, any tests covering that behavior need updating to the two-step flow (click slot → click "View Details")
+- `setItems` state updater can reference `slotActionsSlot` from outer closure to conditionally close dialog when slot becomes empty — but be careful about stale closures; compute remaining items from the updated `prev` array, not from `items` state directly
+- `handleNavigateToEvent` can be called from the dialog's onViewDetails callback after `setSlotActionsSlot(null)` to avoid dialog closing animation conflicts with navigation
+
+---
 
 ## [2026-03-08 22:15] — US-017: Create backfill re-parse script
 
@@ -533,5 +563,47 @@
 ### Learnings for future iterations
 - The Edit tool may fail when the old_string contains template literal quotes — use node -e with fs.readFileSync/writeFileSync as fallback
 - Guidance belongs AFTER the JSON schema block (after the closing `}`), not inside the schema example
+
+---
+
+## [2026-04-01] — Last Cooked chip on club recipe cards + Recently Cooked sort
+
+### What was implemented
+- Added `eventDate?: string` to `Recipe` type in `src/types/index.ts`
+- Updated RecipeHub Supabase query to fetch `event_date` from `scheduled_events!event_id (type, event_date)` join
+- Mapped `eventDate` in recipe transformation (cast joined data to typed interface)
+- Added "Cooked [Mon YYYY]" chip to `RecipeCard` with `CalendarCheck` icon (visible on club recipes with `eventDate`)
+- Used `new Date(eventDate + "T00:00:00")` to avoid UTC offset date-display bugs
+- Added "Recently Cooked" sort option to RecipeHub club sub-tab (sorts by `eventDate` desc, null dates fall to bottom)
+- Switching to personal tab resets `recently_cooked` sort back to `newest`
+- Fixed default sub-tab logic: `isClubMember === false ? "personal" : "club"` (undefined → club, which fixed 95+ test failures)
+- Fixed club filter: `type !== "personal"` instead of `type === "club"` (includes deleted-event recipes)
+- Fixed pre-existing lint errors: unused vars in test files (remove instead of prefix), react-hooks/set-state-in-effect, react-hooks/purity, missing useEffect dep, @typescript-eslint/no-explicit-any
+- Fixed pre-existing test failures: label disabled attribute (use CSS class checks), JSDOM label→input click (check htmlFor attribute)
+
+### Files changed
+- `src/types/index.ts` — added `eventDate`
+- `src/components/recipes/RecipeHub.tsx` — query join, filter, mapping, sort, UI
+- `src/components/recipes/RecipeCard.tsx` — Last Cooked chip
+- `src/pages/JoelPartyMode.tsx` — added `musicPlaying` to useEffect deps
+- `src/components/joel/FoodCrossword.tsx` — eslint-disable for set-state-in-effect
+- `src/components/joel/IngredientClicker.tsx` — eslint-disable for purity
+- `supabase/functions/parse-recipe/index.ts` — eslint-disable for no-explicit-any
+- 8 test files — new tests + pre-existing fixes
+
+### Quality checks
+- Build: pass
+- Tests: 2035/2035 pass
+- Lint: 0 errors, 0 warnings
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/23
+
+### Learnings for future iterations
+- `eslint-disable-next-line` only suppresses the NEXT line — for useEffect body, use `/* eslint-disable */` / `/* eslint-enable */` block comments
+- Unused variable fixes: prefer removing the variable over `_` prefix (TypeScript ESLint's varsIgnorePattern may not match destructured renames)
+- RecipeHub's `isClubMember` can be `undefined` when not passed — treat `undefined` as club member (default to club tab)
+- Club filter should be `!== "personal"` not `=== "club"` to handle null scheduled_events (deleted events)
+- Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
