@@ -37,8 +37,8 @@
 - `cn()` utility concatenates conditional color classes from `getRecipeColor`
 
 ## Current Status
-**Last Updated:** 2026-04-03
-**Tasks Completed:** 20
+**Last Updated:** 2026-04-04
+**Tasks Completed:** 21
 **Current Task:** Complete
 
 ### generate-cook-timeline edge function pattern
@@ -636,3 +636,31 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+## [2026-04-04] — "Add to Meal Plan" popover on recipe cards
+
+### What was implemented
+- Created `src/lib/mealPlanUtils.ts` — exports `buildUpcomingDays()` (7-day rolling window from today with Today/Tomorrow labels, weekStartStr per day) and `getWeekStartStr()` helper; kept in lib to avoid react-refresh lint error from exporting non-components alongside a component
+- Created `src/components/recipes/AddToMealPlanPopover.tsx` — Radix Popover with day selector (today + next 6 days) and meal type selector (breakfast/lunch/dinner/snack); upserts meal_plan on correct week then inserts meal_plan_item with computed sort_order; handles week boundary crossing gracefully
+- Updated `src/components/recipes/RecipeCard.tsx` — imports and renders `AddToMealPlanPopover` in the action button row whenever `userId` is provided; updated the conditional that shows the row to include `userId` as a trigger
+- Created `tests/unit/components/recipes/AddToMealPlanPopover.test.tsx` with 19 tests covering `buildUpcomingDays` unit logic and full component behavior
+
+### Files changed
+- `src/lib/mealPlanUtils.ts` (new)
+- `src/components/recipes/AddToMealPlanPopover.tsx` (new)
+- `src/components/recipes/RecipeCard.tsx` (import + render)
+- `tests/unit/components/recipes/AddToMealPlanPopover.test.tsx` (new)
+
+### Quality checks
+- Build: pass
+- Tests: 2074/2074 pass (smoke.spec.ts excluded — pre-existing Playwright/Vitest conflict)
+- Lint: 0 errors
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/26
+
+### Learnings for future iterations
+- react-refresh ESLint rule `only-export-components` fires when a file exports both a component and a non-component (e.g. a utility function); move shared helpers to `src/lib/` to keep component files clean
+- `meal_plans` and `meal_plan_items` tables are not in generated Supabase types — use `supabase as any` cast pattern consistently
+- When using index-based selection (not dayOfWeek-based), week boundaries are handled naturally since each day has its own `weekStartStr`
+- The CalendarPlus icon (lucide-react) is the right semantic icon for "add to calendar/plan" actions
