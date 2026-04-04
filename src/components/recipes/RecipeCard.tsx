@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users, CalendarCheck } from "lucide-react";
 import { toast } from "sonner";
+import AddToMealPlanPopover from "./AddToMealPlanPopover";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
 import { getLightBackgroundColor, getBorderColor, getDarkerTextColor } from "@/lib/ingredientColors";
@@ -181,7 +182,7 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
               )}
             </div>
             {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions) && (
+            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions || userId) && (
               <div className="flex items-center gap-0 -ml-1 mt-0.5">
                 {recipe.url && (
                   <a
@@ -249,6 +250,13 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                   >
                     <ChefHat className="h-3.5 w-3.5" />
                   </Button>
+                )}
+                {userId && (
+                  <AddToMealPlanPopover
+                    recipeId={recipe.id}
+                    recipeName={recipe.name}
+                    userId={userId}
+                  />
                 )}
               </div>
             )}
