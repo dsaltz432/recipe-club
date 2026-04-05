@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, UtensilsCrossed, LayoutGrid } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, LayoutGrid, Copy, Loader2 } from "lucide-react";
 import ParseProgressDialog from "./ParseProgressDialog";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
@@ -14,6 +14,7 @@ import { useGroceryList } from "@/hooks/useGroceryList";
 import { useRecipeParse } from "@/hooks/useRecipeParse";
 import type { MealPlanItem, UserPreferences } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 interface MealPlanPageProps {
   userId: string;
@@ -46,6 +47,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [viewTab, setViewTab] = useState<"plan" | "groceries" | "pantry">("plan");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
 
   const navigate = useNavigate();
 
@@ -297,6 +299,62 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     }
   };
 
+  const handleCopyFromPreviousWeek = async () => {
+    if (!planId || isCopying) return;
+    setIsCopying(true);
+    try {
+      const prevWeekStart = new Date(weekStart);
+      prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+      const prevWeekStartStr = prevWeekStart.toISOString().split("T")[0];
+
+      const { data: prevPlans } = await supabase
+        .from("meal_plans")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("week_start", prevWeekStartStr)
+        .order("created_at")
+        .limit(1);
+
+      const prevPlan = prevPlans && prevPlans.length > 0 ? prevPlans[0] : null;
+      if (!prevPlan) {
+        toast.info("No meals found in the previous week");
+        return;
+      }
+
+      const { data: prevItems } = await supabase
+        .from("meal_plan_items")
+        .select("day_of_week, meal_type, recipe_id, custom_name, custom_url, sort_order")
+        .eq("plan_id", prevPlan.id)
+        .order("sort_order");
+
+      if (!prevItems || prevItems.length === 0) {
+        toast.info("No meals found in the previous week");
+        return;
+      }
+
+      const newItems = prevItems.map((item) => ({
+        plan_id: planId,
+        day_of_week: item.day_of_week,
+        meal_type: item.meal_type,
+        recipe_id: item.recipe_id ?? null,
+        custom_name: item.custom_name ?? null,
+        custom_url: item.custom_url ?? null,
+        sort_order: item.sort_order ?? 0,
+      }));
+
+      const { error } = await supabase.from("meal_plan_items").insert(newItems);
+      if (error) throw error;
+
+      toast.success(`Copied ${newItems.length} meal${newItems.length !== 1 ? "s" : ""} from last week`);
+      loadPlan();
+    } catch (err) {
+      console.error("Error copying meal plan:", err);
+      toast.error("Failed to copy meals from last week");
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   const handleViewMealEvent = async (dayOfWeek: number, mealType: string) => {
     const slotItems = items.filter(
       (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
@@ -419,6 +477,30 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
 
       {viewTab === "plan" && (
         <>
+          {items.length === 0 && (
+            <div className="flex flex-col sm:flex-row items-center gap-3 rounded-xl border border-dashed border-purple/20 bg-purple/5 px-4 py-3">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <p className="text-sm font-medium text-gray-700">Nothing planned yet</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Add meals to the grid below, or copy your plan from last week.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-purple/30 text-purple-700 hover:bg-purple/10 hover:border-purple/50 shrink-0 gap-1.5 min-h-[44px] sm:min-h-0"
+                onClick={handleCopyFromPreviousWeek}
+                disabled={isCopying}
+              >
+                {isCopying ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                Copy from last week
+              </Button>
+            </div>
+          )}
           <MealPlanGrid
             items={items}
             weekStart={weekStart}

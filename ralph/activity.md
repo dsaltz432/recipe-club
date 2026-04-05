@@ -636,3 +636,33 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+## [2026-04-05] — Copy from previous week (meal plan)
+
+### What was implemented
+- Added "Copy from last week" feature to `MealPlanPage`
+- When the current week has no meals, a banner appears above the meal grid: "Nothing planned yet" with a "Copy from last week" button
+- Clicking the button fetches the previous week's meal plan and bulk-inserts all items into the current week
+- Shows `toast.success` with item count, `toast.info` if no previous week exists/has no meals, `toast.error` on insert failure
+- Loading state with `Loader2` spinner on the button while copying
+- `loadPlan()` called fire-and-forget after success so toast shows immediately before reload
+- Responsive layout: stacks vertically on mobile (320px), horizontal on sm+ screens
+- Purple brand palette: dashed border, muted bg, button hover states
+
+### Files changed
+- `src/components/mealplan/MealPlanPage.tsx` — added `isCopying` state, `handleCopyFromPreviousWeek` async function, empty-week banner UI
+- `tests/unit/components/mealplan/MealPlanPage.test.tsx` — 6 new tests in "Copy from last week" describe; also fixed pre-existing test isolation bug (mockLoadUserPreferences not reset in beforeEach, causing weekStartDay pollution across tests)
+
+### Quality checks
+- Build: pass
+- Tests: 2062/2062 pass
+- Lint: 0 errors
+
+### Patterns learned
+- `vi.clearAllMocks()` clears call history but NOT mock implementations — after a test overrides `mockFn.mockResolvedValue(...)`, subsequent tests inherit that implementation unless `beforeEach` explicitly resets it
+- For tests that depend on week-start date alignment, any mock that sets `weekStartDay !== 0` must be reset in `beforeEach` to avoid polluting the component's `weekStart` state calculation
+- `week_start` closure variable pattern for distinguishing current vs. previous week Supabase queries: capture `qWeekStart` in the `eq()` override, then use it in `limit()` to decide which plan ID to return
+
+### PR
+(see below)
+

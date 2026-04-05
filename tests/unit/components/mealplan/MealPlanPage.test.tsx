@@ -126,6 +126,7 @@ vi.mock("sonner", () => ({
   toast: {
     error: vi.fn(),
     success: vi.fn(),
+    info: vi.fn(),
   },
 }));
 
@@ -178,6 +179,7 @@ describe("MealPlanPage", () => {
     capturedGroceryListProps = null;
     mockGetPantryItems.mockResolvedValue([]);
     mockEnsureDefaultPantryItems.mockResolvedValue(undefined);
+    mockLoadUserPreferences.mockResolvedValue({ mealTypes: ["breakfast", "lunch", "dinner"], weekStartDay: 0, householdSize: 2 });
     mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
     mockSmartCombineIngredients.mockResolvedValue(null);
     mockLoadGroceryCache.mockResolvedValue(null);
@@ -4969,4 +4971,255 @@ describe("MealPlanPage", () => {
       });
     });
   });
+
+  describe("Copy from last week", () => {
+    // Helper: configure mocks for a plan with no items (empty week)
+    const setupEmptyWeek = () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-current");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+    };
+
+    it("shows the empty-week banner with Copy button when plan has no meals", async () => {
+      setupEmptyWeek();
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Nothing planned yet")).toBeInTheDocument();
+      });
+      expect(screen.getByRole("button", { name: /copy from last week/i })).toBeInTheDocument();
+    });
+
+    it("does not show the empty-week banner when plan has meals", async () => {
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          return createPlanMock("plan-current");
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "item-1",
+                  plan_id: "plan-current",
+                  recipe_id: "recipe-1",
+                  day_of_week: 1,
+                  meal_type: "dinner",
+                  custom_name: null,
+                  custom_url: null,
+                  sort_order: 0,
+                  recipes: { name: "Pasta", url: null },
+                },
+              ],
+              error: null,
+            }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Pasta")[0]).toBeInTheDocument();
+      });
+      expect(screen.queryByText("Nothing planned yet")).not.toBeInTheDocument();
+    });
+
+    it("copies meals from previous week and reloads on success", async () => {
+      vi.useRealTimers();
+      const prevPlanItems = [
+        { day_of_week: 1, meal_type: "dinner", recipe_id: "recipe-pasta", custom_name: null, custom_url: null, sort_order: 0 },
+        { day_of_week: 3, meal_type: "lunch", recipe_id: null, custom_name: "Sandwich", custom_url: null, sort_order: 0 },
+      ];
+
+      // Compute the previous week start string (same logic as component)
+      const now = new Date();
+      const dow = now.getDay();
+      const currentWS = new Date(now);
+      currentWS.setDate(currentWS.getDate() - dow);
+      currentWS.setHours(0, 0, 0, 0);
+      const prevWS = new Date(currentWS);
+      prevWS.setDate(prevWS.getDate() - 7);
+      const prevWeekStr = prevWS.toISOString().split("T")[0];
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          // Track week_start per query to distinguish current vs prev week
+          let qWeekStart: string | null = null;
+          const builder = createMockQueryBuilder();
+          builder.eq = vi.fn().mockImplementation((col: string, val: string) => {
+            if (col === "week_start") qWeekStart = val;
+            return builder;
+          });
+          builder.limit = vi.fn().mockImplementation(() =>
+            Promise.resolve({
+              data: [{ id: qWeekStart === prevWeekStr ? "plan-prev" : "plan-current" }],
+              error: null,
+            })
+          );
+          return builder;
+        }
+        if (table === "meal_plan_items") {
+          const builder = createMockQueryBuilder();
+          builder.insert = vi.fn().mockResolvedValue({ data: null, error: null });
+          builder.eq = vi.fn().mockImplementation((_col: string, val: string) => {
+            const rows = val === "plan-prev" ? prevPlanItems : [];
+            return { eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: rows, error: null }) };
+          });
+          return builder;
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /copy from last week/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /copy from last week/i }));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Copied 2 meals from last week");
+      }, { timeout: 3000 });
+    });
+
+    it("shows info toast when previous week has no plan", async () => {
+      let planCallCount = 0;
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          planCallCount++;
+          const builder = createMockQueryBuilder();
+          if (planCallCount === 1) {
+            // Current week plan
+            builder.limit = vi.fn().mockResolvedValue({ data: [{ id: "plan-current" }], error: null });
+          } else {
+            // Previous week: no plan found
+            builder.limit = vi.fn().mockResolvedValue({ data: [], error: null });
+          }
+          return builder;
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /copy from last week/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /copy from last week/i }));
+
+      await waitFor(() => {
+        expect(toast.info).toHaveBeenCalledWith("No meals found in the previous week");
+      });
+    });
+
+    it("shows info toast when previous week plan exists but has no items", async () => {
+      let planCallCount = 0;
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          planCallCount++;
+          const builder = createMockQueryBuilder();
+          if (planCallCount === 1) {
+            builder.limit = vi.fn().mockResolvedValue({ data: [{ id: "plan-current" }], error: null });
+          } else {
+            builder.limit = vi.fn().mockResolvedValue({ data: [{ id: "plan-prev" }], error: null });
+          }
+          return builder;
+        }
+        if (table === "meal_plan_items") {
+          return createMockQueryBuilder({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          });
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /copy from last week/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /copy from last week/i }));
+
+      await waitFor(() => {
+        expect(toast.info).toHaveBeenCalledWith("No meals found in the previous week");
+      });
+    });
+
+    it("shows error toast when the insert fails", async () => {
+      vi.useRealTimers();
+      const prevItems = [
+        { day_of_week: 0, meal_type: "dinner", recipe_id: "r1", custom_name: null, custom_url: null, sort_order: 0 },
+      ];
+
+      const now = new Date();
+      const dow = now.getDay();
+      const currentWS = new Date(now);
+      currentWS.setDate(currentWS.getDate() - dow);
+      currentWS.setHours(0, 0, 0, 0);
+      const prevWS = new Date(currentWS);
+      prevWS.setDate(prevWS.getDate() - 7);
+      const prevWeekStr = prevWS.toISOString().split("T")[0];
+
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "meal_plans") {
+          let qWeekStart: string | null = null;
+          const builder = createMockQueryBuilder();
+          builder.eq = vi.fn().mockImplementation((col: string, val: string) => {
+            if (col === "week_start") qWeekStart = val;
+            return builder;
+          });
+          builder.limit = vi.fn().mockImplementation(() =>
+            Promise.resolve({
+              data: [{ id: qWeekStart === prevWeekStr ? "plan-prev" : "plan-current" }],
+              error: null,
+            })
+          );
+          return builder;
+        }
+        if (table === "meal_plan_items") {
+          const builder = createMockQueryBuilder();
+          builder.insert = vi.fn().mockResolvedValue({ data: null, error: { message: "Insert failed" } });
+          builder.eq = vi.fn().mockImplementation((_col: string, val: string) => {
+            const rows = val === "plan-prev" ? prevItems : [];
+            return { eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: rows, error: null }) };
+          });
+          return builder;
+        }
+        return createMockQueryBuilder();
+      });
+
+      render(<MealPlanPage {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /copy from last week/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /copy from last week/i }));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to copy meals from last week");
+      }, { timeout: 3000 });
+    });
+  });
 });
+
