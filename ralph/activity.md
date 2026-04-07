@@ -37,9 +37,17 @@
 - `cn()` utility concatenates conditional color classes from `getRecipeColor`
 
 ## Current Status
-**Last Updated:** 2026-04-06
-**Tasks Completed:** 21
+**Last Updated:** 2026-04-07
+**Tasks Completed:** 22
 **Current Task:** Complete
+
+### 2026-04-07 — Quick Mark-as-Cooked Toggle on Meal Plan Slots
+- Added circular `✓` button to every filled `MealPlanSlot` — toggling `cooked_at` without leaving the meal plan page
+- New props: `onToggleCooked` and `isToggling` on `MealPlanSlot`; `onToggleCooked` and `togglingSlots: Set<string>` on `MealPlanGrid`
+- `handleToggleCooked` in `MealPlanPage`: optimistic update → Supabase `.update({ cooked_at })` → revert on error + toast
+- `togglingSlots` Set keyed by `"${dayOfWeek}-${mealType}"` tracks in-flight updates to disable the button
+- `stopPropagation` on toggle click prevents the slot's navigate-to-detail handler from firing
+- 13 new tests across `MealPlanSlot.test.tsx` (9) and `MealPlanGrid.test.tsx` (4); all 2069 tests pass
 
 ### 2026-04-06 — Cooking Streak + Week Completion Stats
 - Enhanced `RecentlyCookedCard` on home page with streak + week completion stats row
