@@ -6,6 +6,8 @@ interface MealPlanGridProps {
   weekStart: Date;
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  onToggleCooked?: (dayOfWeek: number, mealType: string) => void;
+  togglingSlots?: Set<string>;
   mealTypes?: string[];
   weekStartDay?: number;
 }
@@ -13,7 +15,7 @@ interface MealPlanGridProps {
 const ALL_DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DEFAULT_MEAL_TYPES = ["breakfast", "lunch", "dinner"];
 
-const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes, weekStartDay = 0 }: MealPlanGridProps) => {
+const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, onToggleCooked, togglingSlots, mealTypes, weekStartDay = 0 }: MealPlanGridProps) => {
   const activeMealTypes = mealTypes || DEFAULT_MEAL_TYPES;
   // Build reordered day labels and indices based on weekStartDay
   // dayOrder maps display position → actual dayOfWeek value (0=Sun..6=Sat)
@@ -30,16 +32,21 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  const renderSlot = (dayIndex: number, mealType: string) => (
-    <MealPlanSlot
-      items={getItemsForSlot(dayIndex, mealType)}
-      dayOfWeek={dayIndex}
-      mealType={mealType}
-      onAddMeal={onAddMeal}
-      onViewMealEvent={onViewMealEvent}
-      slotMinH={slotMinH}
-    />
-  );
+  const renderSlot = (dayIndex: number, mealType: string) => {
+    const slotKey = `${dayIndex}-${mealType}`;
+    return (
+      <MealPlanSlot
+        items={getItemsForSlot(dayIndex, mealType)}
+        dayOfWeek={dayIndex}
+        mealType={mealType}
+        onAddMeal={onAddMeal}
+        onViewMealEvent={onViewMealEvent}
+        onToggleCooked={onToggleCooked}
+        isToggling={togglingSlots?.has(slotKey) ?? false}
+        slotMinH={slotMinH}
+      />
+    );
+  };
 
   // Expand slot heights when fewer meal types are shown
   const mealCount = activeMealTypes.length;

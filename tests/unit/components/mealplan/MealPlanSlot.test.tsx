@@ -519,4 +519,138 @@ describe("MealPlanSlot", () => {
       expect(screen.queryByTestId("cooked-check")).not.toBeInTheDocument();
     });
   });
+
+  describe("cooked toggle button", () => {
+    const filledItem: MealPlanItem = {
+      id: "item-1",
+      planId: "plan-1",
+      dayOfWeek: 1,
+      mealType: "dinner",
+      sortOrder: 0,
+      recipeName: "Grilled Salmon",
+    };
+
+    it("does not render cooked toggle when onToggleCooked is not provided", () => {
+      render(<MealPlanSlot {...defaultProps} items={[filledItem]} />);
+      expect(screen.queryByTestId("cooked-toggle")).not.toBeInTheDocument();
+    });
+
+    it("renders cooked toggle button when onToggleCooked is provided", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      expect(screen.getByTestId("cooked-toggle")).toBeInTheDocument();
+    });
+
+    it("shows 'Mark as cooked' aria-label on uncooked slot", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      expect(screen.getByLabelText("Mark as cooked")).toBeInTheDocument();
+    });
+
+    it("shows 'Unmark as cooked' aria-label on cooked slot", () => {
+      const cookedItem = { ...filledItem, cookedAt: "2026-04-07T12:00:00Z" };
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[cookedItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      expect(screen.getByLabelText("Unmark as cooked")).toBeInTheDocument();
+    });
+
+    it("calls onToggleCooked with correct dayOfWeek and mealType when clicked", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      fireEvent.click(screen.getByTestId("cooked-toggle"));
+      expect(onToggleCooked).toHaveBeenCalledWith(1, "dinner");
+    });
+
+    it("does not call onViewMealEvent when cooked toggle is clicked", () => {
+      const onToggleCooked = vi.fn();
+      const onViewMealEvent = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+          onViewMealEvent={onViewMealEvent}
+        />
+      );
+      fireEvent.click(screen.getByTestId("cooked-toggle"));
+      expect(onViewMealEvent).not.toHaveBeenCalled();
+    });
+
+    it("is disabled when isToggling is true", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+          isToggling
+        />
+      );
+      const btn = screen.getByTestId("cooked-toggle");
+      expect(btn).toBeDisabled();
+    });
+
+    it("has green filled style when slot is cooked", () => {
+      const cookedItem = { ...filledItem, cookedAt: "2026-04-07T12:00:00Z" };
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[cookedItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      const btn = screen.getByTestId("cooked-toggle");
+      expect(btn.className).toContain("bg-green-500");
+    });
+
+    it("has outline style when slot is not cooked", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      const btn = screen.getByTestId("cooked-toggle");
+      expect(btn.className).toContain("border-gray-200");
+    });
+
+    it("does not render cooked toggle on empty slot even with onToggleCooked", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanSlot
+          {...defaultProps}
+          items={[]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      expect(screen.queryByTestId("cooked-toggle")).not.toBeInTheDocument();
+    });
+  });
 });

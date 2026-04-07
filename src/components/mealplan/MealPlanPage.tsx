@@ -46,6 +46,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [viewTab, setViewTab] = useState<"plan" | "groceries" | "pantry">("plan");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [togglingSlots, setTogglingSlots] = useState<Set<string>>(new Set());
 
   const navigate = useNavigate();
 
@@ -192,6 +193,55 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const handleAddMeal = (dayOfWeek: number, mealType: string) => {
     setPendingSlot({ dayOfWeek, mealType });
     setShowAddMealDialog(true);
+  };
+
+  const handleToggleCooked = async (dayOfWeek: number, mealType: string) => {
+    const slotItems = items.filter(
+      (i) => i.dayOfWeek === dayOfWeek && i.mealType === mealType
+    );
+    if (slotItems.length === 0) return;
+
+    const currentlyCooked = slotItems.every((i) => i.cookedAt);
+    const newCookedAt = currentlyCooked ? null : new Date().toISOString();
+    const slotKey = `${dayOfWeek}-${mealType}`;
+
+    // Optimistic update
+    setItems((prev) =>
+      prev.map((item) =>
+        item.dayOfWeek === dayOfWeek && item.mealType === mealType
+          ? { ...item, cookedAt: newCookedAt ?? undefined }
+          : item
+      )
+    );
+
+    setTogglingSlots((prev) => new Set([...prev, slotKey]));
+    try {
+      const itemIds = slotItems.map((i) => i.id);
+      const { error } = await supabase
+        .from("meal_plan_items")
+        .update({ cooked_at: newCookedAt } as { cooked_at: string | null })
+        .in("id", itemIds);
+      if (error) throw error;
+      toast.success(currentlyCooked ? "Meal unmarked" : "Marked as cooked!");
+    } catch (err) {
+      console.error("Error toggling cooked status:", err);
+      // Revert optimistic update
+      const originalCookedAt = slotItems[0]?.cookedAt;
+      setItems((prev) =>
+        prev.map((item) =>
+          item.dayOfWeek === dayOfWeek && item.mealType === mealType
+            ? { ...item, cookedAt: originalCookedAt }
+            : item
+        )
+      );
+      toast.error("Failed to update meal status");
+    } finally {
+      setTogglingSlots((prev) => {
+        const next = new Set(prev);
+        next.delete(slotKey);
+        return next;
+      });
+    }
   };
 
   const handleAddCustomMeal = async (name: string, url?: string, shouldParse?: boolean) => {
@@ -424,6 +474,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             weekStart={weekStart}
             onAddMeal={handleAddMeal}
             onViewMealEvent={handleViewMealEvent}
+            onToggleCooked={handleToggleCooked}
+            togglingSlots={togglingSlots}
             mealTypes={userPreferences?.mealTypes}
             weekStartDay={userPreferences?.weekStartDay}
           />

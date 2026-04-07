@@ -1,4 +1,4 @@
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Loader2 } from "lucide-react";
 import type { MealPlanItem } from "@/types";
 
 interface MealPlanSlotProps {
@@ -7,6 +7,8 @@ interface MealPlanSlotProps {
   mealType: string;
   onAddMeal: (dayOfWeek: number, mealType: string) => void;
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
+  onToggleCooked?: (dayOfWeek: number, mealType: string) => void;
+  isToggling?: boolean;
   slotMinH?: string;
 }
 
@@ -23,6 +25,8 @@ const MealPlanSlot = ({
   mealType,
   onAddMeal,
   onViewMealEvent,
+  onToggleCooked,
+  isToggling = false,
   slotMinH,
 }: MealPlanSlotProps) => {
   const isCooked = items.length > 0 && items.every((i) => i.cookedAt);
@@ -53,12 +57,13 @@ const MealPlanSlot = ({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onViewMealEvent?.(dayOfWeek, mealType); }}
     >
       {isCooked && <span className="sr-only">Cooked</span>}
-      <div className="space-y-1">
+      {/* Meal names — leave right-side padding for the cooked toggle */}
+      <div className="space-y-1 pr-6">
         {items.map((item) => {
           const name = item.recipeName || item.customName || "Unnamed meal";
 
           return (
-            <div key={item.id} className="flex items-start justify-between gap-1">
+            <div key={item.id} className="flex items-start gap-1">
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs font-medium truncate flex items-center gap-1">
                   {isCooked && <Check className="h-3 w-3 text-green-600 flex-shrink-0" data-testid="cooked-check" />}
@@ -69,6 +74,33 @@ const MealPlanSlot = ({
           );
         })}
       </div>
+
+      {/* Cooked toggle button — top-right corner, always visible on filled slots */}
+      {onToggleCooked && (
+        <button
+          data-testid="cooked-toggle"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleCooked(dayOfWeek, mealType);
+          }}
+          disabled={isToggling}
+          aria-label={isCooked ? "Unmark as cooked" : "Mark as cooked"}
+          title={isCooked ? "Unmark as cooked" : "Mark as cooked"}
+          className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center transition-all shrink-0 ${
+            isCooked
+              ? "bg-green-500 text-white border border-green-500 hover:bg-green-600 hover:border-green-600"
+              : "bg-white text-gray-300 border border-gray-200 hover:border-green-400 hover:text-green-500 shadow-sm"
+          } ${isToggling ? "opacity-50 cursor-not-allowed" : ""}`}
+        >
+          {isToggling ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Check className="h-3 w-3" />
+          )}
+        </button>
+      )}
+
+      {/* Add another meal — desktop only, bottom-right */}
       <button
         onClick={(e) => { e.stopPropagation(); onAddMeal(dayOfWeek, mealType); }}
         className="hidden md:flex absolute bottom-1 right-1 text-muted-foreground hover:text-purple transition-colors p-1"

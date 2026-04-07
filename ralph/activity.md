@@ -37,9 +37,16 @@
 - `cn()` utility concatenates conditional color classes from `getRecipeColor`
 
 ## Current Status
-**Last Updated:** 2026-04-03
-**Tasks Completed:** 20
+**Last Updated:** 2026-04-06
+**Tasks Completed:** 21
 **Current Task:** Complete
+
+### 2026-04-06 — Cooking Streak + Week Completion Stats
+- Enhanced `RecentlyCookedCard` on home page with streak + week completion stats row
+- Pure `calculateStreak()` function extracted to `src/lib/cookingStreak.ts` (ESLint react-refresh requires non-component exports in separate files)
+- Multi-query component pattern: 4 sequential Supabase queries; tests use `mockReturnValueOnce` chains per query
+- Week items query must end with `.limit()` (not `.eq()`) so the mock terminal resolver works — avoid ending query chains with `.eq()` in tests
+- 38 tests added/updated; all pass; build + lint clean
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty

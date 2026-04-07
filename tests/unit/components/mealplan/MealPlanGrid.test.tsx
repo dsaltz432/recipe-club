@@ -310,4 +310,66 @@ describe("MealPlanGrid", () => {
     });
   });
 
+  describe("cooked toggle integration", () => {
+    const filledItem: MealPlanItem = {
+      id: "item-1",
+      planId: "plan-1",
+      dayOfWeek: 0, // Sunday
+      mealType: "dinner",
+      sortOrder: 0,
+      recipeName: "Pasta",
+    };
+
+    it("renders cooked toggle buttons for filled slots when onToggleCooked is provided", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      // One slot is filled, so cooked toggle appears once per layout (mobile + desktop)
+      const toggles = screen.getAllByTestId("cooked-toggle");
+      expect(toggles.length).toBeGreaterThan(0);
+    });
+
+    it("does not render cooked toggle buttons when onToggleCooked is not provided", () => {
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          items={[filledItem]}
+        />
+      );
+      expect(screen.queryByTestId("cooked-toggle")).not.toBeInTheDocument();
+    });
+
+    it("calls onToggleCooked with correct dayOfWeek and mealType", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+        />
+      );
+      const toggles = screen.getAllByTestId("cooked-toggle");
+      fireEvent.click(toggles[0]);
+      expect(onToggleCooked).toHaveBeenCalledWith(0, "dinner");
+    });
+
+    it("disables cooked toggle for slot in togglingSlots", () => {
+      const onToggleCooked = vi.fn();
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          items={[filledItem]}
+          onToggleCooked={onToggleCooked}
+          togglingSlots={new Set(["0-dinner"])}
+        />
+      );
+      const toggles = screen.getAllByTestId("cooked-toggle");
+      expect(toggles[0]).toBeDisabled();
+    });
+  });
 });
