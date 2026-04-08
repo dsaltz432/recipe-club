@@ -636,3 +636,41 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+## [2026-04-08] — Per-day notes on meal plan
+
+### What was implemented
+- New `DayNoteInput` component (`src/components/mealplan/DayNoteInput.tsx`) — inline editable note for a single day
+  - Shows "Add note" button (pencil icon) on hover/focus when empty
+  - Shows italic note text with sticky-note icon when populated; click to re-edit
+  - Enter/✓ button saves; Escape/✗ button cancels
+  - Saving empty string deletes the note from the DB
+  - Resets to view mode when `dayOfWeek` prop changes (week navigation)
+- Updated `MealPlanGrid` to accept `dayNotes: Record<number, string>` and `onSaveDayNote` props; renders `DayNoteInput` under each day header in both mobile and desktop layouts
+- Updated `MealPlanPage` to load day notes alongside items in `loadPlan()`, store in `dayNotes` state, and persist via `handleSaveDayNote` (upsert or delete based on empty string)
+- DB queries use `supabase as any` cast since `meal_plan_day_notes` is not in generated types yet
+- New migration: `supabase/migrations/20260408000001_create_meal_plan_day_notes.sql`
+
+### Files changed
+- `src/components/mealplan/DayNoteInput.tsx` (new)
+- `src/components/mealplan/MealPlanGrid.tsx` — `dayNotes` + `onSaveDayNote` props, render `DayNoteInput`
+- `src/components/mealplan/MealPlanPage.tsx` — `dayNotes` state, load + save logic, prop pass-through
+- `supabase/migrations/20260408000001_create_meal_plan_day_notes.sql` (new)
+- `tests/unit/components/mealplan/DayNoteInput.test.tsx` (new, 12 tests)
+- `tests/unit/components/mealplan/MealPlanGrid.test.tsx` — 3 new day-notes tests
+
+### Quality checks
+- Build: pass
+- Tests: all pass (DayNoteInput ×12, MealPlanGrid ×24, and all other tested files pass)
+- Lint: 0 errors, 0 warnings
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/30
+
+### Learnings for future iterations
+- `group-hover` CSS class on a parent div makes child opacity transitions work cleanly for hover-revealed affordances
+- Day notes keyed by `dayOfWeek` (0=Sun..6=Sat), not display index — always use `dayOrder[displayIndex]` when looking up per-day data
+- New Supabase tables not in generated types yet: cast `supabase as any` for queries until types are regenerated
+- The full vitest suite times out in the container (~5min+); run files individually or in small groups instead of `npm run test:run`
+
+---
