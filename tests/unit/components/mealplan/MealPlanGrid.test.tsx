@@ -310,4 +310,46 @@ describe("MealPlanGrid", () => {
     });
   });
 
+  describe("day notes", () => {
+    it("renders existing day note text when dayNotes and onSaveDayNote are provided", () => {
+      const onSaveDayNote = vi.fn().mockResolvedValue(undefined);
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          dayNotes={{ 0: "Eating out" }}
+          onSaveDayNote={onSaveDayNote}
+        />
+      );
+
+      // Note text appears in both mobile and desktop layouts
+      expect(screen.getAllByText("Eating out").length).toBeGreaterThan(0);
+    });
+
+    it("does not render DayNoteInput when onSaveDayNote is not provided", () => {
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          dayNotes={{ 0: "Should not appear" }}
+        />
+      );
+
+      expect(screen.queryByText("Should not appear")).not.toBeInTheDocument();
+    });
+
+    it("renders add note buttons for all days when onSaveDayNote is provided", () => {
+      const onSaveDayNote = vi.fn().mockResolvedValue(undefined);
+      render(
+        <MealPlanGrid
+          {...defaultProps}
+          dayNotes={{}}
+          onSaveDayNote={onSaveDayNote}
+        />
+      );
+
+      // 7 days × 2 layouts = 14 add-note buttons
+      const addNoteButtons = screen.getAllByRole("button", { name: /add note/i });
+      expect(addNoteButtons.length).toBe(14);
+    });
+  });
+
 });

@@ -1,4 +1,5 @@
 import MealPlanSlot from "./MealPlanSlot";
+import DayNoteInput from "./DayNoteInput";
 import type { MealPlanItem } from "@/types";
 
 interface MealPlanGridProps {
@@ -8,12 +9,14 @@ interface MealPlanGridProps {
   onViewMealEvent?: (dayOfWeek: number, mealType: string) => void;
   mealTypes?: string[];
   weekStartDay?: number;
+  dayNotes?: Record<number, string>;
+  onSaveDayNote?: (dayOfWeek: number, note: string) => Promise<void>;
 }
 
 const ALL_DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DEFAULT_MEAL_TYPES = ["breakfast", "lunch", "dinner"];
 
-const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes, weekStartDay = 0 }: MealPlanGridProps) => {
+const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes, weekStartDay = 0, dayNotes = {}, onSaveDayNote }: MealPlanGridProps) => {
   const activeMealTypes = mealTypes || DEFAULT_MEAL_TYPES;
   // Build reordered day labels and indices based on weekStartDay
   // dayOrder maps display position → actual dayOfWeek value (0=Sun..6=Sat)
@@ -73,19 +76,31 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
         </div>
         {/* Day rows */}
         <div className="space-y-1">
-          {dayLabels.map((day, displayIndex) => (
-            <div key={day} className={`grid ${mobileGridCols} gap-1 items-stretch`}>
-              <div className="flex flex-col justify-center py-1">
-                <span className={`text-xs font-semibold ${isToday(displayIndex) ? "text-purple" : ""}`}>{day}</span>
-                <span className={`text-[10px] ${isToday(displayIndex) ? "text-purple/70" : "text-muted-foreground"}`}>{getDateLabel(displayIndex)}</span>
-              </div>
-              {activeMealTypes.map((mealType) => (
-                <div key={mealType} className={mobileMinH}>
-                  {renderSlot(dayOrder[displayIndex], mealType)}
+          {dayLabels.map((day, displayIndex) => {
+            const dow = dayOrder[displayIndex];
+            return (
+              <div key={day} className="group">
+                <div className={`grid ${mobileGridCols} gap-1 items-stretch`}>
+                  <div className="flex flex-col justify-center py-1 min-w-0">
+                    <span className={`text-xs font-semibold ${isToday(displayIndex) ? "text-purple" : ""}`}>{day}</span>
+                    <span className={`text-[10px] ${isToday(displayIndex) ? "text-purple/70" : "text-muted-foreground"}`}>{getDateLabel(displayIndex)}</span>
+                    {onSaveDayNote && (
+                      <DayNoteInput
+                        dayOfWeek={dow}
+                        note={dayNotes[dow] ?? ""}
+                        onSave={onSaveDayNote}
+                      />
+                    )}
+                  </div>
+                  {activeMealTypes.map((mealType) => (
+                    <div key={mealType} className={mobileMinH}>
+                      {renderSlot(dow, mealType)}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -95,12 +110,22 @@ const MealPlanGrid = ({ items, weekStart, onAddMeal, onViewMealEvent, mealTypes,
           {/* Header row */}
           <div className="grid grid-cols-8 gap-1 mb-1">
             <div className="p-2 text-xs font-medium text-muted-foreground"></div>
-            {dayLabels.map((day, displayIndex) => (
-              <div key={day} className={`p-2 text-center rounded-md ${isToday(displayIndex) ? "bg-purple/5" : ""}`}>
-                <div className={`text-xs font-semibold ${isToday(displayIndex) ? "text-purple" : ""}`}>{day}</div>
-                <div className={`text-sm ${isToday(displayIndex) ? "text-purple/70" : "text-muted-foreground"}`}>{getDateLabel(displayIndex)}</div>
-              </div>
-            ))}
+            {dayLabels.map((day, displayIndex) => {
+              const dow = dayOrder[displayIndex];
+              return (
+                <div key={day} className={`p-2 text-center rounded-md group ${isToday(displayIndex) ? "bg-purple/5" : ""}`}>
+                  <div className={`text-xs font-semibold ${isToday(displayIndex) ? "text-purple" : ""}`}>{day}</div>
+                  <div className={`text-sm ${isToday(displayIndex) ? "text-purple/70" : "text-muted-foreground"}`}>{getDateLabel(displayIndex)}</div>
+                  {onSaveDayNote && (
+                    <DayNoteInput
+                      dayOfWeek={dow}
+                      note={dayNotes[dow] ?? ""}
+                      onSave={onSaveDayNote}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Meal type rows */}

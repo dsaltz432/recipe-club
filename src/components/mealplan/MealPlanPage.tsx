@@ -46,6 +46,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [viewTab, setViewTab] = useState<"plan" | "groceries" | "pantry">("plan");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [dayNotes, setDayNotes] = useState<Record<number, string>>({});
 
   const navigate = useNavigate();
 
@@ -110,6 +111,19 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         });
         setItems(mapped);
         refreshGroceries();
+
+        // Load day notes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabase as any;
+        const { data: notesData } = await db
+          .from("meal_plan_day_notes")
+          .select("day_of_week, note")
+          .eq("plan_id", existingPlan.id);
+        const notesMap: Record<number, string> = {};
+        for (const row of notesData ?? []) {
+          notesMap[row.day_of_week as number] = row.note as string;
+        }
+        setDayNotes(notesMap);
       } else {
         // Create plan — use upsert to be idempotent under StrictMode double-execution
         const { data: newPlan, error } = await supabase
@@ -128,6 +142,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
         if (error) throw error;
         setPlanId(newPlan.id);
         setItems([]);
+        setDayNotes({});
         refreshGroceries();
       }
     } catch (error) {
@@ -188,6 +203,26 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
     },
     onDiscard: loadPlan,
   });
+
+  const handleSaveDayNote = async (dayOfWeek: number, note: string) => {
+    if (!planId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    if (!note) {
+      await db.from("meal_plan_day_notes").delete().eq("plan_id", planId).eq("day_of_week", dayOfWeek);
+      setDayNotes((prev) => {
+        const next = { ...prev };
+        delete next[dayOfWeek];
+        return next;
+      });
+    } else {
+      await db.from("meal_plan_day_notes").upsert(
+        { plan_id: planId, day_of_week: dayOfWeek, note },
+        { onConflict: "plan_id,day_of_week" }
+      );
+      setDayNotes((prev) => ({ ...prev, [dayOfWeek]: note }));
+    }
+  };
 
   const handleAddMeal = (dayOfWeek: number, mealType: string) => {
     setPendingSlot({ dayOfWeek, mealType });
@@ -426,6 +461,8 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             onViewMealEvent={handleViewMealEvent}
             mealTypes={userPreferences?.mealTypes}
             weekStartDay={userPreferences?.weekStartDay}
+            dayNotes={dayNotes}
+            onSaveDayNote={handleSaveDayNote}
           />
 
           {pendingSlot && (
