@@ -636,3 +636,34 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+---
+
+## [2026-04-09] — Cook Mode step timers
+
+### What was implemented
+- Added inline countdown timer to cook mode's active step when the step has parseable timing
+- Created `src/lib/parseTimingSeconds.ts` — utility to extract total seconds from timing strings like "30 minutes", "1 hour 30 min", "45 sec", "1.5 hours", "3:30" (MM:SS)
+- Created `src/components/cookmode/StepTimer.tsx` — timer widget with circular SVG progress ring, MM:SS display, Start/Pause/Resume/Reset controls, and a "Timer done!" done state
+- Wired timer state into `CookModeDialog` using a `Map<stepIndex, StepTimerState>` so timers persist as users navigate between steps
+- Timer tick is a single `setInterval` effect in the dialog that decrements all running timers each second
+- When a timer reaches 0, it plays a 3-beep Web Audio alert and transitions to the "done" state
+- Converted the active step container from `<button>` to `<div>` to allow nested interactive timer buttons (the step is already current, so click-to-navigate was a no-op)
+- Timer state is reset when the dialog is opened/closed
+
+### Files changed
+- `src/lib/parseTimingSeconds.ts` (new)
+- `src/components/cookmode/StepTimer.tsx` (new)
+- `src/components/cookmode/CookModeDialog.tsx` — timer state, tick effect, callbacks, StepTimer render in active step
+- `tests/unit/lib/parseTimingSeconds.test.ts` (new, 25 tests)
+- `tests/unit/components/cookmode/StepTimer.test.tsx` (new, 13 tests)
+
+### Quality checks
+- Build: pass
+- Tests: 2093/2093 pass (86 suites — pre-existing e2e/smoke.spec.ts Playwright config error not counted)
+- Lint: 0 errors, 0 warnings
+
+### Learnings for future iterations
+- Active step in CookModeDialog is a `<button>` — nested interactive elements require changing it to a `<div>` with onClick handler
+- `stepRefs` is typed as `HTMLButtonElement[]` — when the active step becomes a `<div>`, cast the ref assignment: `ref={(el) => { stepRefs.current[index] = el as unknown as HTMLButtonElement; }}`
+- Web Audio `AudioContext` must be created inside a user gesture handler to avoid autoplay policy; it's fine here because the timer starts via button click

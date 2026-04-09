@@ -5,7 +5,10 @@ import type { CookModeStep as CookModeStepType, RecipeIngredient } from "@/types
 import type { CookViewMode } from "@/hooks/useCookMode";
 import CookModeSidebar from "./CookModeSidebar";
 import CookModeComplete from "./CookModeComplete";
+import StepTimer from "./StepTimer";
+import type { StepTimerState } from "./StepTimer";
 import { getRecipeColor } from "@/lib/cookModeColors";
+import { parseTimingSeconds } from "@/lib/parseTimingSeconds";
 import { cn } from "@/lib/utils";
 
 interface CookModeDialogProps {
@@ -41,6 +44,7 @@ const CookModeDialog = ({
   const [completed, setCompleted] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileSideBySideTab, setMobileSideBySideTab] = useState<string | null>(null);
+  const [timers, setTimers] = useState<Map<number, StepTimerState>>(new Map());
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const stepRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -123,6 +127,7 @@ const CookModeDialog = ({
       setCurrentStep(0);
       setCompleted(false);
       setMobileDrawerOpen(false);
+      setTimers(new Map());
     }
   }, [open]);
 
@@ -136,6 +141,61 @@ const CookModeDialog = ({
       setMobileSideBySideTab((prev) => prev ?? [...stepsByRecipe.keys()][0]);
     }
   }, [viewMode, stepsByRecipe]);
+
+  // Timer tick — runs every second, decrements all running timers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimers((prev) => {
+        let changed = false;
+        const next = new Map(prev);
+        next.forEach((timer, idx) => {
+          if (!timer.running) return;
+          if (timer.remaining > 0) {
+            next.set(idx, { ...timer, remaining: timer.remaining - 1 });
+            changed = true;
+          } else {
+            // Timer hit zero — mark done and play audio alert
+            next.set(idx, { ...timer, running: false, done: true });
+            changed = true;
+            playTimerAlert();
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const startTimer = useCallback((stepIndex: number, initialSeconds: number) => {
+    setTimers((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(stepIndex);
+      if (existing) {
+        next.set(stepIndex, { ...existing, running: true });
+      } else {
+        next.set(stepIndex, { initial: initialSeconds, remaining: initialSeconds, running: true, done: false });
+      }
+      return next;
+    });
+  }, []);
+
+  const pauseTimer = useCallback((stepIndex: number) => {
+    setTimers((prev) => {
+      const existing = prev.get(stepIndex);
+      if (!existing) return prev;
+      const next = new Map(prev);
+      next.set(stepIndex, { ...existing, running: false });
+      return next;
+    });
+  }, []);
+
+  const resetTimer = useCallback((stepIndex: number, initialSeconds: number) => {
+    setTimers((prev) => {
+      const next = new Map(prev);
+      next.set(stepIndex, { initial: initialSeconds, remaining: initialSeconds, running: false, done: false });
+      return next;
+    });
+  }, []);
 
   const goToPrev = useCallback(() => {
     setCurrentStep((s) => Math.max(0, s - 1));
@@ -284,12 +344,13 @@ const CookModeDialog = ({
                           ];
 
                           if (isActive) {
+                            const timerSeconds = step.timing ? parseTimingSeconds(step.timing) : null;
+                            const timerState = timers.get(index);
                             return (
-                              <button
+                              <div
                                 key={index}
-                                ref={(el) => { stepRefs.current[index] = el; }}
-                                onClick={() => jumpToStep(index)}
-                                className="w-full text-left px-4 py-4 border-l-4 bg-slate-800/60 transition-colors focus:outline-none"
+                                ref={(el) => { stepRefs.current[index] = el as unknown as HTMLButtonElement; }}
+                                className="w-full text-left px-4 py-4 border-l-4 bg-slate-800/60"
                                 style={{ borderLeftColor: color.accent }}
                                 aria-current="step"
                               >
@@ -325,7 +386,16 @@ const CookModeDialog = ({
                                     {step.timing}
                                   </p>
                                 )}
-                              </button>
+                                {timerSeconds !== null && (
+                                  <StepTimer
+                                    state={timerState ?? { initial: timerSeconds, remaining: timerSeconds, running: false, done: false }}
+                                    accentColor={color.accent}
+                                    onStart={() => startTimer(index, timerSeconds)}
+                                    onPause={() => pauseTimer(index)}
+                                    onReset={() => resetTimer(index, timerSeconds)}
+                                  />
+                                )}
+                              </div>
                             );
                           }
 
@@ -537,6 +607,30 @@ const CookModeDialog = ({
     </DialogPrimitive.Root>
   );
 };
+
+/** Plays a short 3-beep audio alert using the Web Audio API */
+function playTimerAlert() {
+  try {
+    const ctx = new AudioContext();
+    const beepAt = (startTime: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.35, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
+    };
+    beepAt(ctx.currentTime);
+    beepAt(ctx.currentTime + 0.35);
+    beepAt(ctx.currentTime + 0.70);
+  } catch {
+    // Web Audio not available — silent fallback
+  }
+}
 
 /** A single step row in the side-by-side reference view */
 function SideBySideStep({ step, index, colorIndex }: { step: CookModeStepType; index: number; colorIndex: number }) {
