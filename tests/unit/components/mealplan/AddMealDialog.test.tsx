@@ -40,6 +40,9 @@ vi.mock("@/lib/upload", () => ({
 const createMockQueryBuilder = (overrides: Record<string, unknown> = {}) => ({
   select: vi.fn().mockReturnThis(),
   ilike: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  not: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnThis(),
   limit: vi.fn().mockResolvedValue({ data: [], error: null }),
   ...overrides,
 });
@@ -643,6 +646,236 @@ describe("AddMealDialog", () => {
 
       // Submit should be disabled — no paste text entered
       expect(screen.getByText("Add to Meal")).toBeDisabled();
+    });
+  });
+
+  describe("Recently Used Recipes", () => {
+    const mockRecentData = [
+      {
+        recipe_id: "r-recent-1",
+        recipes: { id: "r-recent-1", name: "Pasta Carbonara", url: "https://example.com/pasta", event_id: "e-1" },
+      },
+      {
+        recipe_id: "r-recent-2",
+        recipes: { id: "r-recent-2", name: "Caesar Salad", url: null, event_id: null },
+      },
+    ];
+
+    it("shows recently used recipes when userId is provided", async () => {
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: mockRecentData, error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Recently used")).toBeInTheDocument();
+        expect(screen.getByText("Pasta Carbonara")).toBeInTheDocument();
+        expect(screen.getByText("Caesar Salad")).toBeInTheDocument();
+      });
+    });
+
+    it("shows 'Or search all recipes above' hint when recent recipes are shown", async () => {
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: mockRecentData, error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Or search all recipes above")).toBeInTheDocument();
+      });
+    });
+
+    it("shows 'Type to search' fallback when userId is provided but no recent recipes", async () => {
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Type to search your recipes")).toBeInTheDocument();
+      });
+    });
+
+    it("shows 'Type to search' when no userId is provided", async () => {
+      render(<AddMealDialog {...defaultProps} />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      expect(screen.getByText("Type to search your recipes")).toBeInTheDocument();
+    });
+
+    it("hides recent recipes and shows search results when user types", async () => {
+      // First call (recent): return recent recipes; second call (search): return search results
+      mockSupabaseFrom
+        .mockImplementationOnce(() =>
+          createMockQueryBuilder({
+            limit: vi.fn().mockResolvedValue({ data: mockRecentData, error: null }),
+          })
+        )
+        .mockImplementation(() =>
+          createMockQueryBuilder({
+            limit: vi.fn().mockResolvedValue({
+              data: [{ id: "r-search-1", name: "Search Result", url: null, event_id: null }],
+              error: null,
+            }),
+          })
+        );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      // Wait for recent recipes to appear
+      await waitFor(() => {
+        expect(screen.getByText("Pasta Carbonara")).toBeInTheDocument();
+      });
+
+      // Type a search query
+      fireEvent.change(screen.getByPlaceholderText("Search recipes..."), {
+        target: { value: "search" },
+      });
+
+      // Wait for search results — recent section no longer shown
+      await waitFor(() => {
+        expect(screen.getByText("Search Result")).toBeInTheDocument();
+        expect(screen.queryByText("Recently used")).not.toBeInTheDocument();
+        expect(screen.queryByText("Pasta Carbonara")).not.toBeInTheDocument();
+      });
+    });
+
+    it("can select a recently used recipe and submit", async () => {
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: mockRecentData, error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Pasta Carbonara")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Pasta Carbonara"));
+      expect(screen.getByText("Add 1 to Meal")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Add 1 to Meal"));
+      expect(defaultProps.onAddRecipeMeal).toHaveBeenCalledWith([
+        { id: "r-recent-1", name: "Pasta Carbonara", url: "https://example.com/pasta" },
+      ]);
+    });
+
+    it("shows loading skeletons while fetching recent recipes", async () => {
+      // Return a promise that never resolves to keep loading state
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockReturnValue(new Promise(() => {})),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Recently used")).toBeInTheDocument();
+      });
+    });
+
+    it("limits displayed recent recipes to 6", async () => {
+      const manyRecentData = Array.from({ length: 10 }, (_, i) => ({
+        recipe_id: `r-${i}`,
+        recipes: { id: `r-${i}`, name: `Recipe ${i}`, url: null, event_id: null },
+      }));
+
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: manyRecentData, error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Recipe 0")).toBeInTheDocument();
+        expect(screen.getByText("Recipe 5")).toBeInTheDocument();
+        expect(screen.queryByText("Recipe 6")).not.toBeInTheDocument();
+      });
+    });
+
+    it("deduplicates recipes that appear multiple times in history", async () => {
+      const duplicateData = [
+        {
+          recipe_id: "r-dupe",
+          recipes: { id: "r-dupe", name: "Favorite Pasta", url: null, event_id: null },
+        },
+        {
+          recipe_id: "r-dupe", // same recipe again
+          recipes: { id: "r-dupe", name: "Favorite Pasta", url: null, event_id: null },
+        },
+        {
+          recipe_id: "r-other",
+          recipes: { id: "r-other", name: "Other Recipe", url: null, event_id: null },
+        },
+      ];
+
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: duplicateData, error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Favorite Pasta")).toBeInTheDocument();
+      });
+
+      // "Favorite Pasta" should appear only once
+      expect(screen.getAllByText("Favorite Pasta")).toHaveLength(1);
+    });
+
+    it("shows Club badge for recent club recipes and Personal for personal ones", async () => {
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockResolvedValue({ data: mockRecentData, error: null }),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Club")).toBeInTheDocument();
+        expect(screen.getByText("Personal")).toBeInTheDocument();
+      });
+    });
+
+    it("handles fetch error gracefully — falls back to empty state", async () => {
+      mockSupabaseFrom.mockImplementation(() =>
+        createMockQueryBuilder({
+          limit: vi.fn().mockRejectedValue(new Error("Network error")),
+        })
+      );
+
+      render(<AddMealDialog {...defaultProps} userId="user-abc" />);
+      fireEvent.click(screen.getByText("From Recipes"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Type to search your recipes")).toBeInTheDocument();
+      });
     });
   });
 

@@ -8,8 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Loader2, Search } from "lucide-react";
+import { Check, Clock, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RecipeInputForm, {
   createInitialFormData,
@@ -33,6 +34,7 @@ interface AddMealDialogProps {
   onAddCustomMeal: (name: string, url?: string, shouldParse?: boolean) => void;
   onAddRecipeMeal: (recipes: Array<{ id: string; name: string; url?: string }>) => void;
   onAddManualMeal?: (name: string, text: string) => void;
+  userId?: string;
 }
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -45,6 +47,7 @@ const AddMealDialog = ({
   onAddCustomMeal,
   onAddRecipeMeal,
   onAddManualMeal,
+  userId,
 }: AddMealDialogProps) => {
   const [activeTab, setActiveTab] = useState<"custom" | "recipes">("custom");
   const [formData, setFormData] = useState<RecipeFormData>(createInitialFormData());
@@ -53,7 +56,62 @@ const AddMealDialog = ({
   const [searchResults, setSearchResults] = useState<RecipeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRecipes, setSelectedRecipes] = useState<RecipeResult[]>([]);
+  const [recentRecipes, setRecentRecipes] = useState<RecipeResult[]>([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load recently used recipes whenever the dialog opens (requires userId)
+  useEffect(() => {
+    if (!open || !userId) return;
+
+    let cancelled = false;
+    setIsLoadingRecent(true);
+
+    const fetchRecentRecipes = async () => {
+      try {
+        // meal_plan_items not yet fully typed for this join — cast to any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabase as any;
+        const { data } = await db
+          .from("meal_plan_items")
+          .select("recipe_id, recipes(id, name, url, event_id), meal_plans!inner(user_id)")
+          .eq("meal_plans.user_id", userId)
+          .not("recipe_id", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(30); // fetch extras for client-side dedup
+
+        if (cancelled) return;
+
+        if (data) {
+          const seen = new Set<string>();
+          const deduped: RecipeResult[] = [];
+          for (const row of data as Array<{
+            recipe_id: string;
+            recipes: { id: string; name: string; url: string | null; event_id: string | null } | null;
+          }>) {
+            if (row.recipe_id && !seen.has(row.recipe_id) && row.recipes) {
+              seen.add(row.recipe_id);
+              deduped.push({
+                id: row.recipes.id,
+                name: row.recipes.name,
+                url: row.recipes.url,
+                event_id: row.recipes.event_id,
+              });
+              if (deduped.length >= 6) break;
+            }
+          }
+          setRecentRecipes(deduped);
+        }
+      } catch {
+        // non-critical — leave list empty
+      } finally {
+        if (!cancelled) setIsLoadingRecent(false);
+      }
+    };
+
+    fetchRecentRecipes();
+    return () => { cancelled = true; };
+  }, [open, userId]);
 
   const resetForm = () => {
     setActiveTab("custom");
@@ -63,6 +121,8 @@ const AddMealDialog = ({
     setSearchResults([]);
     setIsSearching(false);
     setSelectedRecipes([]);
+    setRecentRecipes([]);
+    setIsLoadingRecent(false);
   };
 
   const handleClose = () => {
@@ -140,6 +200,30 @@ const AddMealDialog = ({
       }))
     );
     handleClose();
+  };
+
+  const renderRecipeRow = (recipe: RecipeResult) => {
+    const isSelected = selectedRecipes.some((r) => r.id === recipe.id);
+    return (
+      <button
+        key={recipe.id}
+        className={cn(
+          "w-full text-left px-3 py-2 rounded-md transition-colors",
+          isSelected ? "bg-purple/10" : "hover:bg-muted"
+        )}
+        onClick={() => toggleRecipeSelection(recipe)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            {isSelected && <Check className="h-4 w-4 text-purple shrink-0" />}
+            <span className="text-sm font-medium truncate">{recipe.name}</span>
+          </div>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground ml-2 shrink-0">
+            {recipe.event_id ? "Club" : "Personal"}
+          </span>
+        </div>
+      </button>
+    );
   };
 
   return (
@@ -233,34 +317,50 @@ const AddMealDialog = ({
                 </p>
               )}
 
-              {!isSearching && searchResults.map((recipe) => {
-                const isSelected = selectedRecipes.some((r) => r.id === recipe.id);
-                return (
-                  <button
-                    key={recipe.id}
-                    className={cn(
-                      "w-full text-left px-3 py-2 rounded-md transition-colors",
-                      isSelected ? "bg-purple/10" : "hover:bg-muted"
-                    )}
-                    onClick={() => toggleRecipeSelection(recipe)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isSelected && <Check className="h-4 w-4 text-purple shrink-0" />}
-                        <span className="text-sm font-medium truncate">{recipe.name}</span>
-                      </div>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground ml-2 shrink-0">
-                        {recipe.event_id ? "Club" : "Personal"}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+              {!isSearching && searchQuery.trim() && searchResults.map(renderRecipeRow)}
 
               {!isSearching && !searchQuery.trim() && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Type to search your recipes
-                </p>
+                <>
+                  {/* Recently used section — only shown when userId is provided */}
+                  {userId && isLoadingRecent && (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center gap-1.5 px-1 mb-2">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Recently used
+                        </span>
+                      </div>
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="px-3 py-2 flex items-center gap-3">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <Skeleton className="h-4 flex-1 max-w-[160px]" />
+                          <Skeleton className="h-4 w-12 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {userId && !isLoadingRecent && recentRecipes.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center gap-1.5 px-1 mb-1">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Recently used
+                        </span>
+                      </div>
+                      {recentRecipes.map(renderRecipeRow)}
+                      <p className="text-xs text-center text-muted-foreground pt-1">
+                        Or search all recipes above
+                      </p>
+                    </div>
+                  )}
+
+                  {(!userId || (!isLoadingRecent && recentRecipes.length === 0)) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Type to search your recipes
+                    </p>
+                  )}
+                </>
               )}
             </div>
 

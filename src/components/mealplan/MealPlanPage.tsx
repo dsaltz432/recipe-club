@@ -437,6 +437,7 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
               onAddCustomMeal={handleAddCustomMeal}
               onAddRecipeMeal={handleAddRecipeMeal}
               onAddManualMeal={handleAddManualMeal}
+              userId={userId}
             />
           )}
         </>
