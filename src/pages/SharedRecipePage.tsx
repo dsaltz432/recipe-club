@@ -384,7 +384,7 @@ const SharedRecipePage = () => {
             >
               Ingredients
             </h2>
-            <RecipeIngredientList recipeId={recipe.id} userId="" editable={false} />
+            <RecipeIngredientList recipeId={recipe.id} userId="" editable={false} servings={recipeContent?.servings} />
           </div>
 
           {/* Instructions section */}

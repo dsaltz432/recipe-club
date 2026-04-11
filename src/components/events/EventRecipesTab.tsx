@@ -340,6 +340,7 @@ const EventRecipesTab = ({
                         onIngredientsChange={() => onIngredientsChange?.(recipe.id)}
                         cacheContext={cacheContext}
                         pantryItems={pantryItems}
+                        servings={recipeContentMap?.get(recipe.id)?.servings ?? undefined}
                       />
                     </>
                   )}

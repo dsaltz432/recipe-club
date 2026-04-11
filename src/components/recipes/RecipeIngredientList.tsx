@@ -9,6 +9,7 @@ import { deleteGroceryCache } from "@/lib/groceryCache";
 import { parseIngredientText } from "@/lib/parseIngredientText";
 import GroceryCategoryGroup from "@/components/recipes/GroceryCategoryGroup";
 import AddIngredientInput from "@/components/recipes/AddIngredientInput";
+import { parseServingsNumber } from "@/lib/recipeScaler";
 
 interface RecipeIngredientListProps {
   recipeId: string;
@@ -17,13 +18,22 @@ interface RecipeIngredientListProps {
   onIngredientsChange?: () => void;
   cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string };
   pantryItems?: string[];
+  servings?: string;
 }
 
-function toSmartItem(ing: RecipeIngredient): SmartGroceryItem {
+const SCALE_OPTIONS: { value: number; label: string }[] = [
+  { value: 0.5, label: "½×" },
+  { value: 1, label: "1×" },
+  { value: 2, label: "2×" },
+  { value: 3, label: "3×" },
+];
+
+function toSmartItem(ing: RecipeIngredient, multiplier: number): SmartGroceryItem {
   return {
     name: ing.name,
     displayName: ing.name,
-    totalQuantity: ing.quantity ?? undefined,
+    totalQuantity:
+      ing.quantity != null ? ing.quantity * multiplier : undefined,
     unit: ing.unit ?? undefined,
     category: ing.category,
     sourceRecipes: [],
@@ -50,9 +60,11 @@ const RecipeIngredientList = ({
   onIngredientsChange,
   cacheContext,
   pantryItems,
+  servings,
 }: RecipeIngredientListProps) => {
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scaleMultiplier, setScaleMultiplier] = useState(1);
 
   const loadIngredients = useCallback(async () => {
     const { data, error } = await supabase
@@ -170,8 +182,50 @@ const RecipeIngredientList = ({
   );
   const grouped = groupByCategory(displayedIngredients);
 
+  const baseServings = servings ? parseServingsNumber(servings) : null;
+  const scaledServings =
+    baseServings != null && scaleMultiplier !== 1
+      ? Math.round(baseServings * scaleMultiplier * 10) / 10
+      : null;
+
+  const showScaler = !editable && displayedIngredients.length > 0;
+
   return (
     <div>
+      {showScaler && (
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <span className="text-xs text-muted-foreground font-medium">Scale:</span>
+          <div className="flex items-center gap-1" role="group" aria-label="Serving scale">
+            {SCALE_OPTIONS.map(({ value, label }) => {
+              const isSelected = scaleMultiplier === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setScaleMultiplier(value)}
+                  aria-pressed={isSelected}
+                  className={`min-w-[2.25rem] h-7 rounded-full px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 ${
+                    isSelected
+                      ? "bg-purple-600 text-white"
+                      : "border border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-700 bg-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {scaledServings != null && (
+            <span className="text-xs text-purple-600 font-medium">
+              → {scaledServings === Math.floor(scaledServings)
+                ? scaledServings
+                : scaledServings}{" "}
+              serving{scaledServings !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+
       {displayedIngredients.length === 0 ? (
         <p className="text-sm text-muted-foreground py-2">No ingredients yet</p>
       ) : (
@@ -179,7 +233,7 @@ const RecipeIngredientList = ({
           <GroceryCategoryGroup
             key={category}
             category={category}
-            items={items.map(toSmartItem)}
+            items={items.map((ing) => toSmartItem(ing, scaleMultiplier))}
             editable={editable}
             onEditItemText={editable ? handleEditItemText : undefined}
             onRemoveItem={editable ? handleRemoveItem : undefined}

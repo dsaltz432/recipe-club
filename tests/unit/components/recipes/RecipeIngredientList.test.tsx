@@ -30,6 +30,7 @@ vi.mock("@/lib/groceryCache", () => ({
 }));
 
 import RecipeIngredientList from "@/components/recipes/RecipeIngredientList";
+import { parseServingsNumber } from "@/lib/recipeScaler";
 import { parseIngredientText } from "@/lib/parseIngredientText";
 import { deleteGroceryCache } from "@/lib/groceryCache";
 
@@ -322,5 +323,120 @@ describe("RecipeIngredientList", () => {
     await waitFor(() => {
       expect(mockDeleteGroceryCache).toHaveBeenCalledWith("event", "event-1", "user-1");
     });
+  });
+});
+
+describe("parseServingsNumber", () => {
+  it("parses a plain integer", () => {
+    expect(parseServingsNumber("4")).toBe(4);
+  });
+
+  it("parses a range like '4-6'", () => {
+    expect(parseServingsNumber("4-6")).toBe(4);
+  });
+
+  it("parses 'Serves 6 people'", () => {
+    expect(parseServingsNumber("Serves 6 people")).toBe(6);
+  });
+
+  it("parses a decimal like '2.5 servings'", () => {
+    expect(parseServingsNumber("2.5 servings")).toBe(2.5);
+  });
+
+  it("returns null for non-numeric string", () => {
+    expect(parseServingsNumber("a few")).toBeNull();
+  });
+
+  it("returns null for empty string", () => {
+    expect(parseServingsNumber("")).toBeNull();
+  });
+});
+
+describe("RecipeIngredientList serving scaler", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupLoadIngredients();
+  });
+
+  it("shows scale buttons when not editable and ingredients exist", async () => {
+    render(<RecipeIngredientList recipeId="recipe-1" userId="user-1" editable={false} />);
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    expect(screen.getByRole("group", { name: /serving scale/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1×" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2×" })).toBeInTheDocument();
+  });
+
+  it("does not show scale buttons in editable mode", async () => {
+    render(<RecipeIngredientList recipeId="recipe-1" userId="user-1" editable />);
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    expect(screen.queryByRole("group", { name: /serving scale/i })).not.toBeInTheDocument();
+  });
+
+  it("1× button is selected by default", async () => {
+    render(<RecipeIngredientList recipeId="recipe-1" userId="user-1" editable={false} />);
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    const btn1x = screen.getByRole("button", { name: "1×" });
+    expect(btn1x).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("scales ingredient quantities when 2× is clicked", async () => {
+    render(<RecipeIngredientList recipeId="recipe-1" userId="user-1" editable={false} />);
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    // flour starts at quantity=2, so 2× should show 4
+    fireEvent.click(screen.getByRole("button", { name: "2×" }));
+
+    await waitFor(() => expect(screen.getByText("4 cups flour")).toBeInTheDocument());
+  });
+
+  it("shows scaled servings count when servings prop is provided and scale != 1×", async () => {
+    render(
+      <RecipeIngredientList
+        recipeId="recipe-1"
+        userId="user-1"
+        editable={false}
+        servings="4 servings"
+      />
+    );
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "2×" }));
+
+    await waitFor(() => expect(screen.getByText(/→ 8 serving/)).toBeInTheDocument());
+  });
+
+  it("does not show scaled servings when scale is 1×", async () => {
+    render(
+      <RecipeIngredientList
+        recipeId="recipe-1"
+        userId="user-1"
+        editable={false}
+        servings="4 servings"
+      />
+    );
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    // Default is 1× — no "→ X servings" label
+    expect(screen.queryByText(/→/)).not.toBeInTheDocument();
+  });
+
+  it("halves quantities when ½× is clicked", async () => {
+    render(<RecipeIngredientList recipeId="recipe-1" userId="user-1" editable={false} />);
+
+    await waitFor(() => expect(screen.getByText("Pantry")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "½×" }));
+
+    // flour quantity=2, ½× → 1 (unit stays "cups" since pluralizeUnit only pluralizes, not singularizes)
+    await waitFor(() => expect(screen.getByText("1 cups flour")).toBeInTheDocument());
   });
 });
