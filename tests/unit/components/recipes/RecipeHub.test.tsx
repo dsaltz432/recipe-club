@@ -5295,3 +5295,122 @@ describe("RecipeHub - Active Filter Chips", () => {
     });
   });
 });
+
+describe("RecipeHub - Favorites Filter", () => {
+  const baseRecipe = {
+    url: null,
+    event_id: "event-1",
+    ingredient_id: "ing-1",
+    created_by: "user-123",
+    created_at: "2025-01-15T10:00:00Z",
+    ingredients: { name: "Salmon" },
+    scheduled_events: { type: "club", event_date: "2025-01-15" },
+  };
+
+  const mockRecipesData = [
+    { ...baseRecipe, id: "recipe-1", name: "Grilled Salmon" },
+    { ...baseRecipe, id: "recipe-2", name: "Chicken Stir Fry" },
+    { ...baseRecipe, id: "recipe-3", name: "Veggie Bowl" },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    invalidatePantryCache();
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_favorites") return createMockQueryBuilder([{ recipe_id: "recipe-1" }]);
+      return createMockQueryBuilder([]);
+    });
+  });
+
+  it("renders the Favorites toggle button when userId is provided", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: /show favorites only/i })).toBeInTheDocument();
+  });
+
+  it("does not render the Favorites toggle button when no userId", async () => {
+    render(<RecipeHub />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("button", { name: /favorites/i })).not.toBeInTheDocument();
+  });
+
+  it("shows only favorited recipes when Favorites toggle is clicked", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      expect(screen.getByText("Veggie Bowl")).toBeInTheDocument();
+    });
+
+    // Click the Favorites toggle — recipe-1 (Grilled Salmon) is the only favorite
+    fireEvent.click(screen.getByRole("button", { name: /show favorites only/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
+      expect(screen.queryByText("Veggie Bowl")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows empty state with helpful message when user has no favorites and filter is active", async () => {
+    // Override: no favorites for this user
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === "recipes") return createMockQueryBuilder(mockRecipesData);
+      if (table === "recipe_notes") return createMockQueryBuilder([]);
+      if (table === "recipe_ratings") return createMockQueryBuilder([]);
+      if (table === "ingredients") return createMockQueryBuilder([]);
+      if (table === "recipe_favorites") return createMockQueryBuilder([]);
+      return createMockQueryBuilder([]);
+    });
+
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /show favorites only/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No favorites yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("toggles back to show all recipes when Favorites button is clicked again", async () => {
+    render(<RecipeHub userId="user-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+    });
+
+    // Activate favorites filter
+    fireEvent.click(screen.getByRole("button", { name: /show favorites only/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Chicken Stir Fry")).not.toBeInTheDocument();
+    });
+
+    // Deactivate favorites filter
+    fireEvent.click(screen.getByRole("button", { name: /show all recipes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Grilled Salmon")).toBeInTheDocument();
+      expect(screen.getByText("Chicken Stir Fry")).toBeInTheDocument();
+      expect(screen.getByText("Veggie Bowl")).toBeInTheDocument();
+    });
+  });
+});

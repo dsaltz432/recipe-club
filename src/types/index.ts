@@ -31,6 +31,8 @@ export interface Recipe {
   // Aggregated data (populated by joins)
   notesCount?: number;
   contributors?: string[];
+  // User-specific state
+  isFavorited?: boolean;
 }
 
 export interface RecipeNote {

@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX, Heart } from "lucide-react";
 import PhotoUpload from "./PhotoUpload";
 import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
@@ -129,6 +129,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [recipeTagsMap, setRecipeTagsMap] = useState<Record<string, string[]>>({});
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // Add Recipe dialog state
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
@@ -741,6 +743,49 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
     }
   };
 
+  const handleToggleFavorite = async (recipeId: string, newValue: boolean) => {
+    if (!userId) return;
+
+    // Optimistic update
+    setFavoritedIds((prev) => {
+      const next = new Set(prev);
+      if (newValue) {
+        next.add(recipeId);
+      } else {
+        next.delete(recipeId);
+      }
+      return next;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    try {
+      if (newValue) {
+        await db
+          .from("recipe_favorites")
+          .insert({ recipe_id: recipeId, user_id: userId });
+      } else {
+        await db
+          .from("recipe_favorites")
+          .delete()
+          .eq("recipe_id", recipeId)
+          .eq("user_id", userId);
+      }
+    } catch {
+      // Revert on error
+      setFavoritedIds((prev) => {
+        const next = new Set(prev);
+        if (newValue) {
+          next.delete(recipeId);
+        } else {
+          next.add(recipeId);
+        }
+        return next;
+      });
+      toast.error("Failed to update favorite");
+    }
+  };
+
   useEffect(() => {
     loadUsedIngredients();
 
@@ -753,7 +798,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
       // Load user's recipe tags (cast to any — recipe_tags is a new table not yet in generated types)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
+      const db = supabase as any;
+      db
         .from("recipe_tags")
         .select("recipe_id, tag")
         .eq("user_id", userId)
@@ -764,6 +810,15 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             map[row.recipe_id].push(row.tag);
           }
           setRecipeTagsMap(map);
+        });
+
+      // Load user's recipe favorites (cast to any — recipe_favorites is not yet in generated types)
+      db
+        .from("recipe_favorites")
+        .select("recipe_id")
+        .eq("user_id", userId)
+        .then(({ data }: { data: { recipe_id: string }[] | null }) => {
+          setFavoritedIds(new Set((data ?? []).map((r) => r.recipe_id)));
         });
     }
 
@@ -832,7 +887,9 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       return true;
     })();
 
-    return matchesSearch && matchesIngredient && matchesTime && matchesRating;
+    const matchesFavorites = !showFavoritesOnly || favoritedIds.has(recipe.id);
+
+    return matchesSearch && matchesIngredient && matchesTime && matchesRating && matchesFavorites;
   });
 
   const totalRecipes = recipes.length;
@@ -882,7 +939,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   return (
     <div className="space-y-6">
       {/* Sub-tabs */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant={subTab === "club" ? "default" : "outline"}
           size="sm"
@@ -902,6 +959,27 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         >
           My Recipes{personalCount !== null ? ` (${personalCount})` : ""}
         </Button>
+        {userId && (
+          <button
+            type="button"
+            aria-label={showFavoritesOnly ? "Show all recipes" : "Show favorites only"}
+            aria-pressed={showFavoritesOnly}
+            onClick={() => setShowFavoritesOnly((v) => !v)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors ${
+              showFavoritesOnly
+                ? "bg-rose-50 border-rose-300 text-rose-600 hover:bg-rose-100"
+                : "border-border text-muted-foreground hover:border-rose-300 hover:text-rose-500"
+            }`}
+          >
+            <Heart
+              className={`h-3.5 w-3.5 transition-colors ${showFavoritesOnly ? "fill-rose-500 text-rose-500" : ""}`}
+            />
+            Favorites
+            {showFavoritesOnly && favoritedIds.size > 0 && (
+              <span className="ml-0.5 text-xs opacity-75">({favoritedIds.size})</span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Club / Personal tab content */}
@@ -1153,6 +1231,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     setTimeFilter("all");
                     setRatingFilter("all");
                     setSortOption("newest");
+                    setShowFavoritesOnly(false);
                   }}
                   aria-label="Clear all filters"
                   className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/30 text-muted-foreground px-3 py-1 text-sm hover:border-muted-foreground/60 hover:text-foreground transition-colors"
@@ -1178,7 +1257,11 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
+                {showFavoritesOnly && favoritedIds.size === 0
+                  ? "No favorites yet. Click the heart on any recipe to save it here."
+                  : showFavoritesOnly
+                  ? "No favorited recipes match your current filters."
+                  : searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
                   ? "No recipes found matching your filters."
                   : subTab === "personal"
                   ? "No personal recipes yet. Click \"Add Recipe\" to get started."
@@ -1205,6 +1288,8 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onIngredientsChange={() => handleIngredientsChange(recipe.id)}
                 tags={recipeTagsMap[recipe.id] ?? []}
                 onTagsChange={userId ? handleTagsChange : undefined}
+                isFavorited={favoritedIds.has(recipe.id)}
+                onToggleFavorite={userId ? handleToggleFavorite : undefined}
               />
             ))}
           </div>

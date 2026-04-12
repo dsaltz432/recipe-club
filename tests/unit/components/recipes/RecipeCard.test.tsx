@@ -1333,3 +1333,66 @@ describe("RecipeCard - Last Cooked chip", () => {
     expect(screen.getByText(/Cooked Dec 2025/)).toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - favorites", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders a heart button when onToggleFavorite is provided", () => {
+    const recipe = createMockRecipe();
+    render(<RecipeCard recipe={recipe} onToggleFavorite={vi.fn()} isFavorited={false} />);
+    expect(screen.getByLabelText(`Add ${recipe.name} to favorites`)).toBeInTheDocument();
+  });
+
+  it("does not render a heart button when onToggleFavorite is not provided", () => {
+    const recipe = createMockRecipe();
+    render(<RecipeCard recipe={recipe} />);
+    expect(screen.queryByLabelText(/favorites/i)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Remove from favorites' label when isFavorited is true", () => {
+    const recipe = createMockRecipe();
+    render(<RecipeCard recipe={recipe} onToggleFavorite={vi.fn()} isFavorited={true} />);
+    expect(screen.getByLabelText(`Remove ${recipe.name} from favorites`)).toBeInTheDocument();
+  });
+
+  it("calls onToggleFavorite(recipeId, true) when clicking an unfavorited heart", () => {
+    const recipe = createMockRecipe({ id: "recipe-abc" });
+    const handleToggle = vi.fn();
+    render(<RecipeCard recipe={recipe} onToggleFavorite={handleToggle} isFavorited={false} />);
+    fireEvent.click(screen.getByLabelText(`Add ${recipe.name} to favorites`));
+    expect(handleToggle).toHaveBeenCalledWith("recipe-abc", true);
+  });
+
+  it("calls onToggleFavorite(recipeId, false) when clicking a favorited heart", () => {
+    const recipe = createMockRecipe({ id: "recipe-abc" });
+    const handleToggle = vi.fn();
+    render(<RecipeCard recipe={recipe} onToggleFavorite={handleToggle} isFavorited={true} />);
+    fireEvent.click(screen.getByLabelText(`Remove ${recipe.name} from favorites`));
+    expect(handleToggle).toHaveBeenCalledWith("recipe-abc", false);
+  });
+
+  it("heart icon is filled when isFavorited is true", () => {
+    const recipe = createMockRecipe();
+    render(<RecipeCard recipe={recipe} onToggleFavorite={vi.fn()} isFavorited={true} />);
+    const btn = screen.getByLabelText(`Remove ${recipe.name} from favorites`);
+    // SVG className in JSDOM is an SVGAnimatedString — use baseVal
+    const heartIcon = btn.querySelector("svg");
+    const classValue = typeof heartIcon?.className === "object"
+      ? (heartIcon.className as SVGAnimatedString).baseVal
+      : heartIcon?.className ?? "";
+    expect(classValue).toMatch(/fill-rose-500/);
+  });
+
+  it("heart icon is not filled when isFavorited is false", () => {
+    const recipe = createMockRecipe();
+    render(<RecipeCard recipe={recipe} onToggleFavorite={vi.fn()} isFavorited={false} />);
+    const btn = screen.getByLabelText(`Add ${recipe.name} to favorites`);
+    const heartIcon = btn.querySelector("svg");
+    const classValue = typeof heartIcon?.className === "object"
+      ? (heartIcon.className as SVGAnimatedString).baseVal
+      : heartIcon?.className ?? "";
+    expect(classValue).not.toMatch(/fill-rose-500/);
+  });
+});

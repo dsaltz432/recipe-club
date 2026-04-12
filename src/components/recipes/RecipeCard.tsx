@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users, CalendarCheck } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users, CalendarCheck, Heart } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
@@ -67,9 +67,11 @@ interface RecipeCardProps {
   onIngredientsChange?: () => void;
   tags?: string[];
   onTagsChange?: (recipeId: string, tags: string[]) => void;
+  isFavorited?: boolean;
+  onToggleFavorite?: (recipeId: string, newValue: boolean) => void;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange, tags = [], onTagsChange }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange, tags = [], onTagsChange, isFavorited = false, onToggleFavorite }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
@@ -181,8 +183,21 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
               )}
             </div>
             {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions) && (
+            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions || onToggleFavorite) && (
               <div className="flex items-center gap-0 -ml-1 mt-0.5">
+                {onToggleFavorite && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={isFavorited ? `Remove ${recipe.name} from favorites` : `Add ${recipe.name} to favorites`}
+                    onClick={() => onToggleFavorite(recipe.id, !isFavorited)}
+                  >
+                    <Heart
+                      className={`h-3.5 w-3.5 transition-colors ${isFavorited ? "fill-rose-500 text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
+                    />
+                  </Button>
+                )}
                 {recipe.url && (
                   <a
                     href={recipe.url}
