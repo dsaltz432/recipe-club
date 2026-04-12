@@ -37,9 +37,28 @@
 - `cn()` utility concatenates conditional color classes from `getRecipeColor`
 
 ## Current Status
-**Last Updated:** 2026-04-03
-**Tasks Completed:** 20
+**Last Updated:** 2026-04-12
+**Tasks Completed:** 23
 **Current Task:** Complete
+
+### Serving size scaler pattern (2026-04-11)
+- `src/lib/recipeScaler.ts` — `parseServingsNumber(servings: string): number | null` extracts first number from strings like "Serves 4", "4-6", "4 people"
+- `scaleMultiplier` state (0.5 | 1 | 2 | 3) in `RecipeIngredientList` — pill buttons `½× | 1× | 2× | 3×`
+- Scale hidden when `editable=true`; shown when not editable and ingredients exist
+- Scaling: `toSmartItem(ing, multiplier)` multiplies `ing.quantity * multiplier` before passing to GroceryCategoryGroup/formatGroceryItem
+- Servings label: `parseServingsNumber(servings) * multiplier` rounded to 1 decimal, shown only when `multiplier !== 1`
+- `pluralizeUnit` does NOT singularize — unit stored as "cups" stays "cups" even at qty=1
+- New prop `servings?: string` added to `RecipeIngredientListProps`, passed from `content?.servings` in RecipeCard and `recipeContentMap?.get(id)?.servings` in EventRecipesTab
+- Export `parseServingsNumber` from lib file (not component) to satisfy `react-refresh/only-export-components` lint rule
+
+### Recipe favorites pattern (2026-04-12)
+- New table `recipe_favorites (id, user_id, recipe_id, created_at)` with unique constraint; RLS per-user
+- `recipe_favorites` not in generated Supabase types — cast `supabase as any` (same pattern as `recipe_tags`)
+- `isFavorited?: boolean` and `onToggleFavorite?` props added to `RecipeCardProps`; `favoritedIds: Set<string>` in RecipeHub
+- Favorites loaded alongside tags in the initial useEffect (both are user-specific data)
+- SVG `className` in JSDOM is `SVGAnimatedString` not `string` — use `.baseVal` for regex assertions in tests
+- The Favorites pill lives outside the existing active-filter-chips area (it's a persistent toggle, not a removable chip)
+- `showFavoritesOnly` adds a `matchesFavorites` check in the `filteredRecipes` computation
 
 ### generate-cook-timeline edge function pattern
 - Accepts `{ eventId, recipeIds, model? }` — recipeIds is required and non-empty
@@ -80,6 +99,31 @@
 ---
 
 ## Session Log
+
+## [2026-04-10] — Recently used recipe quick-picks in Add Meal dialog
+
+### What was implemented
+- Updated `src/components/mealplan/AddMealDialog.tsx` — added optional `userId` prop; when provided, fetches last 6 distinct recipes from the user's meal plan history on dialog open; shows them as instant quick-pick selections with a "Recently used" header and loading skeleton; falls back to "Type to search" when no history or no userId
+- Updated `src/components/mealplan/MealPlanPage.tsx` — passes `userId` to `AddMealDialog`
+- Updated `tests/unit/components/mealplan/AddMealDialog.test.tsx` — extended mock query builder with `eq`, `not`, `order` chain methods; added 11 new tests for recently used behavior
+
+### Files changed
+- `src/components/mealplan/AddMealDialog.tsx` (modified)
+- `src/components/mealplan/MealPlanPage.tsx` (modified)
+- `tests/unit/components/mealplan/AddMealDialog.test.tsx` (modified)
+
+### Quality checks
+- Build: pass
+- Tests: 2066/2066 pass (e2e smoke.spec.ts excluded — pre-existing Playwright/Vitest conflict)
+- Lint: 0 errors
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/32
+
+### Learnings for future iterations
+- Recent-recipes query: `from("meal_plan_items").select("recipe_id, recipes(id, name, url, event_id), meal_plans!inner(user_id)").eq("meal_plans.user_id", userId).not("recipe_id","is",null).order("created_at",{ascending:false}).limit(30)` — requires `supabase as any` cast; deduplicate by `recipe_id` in JS
+- Mock query builder for tests that involve multi-step chains (eq, not, order, limit) should include all methods as `vi.fn().mockReturnThis()` in the base builder
+- When a mock is called multiple times (once for recent fetch, once for search), use `mockImplementationOnce` for the first call then `mockImplementation` for subsequent
 
 ## [2026-04-03] — Recently Cooked history widget on Home tab
 
