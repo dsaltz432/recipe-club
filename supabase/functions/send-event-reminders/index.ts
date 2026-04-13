@@ -82,7 +82,8 @@ serve(async (req) => {
           ingredient:ingredients(name)
         `)
         .eq("event_date", dateString)
-        .eq("status", "scheduled");
+        .eq("status", "scheduled")
+        .eq("type", "club");
 
       if (eventsError) {
         results.errors.push(`Error fetching events for ${dateString}: ${eventsError.message}`);
