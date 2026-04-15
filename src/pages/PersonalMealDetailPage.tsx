@@ -44,7 +44,6 @@ import {
   X,
   CheckCircle,
   Share2,
-  Globe,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import PhotoUpload from "@/components/recipes/PhotoUpload";
@@ -81,7 +80,7 @@ const PersonalMealDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isShared, setIsShared] = useState(false);
-  const [isTogglingShare, setIsTogglingShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Add Meal dialog state
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
@@ -826,36 +825,26 @@ const PersonalMealDetailPage = () => {
     }
   };
 
-  const handleToggleShare = async () => {
+  const handleShare = async () => {
     if (!event || !eventId) return;
-    setIsTogglingShare(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("scheduled_events")
-        .update({ is_shared: !isShared })
-        .eq("id", eventId);
-      if (error) throw error;
-      setIsShared(!isShared);
       if (!isShared) {
-        const url = `${window.location.origin}/shared-event/${eventId}`;
-        await navigator.clipboard.writeText(url);
-        toast.success("Event shared! Link copied to clipboard.");
-      } else {
-        toast.success("Event is now private.");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from("scheduled_events")
+          .update({ is_shared: true })
+          .eq("id", eventId);
+        if (error) throw error;
+        setIsShared(true);
       }
+      const url = `${window.location.origin}/shared-event/${eventId}`;
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
     } catch (err) {
-      console.error("Error toggling share:", err);
-      toast.error("Failed to update sharing settings");
-    } finally {
-      setIsTogglingShare(false);
+      console.error("Error sharing event:", err);
+      toast.error("Failed to share event");
     }
-  };
-
-  const handleCopyShareLink = async () => {
-    const url = `${window.location.origin}/shared-event/${eventId}`;
-    await navigator.clipboard.writeText(url);
-    toast.success("Share link copied!");
   };
 
   if (isLoading) {
@@ -958,31 +947,16 @@ const PersonalMealDetailPage = () => {
                 <div className="flex gap-1 sm:gap-2">
                   {/* Share button — always visible for personal events the user owns */}
                   {isPersonalEvent && (
-                    <div className="flex gap-1">
-                      <Button
-                        variant={isShared ? "default" : "outline"}
-                        size="sm"
-                        onClick={handleToggleShare}
-                        disabled={isTogglingShare}
-                        className={`h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs ${isShared ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-                        title={isShared ? "Event is shared — click to make private" : "Share this event"}
-                      >
-                        {isShared ? <Globe className="h-3.5 w-3.5 sm:mr-1" /> : <Share2 className="h-3.5 w-3.5 sm:mr-1" />}
-                        <span className="hidden sm:inline">{isShared ? "Shared" : "Share"}</span>
-                      </Button>
-                      {isShared && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCopyShareLink}
-                          className="h-8 w-8 sm:w-auto sm:px-3 p-0 text-xs"
-                          title="Copy share link"
-                        >
-                          <Share2 className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline ml-1">Copy link</span>
-                        </Button>
-                      )}
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleShare}
+                      className="h-8 w-auto px-3 text-xs"
+                      title="Copy shareable link"
+                    >
+                      <Share2 className="h-3.5 w-3.5 mr-1" />
+                      {shareCopied ? "Copied Link!" : "Share"}
+                    </Button>
                   )}
                   {isPersonalEvent && isUpcoming && (
                     <>

@@ -56,6 +56,7 @@ const SharedEventPage = () => {
   const [event, setEvent] = useState<SharedEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [expandedRecipes, setExpandedRecipes] = useState<Set<string>>(new Set());
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [lightboxPhotos, setLightboxPhotos] = useState<LightboxPhoto[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -228,6 +229,14 @@ const SharedEventPage = () => {
     load();
   }, [eventId]);
 
+  const toggleRecipe = (recipeId: string) => {
+    setExpandedRecipes((prev) => {
+      const next = new Set(prev);
+      if (next.has(recipeId)) { next.delete(recipeId); } else { next.add(recipeId); }
+      return next;
+    });
+  };
+
   const toggleNotes = (recipeId: string) => {
     setExpandedNotes((prev) => {
       const next = new Set(prev);
@@ -372,6 +381,7 @@ const SharedEventPage = () => {
         ) : (
           <div className="space-y-4">
             {event.recipes.map((recipe) => {
+              const recipeExpanded = expandedRecipes.has(recipe.id);
               const notesExpanded = expandedNotes.has(recipe.id);
               const totalPhotos = recipe.notes.reduce(
                 (sum, n) => sum + (n.photos?.length ?? 0),
@@ -384,17 +394,27 @@ const SharedEventPage = () => {
               return (
                 <Card key={recipe.id} className="bg-white/90 border border-purple-100 shadow-sm">
                   <CardContent className="p-4 sm:p-5 space-y-4">
-                    {/* Recipe header */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-0.5 min-w-0">
-                        <h2 className="font-semibold text-base sm:text-lg text-gray-900 leading-tight">
-                          {recipe.name}
-                        </h2>
-                        {recipe.createdByName && (
-                          <p className="text-xs text-muted-foreground">
-                            Added by {recipe.createdByName}
-                          </p>
+                    {/* Recipe header — clickable to expand/collapse */}
+                    <button
+                      className="w-full flex items-start justify-between gap-2 text-left"
+                      onClick={() => toggleRecipe(recipe.id)}
+                    >
+                      <div className="flex items-start gap-2 min-w-0">
+                        {recipeExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-purple-500 shrink-0 mt-0.5" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-purple-500 shrink-0 mt-0.5" />
                         )}
+                        <div className="space-y-0.5 min-w-0">
+                          <h2 className="font-semibold text-base sm:text-lg text-gray-900 leading-tight">
+                            {recipe.name}
+                          </h2>
+                          {recipe.createdByName && (
+                            <p className="text-xs text-muted-foreground">
+                              Added by {recipe.createdByName}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       {recipe.url && (
                         <a
@@ -402,6 +422,7 @@ const SharedEventPage = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="shrink-0"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7">
                             <ExternalLink className="h-3 w-3" />
@@ -409,109 +430,113 @@ const SharedEventPage = () => {
                           </Button>
                         </a>
                       )}
-                    </div>
+                    </button>
 
-                    {/* Meta: servings, times */}
-                    {recipe.content && (
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        {recipe.content.servings && (
-                          <span>Serves {recipe.content.servings}</span>
+                    {recipeExpanded && (
+                      <div className="space-y-4">
+                        {/* Meta: servings, times */}
+                        {recipe.content && (
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            {recipe.content.servings && (
+                              <span>Serves {recipe.content.servings}</span>
+                            )}
+                            {recipe.content.prepTime && (
+                              <span>Prep {recipe.content.prepTime}</span>
+                            )}
+                            {recipe.content.cookTime && (
+                              <span>Cook {recipe.content.cookTime}</span>
+                            )}
+                            {recipe.content.totalTime && (
+                              <span>Total {recipe.content.totalTime}</span>
+                            )}
+                          </div>
                         )}
-                        {recipe.content.prepTime && (
-                          <span>Prep {recipe.content.prepTime}</span>
+
+                        {/* Ingredients */}
+                        {hasIngredients && (
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-700 mb-2">Ingredients</h3>
+                            <RecipeIngredientList
+                              recipeId={recipe.id}
+                              userId={currentUserId ?? ""}
+                              editable={false}
+                            />
+                          </div>
                         )}
-                        {recipe.content.cookTime && (
-                          <span>Cook {recipe.content.cookTime}</span>
+
+                        {/* Instructions */}
+                        {hasInstructions && (
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-700 mb-2">Instructions</h3>
+                            <RecipeInstructions
+                              instructions={recipe.content!.instructions}
+                              servings={recipe.content!.servings}
+                              prepTime={recipe.content!.prepTime}
+                              cookTime={recipe.content!.cookTime}
+                              totalTime={recipe.content!.totalTime}
+                            />
+                          </div>
                         )}
-                        {recipe.content.totalTime && (
-                          <span>Total {recipe.content.totalTime}</span>
-                        )}
-                      </div>
-                    )}
 
-                    {/* Ingredients */}
-                    {hasIngredients && (
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-2">Ingredients</h3>
-                        <RecipeIngredientList
-                          recipeId={recipe.id}
-                          userId={currentUserId ?? ""}
-                          editable={false}
-                        />
-                      </div>
-                    )}
+                        {/* Tips */}
+                        <RecipeTips recipeId={recipe.id} userId={currentUserId ?? undefined} />
 
-                    {/* Instructions */}
-                    {hasInstructions && (
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-2">Instructions</h3>
-                        <RecipeInstructions
-                          instructions={recipe.content!.instructions}
-                          servings={recipe.content!.servings}
-                          prepTime={recipe.content!.prepTime}
-                          cookTime={recipe.content!.cookTime}
-                          totalTime={recipe.content!.totalTime}
-                        />
-                      </div>
-                    )}
+                        {/* Notes toggle */}
+                        {recipe.notes.length > 0 && (
+                          <div>
+                            <button
+                              className="flex items-center gap-1.5 text-sm font-medium text-purple-700 hover:text-purple-800"
+                              onClick={() => toggleNotes(recipe.id)}
+                            >
+                              {notesExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                              Notes & Photos
+                              {totalPhotos > 0 && (
+                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground font-normal">
+                                  <Camera className="h-3 w-3" />
+                                  {totalPhotos}
+                                </span>
+                              )}
+                            </button>
 
-                    {/* Tips */}
-                    <RecipeTips recipeId={recipe.id} userId={currentUserId ?? undefined} />
-
-                    {/* Notes toggle */}
-                    {recipe.notes.length > 0 && (
-                      <div>
-                        <button
-                          className="flex items-center gap-1.5 text-sm font-medium text-purple-700 hover:text-purple-800"
-                          onClick={() => toggleNotes(recipe.id)}
-                        >
-                          {notesExpanded ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                          Notes & Photos
-                          {totalPhotos > 0 && (
-                            <span className="flex items-center gap-0.5 text-xs text-muted-foreground font-normal">
-                              <Camera className="h-3 w-3" />
-                              {totalPhotos}
-                            </span>
-                          )}
-                        </button>
-
-                        {notesExpanded && (
-                          <div className="mt-3 space-y-3">
-                            {recipe.notes.map((note) => (
-                              <div
-                                key={note.id}
-                                className="rounded-lg bg-purple-50/50 border border-purple-100 p-3 space-y-2"
-                              >
-                                <p className="text-xs font-medium text-purple-700">
-                                  {note.userName}
-                                </p>
-                                {note.notes && (
-                                  <p className="text-sm text-gray-700">{note.notes}</p>
-                                )}
-                                {note.photos && note.photos.length > 0 && (
-                                  <div className="flex gap-2 overflow-x-auto pb-1">
-                                    {note.photos.map((photo, idx) => (
-                                      <button
-                                        key={idx}
-                                        onClick={() => openLightbox(note.photos!, idx)}
-                                        className="shrink-0"
-                                        aria-label={`View photo ${idx + 1}`}
-                                      >
-                                        <img
-                                          src={photo}
-                                          alt={`Photo ${idx + 1}`}
-                                          className="h-20 w-20 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity"
-                                        />
-                                      </button>
-                                    ))}
+                            {notesExpanded && (
+                              <div className="mt-3 space-y-3">
+                                {recipe.notes.map((note) => (
+                                  <div
+                                    key={note.id}
+                                    className="rounded-lg bg-purple-50/50 border border-purple-100 p-3 space-y-2"
+                                  >
+                                    <p className="text-xs font-medium text-purple-700">
+                                      {note.userName}
+                                    </p>
+                                    {note.notes && (
+                                      <p className="text-sm text-gray-700">{note.notes}</p>
+                                    )}
+                                    {note.photos && note.photos.length > 0 && (
+                                      <div className="flex gap-2 overflow-x-auto pb-1">
+                                        {note.photos.map((photo, idx) => (
+                                          <button
+                                            key={idx}
+                                            onClick={() => openLightbox(note.photos!, idx)}
+                                            className="shrink-0"
+                                            aria-label={`View photo ${idx + 1}`}
+                                          >
+                                            <img
+                                              src={photo}
+                                              alt={`Photo ${idx + 1}`}
+                                              className="h-20 w-20 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity"
+                                            />
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
+                                ))}
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </div>
