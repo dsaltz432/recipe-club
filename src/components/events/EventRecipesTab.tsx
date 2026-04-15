@@ -295,7 +295,7 @@ const EventRecipesTab = ({
                         <ListOrdered className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         <span className="hidden sm:inline text-xs">Instructions</span>
                       </Button>
-                      {onCookRecipe && recipeContentMap?.get(recipe.id)?.instructions?.length && (
+                      {onCookRecipe && (recipeContentMap?.get(recipe.id)?.instructions?.length ?? 0) > 0 && (
                         <Button
                           variant="ghost"
                           size="sm"

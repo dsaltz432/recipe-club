@@ -1027,7 +1027,7 @@ const EventDetailPage = () => {
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
           onCookClick={handleStartCooking}
-          showCookTab={cookModeRecipes.length > 0 && cookModeRecipes.length < 5}
+          showCookTab={cookModeRecipes.length > 0 && (event?.recipesWithNotes.length ?? 0) < 5}
         />
       </main>
 

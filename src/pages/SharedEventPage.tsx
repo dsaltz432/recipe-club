@@ -335,7 +335,7 @@ const SharedEventPage = () => {
     }
   })();
 
-  const hasCookableRecipes = allCookModeRecipes.length > 0 && allCookModeRecipes.length < 5;
+  const hasCookableRecipes = allCookModeRecipes.length > 0 && (event.recipes.length) < 5;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50/30">
