@@ -11,6 +11,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Settings from "./pages/Settings";
 import ContactUs from "./pages/ContactUs";
 import SharedRecipePage from "./pages/SharedRecipePage";
+import SharedEventPage from "./pages/SharedEventPage";
 import JoelPartyMode from "./pages/JoelPartyMode";
 import AuthGuard from "./components/auth/AuthGuard";
 
@@ -79,6 +80,7 @@ function App() {
           />
           <Route path="/joel" element={<JoelPartyMode />} />
           <Route path="/recipes/:recipeId" element={<SharedRecipePage />} />
+          <Route path="/shared-event/:eventId" element={<SharedEventPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
