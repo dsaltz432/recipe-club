@@ -16,6 +16,7 @@ import {
   ChevronUp,
   Share2,
   ListOrdered,
+  UtensilsCrossed,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Recipe, RecipeNote, EventRecipeWithNotes, RecipeRatingsSummary, RecipeContent } from "@/types";
@@ -62,6 +63,7 @@ interface EventRecipesTabProps {
   onDeleteNoteClick: (note: RecipeNote) => void;
   onDeleteRecipeClick: (recipe: Recipe) => void;
   onRateRecipe?: (recipe: EventRecipeWithRatings) => void;
+  onCookRecipe?: (recipeId: string) => void;
   userId?: string;
   onIngredientsChange?: (recipeId: string) => void;
   cacheContext?: { type: "event" | "meal_plan"; id: string; userId: string };
@@ -84,6 +86,7 @@ const EventRecipesTab = ({
   onDeleteNoteClick,
   onDeleteRecipeClick,
   onRateRecipe,
+  onCookRecipe,
   userId,
   onIngredientsChange,
   cacheContext,
@@ -292,6 +295,18 @@ const EventRecipesTab = ({
                         <ListOrdered className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         <span className="hidden sm:inline text-xs">Instructions</span>
                       </Button>
+                      {onCookRecipe && recipeContentMap?.get(recipe.id)?.instructions?.length && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto px-1.5 py-1 gap-1 text-muted-foreground"
+                          aria-label={`Cook ${recipe.name}`}
+                          onClick={() => onCookRecipe(recipe.id)}
+                        >
+                          <UtensilsCrossed className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          <span className="hidden sm:inline text-xs">Cook</span>
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

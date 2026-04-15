@@ -141,7 +141,7 @@ export function useCookMode({ eventId, recipes, allRecipeIngredients }: UseCookM
       isInitialMount.current = false;
       return;
     }
-    if (recipes.length === 0) return;
+    if (recipes.length === 0 || recipes.length >= 5) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {

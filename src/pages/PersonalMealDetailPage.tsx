@@ -176,13 +176,23 @@ const PersonalMealDetailPage = () => {
   }, [event?.recipesWithNotes, recipeContentMap]);
 
   const [cookModeOpen, setCookModeOpen] = useState(false);
+  const [cookViewMode, setCookViewMode] = useState<CookViewMode>("interleaved");
+  // null = all recipes (event-level cook mode), string = single recipe id
+  const [cookScopeRecipeId, setCookScopeRecipeId] = useState<string | null>(null);
+
   const cookModeRecipeList = useMemo(
     () => cookModeRecipes.map((r) => ({ id: r.id, name: r.name, instructions: r.content.instructions })),
     [cookModeRecipes]
   );
+  const scopedCookRecipeList = useMemo(
+    () => cookScopeRecipeId
+      ? cookModeRecipeList.filter((r) => r.id === cookScopeRecipeId)
+      : cookModeRecipeList,
+    [cookModeRecipeList, cookScopeRecipeId]
+  );
   const { timeline: cookTimeline, loading: cookModeLoading, error: cookModeError, generateTimeline, ingredientsByRecipe: cookModeIngredientsByRecipe } = useCookMode({
     eventId,
-    recipes: cookModeRecipeList,
+    recipes: scopedCookRecipeList,
     allRecipeIngredients: grocery.recipeIngredients,
   });
   const cookModeRecipeNames = useMemo(
@@ -190,12 +200,22 @@ const PersonalMealDetailPage = () => {
     [cookModeRecipes]
   );
 
-  const [cookViewMode, setCookViewMode] = useState<CookViewMode>("interleaved");
-
   const handleStartCooking = () => {
+    setCookScopeRecipeId(null);
     setCookModeOpen(true);
-    generateTimeline(cookViewMode);
   };
+
+  const handleCookRecipe = (recipeId: string) => {
+    setCookScopeRecipeId(recipeId);
+    setCookModeOpen(true);
+  };
+
+  // Re-generate timeline when scope changes while dialog is open
+  useEffect(() => {
+    if (cookModeOpen && scopedCookRecipeList.length > 0) {
+      generateTimeline(cookViewMode);
+    }
+  }, [cookScopeRecipeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCookViewModeChange = (mode: CookViewMode) => {
     setCookViewMode(mode);
@@ -1008,6 +1028,7 @@ const PersonalMealDetailPage = () => {
               onDeleteNoteClick={handleDeleteClick}
               onDeleteRecipeClick={handleDeleteRecipeClick}
               onRateRecipe={handleRateRecipe}
+              onCookRecipe={handleCookRecipe}
               userId={user?.id}
               onIngredientsChange={() => grocery.markIngredientChange()}
               cacheContext={{ type: "event", id: eventId ?? "", userId: user?.id ?? "" }}
@@ -1053,7 +1074,7 @@ const PersonalMealDetailPage = () => {
           }
           pantryContent={<PantrySection userId={user?.id} onPantryChange={handlePantryChange} />}
           onCookClick={handleStartCooking}
-          showCookTab={cookModeRecipes.length > 0}
+          showCookTab={cookModeRecipes.length > 0 && cookModeRecipes.length < 5}
         />
       </main>
 

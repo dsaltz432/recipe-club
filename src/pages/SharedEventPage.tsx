@@ -252,7 +252,10 @@ const SharedEventPage = () => {
   };
 
   // Cook mode setup
-  const cookModeRecipes = useMemo(
+  // null = all recipes, string = single recipe id
+  const [cookScopeRecipeId, setCookScopeRecipeId] = useState<string | null>(null);
+
+  const allCookModeRecipes = useMemo(
     () =>
       (event?.recipes ?? [])
         .filter((r) => r.content?.instructions && r.content.instructions.length > 0)
@@ -264,17 +267,35 @@ const SharedEventPage = () => {
     [event?.recipes]
   );
 
+  const scopedCookRecipes = useMemo(
+    () => cookScopeRecipeId
+      ? allCookModeRecipes.filter((r) => r.id === cookScopeRecipeId)
+      : allCookModeRecipes,
+    [allCookModeRecipes, cookScopeRecipeId]
+  );
+
   const cookMode = useCookMode({
     eventId: event?.id,
-    recipes: cookModeRecipes,
+    recipes: scopedCookRecipes,
   });
 
   const handleStartCookMode = async () => {
+    setCookScopeRecipeId(null);
     setShowCookMode(true);
-    if (cookMode.timeline.length === 0) {
-      await cookMode.generateTimeline();
-    }
+    await cookMode.generateTimeline();
   };
+
+  const handleCookRecipe = async (recipeId: string) => {
+    setCookScopeRecipeId(recipeId);
+    setShowCookMode(true);
+  };
+
+  // Re-generate timeline when scope changes while dialog is open
+  useEffect(() => {
+    if (showCookMode && scopedCookRecipes.length > 0) {
+      cookMode.generateTimeline();
+    }
+  }, [cookScopeRecipeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return (
@@ -314,7 +335,7 @@ const SharedEventPage = () => {
     }
   })();
 
-  const hasCookableRecipes = cookModeRecipes.length > 0;
+  const hasCookableRecipes = allCookModeRecipes.length > 0 && allCookModeRecipes.length < 5;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50/30">
@@ -434,6 +455,19 @@ const SharedEventPage = () => {
 
                     {recipeExpanded && (
                       <div className="space-y-4">
+                        {/* Cook button for single recipe */}
+                        {hasInstructions && (
+                          <Button
+                            onClick={() => handleCookRecipe(recipe.id)}
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs"
+                          >
+                            <UtensilsCrossed className="h-3.5 w-3.5" />
+                            Cook
+                          </Button>
+                        )}
+
                         {/* Meta: servings, times */}
                         {recipe.content && (
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
