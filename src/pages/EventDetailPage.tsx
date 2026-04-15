@@ -216,7 +216,7 @@ const EventDetailPage = () => {
   const handleStartCooking = () => {
     setCookScopeRecipeId(null);
     setCookModeOpen(true);
-    // generateTimeline will be triggered by the useEffect below after scope change
+    generateTimeline(cookViewMode);
   };
 
   const handleCookRecipe = (recipeId: string) => {

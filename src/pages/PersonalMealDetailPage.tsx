@@ -203,6 +203,7 @@ const PersonalMealDetailPage = () => {
   const handleStartCooking = () => {
     setCookScopeRecipeId(null);
     setCookModeOpen(true);
+    generateTimeline(cookViewMode);
   };
 
   const handleCookRecipe = (recipeId: string) => {
