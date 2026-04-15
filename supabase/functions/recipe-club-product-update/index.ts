@@ -33,37 +33,38 @@ serve(async (req) => {
       throw new Error("emails is required and must be a non-empty array");
     }
 
-    const subject = "New Feature: Shared Grocery Lists!";
+    const subject = "New Feature: Share Your Personal Events!";
 
     const bodyHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #9b87f5;">Shared Grocery Lists Are Here!</h1>
+        <h1 style="color: #9b87f5;">Share Your Personal Events!</h1>
         <p>Hey there!</p>
         <p>The team here at Recipe Club Hub is working hard to bring you new features — and we're just getting started!</p>
-        <p>We're excited to announce: <strong>Shared Grocery Lists</strong> and <strong>Pantry Management</strong>!</p>
+        <p>With <strong>Dumplingfest</strong> right around the corner, we wanted to get this out just in time! We're excited to announce: <strong>Shareable Personal Events</strong>!</p>
 
         <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
-          <p style="margin: 0 0 12px 0; font-weight: bold; color: #9b87f5;">Grocery List</p>
+          <p style="margin: 0 0 12px 0; font-weight: bold; color: #9b87f5;">Share Your Meals</p>
           <ul style="margin: 0 0 16px 0; padding-left: 20px; line-height: 1.8;">
-            <li>A shared grocery list is now available on every event page</li>
-            <li>Ingredients are <strong>smartly combined</strong> across all recipes in the event</li>
-            <li>View the combined list or filter by individual recipe</li>
-            <li>Export your list as a <strong>CSV</strong> to take with you</li>
+            <li>Share any personal event with a <strong>single click</strong> — just hit the Share button</li>
+            <li>A <strong>public link</strong> is copied to your clipboard, ready to send to friends and family</li>
+            <li>Guests can view your recipes, ingredients, instructions, and notes — <strong>no sign-up required</strong></li>
+            <li>Recipes are <strong>collapsible</strong> for easy browsing</li>
           </ul>
 
-          <p style="margin: 0 0 12px 0; font-weight: bold; color: #9b87f5;">Pantry</p>
+          <p style="margin: 0 0 12px 0; font-weight: bold; color: #9b87f5;">Per-Recipe Cook Mode</p>
           <ul style="margin: 0 0 16px 0; padding-left: 20px; line-height: 1.8;">
-            <li>Add items you already have at home to <strong>My Pantry</strong></li>
-            <li>Pantry items are automatically <strong>excluded</strong> from your grocery list</li>
-            <li>No more buying salt and pepper every single time!</li>
+            <li>Cook Mode now works on <strong>individual recipes</strong> — look for the Cook button on each recipe card</li>
+            <li>Get step-by-step guided instructions for any single recipe</li>
           </ul>
         </div>
 
-        <p>Head over to your <a href="https://www.therecipeclubhub.com/events/7b1ea8fc-729d-4c83-a64f-46552f9abab6" style="color: #9b87f5; font-weight: bold;">next event</a> to try it out!</p>
+        <p>These features are perfect for sharing your Dumplingfest recipes with guests ahead of time. Get your event set up, hit Share, and everyone will have the full menu at their fingertips!</p>
 
         <div style="text-align: center; margin: 24px 0;">
           <a href="https://therecipeclubhub.com" style="background: #9b87f5; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open Recipe Club Hub</a>
         </div>
+
+        <p style="color: #555; font-size: 14px;">As always, <a href="http://bit.ly/4vxXiop" style="color: #9b87f5; font-weight: bold;">deposits</a> are always appreciated!</p>
 
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="color: #666; font-size: 12px;">Recipe Club Hub</p>
