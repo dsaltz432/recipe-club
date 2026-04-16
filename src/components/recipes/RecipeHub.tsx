@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -36,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX } from "lucide-react";
+import EmptyState from "@/components/ui/empty-state";
 import PhotoUpload from "./PhotoUpload";
 import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
 import RecipeInputForm, {
@@ -1174,18 +1174,35 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
 
         {/* Recipe Grid */}
         {sortedRecipes.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center">
-                {searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all"
-                  ? "No recipes found matching your filters."
-                  : subTab === "personal"
-                  ? "No personal recipes yet. Click \"Add Recipe\" to get started."
-                  : "No recipes yet. Recipes are added through events."}
-              </p>
-            </CardContent>
-          </Card>
+          (() => {
+            const hasFilters = searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all";
+            if (hasFilters) {
+              return (
+                <EmptyState
+                  icon={FilterX}
+                  title="No recipes found matching your filters"
+                  description="Try adjusting your search or clearing the active filters."
+                />
+              );
+            }
+            if (subTab === "personal") {
+              return (
+                <EmptyState
+                  icon={BookOpen}
+                  title="No recipes yet"
+                  description="Save your favorite recipes here to build your own collection."
+                  action={userId ? { label: "Add Recipe", onClick: () => setShowAddRecipeDialog(true), icon: Plus } : undefined}
+                />
+              );
+            }
+            return (
+              <EmptyState
+                icon={BookOpen}
+                title="No recipes yet"
+                description="Club recipes are created through cooking events. Head to the Events tab to get started."
+              />
+            );
+          })()
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedRecipes.map((recipe) => (

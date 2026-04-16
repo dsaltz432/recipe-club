@@ -157,7 +157,7 @@ describe("RecipeClubEvents", () => {
     render(<RecipeClubEvents {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("No events yet. Spin the wheel to create one!")).toBeInTheDocument();
+      expect(screen.getByText("No club events yet")).toBeInTheDocument();
     });
   });
 
@@ -171,7 +171,7 @@ describe("RecipeClubEvents", () => {
     render(<RecipeClubEvents {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("No events yet. Spin the wheel to create one!")).toBeInTheDocument();
+      expect(screen.getByText("No club events yet")).toBeInTheDocument();
     });
 
     // recipes and recipe_notes queries should not have been called
@@ -1318,7 +1318,7 @@ describe("RecipeClubEvents", () => {
     render(<RecipeClubEvents {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("No events yet. Spin the wheel to create one!")).toBeInTheDocument();
+      expect(screen.getByText("No club events yet")).toBeInTheDocument();
     });
   });
 

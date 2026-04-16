@@ -1405,7 +1405,7 @@ describe("RecipeHub - Sub-tabs", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)
+        screen.getByText(/no recipes yet/i)
       ).toBeInTheDocument();
     });
   });
@@ -1546,7 +1546,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)).toBeInTheDocument();
+      expect(screen.getByText(/no recipes yet/i)).toBeInTheDocument();
     });
   });
 
@@ -1561,7 +1561,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)).toBeInTheDocument();
+      expect(screen.getByText(/no recipes yet/i)).toBeInTheDocument();
     });
   });
 
@@ -1588,7 +1588,7 @@ describe("RecipeHub - Sub-tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no personal recipes yet\. click "add recipe" to get started\./i)).toBeInTheDocument();
+      expect(screen.getByText(/no recipes yet/i)).toBeInTheDocument();
     });
   });
 
@@ -4490,7 +4490,7 @@ describe("RecipeHub - Add Recipe", () => {
     fireEvent.click(screen.getByRole("button", { name: /My Recipes/ }));
 
     await waitFor(() => {
-      expect(screen.queryByText(/no personal recipes/i)).toBeInTheDocument();
+      expect(screen.queryByText(/no recipes yet/i)).toBeInTheDocument();
     });
 
     expect(screen.queryByRole("button", { name: /add recipe/i })).not.toBeInTheDocument();
