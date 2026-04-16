@@ -1,3 +1,4 @@
+import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@tests/utils";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient } from "@/types";
@@ -42,6 +43,17 @@ vi.mock("sonner", () => ({
     error: vi.fn(),
     success: vi.fn(),
   },
+}));
+
+// Mock DropdownMenu — render all children immediately so action items are accessible in tests
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick, ...props }: React.HTMLAttributes<HTMLButtonElement> & { onClick?: () => void }) => (
+    <button role="menuitem" onClick={onClick} {...props}>{children}</button>
+  ),
+  DropdownMenuSeparator: () => <hr />,
 }));
 
 import RecipeCard from "@/components/recipes/RecipeCard";
@@ -1071,34 +1083,16 @@ describe("RecipeCard - Tips Section", () => {
     vi.clearAllMocks();
   });
 
-  it("shows Tips toggle button for all recipes", () => {
+  it("renders RecipeTips inline without a toggle", () => {
     const recipe = createMockRecipe();
 
     render(<RecipeCard recipe={recipe} />);
 
-    expect(screen.getByLabelText(/Expand tips for/)).toBeInTheDocument();
-  });
-
-  it("expands and shows RecipeTips when Tips toggle is clicked", () => {
-    const recipe = createMockRecipe();
-
-    render(<RecipeCard recipe={recipe} />);
-
-    fireEvent.click(screen.getByLabelText(/Expand tips for/));
-
+    // RecipeTips is always rendered inline (no toggle needed — it handles its own empty state)
     expect(screen.getByTestId(`recipe-tips-${recipe.id}`)).toBeInTheDocument();
-  });
-
-  it("collapses RecipeTips when Tips toggle is clicked again", () => {
-    const recipe = createMockRecipe();
-
-    render(<RecipeCard recipe={recipe} />);
-
-    fireEvent.click(screen.getByLabelText(/Expand tips for/));
-    expect(screen.getByTestId(`recipe-tips-${recipe.id}`)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText(/Collapse tips for/));
-    expect(screen.queryByTestId(`recipe-tips-${recipe.id}`)).not.toBeInTheDocument();
+    // No toggle button should exist for tips
+    expect(screen.queryByLabelText(/Expand tips for/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Collapse tips for/)).not.toBeInTheDocument();
   });
 });
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Lightbulb, Tag, Clock, Users, CalendarCheck } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Camera, Star, Pencil, Trash2, Plus, Loader2, Share2, ListOrdered, ChefHat, Tag, Clock, Users, CalendarCheck, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import type { Recipe, RecipeNote, RecipeRatingsSummary, RecipeIngredient, RecipeContent, CookModeStep } from "@/types";
 import { isPantryItem } from "@/lib/groceryList";
@@ -18,6 +18,13 @@ import RecipeTagPills from "./RecipeTagPills";
 import RecipeTagEditor from "./RecipeTagEditor";
 import PhotoLightbox from "@/components/shared/PhotoLightbox";
 import type { LightboxPhoto } from "@/components/shared/PhotoLightbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Helper to render stars with half-star support
 const renderStars = (rating: number, starSize = "h-4 w-4") => {
@@ -74,7 +81,6 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-  const [tipsExpanded, setTipsExpanded] = useState(false);
   const [cookModeOpen, setCookModeOpen] = useState(false);
   const [cookModeSteps, setCookModeSteps] = useState<CookModeStep[]>([]);
   const [cookModeIngredients, setCookModeIngredients] = useState<RecipeIngredient[]>([]);
@@ -180,78 +186,84 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                 </span>
               )}
             </div>
-            {/* Action buttons - below name on all screen sizes */}
-            {(recipe.url || onAddNote || onDelete || onEdit || hasInstructions) && (
-              <div className="flex items-center gap-0 -ml-1 mt-0.5">
-                {recipe.url && (
-                  <a
-                    href={recipe.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
-                    aria-label={`Open recipe URL for ${recipe.name}`}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
-                  </a>
-                )}
+            {/* Action buttons — primary actions inline, secondary actions in overflow menu */}
+            <div className="flex items-center gap-0 -ml-1 mt-0.5">
+              {recipe.url && (
+                <a
+                  href={recipe.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center h-7 w-7 p-0 rounded-md hover:bg-accent"
+                  aria-label={`Open recipe URL for ${recipe.name}`}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" style={{ color: themeColor }} />
+                </a>
+              )}
+              {hasInstructions && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0"
-                  aria-label={`Copy share link for ${recipe.name}`}
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/recipes/${recipe.id}`);
-                    toast.success("Link copied!");
-                  }}
+                  aria-label={`Start cooking ${recipe.name}`}
+                  onClick={fetchAndOpenCookMode}
                 >
-                  <Share2 className="h-3.5 w-3.5" />
+                  <ChefHat className="h-3.5 w-3.5" />
                 </Button>
-                {onAddNote && (
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-7 w-7 p-0"
-                    onClick={() => onAddNote(recipe)}
-                    aria-label={`Add note for ${recipe.name}`}
+                    aria-label={`More options for ${recipe.name}`}
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <MoreVertical className="h-3.5 w-3.5" />
                   </Button>
-                )}
-                {onEdit && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    aria-label={`Edit recipe ${recipe.name}`}
-                    onClick={() => onEdit(recipe)}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[10rem]">
+                  <DropdownMenuItem
+                    aria-label={`Copy share link for ${recipe.name}`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/recipes/${recipe.id}`);
+                      toast.success("Link copied!");
+                    }}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                    aria-label={`Delete recipe ${recipe.name}`}
-                    onClick={() => onDelete(recipe.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                {hasInstructions && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    aria-label={`Start cooking ${recipe.name}`}
-                    onClick={fetchAndOpenCookMode}
-                  >
-                    <ChefHat className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-            )}
+                    <Share2 className="h-3.5 w-3.5 mr-2 shrink-0" />
+                    Share link
+                  </DropdownMenuItem>
+                  {onAddNote && (
+                    <DropdownMenuItem
+                      aria-label={`Add note for ${recipe.name}`}
+                      onClick={() => onAddNote(recipe)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Add note
+                    </DropdownMenuItem>
+                  )}
+                  {(onEdit || onDelete) && <DropdownMenuSeparator />}
+                  {onEdit && (
+                    <DropdownMenuItem
+                      aria-label={`Edit recipe ${recipe.name}`}
+                      onClick={() => onEdit(recipe)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      aria-label={`Delete recipe ${recipe.name}`}
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => onDelete(recipe.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Delete
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -475,27 +487,8 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
           </div>
         )}
 
-        {/* Tips Section */}
-        <div className="mb-2 sm:mb-3">
-          <button
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
-            onClick={() => setTipsExpanded(!tipsExpanded)}
-            aria-label={tipsExpanded ? `Collapse tips for ${recipe.name}` : `Expand tips for ${recipe.name}`}
-          >
-            {tipsExpanded ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )}
-            <Lightbulb className="h-3.5 w-3.5 ml-0.5" />
-            <span>Tips</span>
-          </button>
-          {tipsExpanded && (
-            <div className="mt-2">
-              <RecipeTips recipeId={recipe.id} userId={userId} />
-            </div>
-          )}
-        </div>
+        {/* Tips — shown inline; RecipeTips handles empty/loading states and returns null when nothing to show */}
+        <RecipeTips recipeId={recipe.id} userId={userId} />
 
         {/* Expandable Details */}
         {hasDetails && (
