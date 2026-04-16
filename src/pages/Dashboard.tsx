@@ -229,12 +229,12 @@ const Dashboard = () => {
         user={user}
         userIsMemberOrAdmin={userIsMemberOrAdmin}
         title={
-          <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900">
+          <h1 className="font-display text-lg sm:text-2xl font-bold text-gray-900 truncate">
             Recipe Club Hub
           </h1>
         }
         headerContent={
-          <div className="hidden md:flex items-center gap-4 text-sm">
+          <div className="hidden lg:flex items-center gap-4 text-sm">
             {userIsClubMember && (
               <div className="flex items-center gap-1.5 bg-purple/5 border border-purple/20 px-3 py-1 rounded-full">
                 <span className="font-bold text-purple">{completedEventsCount}</span>
