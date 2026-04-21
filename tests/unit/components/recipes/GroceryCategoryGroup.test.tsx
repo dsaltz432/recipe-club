@@ -88,7 +88,7 @@ describe("GroceryCategoryGroup", () => {
     expect(screen.queryByLabelText("Remove item")).not.toBeInTheDocument();
   });
 
-  it("calls onRemoveItem when remove button is clicked", () => {
+  it("shows confirmation dialog and calls onRemoveItem after confirm", () => {
     const onRemoveItem = vi.fn();
 
     render(
@@ -103,6 +103,12 @@ describe("GroceryCategoryGroup", () => {
     const removeButtons = screen.getAllByLabelText("Remove item");
     fireEvent.click(removeButtons[0]);
 
+    // Confirmation dialog should appear, onRemoveItem not called yet
+    expect(onRemoveItem).not.toHaveBeenCalled();
+    expect(screen.getByText(/remove item\?/i)).toBeInTheDocument();
+
+    // Confirm removal
+    fireEvent.click(screen.getByRole("button", { name: /^remove$/i }));
     expect(onRemoveItem).toHaveBeenCalledWith("tomato");
   });
 

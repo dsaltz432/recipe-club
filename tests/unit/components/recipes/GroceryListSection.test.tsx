@@ -1278,7 +1278,7 @@ describe("GroceryListSection", () => {
     expect(screen.getByLabelText("Edit item text")).toBeInTheDocument();
   });
 
-  it("passes onRemoveItem to category groups and calls handler on delete", async () => {
+  it("passes onRemoveItem to category groups and calls handler after confirmation", async () => {
     const user = userEvent.setup();
     const onRemoveItem = vi.fn();
     const removePerRecipeItems: Record<string, SmartGroceryItem[]> = {
@@ -1304,7 +1304,13 @@ describe("GroceryListSection", () => {
     const removeButtons = screen.getAllByLabelText("Remove item");
     expect(removeButtons.length).toBeGreaterThan(0);
 
+    // Click trash — confirmation dialog appears, onRemoveItem not called yet
     fireEvent.click(removeButtons[0]);
+    expect(onRemoveItem).not.toHaveBeenCalled();
+    expect(screen.getByText(/remove item\?/i)).toBeInTheDocument();
+
+    // Confirm
+    fireEvent.click(screen.getByRole("button", { name: /^remove$/i }));
     expect(onRemoveItem).toHaveBeenCalled();
   });
 
