@@ -12,6 +12,7 @@ import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
 import AppHeader from "@/components/shared/AppHeader";
+import ErrorBoundary from "@/components/shared/ErrorBoundary";
 
 const VALID_TABS = ["home", "events", "recipes", "meals"] as const;
 type TabValue = typeof VALID_TABS[number];
@@ -295,41 +296,49 @@ const Dashboard = () => {
             </TabsList>
 
           <TabsContent value="home">
-            <HomeSection
-              user={user}
-              activeEvent={activeEvent}
-              ingredients={ingredients}
-              setIngredients={setIngredients}
-              isAdmin={userIsMemberOrAdmin}
-              isClubMember={userIsClubMember}
-              onEventCreated={handleEventCreated}
-              onRecipeAdded={handleRecipeAdded}
-              onEventUpdated={loadActiveEvent}
-              isEventLoading={isEventLoading}
-            />
+            <ErrorBoundary section="Home">
+              <HomeSection
+                user={user}
+                activeEvent={activeEvent}
+                ingredients={ingredients}
+                setIngredients={setIngredients}
+                isAdmin={userIsMemberOrAdmin}
+                isClubMember={userIsClubMember}
+                onEventCreated={handleEventCreated}
+                onRecipeAdded={handleRecipeAdded}
+                onEventUpdated={loadActiveEvent}
+                isEventLoading={isEventLoading}
+              />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="events">
-            <EventsSection
-              userId={user?.id || ""}
-              isAdmin={userIsMemberOrAdmin}
-              isClubMember={userIsClubMember}
-              onEventChange={loadActiveEvent}
-            />
+            <ErrorBoundary section="Events">
+              <EventsSection
+                userId={user?.id || ""}
+                isAdmin={userIsMemberOrAdmin}
+                isClubMember={userIsClubMember}
+                onEventChange={loadActiveEvent}
+              />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="recipes">
-            <RecipeHub
-              userId={user?.id}
-              isAdmin={userIsAdmin}
-              canEdit={userIsMemberOrAdmin}
-              isClubMember={userIsClubMember}
-            />
+            <ErrorBoundary section="Recipes">
+              <RecipeHub
+                userId={user?.id}
+                isAdmin={userIsAdmin}
+                canEdit={userIsMemberOrAdmin}
+                isClubMember={userIsClubMember}
+              />
+            </ErrorBoundary>
           </TabsContent>
 
           {user?.id && (
             <TabsContent value="meals">
-              <MealPlanPage userId={user.id} />
+              <ErrorBoundary section="Meal Plan">
+                <MealPlanPage userId={user.id} />
+              </ErrorBoundary>
             </TabsContent>
           )}
         </Tabs>

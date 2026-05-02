@@ -14,6 +14,7 @@ import SharedRecipePage from "./pages/SharedRecipePage";
 import SharedEventPage from "./pages/SharedEventPage";
 import JoelPartyMode from "./pages/JoelPartyMode";
 import AuthGuard from "./components/auth/AuthGuard";
+import ErrorBoundary from "./components/shared/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,7 +51,9 @@ function App() {
             path="/events/:eventId"
             element={
               <AuthGuard>
-                <EventDetailPage />
+                <ErrorBoundary section="Event Details">
+                  <EventDetailPage />
+                </ErrorBoundary>
               </AuthGuard>
             }
           />
@@ -58,7 +61,9 @@ function App() {
             path="/meals/:eventId"
             element={
               <AuthGuard>
-                <PersonalMealDetailPage />
+                <ErrorBoundary section="Meal Details">
+                  <PersonalMealDetailPage />
+                </ErrorBoundary>
               </AuthGuard>
             }
           />
