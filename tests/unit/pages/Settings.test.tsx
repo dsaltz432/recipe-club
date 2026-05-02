@@ -156,7 +156,7 @@ describe("Settings", () => {
     });
   });
 
-  it("saves preferences when Save button is clicked", async () => {
+  it("saves preferences when Save button is clicked after making a change", async () => {
     const user = userEvent.setup();
     render(<Settings />);
 
@@ -164,13 +164,16 @@ describe("Settings", () => {
       expect(screen.getByText("Save Settings")).toBeInTheDocument();
     });
 
+    // Make a change so Save is enabled
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "4" } });
+
     await user.click(screen.getByText("Save Settings"));
 
     await waitFor(() => {
       expect(mockSaveUserPreferences).toHaveBeenCalledWith("user-1", {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
-        householdSize: 2,
+        householdSize: 4,
         aiModel: "claude-sonnet-4-6",
       });
     });
@@ -183,6 +186,9 @@ describe("Settings", () => {
     await waitFor(() => {
       expect(screen.getByText("Save Settings")).toBeInTheDocument();
     });
+
+    // Make a change so Save is enabled
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "4" } });
 
     await user.click(screen.getByText("Save Settings"));
 
@@ -199,6 +205,9 @@ describe("Settings", () => {
     await waitFor(() => {
       expect(screen.getByText("Save Settings")).toBeInTheDocument();
     });
+
+    // Make a change so Save is enabled
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "4" } });
 
     await user.click(screen.getByText("Save Settings"));
 
@@ -238,6 +247,9 @@ describe("Settings", () => {
       expect(screen.getByText("Save Settings")).toBeInTheDocument();
     });
 
+    // Make a change so Save is enabled
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "4" } });
+
     await user.click(screen.getByText("Save Settings"));
 
     await waitFor(() => {
@@ -257,6 +269,9 @@ describe("Settings", () => {
     await waitFor(() => {
       expect(screen.getByText("Save Settings")).toBeInTheDocument();
     });
+
+    // Make a change so Save is enabled
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "4" } });
 
     await user.click(screen.getByText("Save Settings"));
 
@@ -395,5 +410,156 @@ describe("Settings", () => {
     });
 
     expect(screen.getByText("AI Model")).toBeInTheDocument();
+  });
+
+  // Unsaved changes behavior
+  it("Save button is disabled when there are no unsaved changes", async () => {
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Save Settings")).toBeInTheDocument();
+    });
+
+    const saveButton = screen.getByRole("button", { name: "Save Settings" });
+    expect(saveButton).toBeDisabled();
+  });
+
+  it("Save button is enabled after making a change", async () => {
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } });
+
+    const saveButton = screen.getByRole("button", { name: "Save Settings" });
+    expect(saveButton).not.toBeDisabled();
+  });
+
+  it("shows unsaved changes indicator when form is dirty", async () => {
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } });
+
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+  });
+
+  it("hides unsaved changes indicator and disables Save after saving", async () => {
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+    });
+
+    // Make a change
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } });
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+
+    // Save
+    await user.click(screen.getByText("Save Settings"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Settings saved successfully");
+    });
+
+    // Indicator should disappear and button disabled
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+    const saveButton = screen.getByRole("button", { name: "Save Settings" });
+    expect(saveButton).toBeDisabled();
+  });
+
+  it("shows leave dialog when Back is clicked with unsaved changes", async () => {
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+    });
+
+    // Make a change
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } });
+
+    // Click Back
+    const backButton = screen.getByRole("button", { name: /back/i });
+    await user.click(backButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Leave without saving?")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/your changes will be lost/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /leave without saving/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stay and save/i })).toBeInTheDocument();
+  });
+
+  it("navigates away when Leave without saving is confirmed", async () => {
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+    });
+
+    // Make a change
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } });
+
+    // Click Back
+    const backButton = screen.getByRole("button", { name: /back/i });
+    await user.click(backButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Leave without saving?")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /leave without saving/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("dismisses leave dialog and stays when Stay and save is clicked", async () => {
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+    });
+
+    // Make a change
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } });
+
+    // Click Back
+    const backButton = screen.getByRole("button", { name: /back/i });
+    await user.click(backButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Leave without saving?")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /stay and save/i }));
+
+    expect(screen.queryByText("Leave without saving?")).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("navigates immediately when Back is clicked with no unsaved changes", async () => {
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+    });
+
+    const backButton = screen.getByRole("button", { name: /back/i });
+    fireEvent.click(backButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    expect(screen.queryByText("Leave without saving?")).not.toBeInTheDocument();
   });
 });
