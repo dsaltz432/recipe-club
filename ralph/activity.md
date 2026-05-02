@@ -636,3 +636,36 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+## [2026-05-01] — Unsaved changes warning in Settings (#37)
+
+### What was implemented
+- Added `savedPreferences` state initialized from loaded prefs; updated after successful save
+- `prefsEqual()` helper compares two `UserPreferences` objects (sorts `mealTypes` before comparing)
+- `hasUnsavedChanges` = `!prefsEqual(preferences, savedPreferences)`
+- Save button disabled when `!hasUnsavedChanges || isSaving`
+- Amber "Unsaved changes" indicator (AlertCircle icon) shown above Save when dirty
+- `beforeunload` event listener added/removed reactively when `hasUnsavedChanges` changes
+- `guardedNavigate()` helper: if changes pending, stores the pending fn and opens AlertDialog; else calls fn directly
+- `handleBack()` uses `guardedNavigate()` to intercept the Back button
+- AlertDialog "Leave without saving?" / "Stay and save" for in-app navigation guard
+
+### Files changed
+- `src/pages/Settings.tsx` — all new state and UI
+- `tests/unit/pages/Settings.test.tsx` — 28 tests (was 19; +9 new for unsaved-change behavior)
+- `screenshots/` — desktop clean, desktop dirty, mobile clean
+
+### Quality checks
+- Build: pass
+- Tests: 28/28 Settings tests pass (pre-existing failures in RecipeHub/RecipeIngredientList unrelated)
+- Lint: 0 errors
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/46
+
+### Learnings for future iterations
+- `useBlocker` from react-router-dom v7 requires `useDataRouterContext` — it THROWS when used with `BrowserRouter` (non-data router). The app uses `BrowserRouter`, so `useBlocker` is not available. Use `guardedNavigate` pattern + AlertDialog instead.
+- For browser-level navigation (close/refresh/back button), `beforeunload` works reliably. For in-app navigation, intercept each navigate call with a guard function.
+- Pre-existing test failures exist in RecipeIngredientList and RecipeHub — do not fix unless the issue specifically targets those.
+
+---
