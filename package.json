@@ -12,10 +12,10 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "dev:local": "supabase start && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt & vite",
+    "dev:local": "supabase start && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt & dotenv -e .env.local -- vercel dev",
     "dev:reset": "supabase db reset",
     "dev:stop": "supabase stop",
-    "deploy:functions": "supabase functions deploy parse-recipe --no-verify-jwt && supabase functions deploy process-grocery-list --no-verify-jwt && supabase functions deploy google-calendar --no-verify-jwt && supabase functions deploy instacart-recipe --no-verify-jwt && supabase functions deploy notify-recipe-change --no-verify-jwt && supabase functions deploy recipe-club-product-update && supabase functions deploy send-event-reminders --no-verify-jwt && supabase functions deploy send-contact-email --no-verify-jwt && supabase functions deploy grocery-api --no-verify-jwt && supabase functions deploy generate-cook-timeline --no-verify-jwt"
+    "deploy:functions": "supabase functions deploy parse-recipe --no-verify-jwt && supabase functions deploy process-grocery-list --no-verify-jwt && supabase functions deploy google-calendar --no-verify-jwt && supabase functions deploy notify-recipe-change --no-verify-jwt && supabase functions deploy recipe-club-product-update && supabase functions deploy send-event-reminders --no-verify-jwt && supabase functions deploy send-contact-email --no-verify-jwt && supabase functions deploy grocery-api --no-verify-jwt && supabase functions deploy generate-cook-timeline --no-verify-jwt"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -33,6 +33,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@supabase/supabase-js": "^2.90.1",
     "@tanstack/react-query": "^5.90.17",
+    "anylist": "^0.8.4",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -58,9 +59,11 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
+    "@vercel/node": "^5.7.13",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.17",
     "autoprefixer": "^10.4.23",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
