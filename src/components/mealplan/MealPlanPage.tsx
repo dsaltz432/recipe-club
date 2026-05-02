@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, UtensilsCrossed, LayoutGrid } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, LayoutGrid, CalendarDays, Plus } from "lucide-react";
+import EmptyState from "@/components/ui/empty-state";
 import ParseProgressDialog from "./ParseProgressDialog";
 import WeekNavigation from "./WeekNavigation";
 import MealPlanGrid from "./MealPlanGrid";
@@ -427,6 +428,15 @@ const MealPlanPage = ({ userId }: MealPlanPageProps) => {
             mealTypes={userPreferences?.mealTypes}
             weekStartDay={userPreferences?.weekStartDay}
           />
+
+          {items.length === 0 && (
+            <EmptyState
+              icon={CalendarDays}
+              title="No meals planned this week"
+              description="Tap any slot in the grid above to add a meal, or click below to get started."
+              action={{ label: "Add a Meal", onClick: () => handleAddMeal(new Date().getDay(), "dinner"), icon: Plus }}
+            />
+          )}
 
           {pendingSlot && (
             <AddMealDialog

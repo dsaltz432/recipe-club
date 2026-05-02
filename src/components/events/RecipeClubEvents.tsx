@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -22,7 +22,9 @@ import {
   X,
   ChefHat,
   Pencil,
+  Disc3,
 } from "lucide-react";
+import EmptyState from "@/components/ui/empty-state";
 import { Calendar } from "@/components/ui/calendar";
 import { cancelEvent as cancelEventAction, completeEvent as completeEventAction, updateEvent as updateEventAction } from "@/lib/eventActions";
 import {
@@ -59,6 +61,7 @@ interface EventData {
 const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClubEventsProps) => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const loadEvents = async () => {
     try {
@@ -227,14 +230,20 @@ const RecipeClubEvents = ({ userId, isAdmin = false, onEventChange }: RecipeClub
   return (
     <div className="space-y-4">
       {events.length === 0 ? (
-        <Card className="bg-white/80 backdrop-blur-sm">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-center">
-              No events yet. Spin the wheel to create one!
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={CalendarIcon}
+          title="No club events yet"
+          description={
+            isAdmin
+              ? "Head to the Home tab and spin the wheel to create your first cooking event!"
+              : "No upcoming events yet. Check back soon!"
+          }
+          action={
+            isAdmin
+              ? { label: "Go to Home", onClick: () => navigate("/dashboard/home"), icon: Disc3 }
+              : undefined
+          }
+        />
       ) : (
         events.map((event) => {
           const isUpcoming = event.status === "scheduled";

@@ -72,8 +72,8 @@ const AppHeader = ({
             <DropdownMenuContent align="end" className="w-48">
               {dropdownHeader && (
                 <>
-                  <div className="md:hidden">{dropdownHeader}</div>
-                  <DropdownMenuSeparator className="md:hidden" />
+                  <div className="lg:hidden">{dropdownHeader}</div>
+                  <DropdownMenuSeparator className="lg:hidden" />
                 </>
               )}
               {userIsMemberOrAdmin && (

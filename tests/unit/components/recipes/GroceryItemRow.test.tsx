@@ -280,7 +280,7 @@ describe("GroceryItemRow", () => {
     expect(onEdit).not.toHaveBeenCalled();
   });
 
-  it("calls onRemove when remove button is clicked", () => {
+  it("shows confirmation dialog when remove button is clicked and calls onRemove after confirm", () => {
     const onRemove = vi.fn();
     const item: SmartGroceryItem = {
       name: "flour",
@@ -293,8 +293,13 @@ describe("GroceryItemRow", () => {
 
     render(<GroceryItemRow item={item} editable onRemove={onRemove} />);
 
+    // Click trash icon — confirmation dialog should appear, onRemove not called yet
     fireEvent.click(screen.getByLabelText("Remove item"));
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(screen.getByText(/remove item\?/i)).toBeInTheDocument();
 
+    // Confirm removal
+    fireEvent.click(screen.getByRole("button", { name: /^remove$/i }));
     expect(onRemove).toHaveBeenCalledWith("flour");
   });
 

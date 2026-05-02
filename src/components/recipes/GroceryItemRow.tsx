@@ -5,6 +5,16 @@ import { formatGroceryItem } from "@/lib/groceryList";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export interface GroceryItemEdit {
   name: string;
@@ -26,6 +36,7 @@ interface GroceryItemRowProps {
 const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecked, onToggleChecked, recipeColorMap }: GroceryItemRowProps) => {
   const useSingleField = !!onEditText;
   const [isEditing, setIsEditing] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [editName, setEditName] = useState(item.name);
   const [editQuantity, setEditQuantity] = useState(
     item.totalQuantity != null ? String(item.totalQuantity) : ""
@@ -203,15 +214,36 @@ const GroceryItemRow = ({ item, editable, onEdit, onEditText, onRemove, isChecke
               </Button>
             )}
             {(editable || onRemove) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRemove?.(item.name)}
-                className="h-5 w-5 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                aria-label="Remove item"
-              >
-                <Trash2 className="h-3 w-3 text-red-500" />
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRemoveConfirm(true)}
+                  className="h-5 w-5 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove item"
+                >
+                  <Trash2 className="h-3 w-3 text-red-500" />
+                </Button>
+                <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove item?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Remove &quot;{formatGroceryItem(item)}&quot; from your grocery list?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => onRemove?.(item.name)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Remove
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
           </>
         )}
