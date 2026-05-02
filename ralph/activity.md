@@ -636,3 +636,33 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+## [2026-05-02] — Error boundaries with user-friendly recovery UI (#41)
+
+### What was implemented
+- Created `src/components/shared/ErrorBoundary.tsx` — reusable React class component (no external library needed)
+- Shows branded error card matching purple palette: warning icon, section-specific heading (e.g. "Recipes failed to load"), description, Try Again + Reload Page buttons
+- `Try Again` resets the boundary state so children re-render; `Reload Page` calls `window.location.reload()`
+- Logs caught errors via `componentDidCatch` (keeps existing console.error pattern)
+- Wrapped each Dashboard tab independently in `src/pages/Dashboard.tsx` (Home, Events, Recipes, Meals)
+- Wrapped EventDetailPage and PersonalMealDetailPage at the route level in `src/App.tsx`
+
+### Files changed
+- `src/components/shared/ErrorBoundary.tsx` (new)
+- `src/pages/Dashboard.tsx` — added ErrorBoundary around each TabsContent section
+- `src/App.tsx` — wrapped EventDetailPage and PersonalMealDetailPage routes
+- `tests/unit/components/shared/ErrorBoundary.test.tsx` (new — 5 tests)
+
+### Quality checks
+- Build: pass
+- Tests: 5 new tests pass; 33 pre-existing failures unchanged on master
+- Lint: 0 errors
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/47
+
+### Learnings for future iterations
+- React ErrorBoundary must be a class component (hooks cannot catch render errors)
+- `git stash` / `git stash pop` is useful for verifying pre-existing failures vs. regressions
+- `agent-browser --viewport` flag does not resize the physical browser window in the NanoClaw container; screenshots are always at the default 1280px width
+- Pre-existing test failures (4 files, 33 tests) exist on master — do not try to fix them unless they're related to your changes
