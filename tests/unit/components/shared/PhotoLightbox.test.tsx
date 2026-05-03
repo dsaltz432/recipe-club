@@ -146,4 +146,12 @@ describe("PhotoLightbox", () => {
     );
     expect(screen.getByRole("img")).toHaveAttribute("src", photo3.src);
   });
+
+  it("uses eager loading on the main image for fast LCP", () => {
+    render(
+      <PhotoLightbox photos={[photo1]} initialIndex={0} open={true} onClose={vi.fn()} />
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute("loading", "eager");
+  });
 });

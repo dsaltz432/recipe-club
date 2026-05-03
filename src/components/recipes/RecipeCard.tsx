@@ -539,6 +539,9 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                                     src={photo}
                                     alt={`${recipe.name} photo ${idx + 1}`}
                                     className="h-24 w-24 sm:h-20 sm:w-20 object-cover rounded-md hover:opacity-90 transition-opacity"
+                                    width={96}
+                                    height={96}
+                                    loading="lazy"
                                   />
                                 </button>
                               ))}

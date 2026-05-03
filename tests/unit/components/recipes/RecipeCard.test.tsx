@@ -270,6 +270,28 @@ describe("RecipeCard - Expandable Details", () => {
     );
   });
 
+  it("note photos use lazy loading since they are below the fold", () => {
+    const recipe = createMockRecipe({
+      notes: [
+        createMockNote({
+          photos: ["https://example.com/photo1.jpg"],
+        }),
+      ],
+    });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // Expand to reveal note photos
+    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
+
+    // Find the note photo img (not an avatar)
+    const notePhoto = screen
+      .getAllByRole("img")
+      .find((img) => img.getAttribute("src") === "https://example.com/photo1.jpg");
+    expect(notePhoto).toBeDefined();
+    expect(notePhoto).toHaveAttribute("loading", "lazy");
+  });
+
   it("collapses when Show Less is clicked", () => {
     const recipe = createMockRecipe({ url: "https://example.com/recipe" });
 

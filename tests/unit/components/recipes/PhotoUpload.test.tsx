@@ -107,6 +107,17 @@ describe("PhotoUpload", () => {
     expect(images[1]).toHaveAttribute("src", photos[1]);
   });
 
+  it("photo thumbnails use lazy loading", () => {
+    const photos = ["https://example.com/photo1.jpg"];
+
+    render(
+      <PhotoUpload photos={photos} onPhotosChange={mockOnPhotosChange} />
+    );
+
+    const images = screen.getAllByRole("img");
+    expect(images[0]).toHaveAttribute("loading", "lazy");
+  });
+
   it("shows correct photo count", () => {
     const photos = ["https://example.com/photo1.jpg"];
 
