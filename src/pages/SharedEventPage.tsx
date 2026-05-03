@@ -562,6 +562,9 @@ const SharedEventPage = () => {
                                               src={photo}
                                               alt={`Photo ${idx + 1}`}
                                               className="h-20 w-20 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity"
+                                              width={80}
+                                              height={80}
+                                              loading="lazy"
                                             />
                                           </button>
                                         ))}

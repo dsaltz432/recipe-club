@@ -102,6 +102,7 @@ const PhotoLightbox = ({ photos, initialIndex = 0, open, onClose }: PhotoLightbo
               alt={current.alt ?? `Photo ${index + 1}`}
               className="max-w-full max-h-full object-contain rounded-lg select-none"
               draggable={false}
+              loading="eager"
             />
           </div>
 

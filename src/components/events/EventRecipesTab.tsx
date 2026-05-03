@@ -420,6 +420,9 @@ const EventRecipesTab = ({
                                           src={photo}
                                           alt={`Photo for ${recipe.name}`}
                                           className="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-lg shadow-sm shrink-0"
+                                          width={80}
+                                          height={80}
+                                          loading="lazy"
                                         />
                                       ))}
                                     </div>

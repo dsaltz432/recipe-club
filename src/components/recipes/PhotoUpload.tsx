@@ -171,6 +171,7 @@ const PhotoUpload = ({
                     src={photo}
                     alt={`Recipe photo ${index + 1}`}
                     className="w-full h-full object-cover rounded-lg"
+                    loading="lazy"
                   />
                 )}
                 <button
