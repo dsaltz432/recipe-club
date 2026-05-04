@@ -34,7 +34,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX } from "lucide-react";
+import { Search, BookOpen, Loader2, SlidersHorizontal, Plus, X, FilterX, Tag } from "lucide-react";
 import EmptyState from "@/components/ui/empty-state";
 import PhotoUpload from "./PhotoUpload";
 import ParseProgressDialog from "@/components/mealplan/ParseProgressDialog";
@@ -129,6 +129,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
   const [pantryItemNames, setPantryItemNames] = useState<string[]>(DEFAULT_PANTRY_ITEMS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [recipeTagsMap, setRecipeTagsMap] = useState<Record<string, string[]>>({});
+  const [tagFilter, setTagFilter] = useState<string>("all");
 
   // Add Recipe dialog state
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
@@ -832,11 +833,22 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
       return true;
     })();
 
-    return matchesSearch && matchesIngredient && matchesTime && matchesRating;
+    const matchesTag =
+      tagFilter === "all" ||
+      (recipeTagsMap[recipe.id] ?? []).includes(tagFilter);
+
+    return matchesSearch && matchesIngredient && matchesTime && matchesRating && matchesTag;
   });
 
   const totalRecipes = recipes.length;
   const isSearchActive = searchQuery.trim() !== "";
+
+  // Compute unique tags from current recipes for the tag filter dropdown
+  const availableTags = Array.from(
+    new Set(
+      recipes.flatMap((r) => recipeTagsMap[r.id] ?? [])
+    )
+  ).sort();
 
   // Sort filtered recipes
   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
@@ -886,7 +898,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         <Button
           variant={subTab === "club" ? "default" : "outline"}
           size="sm"
-          onClick={() => setSubTab("club")}
+          onClick={() => { setSubTab("club"); setTagFilter("all"); }}
           className={subTab === "club" ? "bg-purple hover:bg-purple-dark" : ""}
         >
           Club{clubCount !== null ? ` (${clubCount})` : ""}
@@ -897,6 +909,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
           onClick={() => {
             setSubTab("personal");
             if (sortOption === "recently_cooked") setSortOption("newest");
+            setTagFilter("all");
           }}
           className={subTab === "personal" ? "bg-purple hover:bg-purple-dark" : ""}
         >
@@ -948,7 +961,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all") && (
+                {(sortOption !== "newest" || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all" || tagFilter !== "all") && (
                   <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-purple" />
                 )}
               </Button>
@@ -1002,6 +1015,20 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     <SelectItem value="5only">5 Stars Only</SelectItem>
                   </SelectContent>
                 </Select>
+                {availableTags.length > 0 && (
+                  <Select value={tagFilter} onValueChange={setTagFilter}>
+                    <SelectTrigger className="w-full">
+                      <Tag className="h-3.5 w-3.5 mr-1 shrink-0 text-muted-foreground" />
+                      <SelectValue placeholder="All Tags" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tags</SelectItem>
+                      {availableTags.map((tag) => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             )}
 
@@ -1051,6 +1078,20 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 <SelectItem value="5only">5 Stars Only</SelectItem>
               </SelectContent>
             </Select>
+            {availableTags.length > 0 && (
+              <Select value={tagFilter} onValueChange={setTagFilter}>
+                <SelectTrigger className="hidden sm:flex w-36">
+                  <Tag className="h-3.5 w-3.5 mr-1 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder="All Tags" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tags</SelectItem>
+                  {availableTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           {subTab === "personal" && userId && (
             <Button
@@ -1123,6 +1164,13 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
               onRemove: () => setSortOption("newest"),
             });
           }
+          if (tagFilter !== "all") {
+            activeFilters.push({
+              key: "tag",
+              label: tagFilter,
+              onRemove: () => setTagFilter("all"),
+            });
+          }
 
           if (activeFilters.length === 0) return null;
 
@@ -1153,6 +1201,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                     setTimeFilter("all");
                     setRatingFilter("all");
                     setSortOption("newest");
+                    setTagFilter("all");
                   }}
                   aria-label="Clear all filters"
                   className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/30 text-muted-foreground px-3 py-1 text-sm hover:border-muted-foreground/60 hover:text-foreground transition-colors"
@@ -1175,7 +1224,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
         {/* Recipe Grid */}
         {sortedRecipes.length === 0 ? (
           (() => {
-            const hasFilters = searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all";
+            const hasFilters = searchQuery || ingredientFilter !== "all" || timeFilter !== "all" || ratingFilter !== "all" || tagFilter !== "all";
             if (hasFilters) {
               return (
                 <EmptyState
@@ -1222,6 +1271,7 @@ const RecipeHub = ({ userId, isAdmin, canEdit = isAdmin, isClubMember }: RecipeH
                 onIngredientsChange={() => handleIngredientsChange(recipe.id)}
                 tags={recipeTagsMap[recipe.id] ?? []}
                 onTagsChange={userId ? handleTagsChange : undefined}
+                activeTagFilter={tagFilter !== "all" ? tagFilter : undefined}
               />
             ))}
           </div>

@@ -74,9 +74,10 @@ interface RecipeCardProps {
   onIngredientsChange?: () => void;
   tags?: string[];
   onTagsChange?: (recipeId: string, tags: string[]) => void;
+  activeTagFilter?: string;
 }
 
-const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange, tags = [], onTagsChange }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredients, pantryItems, contentStatus, content, onParseRecipe, userId, onIngredientsChange, tags = [], onTagsChange, activeTagFilter }: RecipeCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
@@ -363,37 +364,97 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
         </div>
 
         {/* Tags Section */}
-        {onTagsChange && (
+        {onTagsChange && tags.length > 0 && (
           <div className="mb-2 sm:mb-3">
-            {tags.length > 0 && !tagsExpanded && (
-              <div
-                className="flex items-center gap-1.5 cursor-pointer group"
+            {!tagsExpanded ? (
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setTagsExpanded(true)}
-                aria-label="Edit recipe tags"
+                aria-label={`Show tags for ${recipe.name}`}
               >
-                <RecipeTagPills tags={tags} />
-                <Tag className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </div>
-            )}
-            {(tagsExpanded || tags.length === 0) && (
+                <Tag className="h-3 w-3 shrink-0" />
+                <span>Tags ({tags.length})</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </button>
+            ) : (
               <div className="flex items-start gap-2">
                 <Tag className="h-3.5 w-3.5 text-muted-foreground mt-1 shrink-0" />
-                <RecipeTagEditor
-                  tags={tags}
-                  onChange={(newTags) => {
-                    onTagsChange(recipe.id, newTags);
-                    if (newTags.length === 0) setTagsExpanded(false);
-                  }}
-                />
+                <div className="flex-1 min-w-0">
+                  <RecipeTagEditor
+                    tags={tags}
+                    onChange={(newTags) => {
+                      onTagsChange(recipe.id, newTags);
+                      if (newTags.length === 0) setTagsExpanded(false);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setTagsExpanded(false)}
+                    aria-label={`Hide tags for ${recipe.name}`}
+                  >
+                    <ChevronUp className="h-3 w-3 shrink-0" />
+                    <span>Hide tags</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
         )}
-        {!onTagsChange && tags.length > 0 && (
+        {onTagsChange && tags.length === 0 && (
           <div className="mb-2 sm:mb-3">
-            <RecipeTagPills tags={tags} />
+            <div className="flex items-start gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground mt-1 shrink-0" />
+              <RecipeTagEditor
+                tags={tags}
+                onChange={(newTags) => {
+                  onTagsChange(recipe.id, newTags);
+                }}
+              />
+            </div>
           </div>
         )}
+        {!onTagsChange && tags.length > 0 && (() => {
+          // Show the matching tag if a filter is active; otherwise show a "Tags (N)" toggle
+          const matchingTag = activeTagFilter && tags.includes(activeTagFilter) ? activeTagFilter : null;
+          if (matchingTag) {
+            return (
+              <div className="mb-2 sm:mb-3">
+                <RecipeTagPills tags={[matchingTag]} />
+              </div>
+            );
+          }
+          return (
+            <div className="mb-2 sm:mb-3">
+              {!tagsExpanded ? (
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setTagsExpanded(true)}
+                  aria-label={`Show tags for ${recipe.name}`}
+                >
+                  <Tag className="h-3 w-3 shrink-0" />
+                  <span>Tags ({tags.length})</span>
+                  <ChevronDown className="h-3 w-3 shrink-0" />
+                </button>
+              ) : (
+                <div>
+                  <RecipeTagPills tags={tags} />
+                  <button
+                    type="button"
+                    className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setTagsExpanded(false)}
+                    aria-label={`Hide tags for ${recipe.name}`}
+                  >
+                    <ChevronUp className="h-3 w-3 shrink-0" />
+                    <span>Hide tags</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Ingredients Section */}
         {contentStatus === "parsing" ? (
