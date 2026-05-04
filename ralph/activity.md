@@ -636,3 +636,36 @@ https://github.com/dsaltz432/recipe-club/pull/23
 - Always append `T00:00:00` when parsing ISO date strings to avoid UTC timezone offset shifting the displayed date
 
 ---
+
+## [2026-05-04] — Hide recipe card tags by default, show toggle and tag filter (#44)
+
+### What was implemented
+- RecipeCard: tags hidden by default behind "Tags (N) ▾" toggle button (collapsed is always default)
+- Clicking toggle: editable mode shows RecipeTagEditor; view-only mode shows RecipeTagPills
+- "Hide tags" button collapses expanded state
+- When `activeTagFilter` prop matches a recipe's tag, that tag is shown inline without expansion; non-matching tags stay hidden
+- RecipeHub: added `tagFilter` state (string, default "all") and `availableTags` derived from `recipeTagsMap`
+- "All Tags" dropdown in both desktop filter row and mobile collapsible panel (only rendered when `availableTags.length > 0`)
+- Tag filter integrates with active filter chips, "Clear all" button, and tab-switch reset
+- `activeTagFilter={tagFilter !== "all" ? tagFilter : undefined}` passed from RecipeHub to each RecipeCard
+
+### Files changed
+- `src/components/recipes/RecipeCard.tsx` — added `activeTagFilter` prop; new tag section logic
+- `src/components/recipes/RecipeHub.tsx` — `tagFilter` state, `availableTags` computation, filter UI, prop pass-through
+- `tests/unit/components/recipes/RecipeCard.test.tsx` — 11 new tests for tag toggle behavior
+
+### Quality checks
+- Build: pass
+- Tests: 101/101 RecipeCard tests pass; 31 pre-existing failures in RecipeHub tests (unrelated to this PR)
+- Lint: 0 errors, 0 warnings
+
+### PR
+https://github.com/dsaltz432/recipe-club/pull/49
+
+### Learnings for future iterations
+- agent-browser `--viewport 390x844` flag does not reliably change the viewport width in this environment; cannot take true mobile screenshots
+- Vite dev server serves new code via curl/fetch, but the browser module cache can hold old compiled modules; close+reopen of agent-browser is needed to get a clean state
+- `recipe_tags` table may not be seeded in the local/test Supabase environment; tag-related features cannot be demoed visually without seeded data
+- RecipeTagEditor renders ALL RECIPE_TAGS as buttons (aria-pressed); RecipeTagPills renders only assigned tags as spans — different DOM types
+
+---
