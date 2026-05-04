@@ -1327,3 +1327,98 @@ describe("RecipeCard - Last Cooked chip", () => {
     expect(screen.getByText(/Cooked Dec 2025/)).toBeInTheDocument();
   });
 });
+
+describe("RecipeCard - Tags hidden by default", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows a collapsed 'Tags (N)' toggle instead of tag pills when tags exist and no onTagsChange", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    render(<RecipeCard recipe={recipe} tags={["Spicy", "Quick"]} />);
+    expect(screen.getByText("Tags (2)")).toBeInTheDocument();
+    // Tag pills should NOT be visible by default
+    expect(screen.queryByText("Spicy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Quick")).not.toBeInTheDocument();
+  });
+
+  it("expands tags when the toggle button is clicked (view-only mode)", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    render(<RecipeCard recipe={recipe} tags={["Vegetarian", "Easy"]} />);
+    fireEvent.click(screen.getByLabelText(`Show tags for ${recipe.name}`));
+    expect(screen.getByText("Vegetarian")).toBeInTheDocument();
+    expect(screen.getByText("Easy")).toBeInTheDocument();
+  });
+
+  it("collapses tags again when 'Hide tags' is clicked (view-only mode)", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    render(<RecipeCard recipe={recipe} tags={["Vegetarian"]} />);
+    fireEvent.click(screen.getByLabelText(`Show tags for ${recipe.name}`));
+    expect(screen.getByText("Vegetarian")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(`Hide tags for ${recipe.name}`));
+    expect(screen.queryByText("Vegetarian")).not.toBeInTheDocument();
+    expect(screen.getByText("Tags (1)")).toBeInTheDocument();
+  });
+
+  it("shows no tag toggle when tags are empty in view-only mode", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    render(<RecipeCard recipe={recipe} tags={[]} />);
+    expect(screen.queryByText(/Tags \(/)).not.toBeInTheDocument();
+  });
+
+  it("shows collapsed 'Tags (N)' toggle when onTagsChange is provided", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    const mockOnTagsChange = vi.fn();
+    render(
+      <RecipeCard recipe={recipe} tags={["Spicy"]} onTagsChange={mockOnTagsChange} />
+    );
+    expect(screen.getByText("Tags (1)")).toBeInTheDocument();
+    // Tag editor should NOT be visible by default
+    expect(screen.queryByRole("group", { name: "Recipe tags" })).not.toBeInTheDocument();
+  });
+
+  it("expands tags editor when toggle is clicked (editable mode)", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    const mockOnTagsChange = vi.fn();
+    render(
+      <RecipeCard recipe={recipe} tags={["Spicy"]} onTagsChange={mockOnTagsChange} />
+    );
+    fireEvent.click(screen.getByLabelText(`Show tags for ${recipe.name}`));
+    expect(screen.getByRole("group", { name: "Recipe tags" })).toBeInTheDocument();
+  });
+
+  it("shows empty tag editor (no toggle) when no tags and onTagsChange is provided", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    const mockOnTagsChange = vi.fn();
+    render(
+      <RecipeCard recipe={recipe} tags={[]} onTagsChange={mockOnTagsChange} />
+    );
+    // No toggle needed — editor is always shown when no tags
+    expect(screen.getByRole("group", { name: "Recipe tags" })).toBeInTheDocument();
+    expect(screen.queryByText(/Tags \(/)).not.toBeInTheDocument();
+  });
+
+  it("shows only the matching tag when activeTagFilter matches a tag (view-only mode)", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    render(
+      <RecipeCard recipe={recipe} tags={["Spicy", "Quick", "Easy"]} activeTagFilter="Quick" />
+    );
+    // Only the matching tag should be shown without needing to click
+    expect(screen.getByText("Quick")).toBeInTheDocument();
+    // Other tags should not appear
+    expect(screen.queryByText("Spicy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Easy")).not.toBeInTheDocument();
+    // No toggle needed when filter is showing the tag
+    expect(screen.queryByText(/Tags \(/)).not.toBeInTheDocument();
+  });
+
+  it("shows toggle (not the tag) when activeTagFilter does not match any tag", () => {
+    const recipe = createMockRecipe({ notes: [] });
+    render(
+      <RecipeCard recipe={recipe} tags={["Spicy", "Quick"]} activeTagFilter="Vegetarian" />
+    );
+    // No match — fall back to collapsed toggle
+    expect(screen.getByText("Tags (2)")).toBeInTheDocument();
+    expect(screen.queryByText("Spicy")).not.toBeInTheDocument();
+  });
+});
