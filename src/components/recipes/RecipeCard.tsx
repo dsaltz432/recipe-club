@@ -186,8 +186,87 @@ const RecipeCard = ({ recipe, onEdit, onDelete, onEditRating, onAddNote, ingredi
                 </span>
               )}
             </div>
-            {/* Action buttons — primary actions inline, secondary actions in overflow menu */}
-            <div className="flex items-center gap-0 -ml-1 mt-0.5">
+            {/* Mobile action bar: Cook + Share inline, rest in overflow (hidden on sm+) */}
+            <div className="flex items-center gap-0 -ml-1 mt-0.5 sm:hidden">
+              {hasInstructions && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  aria-label={`Start cooking ${recipe.name}`}
+                  onClick={fetchAndOpenCookMode}
+                >
+                  <ChefHat className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                aria-label={`Share ${recipe.name}`}
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/recipes/${recipe.id}`);
+                  toast.success("Link copied!");
+                }}
+              >
+                <Share2 className="h-3.5 w-3.5" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    aria-label={`More options for ${recipe.name}`}
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[10rem]">
+                  {recipe.url && (
+                    <DropdownMenuItem
+                      aria-label={`Open recipe URL for ${recipe.name}`}
+                      onClick={() => window.open(recipe.url, "_blank", "noopener,noreferrer")}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Open recipe
+                    </DropdownMenuItem>
+                  )}
+                  {onAddNote && (
+                    <DropdownMenuItem
+                      aria-label={`Add note for ${recipe.name}`}
+                      onClick={() => onAddNote(recipe)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Add note
+                    </DropdownMenuItem>
+                  )}
+                  {(onEdit || onDelete) && <DropdownMenuSeparator />}
+                  {onEdit && (
+                    <DropdownMenuItem
+                      aria-label={`Edit recipe ${recipe.name}`}
+                      onClick={() => onEdit(recipe)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      aria-label={`Delete recipe ${recipe.name}`}
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => onDelete(recipe.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-2 shrink-0" />
+                      Delete
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Desktop action bar: ExternalLink + Cook inline, rest in overflow (hidden below sm) */}
+            <div className="hidden sm:flex items-center gap-0 -ml-1 mt-0.5">
               {recipe.url && (
                 <a
                   href={recipe.url}

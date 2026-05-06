@@ -215,11 +215,13 @@ describe("RecipeCard - Expandable Details", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    const link = screen.getByLabelText(/Open recipe URL/);
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href", "https://example.com/salmon-recipe");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    // Both mobile dropdown and desktop inline render in tests; the desktop link (index 1) has href/target/rel
+    const links = screen.getAllByLabelText(/Open recipe URL/);
+    expect(links.length).toBeGreaterThanOrEqual(1);
+    const desktopLink = links[links.length - 1];
+    expect(desktopLink).toHaveAttribute("href", "https://example.com/salmon-recipe");
+    expect(desktopLink).toHaveAttribute("target", "_blank");
+    expect(desktopLink).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("shows notes section when expanded with notes", () => {
@@ -275,8 +277,8 @@ describe("RecipeCard - Expandable Details", () => {
 
     render(<RecipeCard recipe={recipe} />);
 
-    // URL icon always visible in header
-    expect(screen.getByLabelText(/Open recipe URL/)).toBeInTheDocument();
+    // URL icon always visible in header (both mobile overflow and desktop inline render in tests)
+    expect(screen.getAllByLabelText(/Open recipe URL/).length).toBeGreaterThan(0);
 
     // Expand
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
@@ -427,8 +429,9 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    // Both mobile and desktop layouts render in tests; each item appears twice
+    expect(screen.getAllByLabelText(/Edit recipe/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Delete recipe/).length).toBeGreaterThan(0);
   });
 
   it("shows edit and delete buttons for non-personal recipes with callbacks", () => {
@@ -438,8 +441,8 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Edit recipe/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Delete recipe/).length).toBeGreaterThan(0);
   });
 
   it("does not show edit/delete buttons when callbacks are not provided", () => {
@@ -458,7 +461,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByLabelText(/Edit recipe/));
+    fireEvent.click(screen.getAllByLabelText(/Edit recipe/)[0]);
 
     expect(onEdit).toHaveBeenCalledWith(recipe);
   });
@@ -470,7 +473,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByLabelText(/Delete recipe/));
+    fireEvent.click(screen.getAllByLabelText(/Delete recipe/)[0]);
 
     expect(onDelete).toHaveBeenCalledWith("recipe-42");
   });
@@ -482,8 +485,8 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Edit recipe/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Delete recipe/).length).toBeGreaterThan(0);
   });
 
   it("shows delete button for club recipe when only onDelete provided", () => {
@@ -492,7 +495,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onDelete={onDelete} />);
 
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Delete recipe/).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText(/Edit recipe/)).not.toBeInTheDocument();
   });
 
@@ -502,7 +505,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
 
     render(<RecipeCard recipe={recipe} onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByLabelText(/Delete recipe/));
+    fireEvent.click(screen.getAllByLabelText(/Delete recipe/)[0]);
 
     expect(onDelete).toHaveBeenCalledWith("club-recipe-42");
   });
@@ -515,7 +518,7 @@ describe("RecipeCard - Personal Recipe Edit/Delete", () => {
     render(<RecipeCard recipe={recipe} onEdit={onEdit} onDelete={onDelete} />);
 
     expect(screen.getByText("Personal")).toBeInTheDocument();
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Edit recipe/).length).toBeGreaterThan(0);
   });
 });
 
@@ -618,7 +621,8 @@ describe("RecipeCard - Add Note Button", () => {
 
     render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
 
-    expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
+    // Both mobile and desktop dropdowns render in tests
+    expect(screen.getAllByLabelText(/Add note/).length).toBeGreaterThan(0);
   });
 
   it("does not show Add Note button when onAddNote is not provided", () => {
@@ -635,7 +639,7 @@ describe("RecipeCard - Add Note Button", () => {
 
     render(<RecipeCard recipe={recipe} onAddNote={onAddNote} />);
 
-    fireEvent.click(screen.getByLabelText(/Add note/));
+    fireEvent.click(screen.getAllByLabelText(/Add note/)[0]);
 
     expect(onAddNote).toHaveBeenCalledWith(recipe);
   });
@@ -1018,10 +1022,10 @@ describe("RecipeCard - Layout Structure", () => {
       />
     );
 
-    // All action buttons should be present
-    expect(screen.getByLabelText(/Add note/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Edit recipe/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Delete recipe/)).toBeInTheDocument();
+    // All action buttons should be present (both mobile and desktop layouts render in tests)
+    expect(screen.getAllByLabelText(/Add note/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Edit recipe/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Delete recipe/).length).toBeGreaterThan(0);
     // Badges should be in a separate row (both present)
     expect(screen.getByText("Personal")).toBeInTheDocument();
     expect(screen.getByText("Salmon")).toBeInTheDocument();
@@ -1164,7 +1168,8 @@ describe("RecipeCard - CookModeDialog wiring", () => {
       <RecipeCard recipe={recipe} content={recipeContent} contentStatus="completed" userId="user-123" />
     );
 
-    expect(screen.getByLabelText(/Start cooking/)).toBeInTheDocument();
+    // Cook button renders in both mobile and desktop bars
+    expect(screen.getAllByLabelText(/Start cooking/).length).toBeGreaterThan(0);
   });
 });
 
@@ -1325,5 +1330,73 @@ describe("RecipeCard - Last Cooked chip", () => {
     const recipe = createMockRecipe({ eventDate: "2025-12-01", isPersonal: false });
     render(<RecipeCard recipe={recipe} />);
     expect(screen.getByText(/Cooked Dec 2025/)).toBeInTheDocument();
+  });
+});
+
+describe("RecipeCard - Mobile overflow menu", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows an inline Share button (mobile layout) alongside the overflow trigger", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // The mobile bar has an inline Share button distinct from the desktop dropdown's "Share link" item
+    expect(screen.getByLabelText(`Share ${recipe.name}`)).toBeInTheDocument();
+  });
+
+  it("clicking the mobile inline Share button copies the recipe link", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    const recipe = createMockRecipe({ id: "recipe-abc" });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    fireEvent.click(screen.getByLabelText(`Share ${recipe.name}`));
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/recipes/recipe-abc"));
+  });
+
+  it("mobile overflow menu contains Open recipe when recipe has URL", () => {
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // "Open recipe" label only appears in the mobile overflow dropdown
+    expect(screen.getByText("Open recipe")).toBeInTheDocument();
+  });
+
+  it("mobile overflow menu does not show Open recipe when recipe has no URL", () => {
+    const recipe = createMockRecipe({ url: undefined });
+
+    render(<RecipeCard recipe={recipe} />);
+
+    expect(screen.queryByText("Open recipe")).not.toBeInTheDocument();
+  });
+
+  it("desktop dropdown shows Share link item", () => {
+    const recipe = createMockRecipe();
+
+    render(<RecipeCard recipe={recipe} />);
+
+    // "Share link" text is the desktop dropdown item
+    expect(screen.getByText("Share link")).toBeInTheDocument();
+  });
+
+  it("mobile overflow menu shows Add Note, Edit, Delete when callbacks provided", () => {
+    const onAddNote = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const recipe = createMockRecipe({ url: "https://example.com/recipe" });
+
+    render(<RecipeCard recipe={recipe} onAddNote={onAddNote} onEdit={onEdit} onDelete={onDelete} />);
+
+    // Each action appears twice (mobile + desktop dropdown) — verify at least one instance
+    expect(screen.getAllByLabelText(/Add note/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Edit recipe/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Delete recipe/).length).toBeGreaterThan(0);
   });
 });
