@@ -97,6 +97,11 @@ vi.mock("@/components/recipes/RecipeHub", () => ({
   default: () => <div data-testid="recipe-hub">RecipeHub</div>,
 }));
 
+// Banner decides visibility from today's date — stub it so these tests only check gating
+vi.mock("@/components/shared/AnniversaryBanner", () => ({
+  default: () => <div data-testid="anniversary-banner">AnniversaryBanner</div>,
+}));
+
 // PantryDialog removed — pantry is now a tab in MealPlanPage
 
 describe("Dashboard", () => {
@@ -1156,5 +1161,28 @@ describe("Dashboard", () => {
     await waitFor(() => {
       expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
     });
+  });
+
+  it("shows the anniversary banner to club members", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", name: "Test", email: "test@test.com" });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: true });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    expect(await screen.findByTestId("anniversary-banner")).toBeInTheDocument();
+  });
+
+  it("does not show the anniversary banner to non-club members", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", name: "Test", email: "test@test.com" });
+    mockGetAllowedUser.mockResolvedValue({ role: "viewer", is_club_member: false });
+    mockIsAdmin.mockReturnValue(false);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recipe Club Hub")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("anniversary-banner")).not.toBeInTheDocument();
   });
 });

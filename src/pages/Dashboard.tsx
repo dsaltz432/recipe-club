@@ -12,6 +12,7 @@ import HomeSection from "@/components/home/HomeSection";
 import RecipeHub from "@/components/recipes/RecipeHub";
 import MealPlanPage from "@/components/mealplan/MealPlanPage";
 import AppHeader from "@/components/shared/AppHeader";
+import AnniversaryBanner from "@/components/shared/AnniversaryBanner";
 
 const VALID_TABS = ["home", "events", "recipes", "meals"] as const;
 type TabValue = typeof VALID_TABS[number];
@@ -274,6 +275,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:py-8">
+        {userIsClubMember && <AnniversaryBanner />}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full max-w-lg mx-auto mb-4 md:mb-8 grid-cols-4 bg-white/80 border border-purple/10 shadow-sm p-1.5 rounded-xl !h-auto">
               <TabsTrigger value="home" className="py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 data-[state=active]:bg-purple data-[state=active]:text-white data-[state=active]:shadow-none rounded-md">
