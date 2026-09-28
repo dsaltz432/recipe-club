@@ -13,7 +13,6 @@ const setToday = (date: Date) => {
 describe("AnniversaryBanner", () => {
   beforeEach(() => {
     localStorage.clear();
-    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -40,7 +39,7 @@ describe("AnniversaryBanner", () => {
     expect(screen.getByText(/6 years ago today/)).toBeInTheDocument();
   });
 
-  it("fires a single confetti burst once per session", () => {
+  it("fires a confetti burst every time the banner loads", () => {
     setToday(new Date(2026, 8, 29, 10));
     const { unmount } = render(<AnniversaryBanner />);
     expect(confetti).toHaveBeenCalledTimes(2); // one burst from each side
@@ -49,8 +48,7 @@ describe("AnniversaryBanner", () => {
     unmount();
     vi.mocked(confetti).mockClear();
     render(<AnniversaryBanner />);
-    expect(screen.getByText("Happy 6th Anniversary, Recipe Club!")).toBeInTheDocument();
-    expect(confetti).not.toHaveBeenCalled();
+    expect(confetti).toHaveBeenCalledTimes(2);
   });
 
   it("stays dismissed after the user closes it", () => {
@@ -60,7 +58,6 @@ describe("AnniversaryBanner", () => {
     expect(screen.queryByText(/Anniversary, Recipe Club/)).not.toBeInTheDocument();
 
     unmount();
-    sessionStorage.clear();
     vi.mocked(confetti).mockClear();
     render(<AnniversaryBanner />);
     expect(screen.queryByText(/Anniversary, Recipe Club/)).not.toBeInTheDocument();

@@ -7,7 +7,6 @@ import { CLUB_FOUNDED_DATE, getAnniversaryInfo, toOrdinal } from "@/lib/annivers
 const COLORS = ["#9b87f5", "#F97316", "#F6A000", "#E5DEFF", "#FEC6A1"];
 
 const dismissedKey = (year: number) => `recipe-club-anniversary-dismissed-${year}`;
-const confettiKey = (year: number) => `recipe-club-anniversary-confetti-${year}`;
 
 // Storage can throw (private mode, blocked site data) — treat that as "not set"
 const readFlag = (storage: Storage, key: string) => {
@@ -31,11 +30,10 @@ const AnniversaryBanner = () => {
   const year = info?.date.getFullYear() ?? 0;
   const [dismissed, setDismissed] = useState(() => !info || readFlag(localStorage, dismissedKey(year)));
 
-  // One short burst per browser session — celebratory, then out of the way.
+  // One short burst each time the banner appears — celebratory, then out of the way.
   // The confetti canvas ignores pointer events, so the page stays usable.
   useEffect(() => {
-    if (!info || dismissed || readFlag(sessionStorage, confettiKey(year))) return;
-    writeFlag(sessionStorage, confettiKey(year));
+    if (!info || dismissed) return;
 
     const shared = {
       particleCount: 60,
@@ -47,7 +45,7 @@ const AnniversaryBanner = () => {
     };
     confetti({ ...shared, angle: 60, origin: { x: 0, y: 0.7 } });
     confetti({ ...shared, angle: 120, origin: { x: 1, y: 0.7 } });
-  }, [info, dismissed, year]);
+  }, [info, dismissed]);
 
   if (!info || dismissed) return null;
 
