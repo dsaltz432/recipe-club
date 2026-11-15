@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface RequestBody {
-  action: "create" | "update" | "delete";
+  action: "create" | "update" | "delete" | "status";
   calendarEventId?: string;
   date?: string; // ISO string
   time?: string; // "HH:mm"
@@ -16,14 +16,40 @@ interface RequestBody {
   attendeeEmails?: string[];
 }
 
+/**
+ * Health of the user's Google connection.
+ * - connected:     refresh token works and has calendar scope
+ * - disconnected:  Google rejected the refresh token (revoked/expired)
+ * - missing_scope: token works but calendar access wasn't granted
+ * - missing:       no refresh token stored for this user
+ * - error:         couldn't tell (network/Google outage) — don't prompt the user
+ */
+type ConnectionStatus = "connected" | "disconnected" | "missing_scope" | "missing" | "error";
+
 interface CalendarResponse {
   success: boolean;
   eventId?: string;
   error?: string;
+  status?: ConnectionStatus;
+  needsReconnect?: boolean;
+}
+
+const CALENDAR_SCOPES = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/calendar",
+];
+
+class GoogleTokenError extends Error {
+  status: ConnectionStatus;
+  constructor(message: string, status: ConnectionStatus) {
+    super(message);
+    this.status = status;
+  }
 }
 
 /**
  * Exchange a stored refresh token for a fresh Google access token.
+ * Throws GoogleTokenError with a ConnectionStatus describing why it failed.
  */
 async function getAccessToken(refreshToken: string): Promise<string> {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
@@ -35,26 +61,70 @@ async function getAccessToken(refreshToken: string): Promise<string> {
     );
   }
 
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(
-      `Failed to refresh Google token: ${errorData.error_description || errorData.error || "Unknown error"}`
+  let response: Response;
+  try {
+    response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+  } catch (err) {
+    throw new GoogleTokenError(
+      `Could not reach Google: ${err instanceof Error ? err.message : "Unknown error"}`,
+      "error"
     );
   }
 
-  const { access_token } = await response.json();
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const message = `Failed to refresh Google token: ${errorData.error_description || errorData.error || "Unknown error"}`;
+    // invalid_grant = token revoked, expired, or issued for a different client
+    throw new GoogleTokenError(
+      message,
+      errorData.error === "invalid_grant" ? "disconnected" : "error"
+    );
+  }
+
+  const { access_token, scope } = await response.json();
+
+  // Google returns the granted scopes; if the user unticked calendar access on
+  // the consent screen, the token works but can't create events.
+  if (typeof scope === "string" && !scope.split(" ").some((s) => CALENDAR_SCOPES.includes(s))) {
+    throw new GoogleTokenError(
+      "Google Calendar access was not granted. Please reconnect and allow calendar access.",
+      "missing_scope"
+    );
+  }
+
   return access_token;
+}
+
+/**
+ * Record the latest connection status on the user's token row so it can be
+ * inspected from the database. Failures here never block the request.
+ */
+async function recordStatus(
+  // deno-lint-ignore no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabaseAdmin: any,
+  userId: string,
+  status: ConnectionStatus
+): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin
+      .from("user_tokens")
+      .update({ last_status: status, last_checked_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("provider", "google");
+    if (error) console.warn("Failed to record Google connection status:", error);
+  } catch (err) {
+    console.warn("Failed to record Google connection status:", err);
+  }
 }
 
 /**
@@ -297,6 +367,17 @@ serve(async (req) => {
     // but service role is more reliable for server-side operations)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Parse request body
+    const body: RequestBody = await req.json();
+    const { action } = body;
+    const isStatusCheck = action === "status";
+
+    const jsonResponse = (payload: CalendarResponse, status: number) =>
+      new Response(JSON.stringify(payload), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status,
+      });
+
     const { data: tokenRow, error: tokenError } = await supabaseAdmin
       .from("user_tokens")
       .select("refresh_token")
@@ -305,28 +386,46 @@ serve(async (req) => {
       .single();
 
     if (tokenError || !tokenRow) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "No Google refresh token found. Please sign out and sign in again with Google to grant calendar access.",
-        }),
+      if (isStatusCheck) {
+        return jsonResponse({ success: true, status: "missing", needsReconnect: true }, 200);
+      }
+      return jsonResponse(
         {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
+          success: false,
+          status: "missing",
+          needsReconnect: true,
+          error: "No Google refresh token found. Please reconnect Google Calendar.",
+        },
+        400
       );
     }
 
     // Exchange refresh token for a fresh access token
-    const accessToken = await getAccessToken(tokenRow.refresh_token);
+    let accessToken: string;
+    try {
+      accessToken = await getAccessToken(tokenRow.refresh_token);
+    } catch (err) {
+      if (!(err instanceof GoogleTokenError)) throw err;
+      console.warn(`Google token check failed for user ${user.id}: ${err.status} - ${err.message}`);
+      await recordStatus(supabaseAdmin, user.id, err.status);
+      const needsReconnect = err.status !== "error";
+      if (isStatusCheck) {
+        return jsonResponse({ success: true, status: err.status, needsReconnect }, 200);
+      }
+      return jsonResponse(
+        { success: false, status: err.status, needsReconnect, error: err.message },
+        400
+      );
+    }
 
-    // Parse request body
-    const body: RequestBody = await req.json();
-    const { action } = body;
+    await recordStatus(supabaseAdmin, user.id, "connected");
 
     let result: CalendarResponse;
 
     switch (action) {
+      case "status":
+        result = { success: true, status: "connected", needsReconnect: false };
+        break;
       case "create":
         result = await createEvent(accessToken, body);
         break;
@@ -339,7 +438,7 @@ serve(async (req) => {
       default:
         result = {
           success: false,
-          error: `Unknown action: ${action}. Supported actions: create, update, delete`,
+          error: `Unknown action: ${action}. Supported actions: create, update, delete, status`,
         };
     }
 

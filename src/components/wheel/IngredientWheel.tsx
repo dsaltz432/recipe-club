@@ -163,7 +163,7 @@ const IngredientWheel = ({ ingredients, onEventCreated, userId, disabled = false
       if (calendarResult.success) {
         toast.success(`Event created! Calendar invite sent for ${format(selectedDate, "MMMM d, yyyy")} at ${formatTime(selectedTime)}`);
       } else {
-        toast.success(`Event created for ${format(selectedDate, "MMMM d, yyyy")} at ${formatTime(selectedTime)}! (Calendar invite not sent)`);
+        toast.success(`Event created for ${format(selectedDate, "MMMM d, yyyy")} at ${formatTime(selectedTime)}! (Calendar invite not sent${calendarResult.needsReconnect ? " — reconnect Google Calendar to fix" : ""})`);
       }
 
       setShowDatePicker(false);

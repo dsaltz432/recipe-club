@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin } from "@/lib/auth";
+import { getCurrentUser, getAllowedUser, isAdmin, isMemberOrAdmin, signInWithGoogle } from "@/lib/auth";
 import { loadUserPreferences, saveUserPreferences, getCachedAiModel } from "@/lib/userPreferences";
 import type { User, UserPreferences } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -205,6 +205,29 @@ const Settings = () => {
               />
             </CardContent>
           </Card>
+
+          {/* Google Calendar — members/admins create club events */}
+          {userIsMemberOrAdmin && (
+            <>
+              <Separator />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Google Calendar</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Calendar invites for events you create are sent from your Google account. If invites stop going out, reconnect here.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => signInWithGoogle(true, window.location.href).catch(() => {})}
+                  >
+                    Reconnect Google Calendar
+                  </Button>
+                </CardContent>
+              </Card>
+            </>
+          )}
 
           {/* AI Models — admin only */}
           {userIsAdmin && (

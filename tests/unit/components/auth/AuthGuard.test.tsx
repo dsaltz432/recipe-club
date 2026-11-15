@@ -45,6 +45,12 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
+vi.mock("@/components/auth/CalendarReconnectPrompt", () => ({
+  default: ({ tokenSavedAt }: { tokenSavedAt: number | null }) => (
+    <div data-testid="calendar-prompt">{tokenSavedAt === null ? "not-saved" : "saved"}</div>
+  ),
+}));
+
 import AuthGuard from "@/components/auth/AuthGuard";
 
 beforeEach(() => {
@@ -201,6 +207,9 @@ describe("AuthGuard", () => {
       },
       { onConflict: "user_id,provider" }
     );
+    // A fresh token triggers a calendar connection re-check
+    await waitFor(() => expect(screen.getByTestId("calendar-prompt")).toHaveTextContent("saved"));
+    expect(screen.getByTestId("calendar-prompt")).not.toHaveTextContent("not-saved");
   });
 
   it("does not upsert when SIGNED_IN event has no provider_refresh_token", async () => {

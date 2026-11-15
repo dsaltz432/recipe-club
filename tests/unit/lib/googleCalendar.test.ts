@@ -30,6 +30,8 @@ import {
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
+  checkCalendarConnection,
+  CALENDAR_RECONNECT_EVENT,
 } from "@/lib/googleCalendar";
 
 describe("Google Calendar Functions", () => {
@@ -350,6 +352,94 @@ describe("Google Calendar Functions", () => {
       const result = await deleteCalendarEvent("event-123");
 
       expect(result.success).toBe(true);
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("connection problems", () => {
+    // supabase-js puts the function's JSON body on error.context (a Response)
+    const httpError = (body: unknown) => ({
+      message: "Edge Function returned a non-2xx status code",
+      context: new Response(JSON.stringify(body), { status: 400 }),
+    });
+
+    it("surfaces the real error and opens the reconnect prompt when create fails for a revoked token", async () => {
+      const listener = vi.fn();
+      window.addEventListener(CALENDAR_RECONNECT_EVENT, listener);
+      mockInvoke.mockResolvedValueOnce({
+        data: null,
+        error: httpError({
+          success: false,
+          status: "disconnected",
+          needsReconnect: true,
+          error: "Failed to refresh Google token: Token has been expired or revoked.",
+        }),
+      });
+
+      const result = await createCalendarEvent({
+        date: new Date("2026-11-17"),
+        time: "19:00",
+        ingredientName: "Cardamom",
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to refresh Google token: Token has been expired or revoked.",
+        needsReconnect: true,
+      });
+      expect(listener).toHaveBeenCalledTimes(1);
+      window.removeEventListener(CALENDAR_RECONNECT_EVENT, listener);
+    });
+
+    it("does not open the reconnect prompt for unrelated failures", async () => {
+      const listener = vi.fn();
+      window.addEventListener(CALENDAR_RECONNECT_EVENT, listener);
+      mockInvoke.mockResolvedValueOnce({
+        data: null,
+        error: httpError({ success: false, error: "Google Calendar API quota exceeded" }),
+      });
+
+      const result = await updateCalendarEvent({
+        calendarEventId: "evt-1",
+        date: new Date("2026-11-17"),
+        ingredientName: "Cardamom",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Google Calendar API quota exceeded");
+      expect(listener).not.toHaveBeenCalled();
+      window.removeEventListener(CALENDAR_RECONNECT_EVENT, listener);
+    });
+
+    it("checkCalendarConnection returns the status from the edge function", async () => {
+      mockInvoke.mockResolvedValueOnce({
+        data: { success: true, status: "disconnected", needsReconnect: true },
+        error: null,
+      });
+
+      await expect(checkCalendarConnection()).resolves.toEqual({
+        status: "disconnected",
+        needsReconnect: true,
+      });
+      expect(mockInvoke).toHaveBeenCalledWith("google-calendar", { body: { action: "status" } });
+    });
+
+    it("checkCalendarConnection treats network failures as a non-prompting error", async () => {
+      mockInvoke.mockRejectedValueOnce(new Error("offline"));
+
+      await expect(checkCalendarConnection()).resolves.toEqual({
+        status: "error",
+        needsReconnect: false,
+      });
+    });
+
+    it("checkCalendarConnection skips the call in dev mode", async () => {
+      mockIsDevMode.mockReturnValueOnce(true);
+
+      await expect(checkCalendarConnection()).resolves.toEqual({
+        status: "connected",
+        needsReconnect: false,
+      });
       expect(mockInvoke).not.toHaveBeenCalled();
     });
   });

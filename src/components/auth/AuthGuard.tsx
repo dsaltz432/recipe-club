@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CalendarReconnectPrompt from "./CalendarReconnectPrompt";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [tokenSavedAt, setTokenSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -42,7 +44,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
 
         // Save Google OAuth refresh token when available
         if (event === "SIGNED_IN" && session.provider_refresh_token) {
-          await supabase.from("user_tokens").upsert(
+          const { error: tokenSaveError } = await supabase.from("user_tokens").upsert(
             {
               user_id: session.user.id,
               provider: "google",
@@ -51,6 +53,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
             },
             { onConflict: "user_id,provider" }
           );
+          // Re-check the calendar connection now that there's a fresh token
+          if (!tokenSaveError && mounted) setTokenSavedAt(Date.now());
         }
       }
     });
@@ -73,7 +77,12 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <CalendarReconnectPrompt tokenSavedAt={tokenSavedAt} />
+    </>
+  );
 };
 
 export default AuthGuard;
