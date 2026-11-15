@@ -34,7 +34,7 @@ vi.mock("@/lib/userPreferences", () => ({
     mockLoadUserPreferences(...args),
   saveUserPreferences: (...args: unknown[]) =>
     mockSaveUserPreferences(...args),
-  getCachedAiModel: vi.fn().mockReturnValue("claude-sonnet-4-6"),
+  getCachedAiModel: vi.fn().mockReturnValue("claude-sonnet-5-5"),
 }));
 
 // Mock Select to make it testable in jsdom
@@ -67,7 +67,7 @@ const defaultPrefs = {
   mealTypes: ["breakfast", "lunch", "dinner"],
   weekStartDay: 0,
   householdSize: 2,
-  aiModel: "claude-sonnet-4-6",
+  aiModel: "claude-sonnet-5-5",
 };
 
 describe("Settings", () => {
@@ -171,7 +171,7 @@ describe("Settings", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
-        aiModel: "claude-sonnet-4-6",
+        aiModel: "claude-sonnet-5-5",
       });
     });
   });

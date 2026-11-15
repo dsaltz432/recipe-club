@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callClaude, DEFAULT_MODEL } from "../_shared/claude.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,7 @@ serve(async (req) => {
     }
 
     const { rawIngredients, model: requestedModel }: { rawIngredients: RawIngredientInput[]; model?: string } = await req.json();
-    const model = requestedModel || "claude-sonnet-4-6";
+    const model = requestedModel || DEFAULT_MODEL;
 
     if (!rawIngredients || rawIngredients.length === 0) {
       return new Response(
@@ -146,33 +147,17 @@ totalQuantity must be a number or null. unit must be a string or null.`;
 
     const userContent = `Combine these raw ingredients from multiple recipes. Each ingredient has a recipeName field.\n\nProduce TWO outputs:\n1. "items" — all ingredients combined across all recipes into one grocery list\n2. "perRecipeItems" — ingredients combined within each recipe, keyed by recipe name\n\nRaw ingredients:\n${JSON.stringify(rawIngredients, null, 2)}`;
 
-    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": aiApiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8192,
-        system: systemPrompt,
-        messages: [
+    const aiText = await callClaude({
+      apiKey: aiApiKey,
+      model,
+      system: systemPrompt,
+      messages: [
           {
             role: "user",
             content: userContent,
           },
         ],
-      }),
     });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
-    }
-
-    const aiResult = await aiResponse.json();
-    const aiText = aiResult.content?.[0]?.text || "";
 
     let parsed: { items: SmartGroceryItem[]; perRecipeItems?: Record<string, SmartGroceryItem[]> };
     try {

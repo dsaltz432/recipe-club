@@ -6,7 +6,20 @@ import { isDevMode } from "@/lib/devMode";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
-const DEFAULT_AI_MODEL = isDevMode() ? "claude-haiku-4-5-20251001" : "claude-sonnet-4-6";
+const DEFAULT_AI_MODEL = isDevMode() ? "claude-haiku-5-5" : "claude-opus-5-5";
+
+// Saved preferences from before the model update. Sonnet 4.6 was the old
+// default, so it maps to the new default (Opus 5.5); others keep their tier.
+const LEGACY_AI_MODELS: Record<string, string> = {
+  "claude-haiku-4-5-20251001": "claude-haiku-5-5",
+  "claude-haiku-4-5": "claude-haiku-5-5",
+  "claude-sonnet-4-6": "claude-opus-5-5",
+  "claude-opus-4-6": "claude-opus-5-5",
+};
+
+export function normalizeAiModel(model: string): string {
+  return LEGACY_AI_MODELS[model] ?? model;
+}
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   mealTypes: ["breakfast", "lunch", "dinner"],
@@ -49,7 +62,7 @@ export async function loadUserPreferences(
           : DEFAULT_PREFERENCES.householdSize,
       aiModel:
         typeof row.ai_model_parse === "string"
-          ? row.ai_model_parse
+          ? normalizeAiModel(row.ai_model_parse)
           : DEFAULT_PREFERENCES.aiModel,
     };
     _aiModelCache = prefs.aiModel;

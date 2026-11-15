@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callClaude, DEFAULT_MODEL } from "../_shared/claude.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +85,7 @@ serve(async (req) => {
       );
     }
 
-    const { eventId, recipeIds, mode = "interleaved", model = "claude-sonnet-4-6" } = body;
+    const { eventId, recipeIds, mode = "interleaved", model = DEFAULT_MODEL } = body;
 
     if (!recipeIds || recipeIds.length === 0) {
       return new Response(
@@ -177,28 +178,12 @@ ${instructions.map((step: string, i: number) => `${i + 1}. ${step}`).join("\n") 
       ? `Rewrite the instructions for each recipe below to include ingredient amounts on first mention. Keep each recipe's steps in order — do not interleave.\n\n${recipeSummaries}`
       : `Create an interleaved cooking timeline for these recipes being prepared simultaneously:\n\n${recipeSummaries}\n\nInterleave the steps optimally so a cook can prepare all recipes at once. Start with anything that needs the longest time (preheating oven, boiling water). Group prep tasks during passive cooking time.`;
 
-    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": aiApiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
-      }),
+    const aiText = await callClaude({
+      apiKey: aiApiKey,
+      model,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
     });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
-    }
-
-    const aiResult = await aiResponse.json();
-    const aiText = aiResult.content?.[0]?.text || "";
 
     let steps: CookModeStep[];
     try {

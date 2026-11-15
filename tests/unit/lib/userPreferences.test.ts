@@ -21,6 +21,7 @@ vi.mock("@/lib/devMode", () => ({
 import {
   loadUserPreferences,
   saveUserPreferences,
+  getCachedAiModel,
 } from "@/lib/userPreferences";
 
 describe("userPreferences", () => {
@@ -46,7 +47,7 @@ describe("userPreferences", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
-        aiModel: "claude-sonnet-4-6",
+        aiModel: "claude-opus-5-5",
       });
     });
 
@@ -86,10 +87,29 @@ describe("userPreferences", () => {
         mealTypes: ["breakfast", "lunch", "dinner"],
         weekStartDay: 0,
         householdSize: 2,
-        aiModel: "claude-sonnet-4-6",
+        aiModel: "claude-opus-5-5",
       });
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
+    });
+
+    it("maps saved pre-update models to current models (old default Sonnet 4.6 -> Opus 5.5)", async () => {
+      for (const [saved, expected] of [
+        ["claude-haiku-4-5-20251001", "claude-haiku-5-5"],
+        ["claude-sonnet-4-6", "claude-opus-5-5"],
+        ["claude-opus-4-6", "claude-opus-5-5"],
+        ["claude-opus-5-5", "claude-opus-5-5"],
+      ]) {
+        mockMaybeSingle.mockResolvedValue({
+          data: { meal_types: ["dinner"], week_start_day: 0, household_size: 2, ai_model_parse: saved },
+          error: null,
+        });
+
+        const result = await loadUserPreferences("user-1");
+
+        expect(result.aiModel).toBe(expected);
+        expect(getCachedAiModel()).toBe(expected);
+      }
     });
 
     it("handles null meal_types with default", async () => {
@@ -98,7 +118,7 @@ describe("userPreferences", () => {
           meal_types: null,
           week_start_day: 0,
           household_size: 2,
-          ai_model_parse: "claude-sonnet-4-6",
+          ai_model_parse: "claude-sonnet-5-5",
         },
         error: null,
       });
@@ -114,7 +134,7 @@ describe("userPreferences", () => {
           meal_types: ["breakfast"],
           week_start_day: null,
           household_size: 2,
-          ai_model_parse: "claude-sonnet-4-6",
+          ai_model_parse: "claude-sonnet-5-5",
         },
         error: null,
       });
@@ -130,7 +150,7 @@ describe("userPreferences", () => {
           meal_types: ["breakfast"],
           week_start_day: 0,
           household_size: null,
-          ai_model_parse: "claude-sonnet-4-6",
+          ai_model_parse: "claude-sonnet-5-5",
         },
         error: null,
       });
@@ -175,7 +195,7 @@ describe("userPreferences", () => {
           mealTypes: ["breakfast"],
           weekStartDay: 0,
           householdSize: 2,
-          aiModel: "claude-sonnet-4-6",
+          aiModel: "claude-sonnet-5-5",
         })
       ).rejects.toThrow("DB error");
 

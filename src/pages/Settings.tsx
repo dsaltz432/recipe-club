@@ -27,9 +27,9 @@ const MEAL_TYPE_OPTIONS = [
 ] as const;
 
 const AI_MODEL_OPTIONS = [
-  { value: "claude-haiku-4-5-20251001", label: "Haiku 4.5 — fastest" },
-  { value: "claude-sonnet-4-6", label: "Sonnet 4.6 — balanced, recommended" },
-  { value: "claude-opus-4-6", label: "Opus 4.6 — most intelligent" },
+  { value: "claude-haiku-5-5", label: "Haiku 5.5 — fastest" },
+  { value: "claude-sonnet-5-5", label: "Sonnet 5.5 — balanced" },
+  { value: "claude-opus-5-5", label: "Opus 5.5 — most intelligent, recommended" },
 ] as const;
 
 const Settings = () => {
